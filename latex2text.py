@@ -2,16 +2,11 @@
 import re;
 import unicodedata;
 import latexwalker;
+import logging;
 
-try:
-    from debuglog import qulog;
-except ImportError:
-    def do_print(x,args,kwargs):
-        print "MESSAGE: %r %r %r" %(x,args,kwargs);
-    class DummyQuLog:
-        def __getattr__(self,name):
-            return lambda x, *args, **kwargs: do_print(x,args,kwargs);
-    qulog = DummyQuLog();
+
+log = logging.getLogger(__name__);
+
 
 
 class EnvDef:
@@ -29,6 +24,7 @@ class MacroDef:
             self.simplify_repl = o.simplify_repl
         elif (isinstance(macname, tuple)):
             (self.macname, self.simplify_repl) = macname
+            self.discard = True if (discard is None) else discard ;
             if (simplify_repl is not None or discard is not None):
                 raise ValueError("macname=%r is tuple but other parameters specified" %(macname,))
         else:
@@ -238,6 +234,7 @@ macro_list = [
     ('uparrow', u'\N{UPWARDS ARROW}'),
     ('downarrow', u'\N{DOWNWARDS ARROW}'),
     ('rightarrow', u'\N{RIGHTWARDS ARROW}'),
+    ('to', u'\N{RIGHTWARDS ARROW}'),
     ('leftarrow', u'\N{LEFTWARDS ARROW}'),
     ('longrightarrow', u'\N{LONG RIGHTWARDS ARROW}'),
     ('longleftarrow', u'\N{LONG LEFTWARDS ARROW}'),
@@ -261,6 +258,10 @@ macro_list += [
     # some ethuebung.sty macros
     ('exercise', format_uebung),
     ('uebung', format_uebung),
+    ('hint', 'Hint: %s'),
+    ('hints', 'Hints: %s'),
+    ('hinweis', 'Hinweis: %s'),
+    ('hinweise', 'Hinweise: %s'),
     ];
 
 
@@ -323,7 +324,7 @@ def make_accented_char(node, combining):
 
     c = latexnodes2text([nodearg]).strip();
 
-    return "".join([unicodedata.normalize('NFC', unicode(ch) + combining) for ch in c]);
+    return u"".join([unicodedata.normalize('NFC', unicode(ch) + combining) for ch in c]);
 
 
 for u in unicode_accents_list:
@@ -364,13 +365,14 @@ macro_dict = dict([(m.macname, m) for m in (MacroDef(m) for m in macro_list)])
 
 
 
-def latex2text(content, keep_inline_math=False, keep_comments=False):
+def latex2text(content, tolerant_parsing=False, keep_inline_math=False, keep_comments=False):
     """
     Extracts text from `content` meant for database indexing. `content` is
     some LaTeX code.
     """
 
-    (nodelist, tpos, tlen) = latexwalker.get_latex_nodes(content, keep_inline_math=keep_inline_math);
+    (nodelist, tpos, tlen) = latexwalker.get_latex_nodes(content, keep_inline_math=keep_inline_math,
+                                                         tolerant_parsing=tolerant_parsing);
 
     return latexnodes2text(nodelist, keep_inline_math=keep_inline_math, keep_comments=keep_comments);
 
@@ -408,9 +410,9 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
                 if ('%' in mac.simplify_repl):
                     try:
                         return mac.simplify_repl % tuple([text_from_node(nn) for nn in node.arg.nodeargs])
-                    except ValueError:
-                        qulog.warning("WARNING: Error in configuration: macro '%s' failed its substitution!"
-                                      %(macroname));
+                    except (TypeError, ValueError):
+                        log.warning("WARNING: Error in configuration: macro '%s' failed its substitution!"
+                                    %(macroname));
                         return mac.simplify_repl; # too bad, keep the percent signs as they are...
                 return mac.simplify_repl
             if mac.discard:
@@ -472,8 +474,6 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
 
 
 if __name__ == '__main__':
-
-    #qulog.debug('hi!');
 
     try:
 

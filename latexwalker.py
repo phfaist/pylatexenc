@@ -140,6 +140,10 @@ macro_list = (
     MacrosDef('pdfloesung', True, 1),
     MacrosDef('pdfsolution', True, 1),
     MacrosDef('exenumfulllabel', False, 1),
+    MacrosDef('hint', False, 1),
+    MacrosDef('hints', False, 1),
+    MacrosDef('hinweis', False, 1),
+    MacrosDef('hinweise', False, 1),
 
     );
 
@@ -241,7 +245,7 @@ def get_token(s, pos, brackets_are_chars=True, environments=True, **parse_flags)
 
 
 
-def get_latex_expression(s, pos, strict_braces=True, **parse_flags):
+def get_latex_expression(s, pos, strict_braces=True, tolerant_parsing=False, **parse_flags):
     """
     Reads a latex expression, e.g. macro argument. This may be a single char, an escape
     sequence, or a expression placed in braces.
@@ -253,6 +257,12 @@ def get_latex_expression(s, pos, strict_braces=True, **parse_flags):
     tok = get_token(s, pos, environments=False, **pp);
 
     if (tok.tok == 'macro'):
+        if (tok.arg == 'end'):
+            if (not tolerant_parsing):
+                # error, this should be an \end{environment}, not an argument in itself
+                raise LatexWalkerParseError("Expected expression, got \end", s, pos);
+            else:
+                return (LatexNode(nodetype='chars', arg=''), tok.pos, 0)
         return (LatexNode(nodetype='macro', arg=LatexMacroNodeArg(macroname=tok.arg, nodeoptarg=None,
                                                                   nodeargs=[])),
                 tok.pos, tok.len)
@@ -338,7 +348,11 @@ def get_latex_environment(s, pos, environmentname=None, **parse_flags):
     args = []
     
     # see if the \begin{environment} is immediately followed by some options.
-    optargtuple = get_latex_maybe_optional_arg(s, pos)
+    # BUG: Don't eat the brace of a commutator!! impose no space.
+    optargtuple = None;
+    if (s[pos] == '['):
+        optargtuple = get_latex_maybe_optional_arg(s, pos)
+
     if (optargtuple is not None):
         optargs.append(optargtuple[0])
         pos = optargtuple[1]+optargtuple[2];
@@ -359,7 +373,7 @@ def get_latex_environment(s, pos, environmentname=None, **parse_flags):
             pos, npos+nlen-pos);
 
 def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_environment=None,
-                    stop_upon_closing_mathmode=None, keep_inline_math=False):
+                    stop_upon_closing_mathmode=None, keep_inline_math=False, tolerant_parsing=False):
     """
     Parses latex content `s`.
 
@@ -369,6 +383,7 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
     # what we'll pass on to recursive calls
     parse_flags = {
         'keep_inline_math': keep_inline_math,
+        'tolerant_parsing': tolerant_parsing,
         };
 
     nodelist = [];
@@ -394,8 +409,14 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
         Return True whenever we should stop trying to read more. (e.g. upon reaching the a matched
         stop_upon_end_environment etc.)
         """
-        
-        tok = get_token(s, p.pos, brackets_are_chars=brackets_are_chars, **parse_flags);
+
+        try:
+            tok = get_token(s, p.pos, brackets_are_chars=brackets_are_chars, **parse_flags);
+        except LatexWalkerEndOfStream:
+            if tolerant_parsing:
+                return True
+            raise # re-raise
+
         p.pos = tok.pos + tok.len;
 
         # if it's a char, just append it to the stream of last characters.
@@ -418,15 +439,21 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
         if (tok.tok == 'brace_close'):
             # we've reached the end of the group. stop the parsing.
             if (tok.arg != stop_upon_closing_brace):
-                raise LatexWalkerParseError(s=s, pos=tok.pos,
-                                            msg='Unexpected mismatching closing brace: `%s\'' %(tok.arg))
+                if (not tolerant_parsing):
+                    raise LatexWalkerParseError(s=s, pos=tok.pos,
+                                                msg='Unexpected mismatching closing brace: `%s\'' %(tok.arg))
+                return False
             return True
 
         if (tok.tok == 'end_environment'):
             # we've reached the end of an environment.
             if (tok.arg != stop_upon_end_environment):
-                raise LatexWalkerParseError(s=s, pos=tok.pos,
-                                            msg='Unexpected mismatching closing environment: `%s\'' %(tok.arg))
+                if (not tolerant_parsing):
+                    raise LatexWalkerParseError(s=s, pos=tok.pos,
+                                                msg=('Unexpected mismatching closing environment: `%s\', '
+                                                     'expecting `%s\'' %(tok.arg, stop_upon_end_environment))
+                                                )
+                return False
             return True
 
         if (tok.tok == 'mathmode_inline'):
@@ -526,8 +553,12 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
         except LatexWalkerEndOfStream:
             if (stop_upon_closing_brace or stop_upon_end_environment):
                 # unexpected eof
-                raise LatexWalkerError("Unexpected end of stream!")
-            r_endnow = True
+                if (not tolerant_parsing):
+                    raise LatexWalkerError("Unexpected end of stream!")
+                else:
+                    r_endnow = False
+            else:
+                r_endnow = True
             
         if (r_endnow):
             # add last chars
