@@ -23,7 +23,7 @@ logical structure of objects, which can then be used to produce output in anothe
 such as plain text.
 
 `latex2text.py` builds up on top of `latexwalker.py`, and provides functions to convert
-given LaTeX code to plain text.
+given LaTeX code to plain text with unicode characters.
 
 Note that you can also run `latex2text.py` as a script to convert LaTeX input (either from
 the standard input, or from files given on the command line) into plain text, written on
