@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import unicodedata;
+import logging
 
-from core.blogger import logger;
+log = logging.getLogger(__name__)
 
 
 #
@@ -524,6 +525,62 @@ utf82latex={
 0x0307: r'\ensuremath{\dot{}}',
 0x0308: r'\ensuremath{\ddot{}}',
 
+0x0391: r'A', # GREEK CAPITAL LETTER ALPHA
+0x0392: r'B', # GREEK CAPITAL LETTER BETA
+0x0393: r'\ensuremath{\Gamma}', # GREEK CAPITAL LETTER GAMMA
+0x0394: r'\ensuremath{\Delta}', # ...
+0x0395: r'E',
+0x0396: r'Z',
+0x0397: r'H',
+0x0398: r'\ensuremath{\Theta}',
+0x0399: r'I',
+0x039A: r'K',
+0x039B: r'\ensuremath{\Lambda}',
+0x039C: r'M',
+0x039D: r'N',
+0x039E: r'\ensuremath{\Xi}',
+0x039F: r'O',
+0x03A0: r'\ensuremath{\Pi}',
+0x03A1: r'P',
+0x03A3: r'\ensuremath{\Sigma}',
+0x03A4: r'T',
+0x03A5: r'\ensuremath{\Upsilon}',
+0x03A6: r'\ensuremath{\Phi}',
+0x03A7: r'X',
+0x03A8: r'\ensuremath{\Psi}',
+0x03A9: r'\ensuremath{\Omega}',
+# tonos letters [ ... ]
+0x03B1: r'\ensuremath{\alpha}', # Greek Small Letter Alpha
+0x03B2: r'\ensuremath{\beta}',
+0x03B3: r'\ensuremath{\gamma}',
+0x03B4: r'\ensuremath{\delta}',
+0x03B5: r'\ensuremath{\varepsilon}',
+0x03B6: r'\ensuremath{\zeta}',
+0x03B7: r'\ensuremath{\eta}',
+0x03B8: r'\ensuremath{\theta}',
+0x03B9: r'\ensuremath{\i}',
+0x03BA: r'\ensuremath{\kappa}',
+0x03BB: r'\ensuremath{\lambda}',
+0x03BC: r'\ensuremath{\mu}',
+0x03BD: r'\ensuremath{\nu}',
+0x03BE: r'\ensuremath{\xi}',
+0x03BF: r'o',
+0x03C0: r'\ensuremath{\pi}',
+0x03C1: r'\ensuremath{\rho}',
+0x03C2: r'\ensuremath{\varsigma}',
+0x03C3: r'\ensuremath{\sigma}',
+0x03C4: r'\ensuremath{\tau}',
+0x03C5: r'\ensuremath{\upsilon}',
+0x03C6: r'\ensuremath{\varphi}',
+0x03C7: r'\ensuremath{\chi}',
+0x03C8: r'\ensuremath{\psi}',
+0x03C9: r'\ensuremath{\omega}',
+
+
+0x03D1: r'\ensuremath{\vartheta}', # Greek Theta Symbol
+0x03D5: r'\ensuremath{\phi}', # Greek Phi Symbol
+0x03D6: r'\ensuremath{\varpi}', # Greek Pi Symbol
+0x03F1: r'\ensuremath{\varrho}', # Greek rho symbol
 
 #
 0x2010: '-', # HYPHEN
@@ -707,8 +764,13 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
                 # add brackets if needed, i.e. if we have a substituting macro.
                 result += (  '{'+lch+'}' if brackets and lch[0] == '\\' else
                              lch  )
+            elif ((ord(ch) >= 32 and ord(ch) <= 127) or
+                  (ch in "\n\r\t")):
+                # ordinary printable ascii char, just add it
+                result += ch
             else:
-                logger.warning(u"Character cannot be encoded into LaTeX: U+%04X - %s" % (ord(ch), ch))
+                # non-ascii char
+                log.warning(u"Character cannot be encoded into LaTeX: U+%04X - `%s'" % (ord(ch), ch))
                 if (substitute_bad_chars):
                     result += r'{\bfseries ?}'
                 else:
@@ -716,5 +778,43 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
                     result += ch
 
     return result
+
+
+
+
+
+
+
+
+
+
+
+
+if __name__ == '__main__':
+
+    try:
+
+        # create console handler and set level to debug
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        log.addHandler(ch)
+
+        import fileinput
+
+        print "Please type some unicode text (Ctrl+D twice to stop) ..."
+
+        latex = ''
+        for line in fileinput.input():
+            latex += line;
+
+        print '\n--- LATEX ---\n'
+        print utf8tolatex(latex.decode('utf-8')).encode('utf-8')
+        print '\n-------------\n'
+
+    except:
+        import pdb;
+        import sys;
+        print "\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n"
+        pdb.post_mortem()
 
 

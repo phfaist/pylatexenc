@@ -487,14 +487,20 @@ if __name__ == '__main__':
         for line in fileinput.input():
             latex += line;
 
+
         print '\n--- WORDS ---\n'
-        print latex2text(latex);#, keep_inline_math=True);
+        print latex2text(latex.decode('utf-8')#, keep_inline_math=True
+                         ).encode('utf-8')
         print '\n-------------\n'
 
     except:
         import pdb;
+        import traceback;
         import sys;
-        print "\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n"
+        (exc_type, exc_value, exc_traceback) = sys.exc_info()
+        
+        print "\nEXCEPTION: " + unicode(sys.exc_value) + "\n"
+        
         pdb.post_mortem()
 
 

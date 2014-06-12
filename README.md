@@ -2,7 +2,7 @@ pylatexenc
 ==========
 
 Python library for encoding unicode to latex and for parsing LaTeX to generate unicode
-text
+text.
 
 
 Unicode Text to LaTeX code
@@ -12,6 +12,10 @@ Unicode Text to LaTeX code
 a unicode string into LaTeX text and escape sequences. It should recognize accented
 characters and most math symbols. A couple of switches allow you to alter how this
 function behaves.
+
+You can also run `latexencode.py` as a script to convert plain unicode text (from the
+standard input or from files given on the command line) into LaTeX code, written on to the
+standard output.
 
 
 Parsing LaTeX code & converting to plain text (unicode)
