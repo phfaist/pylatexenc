@@ -18,7 +18,7 @@ Parsing LaTeX code & converting to plain text (unicode)
 -------------------------------------------------------
 
 `latexwalker.py` provides a series of routines (in particular, start with
-`get_latex_nodes()`, that parse the LaTeX structure of given LaTeX code and returns a
+`get_latex_nodes()`), that parse the LaTeX structure of given LaTeX code and returns a
 logical structure of objects, which can then be used to produce output in another format
 such as plain text.
 
