@@ -106,6 +106,15 @@ macro_list = [
 
     ("\\", '\n'),
 
+    ("textquoteleft", "`"),
+    ("textquoteright", "'"),
+    ("textquotedblright", u"\N{RIGHT DOUBLE QUOTATION MARK}"),
+    ("textquotedblleft", u"\N{LEFT DOUBLE QUOTATION MARK}"),
+    ("textendash", u"\N{EN DASH}"),
+    ("textemdash", u"\N{EM DASH}"),
+
+    # math stuff
+
     ("hbar", u"\N{LATIN SMALL LETTER H WITH STROKE}"),
     ("ell", u"\N{SCRIPT SMALL L}"),
 
