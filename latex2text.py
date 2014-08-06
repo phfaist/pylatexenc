@@ -113,6 +113,9 @@ macro_list = [
     ("textendash", u"\N{EN DASH}"),
     ("textemdash", u"\N{EM DASH}"),
 
+    ('textpm', u"\N{PLUS-MINUS SIGN}"),
+    ('textmp', u"\N{MINUS-OR-PLUS SIGN}"),
+
     # math stuff
 
     ("hbar", u"\N{LATIN SMALL LETTER H WITH STROKE}"),
