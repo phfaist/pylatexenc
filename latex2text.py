@@ -92,6 +92,8 @@ macro_list = [
     ('o', u'\u00f8'), # o norvegien/nordique
     ('O', u'\u00d8'), # O norvegien/nordique
     ('ss', u'\u00df'), # s-z allemand
+    ('L', u"\N{LATIN CAPITAL LETTER L WITH STROKE}"),
+    ('l', u"\N{LATIN SMALL LETTER L WITH STROKE}"),
 
     ("~", "~" ),
     ("&", "&" ),
