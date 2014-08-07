@@ -96,7 +96,7 @@ macro_list = [
     ('l', u"\N{LATIN SMALL LETTER L WITH STROKE}"),
 
     ("~", "~" ),
-    ("&", "&" ),
+    ("&", "\\&" ), # HACK, see below for text replacement of '&'
     ("$", "$" ),
     ("{", "{" ),
     ("}", "}" ),
@@ -360,7 +360,8 @@ text_replacements = (
     ("``", '"'),
     ("''", '"'),
 
-    ('&', '   '), # ignore tabular alignments, just add a little space
+    (r'(?<!\\)&', '   '), # ignore tabular alignments, just add a little space
+    ('\\&', '&'), # but preserve the \& escapes, that we before *hackingly* kept as '\&' for this purpose ...
 
     );
 
