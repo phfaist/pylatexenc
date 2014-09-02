@@ -118,6 +118,8 @@ macro_list = [
     ('textpm', u"\N{PLUS-MINUS SIGN}"),
     ('textmp', u"\N{MINUS-OR-PLUS SIGN}"),
 
+    ("texteuro", u"\N{EURO SIGN}"),
+
     # math stuff
 
     ("hbar", u"\N{LATIN SMALL LETTER H WITH STROKE}"),
@@ -313,12 +315,22 @@ macro_list += [
     ]
 
 unicode_accents_list = (
+    # see http://en.wikibooks.org/wiki/LaTeX/Special_Characters for a list
     ("'", u"\N{COMBINING ACUTE ACCENT}"),
     ("`", u"\N{COMBINING GRAVE ACCENT}"),
     ('"', u"\N{COMBINING DIAERESIS}"),
     ("c", u"\N{COMBINING CEDILLA}"),
     ("^", u"\N{COMBINING CIRCUMFLEX ACCENT}"),
     ("~", u"\N{COMBINING TILDE}"),
+    ("H", u"\N{COMBINING DOUBLE ACUTE ACCENT}"),
+    ("k", u"\N{COMBINING OGONEK}"),
+    ("=", u"\N{COMBINING MACRON}"),
+    ("b", u"\N{COMBINING MACRON BELOW}"),
+    (".", u"\N{COMBINING DOT ABOVE}"),
+    ("d", u"\N{COMBINING DOT BELOW}"),
+    ("r", u"\N{COMBINING RING ABOVE}"),
+    ("u", u"\N{COMBINING BREVE}"),
+    ("v", u"\N{COMBINING CARON}"),
 
     ("vec", u"\N{COMBINING RIGHT ARROW ABOVE}"),
     ("dot", u"\N{COMBINING DOT ABOVE}"),
@@ -340,12 +352,15 @@ def make_accented_char(node, combining):
 
     c = latexnodes2text([nodearg]).strip();
 
-    def trans(ch):
+    def getaccented(ch, combining):
         if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
-            return "i"
-        return ch
+            ch = "i"
+        if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
+            ch = "j"
+        print u"Accenting %s with %s"%(ch, combining)
+        return unicodedata.normalize('NFC', unicode(ch)+combining)
 
-    return u"".join([unicodedata.normalize('NFC', unicode(trans(ch)) + combining) for ch in c]);
+    return u"".join([getaccented(ch, combining) for ch in c]);
 
 
 for u in unicode_accents_list:
