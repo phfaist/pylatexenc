@@ -94,6 +94,8 @@ macro_list = [
     ('ss', u'\u00df'), # s-z allemand
     ('L', u"\N{LATIN CAPITAL LETTER L WITH STROKE}"),
     ('l', u"\N{LATIN SMALL LETTER L WITH STROKE}"),
+    ('i', u"\N{LATIN SMALL LETTER DOTLESS I}"),
+    ('j', u"\N{LATIN SMALL LETTER DOTLESS J}"),
 
     ("~", "~" ),
     ("&", "\\&" ), # HACK, see below for text replacement of '&'
@@ -338,7 +340,12 @@ def make_accented_char(node, combining):
 
     c = latexnodes2text([nodearg]).strip();
 
-    return u"".join([unicodedata.normalize('NFC', unicode(ch) + combining) for ch in c]);
+    def trans(ch):
+        if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
+            return "i"
+        return ch
+
+    return u"".join([unicodedata.normalize('NFC', unicode(trans(ch)) + combining) for ch in c]);
 
 
 for u in unicode_accents_list:
