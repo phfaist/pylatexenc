@@ -353,11 +353,13 @@ def make_accented_char(node, combining):
     c = latexnodes2text([nodearg]).strip();
 
     def getaccented(ch, combining):
+        ch = unicode(ch)
+        combining = unicode(combining)
         if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
-            ch = "i"
+            ch = u"i"
         if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
-            ch = "j"
-        print u"Accenting %s with %s"%(ch, combining)
+            ch = u"j"
+        #print u"Accenting %s with %s"%(ch, combining) # this causes UnicdeDecodeError!!!
         return unicodedata.normalize('NFC', unicode(ch)+combining)
 
     return u"".join([getaccented(ch, combining) for ch in c]);
