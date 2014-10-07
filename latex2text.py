@@ -96,9 +96,11 @@ macro_list = [
     ('ss', u'\u00df'), # s-z allemand
     ('L', u"\N{LATIN CAPITAL LETTER L WITH STROKE}"),
     ('l', u"\N{LATIN SMALL LETTER L WITH STROKE}"),
+    ('i', u"\N{LATIN SMALL LETTER DOTLESS I}"),
+    ('j', u"\N{LATIN SMALL LETTER DOTLESS J}"),
 
     ("~", "~" ),
-    ("&", "&" ),
+    ("&", "\\&" ), # HACK, see below for text replacement of '&'
     ("$", "$" ),
     ("{", "{" ),
     ("}", "}" ),
@@ -107,6 +109,20 @@ macro_list = [
     ("_", "_" ),
 
     ("\\", '\n'),
+
+    ("textquoteleft", "`"),
+    ("textquoteright", "'"),
+    ("textquotedblright", u"\N{RIGHT DOUBLE QUOTATION MARK}"),
+    ("textquotedblleft", u"\N{LEFT DOUBLE QUOTATION MARK}"),
+    ("textendash", u"\N{EN DASH}"),
+    ("textemdash", u"\N{EM DASH}"),
+
+    ('textpm', u"\N{PLUS-MINUS SIGN}"),
+    ('textmp', u"\N{MINUS-OR-PLUS SIGN}"),
+
+    ("texteuro", u"\N{EURO SIGN}"),
+
+    # math stuff
 
     ("hbar", u"\N{LATIN SMALL LETTER H WITH STROKE}"),
     ("ell", u"\N{SCRIPT SMALL L}"),
@@ -301,12 +317,22 @@ macro_list += [
     ]
 
 unicode_accents_list = (
+    # see http://en.wikibooks.org/wiki/LaTeX/Special_Characters for a list
     ("'", u"\N{COMBINING ACUTE ACCENT}"),
     ("`", u"\N{COMBINING GRAVE ACCENT}"),
     ('"', u"\N{COMBINING DIAERESIS}"),
     ("c", u"\N{COMBINING CEDILLA}"),
     ("^", u"\N{COMBINING CIRCUMFLEX ACCENT}"),
     ("~", u"\N{COMBINING TILDE}"),
+    ("H", u"\N{COMBINING DOUBLE ACUTE ACCENT}"),
+    ("k", u"\N{COMBINING OGONEK}"),
+    ("=", u"\N{COMBINING MACRON}"),
+    ("b", u"\N{COMBINING MACRON BELOW}"),
+    (".", u"\N{COMBINING DOT ABOVE}"),
+    ("d", u"\N{COMBINING DOT BELOW}"),
+    ("r", u"\N{COMBINING RING ABOVE}"),
+    ("u", u"\N{COMBINING BREVE}"),
+    ("v", u"\N{COMBINING CARON}"),
 
     ("vec", u"\N{COMBINING RIGHT ARROW ABOVE}"),
     ("dot", u"\N{COMBINING DOT ABOVE}"),
@@ -328,7 +354,17 @@ def make_accented_char(node, combining):
 
     c = latexnodes2text([nodearg]).strip();
 
-    return u"".join([unicodedata.normalize('NFC', unicode(ch) + combining) for ch in c]);
+    def getaccented(ch, combining):
+        ch = unicode(ch)
+        combining = unicode(combining)
+        if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
+            ch = u"i"
+        if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
+            ch = u"j"
+        #print u"Accenting %s with %s"%(ch, combining) # this causes UnicdeDecodeError!!!
+        return unicodedata.normalize('NFC', unicode(ch)+combining)
+
+    return u"".join([getaccented(ch, combining) for ch in c]);
 
 
 for u in unicode_accents_list:
@@ -350,7 +386,8 @@ text_replacements = (
     ("``", '"'),
     ("''", '"'),
 
-    ('&', '   '), # ignore tabular alignments, just add a little space
+    (r'(?<!\\)&', '   '), # ignore tabular alignments, just add a little space
+    ('\\&', '&'), # but preserve the \& escapes, that we before *hackingly* kept as '\&' for this purpose ...
 
     );
 
