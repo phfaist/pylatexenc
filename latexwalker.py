@@ -43,7 +43,7 @@ macro_list = (
     MacrosDef('hspace', False, 1),
     MacrosDef('vspace', False, 1),
 
-    MacrosDef('\\', True, 0), # end of line with optional spacing, e.g.  \\[2mm]
+    MacrosDef('\\', True, 0), # (Note: single backslash) end of line with optional spacing, e.g.  \\[2mm]
     MacrosDef('item', True, 0),
 
     MacrosDef('includegraphics', True, 1),
@@ -95,6 +95,8 @@ macro_list = (
     MacrosDef('bra', False, 1),
     MacrosDef('braket', False, 2),
     MacrosDef('ketbra', False, 2),
+
+    MacrosDef('texorpdfstring', False, 2),
 
     # ethuebung
     MacrosDef('UebungLoesungFont', False, 1),

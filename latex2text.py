@@ -83,6 +83,8 @@ macro_list = [
     ('item', lambda r: '\n  '+(latexnodes2text([r.nodeoptarg]) if r.nodeoptarg else '*')),
     ('footnote', '[%s]'),
 
+    ('texorpdfstring', lambda arg: latexnodes2text(arg.nodeargs[1:2])), # use second argument
+
     ('oe', u'\u0153'),
     ('OE', u'\u0152'),
     ('ae', u'\u00e6'),
