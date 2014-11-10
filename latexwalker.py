@@ -335,8 +335,8 @@ def get_latex_braced_group(s, pos, brace_type='{', **parse_flags):
 
 def get_latex_environment(s, pos, environmentname=None, **parse_flags):
     """
-    Reads a latex expression enclosed in a \begin{environment}...\end{environment}. The first
-    token in the stream must be the \begin{environment}.
+    Reads a latex expression enclosed in a \\begin{environment}...\\end{environment}. The first
+    token in the stream must be the \\begin{environment}.
 
     Returns a tuple (node, pos, len) with node being a `LatexNode` of `nodetype='environment'`.
     """
@@ -345,7 +345,7 @@ def get_latex_environment(s, pos, environmentname=None, **parse_flags):
     if (firsttok.tok != 'begin_environment'  or
         (environmentname is not None and firsttok.arg != environmentname)):
         raise LatexWalkerParseError(s=s, pos=pos,
-                                    msg='get_latex_environment: expected \begin{%s}: %s' %(
+                                    msg=r'get_latex_environment: expected \begin{%s}: %s' %(
             environmentname if environmentname is not None else '<environment name>',
             tok.arg
             ));
@@ -388,7 +388,7 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
     """
     Parses latex content `s`.
 
-    Returns a tuple (nodelist, pos, len) where nodelist is a list of `LatexNode`s.
+    Returns a tuple `(nodelist, pos, len)` where nodelist is a list of `LatexNode` 's.
     """
 
     # what we'll pass on to recursive calls
