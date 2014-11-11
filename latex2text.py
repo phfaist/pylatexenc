@@ -358,7 +358,7 @@ unicode_accents_list = (
     );
 
 def make_accented_char(node, combining):
-    nodearg = node.nodeargs[0] if len(node.nodeargs) else latexwalker.LatexNode('chars', ' ');
+    nodearg = node.nodeargs[0] if len(node.nodeargs) else latexwalker.LatexCharsNode(chars=' ')
 
     c = latexnodes2text([nodearg]).strip();
 
