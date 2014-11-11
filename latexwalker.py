@@ -164,11 +164,127 @@ macro_dict = dict([(m.macname, m) for m in macro_list]);
 
 LatexToken = namedtuple('LatexToken', ['tok', 'arg', 'pos', 'len', 'pre_space'])
 
-LatexNode = namedtuple('LatexNode', ['nodetype', 'arg'])
 
-LatexMacroNodeArg = namedtuple('LatexMacroNodeArg', ['macroname', 'nodeoptarg', 'nodeargs'])
-LatexEnvironmentNodeArg = namedtuple('LatexEnvironmentNodeArg', ['envname', 'nodelist', 'optargs', 'args'])
-LatexMathNodeArg = namedtuple('LatexMathNodeArg', ['displaytype', 'nodelist']);
+class LatexNode(object):
+    """
+    Represents an abstract 'node' of the latex document.
+
+    Use :py:meth:`nodeType()` to figure out what type of node this is.
+    """
+    def __init__(self, **kwargs):
+        super(LatexNode, self).__init__(**kwargs)
+
+    def nodeType(self):
+        return LatexNode
+
+    def isNodeType(self, t):
+        return isinstance(self, t)
+        
+
+class LatexCharsNode(LatexNode):
+    """
+    A string of characters in the LaTeX document, without any special meaning.
+    """
+    def __init__(self, chars, **kwargs):
+        r"""
+        Arguments:
+            - `chars`: the actual characters.
+        """
+        super(LatexCharsNode, self).__init__(**kwargs)
+        self.chars = chars
+
+    def nodeType(self):
+        return LatexCharsNode
+
+class LatexGroupNode(LatexNode):
+    r"""
+    A LaTeX group, i.e. `{...}`.
+    """
+    def __init__(self, nodelist, **kwargs):
+        """
+        Arguments:
+            - `nodelist`: a list of nodes which comprise the group.
+        """
+        super(LatexNode, self).__init__(**kwargs)
+        self.nodelist = nodelist
+
+    def nodeType(self):
+        return LatexGroupNode
+
+class LatexCommentNode(LatexNode):
+    def __init__(self, comment, **kwargs):
+        super(LatexCommentNode, self).__init__(**kwargs)
+        self.comment = comment
+
+    def nodeType(self):
+        return LatexCommentNode
+
+class LatexMacroNode(LatexNode):
+    r"""
+    Represents a 'macro' type node, e.g. '\textbf'
+    """
+    def __init__(self, macroname, nodeoptarg=None, nodeargs=[], **kwargs):
+        r"""
+        Represents a 'macro' type node, e.g. '\textbf'
+
+        Arguments:
+            - `macroname`: the name of the macro (string), *without* the leading
+              backslash
+            - `nodeoptarg`: if non-`None`, this corresponds to the optional argument
+              of the macro
+            - `nodeargs`: a list of arguments to the macro. Each item in the list
+              should be a LatexNode.
+        """
+        super(LatexMacroNode, self).__init__(**kwargs)
+        self.macroname = macroname
+        self.nodeoptarg = nodeoptarg
+        self.nodeargs = nodeargs
+
+    def nodeType(self):
+        return LatexMacroNode
+
+class LatexEnvironmentNode(LatexNode):
+    def __init__(self, envname, nodelist, optargs=[], args=[], **kwargs):
+        r"""
+        A LaTeX Environment Node, i.e. `\begin{something} ... \end{something}`.
+
+        Arguments:
+            - `envname`: the name of the environment ('itemize', 'equation', ...)
+            - `nodelist`: a list of :py:class:`LatexNode`'s that represent all the
+              contents between the `\begin{...}` instruction and the `\end{...}`
+              instruction.
+            - `optargs`: any possible optional argument passed to the `\begin{...}`
+              instruction, for example in `\begin{enumerate}[label=\roman*)]
+              (Currently, only a single optional argument is parsed, but this is
+              anyway a list of :py:class:`LatexNode`'s.)
+            - `args`: any possible regular arguments passed to the `\begin{...}`
+              instruction, for example in `\begin{tabular}{clr}`. Currently, only a
+              single regular argument is parsed at maximum, but this is anyway a
+              list of :py:class:`LatexNode`'s.
+        """
+        super(LatexEnvironmentNode, self).__init__(**kwargs)
+        self.envname = envname
+        self.nodelist = nodelist
+        self.optargs = optargs
+        self.args = args
+
+    def nodeType(self):
+        return LatexEnvironmentNode
+
+class LatexMathNode(LatexNode):
+    def __init__(self, displaytype, nodelist=[], **kwargs):
+        r"""
+        A Math node type.
+
+        Arguments:
+            - `displaytype`: either 'inline' or 'display'
+        """
+        super(LatexMathNode, self).__init__(**kwargs)
+        self.displaytype = displaytype
+        self.nodelist = nodelist
+
+    def nodeType(self):
+        return LatexMathNode
 
 
 def get_token(s, pos, brackets_are_chars=True, environments=True, **parse_flags):
@@ -184,7 +300,8 @@ def get_token(s, pos, brackets_are_chars=True, environments=True, **parse_flags)
         space += s[pos];
         pos += 1;
         if (space.endswith('\n\n')):  # two \n's indicate new paragraph.
-            return LatexToken('char', '\n\n', pos-2, 2, ''); # pre-space is overkill here I think.
+            # pre-space is overkill here I think.
+            return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space='');
 
 
     if (pos >= len(s)):
@@ -211,16 +328,19 @@ def get_token(s, pos, brackets_are_chars=True, environments=True, **parse_flags)
             if (envmatch is None):
                 raise LatexWalkerParseError(s=s, pos=pos, msg="Bad \\%s macro: expected {environment}" %(macro))
 
-            return LatexToken( 'begin_environment' if macro == 'begin' else  'end_environment',
-                               envmatch.group(1),
-                               pos, i+envmatch.end(), # !!envmatch.end() counts from pos+i
-                               space );
+            return LatexToken(
+                tok=('begin_environment' if macro == 'begin' else  'end_environment'),
+                arg=envmatch.group(1),
+                pos=pos,
+                len=i+envmatch.end(), # !!envmatch.end() counts from pos+i
+                pre_space=space
+                );
 
         # # possibly eat one following whitespace
         # if (s[pos+i].isspace()):
         #     i += 1;
         
-        return LatexToken('macro', macro, pos, i, space);
+        return LatexToken(tok='macro', arg=macro, pos=pos, len=i, pre_space=space);
 
     if (s[pos] == '%'):
         # latex comment
@@ -230,7 +350,7 @@ def get_token(s, pos, brackets_are_chars=True, environments=True, **parse_flags)
             mlen = m.end(); # relative to pos already
         else:
             mlen = len(s)-pos;# [  ==len(s[pos:])  ]
-        return LatexToken('comment', s[pos+1:pos+mlen], pos, mlen, space)
+        return LatexToken(tok='comment', arg=s[pos+1:pos+mlen], pos=pos, len=mlen, pre_space=space)
     
     openbracechars = '{';
     closebracechars = '}';
@@ -239,20 +359,20 @@ def get_token(s, pos, brackets_are_chars=True, environments=True, **parse_flags)
         closebracechars += ']';
 
     if (s[pos] in openbracechars):
-        return LatexToken('brace_open', s[pos], pos, 1, space)
+        return LatexToken(tok='brace_open', arg=s[pos], pos=pos, len=1, pre_space=space)
 
     if (s[pos] in closebracechars):
-        return LatexToken('brace_close', s[pos], pos, 1, space)
+        return LatexToken(tok='brace_close', arg=s[pos], pos=pos, len=1, pre_space=space)
 
     # check if it is an inline math char, if we care about inline math.
     if (s[pos] == '$' and parse_flags.get('keep_inline_math', False)):
         # check that we don't have double-$$, which would be a display environment.
         if not (pos+1 < len(s) and s[pos+1] == '$'):
-            return LatexToken('mathmode_inline', s[pos], pos, 1, space);
+            return LatexToken(tok='mathmode_inline', arg=s[pos], pos=pos, len=1, pre_space=space);
         # otherwise, proceed to 'char' type.
         
 
-    return LatexToken('char', s[pos], pos, 1, space)
+    return LatexToken(tok='char', arg=s[pos], pos=pos, len=1, pre_space=space)
 
 
 
@@ -260,6 +380,8 @@ def get_latex_expression(s, pos, strict_braces=True, tolerant_parsing=False, **p
     """
     Reads a latex expression, e.g. macro argument. This may be a single char, an escape
     sequence, or a expression placed in braces.
+
+    Returns a tuple `(<LatexNode instance>, pos, len)`.
     """
 
     pp = dict([(k,v) for (k,v) in parse_flags.iteritems()]);
@@ -273,9 +395,8 @@ def get_latex_expression(s, pos, strict_braces=True, tolerant_parsing=False, **p
                 # error, this should be an \end{environment}, not an argument in itself
                 raise LatexWalkerParseError("Expected expression, got \end", s, pos);
             else:
-                return (LatexNode(nodetype='chars', arg=''), tok.pos, 0)
-        return (LatexNode(nodetype='macro', arg=LatexMacroNodeArg(macroname=tok.arg, nodeoptarg=None,
-                                                                  nodeargs=[])),
+                return (LatexCharsNode(chars=''), tok.pos, 0)
+        return (LatexMacroNode(macroname=tok.arg, nodeoptarg=None, nodeargs=[]),
                 tok.pos, tok.len)
     if (tok.tok == 'comment'):
         return get_latex_expression(s, pos+tok.len, **parse_flags)
@@ -284,17 +405,17 @@ def get_latex_expression(s, pos, strict_braces=True, tolerant_parsing=False, **p
     if (tok.tok == 'brace_close'):
         if (strict_braces):
             raise LatexWalkerParseError("Expected expression, got closing brace!", s, pos);
-        return (LatexNode(nodetype='chars', arg=''), tok.pos, 0)
+        return (LatexCharsNode(chars=''), tok.pos, 0)
     if (tok.tok == 'char'):
-        return (LatexNode(nodetype='chars', arg=tok.arg), tok.pos, tok.len)
+        return (LatexCharsNode(chars=tok.arg), tok.pos, tok.len)
 
     raise LatexWalkerParseError("Unknown token type: %s" %(tok.tok), s, pos)
 
 
 def get_latex_maybe_optional_arg(s, pos, **parse_flags):
     """
-    Attempts to parse an optional argument. Returns the group node if success, otherwise
-    returns None.
+    Attempts to parse an optional argument. Returns a tuple `(groupnode, pos, len)` if
+    success, otherwise returns None.
     """
     
     tok = get_token(s, pos, brackets_are_chars=False, environments=False, **parse_flags);
@@ -330,7 +451,7 @@ def get_latex_braced_group(s, pos, brace_type='{', **parse_flags):
 
     (nodelist, npos, nlen) = get_latex_nodes(s, pos, stop_upon_closing_brace=closing_brace, **parse_flags);
 
-    return (LatexNode(nodetype='group', arg=nodelist), pos, npos+nlen-pos)
+    return (LatexGroupNode(nodelist=nodelist), pos, npos+nlen-pos)
 
 
 def get_latex_environment(s, pos, environmentname=None, **parse_flags):
@@ -338,7 +459,7 @@ def get_latex_environment(s, pos, environmentname=None, **parse_flags):
     Reads a latex expression enclosed in a \\begin{environment}...\\end{environment}. The first
     token in the stream must be the \\begin{environment}.
 
-    Returns a tuple (node, pos, len) with node being a `LatexNode` of `nodetype='environment'`.
+    Returns a tuple (node, pos, len) with node being a :py:class:`LatexEnvironmentNode`.
     """
 
     firsttok = get_token(s, pos, **parse_flags)
@@ -377,10 +498,10 @@ def get_latex_environment(s, pos, environmentname=None, **parse_flags):
 
     (nodelist, npos, nlen) = get_latex_nodes(s, pos, stop_upon_end_environment=environmentname, **parse_flags);
 
-    return (LatexNode(nodetype='environment', arg=LatexEnvironmentNodeArg(envname=environmentname,
-                                                                          nodelist=nodelist,
-                                                                          optargs=optargs,
-                                                                          args=args)),
+    return (LatexEnvironmentNode(envname=environmentname,
+                                 nodelist=nodelist,
+                                 optargs=optargs,
+                                 args=args),
             pos, npos+nlen-pos);
 
 def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_environment=None,
@@ -441,7 +562,7 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
             
         # if it's not a char, push the last `p.lastchars` into the node list before anything else
         if (len(p.lastchars)):
-            strnode = LatexNode(nodetype='chars', arg=p.lastchars+tok.pre_space);
+            strnode = LatexCharsNode(chars=p.lastchars+tok.pre_space);
             nodelist.append(strnode);
             p.lastchars = ''; # reset lastchars.
 
@@ -480,12 +601,12 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
                                                                 **parse_flags);
             p.pos = mpos + mlen;
 
-            nodelist.append(LatexNode(nodetype='math', arg=LatexMathNodeArg(displaytype='inline',
-                                                                            nodelist=mathinline_nodelist)));
+            nodelist.append(LatexMathNode(displaytype='inline',
+                                          nodelist=mathinline_nodelist));
             return
 
         if (tok.tok == 'comment'):
-            commentnode = LatexNode(nodetype='comment', arg=tok.arg);
+            commentnode = LatexCommentNode(comment=tok.arg);
             nodelist.append(commentnode)
             return
 
@@ -549,9 +670,9 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
 
             #import pdb; pdb.set_trace()
             
-            nodelist.append(LatexNode(nodetype='macro', arg=LatexMacroNodeArg(macroname=tok.arg,
-                                                                              nodeoptarg=nodeoptarg,
-                                                                              nodeargs=nodeargs)));
+            nodelist.append(LatexMacroNode(macroname=tok.arg,
+                                           nodeoptarg=nodeoptarg,
+                                           nodeargs=nodeargs));
             return None
 
         raise LatexWalkerParseError(s=s, pos=p.pos, msg="Uknown token: %r" %(tok));
@@ -574,7 +695,7 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
         if (r_endnow):
             # add last chars
             if (p.lastchars):
-                strnode = LatexNode(nodetype='chars', arg=p.lastchars);
+                strnode = LatexCharsNode(chars=p.lastchars);
                 nodelist.append(strnode);
             return (nodelist, origpos, p.pos - origpos)
 
@@ -600,55 +721,55 @@ def nodelist_to_latex(nodelist):
     for n in nodelist:
         if n is None:
             continue
-        if n.nodetype == 'chars':
-            latex += n.arg;
+        if n.isNodeType(LatexCharsNode):
+            latex += n.chars;
             continue
-        if n.nodetype == 'macro':
-            latex += r'\%s' %(n.arg.macroname);
+        if n.isNodeType(LatexMacroNode):
+            latex += r'\%s' %(n.macroname);
 
             mac = None;
-            if (n.arg.macroname in macro_dict):
-                mac = macro_dict[n.arg.macroname]
+            if (n.macroname in macro_dict):
+                mac = macro_dict[n.macroname]
             
-            if (n.arg.nodeoptarg is not None):
-                latex += '[%s]' %(nodelist_to_latex([n.arg.nodeoptarg]));
+            if (n.nodeoptarg is not None):
+                latex += '[%s]' %(nodelist_to_latex([n.nodeoptarg]));
 
             if mac is not None:
                 macbraces = (mac.numargs if isinstance(mac.numargs, basestring) else '{'*mac.numargs);
             else:
-                macbraces = '{'*len(n.arg.nodeargs);
+                macbraces = '{'*len(n.nodeargs);
                 
             i = 0;
-            if (len(n.arg.nodeargs) != len(macbraces)):
+            if (len(n.nodeargs) != len(macbraces)):
                 raise LatexWalkerError("Error: number of arguments (%d) provided to macro `\\%s' does not "
                                        "match its specification of `%s'"
-                                       %(len(n.arg.nodeargs), n.arg.macroname, macbraces));
-            for i in range(len(n.arg.nodeargs)):
-                nodearg = n.arg.nodeargs[i]
+                                       %(len(n.nodeargs), n.macroname, macbraces));
+            for i in range(len(n.nodeargs)):
+                nodearg = n.nodeargs[i]
                 if nodearg is not None:
                     latex += put_in_braces(macbraces[i], nodelist_to_latex([nodearg]));
 
             continue
         
-        if n.nodetype == 'comment':
-            latex += '%'+n.arg;
+        if n.isNodeType(LatexCommentNode):
+            latex += '%'+n.comment;
             continue
         
-        if n.nodetype == 'group':
-            latex += put_in_braces('{', nodelist_to_latex(n.arg));
+        if n.isNodeType(LatexGroupNode):
+            latex += put_in_braces('{', nodelist_to_latex(n.nodelist));
             continue
         
-        if n.nodetype == 'environment':
-            latex += r'\begin{%s}' %(n.arg.envname);
-            for optarg in n.arg.optargs:
+        if n.isNodeType(LatexEnvironmentNode):
+            latex += r'\begin{%s}' %(n.envname);
+            for optarg in n.optargs:
                 latex += put_in_braces('[', nodelist_to_latex([optarg]));
-            for arg in n.arg.args:
+            for arg in n.args:
                 latex += put_in_braces('{', nodelist_to_latex([arg]));
-            latex += nodelist_to_latex(n.arg.nodelist);
-            latex += r'\end{%s}' %(n.arg.envname);
+            latex += nodelist_to_latex(n.nodelist);
+            latex += r'\end{%s}' %(n.envname);
             continue
         
-        latex += '<[UNKNOWN LATEX NODE: `%s\']>' %(n.nodetype);
+        latex += '<[UNKNOWN LATEX NODE: `%s\']>' %(n.nodeType().__name__);
 
     return latex
 
@@ -656,15 +777,15 @@ def nodelist_to_latex(nodelist):
 
 def math_node_to_latex(node):
 
-    if (node.nodetype != 'math'):
-        raise LatexWalkerError("Expected math node, got `%s'" %(node.nodetype));
+    if (not node.isNodeType(LatexMathNode)):
+        raise LatexWalkerError("Expected math node, got `%s'" %(node.nodeType().__name__));
 
-    if (node.arg.displaytype == 'inline'):
-        return '$%s$' %(nodelist_to_latex(node.arg.nodelist));
-    if (node.arg.displaytype == 'display'):
-        return '$$%s$$' %(nodelist_to_latex(node.arg.nodelist));
+    if (node.displaytype == 'inline'):
+        return '$%s$' %(nodelist_to_latex(node.nodelist));
+    if (node.displaytype == 'display'):
+        return '$$%s$$' %(nodelist_to_latex(node.nodelist));
 
-    raise LatexWalkerError("Unkonwn displaytype: `%s'" %(node.arg.displaytype));
+    raise LatexWalkerError("Unkonwn displaytype: `%s'" %(node.displaytype));
 
 
 
@@ -674,30 +795,30 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
     iterchildren = [];
     if n is None:
         title = '<None>'
-    elif n.nodetype == 'chars':
-        title = "'%s'" %(n.arg.strip());
-    elif n.nodetype == 'macro':
-        title = '\\'+n.arg.macroname;
+    elif n.isNodeType(LatexCharsNode):
+        title = "'%s'" %(n.chars.strip());
+    elif n.isNodeType(LatexMacroNode):
+        title = '\\'+n.macroname;
         #comment = 'opt arg?: %d; %d args' % (n.arg.nodeoptarg is not None, len(n.arg.nodeargs));
-        if (n.arg.nodeoptarg):
-            iterchildren.append(('[...]: ', [n.arg.nodeoptarg], False));
-        if (len(n.arg.nodeargs)):
-            iterchildren.append(('{...}: ', n.arg.nodeargs, False));
-    elif n.nodetype == 'comment':
-        title = '%' + n.arg.strip()
-    elif n.nodetype == 'group':
+        if (n.nodeoptarg):
+            iterchildren.append(('[...]: ', [n.nodeoptarg], False));
+        if (len(n.nodeargs)):
+            iterchildren.append(('{...}: ', n.nodeargs, False));
+    elif n.isNodeType(LatexCommentNode):
+        title = '%' + n.comment.strip()
+    elif n.isNodeType(LatexGroupNode):
         if (skip_group):
             for nn in n.arg:
                 disp_node(nn, indent=indent, context=context);
             return
         title = 'Group: '
-        iterchildren.append(('* ', n.arg, False));
+        iterchildren.append(('* ', n.nodelist, False));
 
-    elif n.nodetype == 'environment':
-        title = '\\begin{%s}' %(n.arg.envname)
-        iterchildren.append(('* ', n.arg.nodelist, False));
+    elif n.isNodeType(LatexEnvironmentNode):
+        title = '\\begin{%s}' %(n.envname)
+        iterchildren.append(('* ', n.nodelist, False));
     else:
-        print "UNKNOWN NODE TYPE: %s"%(n.nodetype)
+        print "UNKNOWN NODE TYPE: %s"%(n.nodeType().__name__)
 
     print ' '*indent + context + title + '  '+comment
 

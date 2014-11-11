@@ -17,6 +17,14 @@ class EnvDef:
 
 class MacroDef:
     def __init__(self, macname, simplify_repl=None, discard=None):
+        """
+        Arguments:
+            - `macname`: the name of the macro (no backslash)
+            - `simplify_repl`: either a string or a callable. The string
+              may contain '%s' replacements, in which the macro arguments
+              will be substituted. The callable should accept the
+              :py:class:`~latexwalker.LatexMacroNode` as an argument.
+        """
         if (isinstance(macname, MacroDef)):
             o = macname
             self.macname = o.macname
@@ -83,7 +91,7 @@ macro_list = [
     ('item', lambda r: '\n  '+(latexnodes2text([r.nodeoptarg]) if r.nodeoptarg else '*')),
     ('footnote', '[%s]'),
 
-    ('texorpdfstring', lambda arg: latexnodes2text(arg.nodeargs[1:2])), # use second argument
+    ('texorpdfstring', lambda node: latexnodes2text(node.nodeargs[1:2])), # use second argument
 
     ('oe', u'\u0153'),
     ('OE', u'\u0152'),
@@ -266,9 +274,9 @@ macro_list = [
 
 
 
-def format_uebung(arg):
-    s = '\n%s\n' %(latexnodes2text([arg.nodeargs[0]]));
-    optarg = arg.nodeargs[1];
+def format_uebung(n):
+    s = '\n%s\n' %(latexnodes2text([n.nodeargs[0]]));
+    optarg = n.nodeargs[1];
     if (optarg is not None):
         s += '[%s]\n' %(latexnodes2text([optarg]));
     return s
@@ -429,17 +437,17 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
         if (node is None):
             return ""
         
-        if (node.nodetype == 'chars'):
-            return node.arg
-        if (node.nodetype == 'comment'):
+        if (node.isNodeType(latexwalker.LatexCharsNode)):
+            return node.chars
+        if (node.isNodeType(latexwalker.LatexCommentNode)):
             if (keep_comments):
-                return '%'+node.arg
+                return '%'+node.comment
             return ""
-        if (node.nodetype == 'group'):
-            return "".join([text_from_node(n) for n in node.arg]);
-        if (node.nodetype == 'macro'):
+        if (node.isNodeType(latexwalker.LatexGroupNode)):
+            return "".join([text_from_node(n) for n in node.nodelist]);
+        if (node.isNodeType(latexwalker.LatexMacroNode)):
             # get macro behavior definition.
-            macroname = node.arg.macroname.rstrip('*');
+            macroname = node.macroname.rstrip('*');
             if (macroname in macro_dict):
                 mac = macro_dict[macroname]
             else:
@@ -447,10 +455,10 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
                 mac = macro_dict['']
             if mac.simplify_repl:
                 if (callable(mac.simplify_repl)):
-                    return mac.simplify_repl(node.arg)
+                    return mac.simplify_repl(node)
                 if ('%' in mac.simplify_repl):
                     try:
-                        return mac.simplify_repl % tuple([text_from_node(nn) for nn in node.arg.nodeargs])
+                        return mac.simplify_repl % tuple([text_from_node(nn) for nn in node.nodeargs])
                     except (TypeError, ValueError):
                         log.warning("WARNING: Error in configuration: macro '%s' failed its substitution!"
                                     %(macroname));
@@ -458,14 +466,14 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
                 return mac.simplify_repl
             if mac.discard:
                 return ""
-            a = node.arg.nodeargs;
-            if (node.arg.nodeoptarg):
-                a.prepend(node.arg.nodeoptarg)
+            a = node.nodeargs;
+            if (node.nodeoptarg):
+                a.prepend(node.nodeoptarg)
             return "".join([text_from_node(n) for n in a])
 
-        if (node.nodetype == 'environment'):
+        if (node.isNodeType(latexwalker.LatexEnvironmentNode)):
             # get environment behavior definition.
-            envname = node.arg.envname.rstrip('*');
+            envname = node.envname.rstrip('*');
             if (envname in env_dict):
                 envdef = env_dict[envname]
             else:
@@ -473,15 +481,15 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
                 envdef = env_dict['']
             if envdef.simplify_repl:
                 if (callable(envdef.simplify_repl)):
-                    return envdef.simplify_repl(node.arg)
+                    return envdef.simplify_repl(node)
                 if ('%' in envdef.simplify_repl):
-                    return envdef.simplify_repl % ("".join([text_from_node(nn) for nn in node.arg.nodelist]))
+                    return envdef.simplify_repl % ("".join([text_from_node(nn) for nn in node.nodelist]))
                 return envdef.simplify_repl
             if envdef.discard:
                 return ""
-            return "".join([text_from_node(n) for n in node.arg.nodelist])
+            return "".join([text_from_node(n) for n in node.nodelist])
 
-        if (node.nodetype == 'math'):
+        if (node.isNodeType(latexwalker.LatexMathNode)):
             # if we have a math node, this means we care about math modes and we should keep this verbatim.
             return latexwalker.math_node_to_latex(node);
 
