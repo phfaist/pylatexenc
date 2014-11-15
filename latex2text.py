@@ -274,7 +274,7 @@ macro_list = [
 
 
 
-def format_uebung(n):
+def _format_uebung(n):
     s = '\n%s\n' %(latexnodes2text([n.nodeargs[0]]));
     optarg = n.nodeargs[1];
     if (optarg is not None):
