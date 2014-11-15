@@ -260,7 +260,7 @@ macro_list = [
 
 
 
-def format_uebung(arg):
+def _format_uebung(arg):
     s = '\n%s\n' %(latexnodes2text([arg.nodeargs[0]]));
     optarg = arg.nodeargs[1];
     if (optarg is not None):
@@ -270,8 +270,8 @@ def format_uebung(arg):
 
 macro_list += [
     # some ethuebung.sty macros
-    ('exercise', format_uebung),
-    ('uebung', format_uebung),
+    ('exercise', _format_uebung),
+    ('uebung', _format_uebung),
     ('hint', 'Hint: %s'),
     ('hints', 'Hints: %s'),
     ('hinweis', 'Hinweis: %s'),
