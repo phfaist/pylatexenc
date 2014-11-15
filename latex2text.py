@@ -17,6 +17,14 @@ class EnvDef:
 
 class MacroDef:
     def __init__(self, macname, simplify_repl=None, discard=None):
+        """
+        Arguments:
+            - `macname`: the name of the macro (no backslash)
+            - `simplify_repl`: either a string or a callable. The string
+              may contain '%s' replacements, in which the macro arguments
+              will be substituted. The callable should accept the
+              :py:class:`~latexwalker.LatexMacroNode` as an argument.
+        """
         if (isinstance(macname, MacroDef)):
             o = macname
             self.macname = o.macname
@@ -83,6 +91,8 @@ macro_list = [
     ('item', lambda r: '\n  '+(latexnodes2text([r.nodeoptarg]) if r.nodeoptarg else '*')),
     ('footnote', '[%s]'),
 
+    ('texorpdfstring', lambda node: latexnodes2text(node.nodeargs[1:2])), # use second argument
+
     ('oe', u'\u0153'),
     ('OE', u'\u0152'),
     ('ae', u'\u00e6'),
@@ -94,6 +104,8 @@ macro_list = [
     ('ss', u'\u00df'), # s-z allemand
     ('L', u"\N{LATIN CAPITAL LETTER L WITH STROKE}"),
     ('l', u"\N{LATIN SMALL LETTER L WITH STROKE}"),
+    ('i', u"\N{LATIN SMALL LETTER DOTLESS I}"),
+    ('j', u"\N{LATIN SMALL LETTER DOTLESS J}"),
 
     ("~", "~" ),
     ("&", "\\&" ), # HACK, see below for text replacement of '&'
@@ -115,6 +127,8 @@ macro_list = [
 
     ('textpm', u"\N{PLUS-MINUS SIGN}"),
     ('textmp', u"\N{MINUS-OR-PLUS SIGN}"),
+
+    ("texteuro", u"\N{EURO SIGN}"),
 
     # math stuff
 
@@ -260,9 +274,9 @@ macro_list = [
 
 
 
-def _format_uebung(arg):
-    s = '\n%s\n' %(latexnodes2text([arg.nodeargs[0]]));
-    optarg = arg.nodeargs[1];
+def format_uebung(n):
+    s = '\n%s\n' %(latexnodes2text([n.nodeargs[0]]));
+    optarg = n.nodeargs[1];
     if (optarg is not None):
         s += '[%s]\n' %(latexnodes2text([optarg]));
     return s
@@ -311,12 +325,22 @@ macro_list += [
     ]
 
 unicode_accents_list = (
+    # see http://en.wikibooks.org/wiki/LaTeX/Special_Characters for a list
     ("'", u"\N{COMBINING ACUTE ACCENT}"),
     ("`", u"\N{COMBINING GRAVE ACCENT}"),
     ('"', u"\N{COMBINING DIAERESIS}"),
     ("c", u"\N{COMBINING CEDILLA}"),
     ("^", u"\N{COMBINING CIRCUMFLEX ACCENT}"),
     ("~", u"\N{COMBINING TILDE}"),
+    ("H", u"\N{COMBINING DOUBLE ACUTE ACCENT}"),
+    ("k", u"\N{COMBINING OGONEK}"),
+    ("=", u"\N{COMBINING MACRON}"),
+    ("b", u"\N{COMBINING MACRON BELOW}"),
+    (".", u"\N{COMBINING DOT ABOVE}"),
+    ("d", u"\N{COMBINING DOT BELOW}"),
+    ("r", u"\N{COMBINING RING ABOVE}"),
+    ("u", u"\N{COMBINING BREVE}"),
+    ("v", u"\N{COMBINING CARON}"),
 
     ("vec", u"\N{COMBINING RIGHT ARROW ABOVE}"),
     ("dot", u"\N{COMBINING DOT ABOVE}"),
@@ -334,11 +358,21 @@ unicode_accents_list = (
     );
 
 def make_accented_char(node, combining):
-    nodearg = node.nodeargs[0] if len(node.nodeargs) else latexwalker.LatexNode('chars', ' ');
+    nodearg = node.nodeargs[0] if len(node.nodeargs) else latexwalker.LatexCharsNode(chars=' ')
 
     c = latexnodes2text([nodearg]).strip();
 
-    return u"".join([unicodedata.normalize('NFC', unicode(ch) + combining) for ch in c]);
+    def getaccented(ch, combining):
+        ch = unicode(ch)
+        combining = unicode(combining)
+        if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
+            ch = u"i"
+        if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
+            ch = u"j"
+        #print u"Accenting %s with %s"%(ch, combining) # this causes UnicdeDecodeError!!!
+        return unicodedata.normalize('NFC', unicode(ch)+combining)
+
+    return u"".join([getaccented(ch, combining) for ch in c]);
 
 
 for u in unicode_accents_list:
@@ -403,17 +437,17 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
         if (node is None):
             return ""
         
-        if (node.nodetype == 'chars'):
-            return node.arg
-        if (node.nodetype == 'comment'):
+        if (node.isNodeType(latexwalker.LatexCharsNode)):
+            return node.chars
+        if (node.isNodeType(latexwalker.LatexCommentNode)):
             if (keep_comments):
-                return '%'+node.arg
+                return '%'+node.comment
             return ""
-        if (node.nodetype == 'group'):
-            return "".join([text_from_node(n) for n in node.arg]);
-        if (node.nodetype == 'macro'):
+        if (node.isNodeType(latexwalker.LatexGroupNode)):
+            return "".join([text_from_node(n) for n in node.nodelist]);
+        if (node.isNodeType(latexwalker.LatexMacroNode)):
             # get macro behavior definition.
-            macroname = node.arg.macroname.rstrip('*');
+            macroname = node.macroname.rstrip('*');
             if (macroname in macro_dict):
                 mac = macro_dict[macroname]
             else:
@@ -421,10 +455,10 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
                 mac = macro_dict['']
             if mac.simplify_repl:
                 if (callable(mac.simplify_repl)):
-                    return mac.simplify_repl(node.arg)
+                    return mac.simplify_repl(node)
                 if ('%' in mac.simplify_repl):
                     try:
-                        return mac.simplify_repl % tuple([text_from_node(nn) for nn in node.arg.nodeargs])
+                        return mac.simplify_repl % tuple([text_from_node(nn) for nn in node.nodeargs])
                     except (TypeError, ValueError):
                         log.warning("WARNING: Error in configuration: macro '%s' failed its substitution!"
                                     %(macroname));
@@ -432,14 +466,14 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
                 return mac.simplify_repl
             if mac.discard:
                 return ""
-            a = node.arg.nodeargs;
-            if (node.arg.nodeoptarg):
-                a.prepend(node.arg.nodeoptarg)
+            a = node.nodeargs;
+            if (node.nodeoptarg):
+                a.prepend(node.nodeoptarg)
             return "".join([text_from_node(n) for n in a])
 
-        if (node.nodetype == 'environment'):
+        if (node.isNodeType(latexwalker.LatexEnvironmentNode)):
             # get environment behavior definition.
-            envname = node.arg.envname.rstrip('*');
+            envname = node.envname.rstrip('*');
             if (envname in env_dict):
                 envdef = env_dict[envname]
             else:
@@ -447,15 +481,15 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
                 envdef = env_dict['']
             if envdef.simplify_repl:
                 if (callable(envdef.simplify_repl)):
-                    return envdef.simplify_repl(node.arg)
+                    return envdef.simplify_repl(node)
                 if ('%' in envdef.simplify_repl):
-                    return envdef.simplify_repl % ("".join([text_from_node(nn) for nn in node.arg.nodelist]))
+                    return envdef.simplify_repl % ("".join([text_from_node(nn) for nn in node.nodelist]))
                 return envdef.simplify_repl
             if envdef.discard:
                 return ""
-            return "".join([text_from_node(n) for n in node.arg.nodelist])
+            return "".join([text_from_node(n) for n in node.nodelist])
 
-        if (node.nodetype == 'math'):
+        if (node.isNodeType(latexwalker.LatexMathNode)):
             # if we have a math node, this means we care about math modes and we should keep this verbatim.
             return latexwalker.math_node_to_latex(node);
 
