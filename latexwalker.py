@@ -376,13 +376,18 @@ def get_token(s, pos, brackets_are_chars=True, environments=True, **parse_flags)
 
 
 
-def get_latex_expression(s, pos, strict_braces=True, tolerant_parsing=False, **parse_flags):
+def get_latex_expression(s, pos, **parse_flags):
     """
     Reads a latex expression, e.g. macro argument. This may be a single char, an escape
     sequence, or a expression placed in braces.
 
-    Returns a tuple `(<LatexNode instance>, pos, len)`.
+    Returns a tuple `(<LatexNode instance>, pos, len)`. `pos` is the first char of the
+    expression, and `len` is its length.
     """
+
+    # keep these in parse_flags for when we call child functions
+    strict_braces = parse_flags.get('strict_braces', True);
+    tolerant_parsing = parse_flags.get('tolerant_parsing', False);
 
     pp = dict([(k,v) for (k,v) in parse_flags.iteritems()]);
     pp['keep_inline_math'] = False; # no inline math char
@@ -427,10 +432,12 @@ def get_latex_maybe_optional_arg(s, pos, **parse_flags):
     
 def get_latex_braced_group(s, pos, brace_type='{', **parse_flags):
     """
-    Reads a latex expression enclosed in braces {...}. The first character of `s[pos:]` must
+    Reads a latex expression enclosed in braces {...}. The first token of `s[pos:]` must
     be an opening brace.
 
-    Returns a tuple (node, pos, len)
+    Returns a tuple `(node, pos, len)`. `pos` is the first char of the
+    expression (which has to be an opening brace), and `len` is its length,
+    including the closing brace.
     """
 
     closing_brace = None
@@ -447,11 +454,12 @@ def get_latex_braced_group(s, pos, brace_type='{', **parse_flags):
         raise LatexWalkerParseError(s=s, pos=pos,
                                     msg='get_latex_braced_group: not an opening brace/bracket: %s' %(s[pos]));
 
-    pos = firsttok.pos + firsttok.len;
+    #pos = firsttok.pos + firsttok.len;
 
-    (nodelist, npos, nlen) = get_latex_nodes(s, pos, stop_upon_closing_brace=closing_brace, **parse_flags);
+    (nodelist, npos, nlen) = get_latex_nodes(s, firsttok.pos + firsttok.len,
+                                             stop_upon_closing_brace=closing_brace, **parse_flags);
 
-    return (LatexGroupNode(nodelist=nodelist), pos, npos+nlen-pos)
+    return (LatexGroupNode(nodelist=nodelist), firsttok.pos, npos + nlen - firsttok.pos)
 
 
 def get_latex_environment(s, pos, environmentname=None, **parse_flags):
@@ -510,6 +518,9 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
     Parses latex content `s`.
 
     Returns a tuple `(nodelist, pos, len)` where nodelist is a list of `LatexNode` 's.
+
+    If `stop_upon_closing_brace` is given, then `len` includes the closing brace, but the
+    closing brace is not included in any of the nodes in the `nodelist`.
     """
 
     # what we'll pass on to recursive calls
