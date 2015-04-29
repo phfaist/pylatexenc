@@ -376,7 +376,7 @@ def get_token(s, pos, brackets_are_chars=True, environments=True, **parse_flags)
 
 
 
-def get_latex_expression(s, pos, **parse_flags):
+def get_latex_expression(s, pos, strict_braces=False, **parse_flags):
     """
     Reads a latex expression, e.g. macro argument. This may be a single char, an escape
     sequence, or a expression placed in braces.
@@ -386,7 +386,6 @@ def get_latex_expression(s, pos, **parse_flags):
     """
 
     # keep these in parse_flags for when we call child functions
-    strict_braces = parse_flags.get('strict_braces', True);
     tolerant_parsing = parse_flags.get('tolerant_parsing', False);
 
     pp = dict([(k,v) for (k,v) in parse_flags.iteritems()]);
@@ -408,7 +407,7 @@ def get_latex_expression(s, pos, **parse_flags):
     if (tok.tok == 'brace_open'):
         return get_latex_braced_group(s, tok.pos, **parse_flags)
     if (tok.tok == 'brace_close'):
-        if (strict_braces):
+        if (strict_braces and not tolerant_parsing):
             raise LatexWalkerParseError("Expected expression, got closing brace!", s, pos);
         return (LatexCharsNode(chars=''), tok.pos, 0)
     if (tok.tok == 'char'):

@@ -777,13 +777,15 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
 
     result = u""
     for ch in s:
+        #log.longdebug("Encoding char %r", ch)
         if (non_ascii_only and ord(ch) < 127):
             result += ch
         else:
             lch = utf82latex.get(ord(ch), None)
             if (lch is not None):
                 # add brackets if needed, i.e. if we have a substituting macro.
-                result += (  '{'+lch+'}' if brackets and lch[0] == '\\' else
+                # note: in condition, beware, that lch might be of zero length.
+                result += (  '{'+lch+'}' if brackets and lch[0:1] == '\\' else
                              lch  )
             elif ((ord(ch) >= 32 and ord(ch) <= 127) or
                   (ch in "\n\r\t")):
