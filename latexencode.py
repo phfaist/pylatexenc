@@ -582,10 +582,24 @@ utf82latex={
 0x03D6: r'\ensuremath{\varpi}', # Greek Pi Symbol
 0x03F1: r'\ensuremath{\varrho}', # Greek rho symbol
 
-#
-0x2010: '-', # HYPHEN
+# spaces
+0x2000: r'\enskip', # EN QUAD (= EN SPACE U+2002)
+0x2001: r'\quad', # EM QUAD (= EM SPACE U+2003)
+0x2002: r'\enskip', # EN SPACE
+0x2003: r'\quad', # EM SPACE
+0x2004: r'\hspace{0.33em}', # THREE-PER-EM SPACE
+0x2005: r'\hsapce{0.25em}', # FOUR-PER-EM SPACE
+0x2006: r'\hspace{0.167em}', # SIX-PER-EM SPACE
+0x2007: r'~', # FIGURE SPACE
+0x2008: r'\;', # PUNCTUATION SPACE
+0x2009: r'\,', # thin space
+0x200A: r'\hspace{1pt}', # supposed to be thinnest typographical space available
+
+0x2010: r'-', # HYPHEN
+0x2061: r'', # FUNCTION APPLICATION
 
 0x210F: r'\ensuremath{\hbar}', # h bar
+0x2113: r'\ensuremath{\ell}', # SCRIPT SMALL L
 
 # Math operators and symbols (U+22XX)
 0x2200: r'\ensuremath{\forall}',
@@ -731,6 +745,13 @@ utf82latex={
 # CJK Symbols Punktuation (!) U+3000 : for \langle/\rangle
 0x3008: r'\ensuremath{\langle}',
 0x3009: r'\ensuremath{\rangle}',
+
+# ligatures
+0xFB00: r'ff', # LATIN SMALL LIGATURE FF
+0xFB01: r'fi', # LATIN SMALL LIGATURE FI
+0xFB02: r'fl', # LATIN SMALL LIGATURE FL
+0xFB03: r'ffi', # LATIN SMALL LIGATURE FFI
+0xFB04: r'ffl', # LATIN SMALL LIGATURE FFL
 
 }
 
