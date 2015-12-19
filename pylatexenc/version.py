@@ -23,4 +23,4 @@
 #
 
 
-version_str = "0.9"
+version_str = "1.0"
