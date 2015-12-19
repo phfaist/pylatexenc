@@ -432,8 +432,8 @@ text_replacements = (
 
 
 
-env_dict = dict([(e.envname, e) for e in env_list])
-macro_dict = dict([(m.macname, m) for m in (MacroDef(m) for m in macro_list)])
+default_env_dict = dict([(e.envname, e) for e in env_list])
+default_macro_dict = dict([(m.macname, m) for m in (MacroDef(m) for m in macro_list)])
 
 
 

@@ -1,7 +1,7 @@
 import unittest
 
 from pylatexenc.latexwalker import (
-    LatexWalker, LatexToken, LatexCharsNode, LatexGroupNode, LatexCommentNode,
+    MacrosDef, LatexWalker, LatexToken, LatexCharsNode, LatexGroupNode, LatexCommentNode,
     LatexMacroNode, LatexEnvironmentNode, LatexMathNode, LatexWalkerParseError
 )
 
@@ -187,6 +187,21 @@ Also: {\itshape some italic text}.
             LatexMacroNode('itshape', None, []), LatexCharsNode(' some italic text')
             ], p, len('\itshape some italic text}')))
 
+        # test our own macro lists etc.
+        pindeed = latextext.find('Indeed thanks to')
+        lineindeed = latextext[pindeed:latextext.find('\n', pindeed)]
+        lw2 = LatexWalker(lineindeed, tolerant_parsing=False, macro_dict={MacrosDef('cite',False,4)})
+        self.assertEqual(lw2.get_latex_nodes(pos=0), ([
+            LatexCharsNode('Indeed thanks to '),
+            LatexMacroNode('cite', None, [
+                LatexCharsNode('['),LatexCharsNode('L'),LatexCharsNode('e'),LatexCharsNode('m'),
+                ]),
+            LatexCharsNode('ma 3]'),
+            LatexGroupNode([LatexCharsNode('Author')]),
+            LatexCharsNode(', we know that...'),
+            ]))
+       
+        
     def test_errors(self):
         latextext = get_test_latex_data_with_possible_inconsistencies()
         
