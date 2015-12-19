@@ -500,12 +500,24 @@ class LatexNodes2Text(object):
         if (len(n.nodeargs) != 1):
             logger.warning(ur"Expected exactly one argument for '\input' ! Got = %r", n.nodeargs)
 
-        inputtex = self.read_input_file(self.to_text([n.nodeargs[0]]).strip())
+        inputtex = self.read_input_file(self.nodelist_to_text([n.nodeargs[0]]).strip())
 
-        return self.to_text(latexwalker.LatexWalker(inputtex, **self.latex_walker_init_args).get_latex_nodes()[0])
+        return self.nodelist_to_text(latexwalker.LatexWalker(inputtex,
+                                                             **self.latex_walker_init_args).get_latex_nodes()[0])
 
 
-    def to_text(self, nodelist):
+    def latex_to_text(self, latex, **parse_flags):
+        """
+        Parses the `latex` LaTeX code heuristically, and returns a text approximation of it.
+        Suitable, e.g. for indexing in a database.
+
+        The `parse_flags` are the flags to give on to the
+        py:class:`~pylatexenc.latexwalker.LatexWalker` constructor.
+        """
+        return self.nodelist_to_text(latexwalker.LatexWalker(latex, **parse_flags).get_latex_nodes()[0])
+
+
+    def nodelist_to_text(self, nodelist):
         """
         Extracts text from a node list. `nodelist` is a list of nodes as returned by
         `latexwalker.get_latex_nodes()`.
@@ -635,7 +647,7 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
        Please use :py:class:`LatexNodes2Text` instead.
     """
 
-    return LatexNodes2Text(keep_inline_math=keep_inline_math, keep_comments=keep_comments).to_text(nodelist)
+    return LatexNodes2Text(keep_inline_math=keep_inline_math, keep_comments=keep_comments).nodelist_to_text(nodelist)
 
 
 

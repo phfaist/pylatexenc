@@ -15,7 +15,7 @@ class TestLatexNodes2Text(unittest.TestCase):
     
     def test_basic(self):
 
-        self.assertEqual(LatexNodes2Text().to_text(LatexWalker(r'\textbf{A}').get_latex_nodes()[0]), 'A')
+        self.assertEqual(LatexNodes2Text().nodelist_to_text(LatexWalker(r'\textbf{A}').get_latex_nodes()[0]), 'A')
 
         latex = r'''\textit{hi there!} This is {\em an equation}:
 \begin{equation}
@@ -24,14 +24,14 @@ class TestLatexNodes2Text(unittest.TestCase):
 
 where $i$ is the imaginary unit.
 '''
-        self.assertEqualUpToWhitespace(LatexNodes2Text().to_text(LatexWalker(latex).get_latex_nodes()[0]),
+        self.assertEqualUpToWhitespace(LatexNodes2Text().nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
                          r'''hi there! This is an equation:
 
     x + y i = 0
 
 where i is the imaginary unit.
 ''')
-        self.assertEqualUpToWhitespace(LatexNodes2Text(keep_inline_math=True).to_text(LatexWalker(latex).get_latex_nodes()[0]),
+        self.assertEqualUpToWhitespace(LatexNodes2Text(keep_inline_math=True).nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
                          '''hi there! This is an equation:
 
     x + y i = 0
@@ -39,6 +39,9 @@ where i is the imaginary unit.
 where $i$ is the imaginary unit.
 ''')
 
+        self.assertEqual(LatexNodes2Text().nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
+                         LatexNodes2Text().latex_to_text(latex))
+        
     def test_input(self):
         latex = r'''ABCDEF fdksanfkld safnkd anfklsa
 
@@ -58,7 +61,7 @@ MORENKFDNSN'''
         l2t = LatexNodes2Text()
         l2t.set_tex_input_directory('.')
 
-        self.assertEqualUpToWhitespace(l2t.to_text(LatexWalker(latex).get_latex_nodes()[0]),
+        self.assertEqualUpToWhitespace(l2t.nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
                                        correct_text)
 
         latex = r'''ABCDEF fdksanfkld safnkd anfklsa
@@ -67,7 +70,7 @@ MORENKFDNSN'''
 
 MORENKFDNSN'''
 
-        self.assertEqualUpToWhitespace(l2t.to_text(LatexWalker(latex).get_latex_nodes()[0]),
+        self.assertEqualUpToWhitespace(l2t.nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
                                        correct_text)
 
         latex = r'''ABCDEF fdksanfkld safnkd anfklsa
@@ -84,11 +87,11 @@ MORENKFDNSN'''
         # make sure that the \input{} directive failed to include the file.
         l2t = LatexNodes2Text()
         l2t.set_tex_input_directory('./dummy')
-        self.assertEqualUpToWhitespace(l2t.to_text(LatexWalker(latex).get_latex_nodes()[0]),
+        self.assertEqualUpToWhitespace(l2t.nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
                                        correct_text_safe)
         # but without the strict_input flag, it can access it.
         l2t.set_tex_input_directory('./dummy', strict_input=False)
-        self.assertEqualUpToWhitespace(l2t.to_text(LatexWalker(latex).get_latex_nodes()[0]),
+        self.assertEqualUpToWhitespace(l2t.nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
                                        correct_text_unsafe)
 
 
