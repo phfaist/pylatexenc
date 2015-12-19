@@ -190,7 +190,7 @@ Also: {\itshape some italic text}.
         # test our own macro lists etc.
         pindeed = latextext.find('Indeed thanks to')
         lineindeed = latextext[pindeed:latextext.find('\n', pindeed)]
-        lw2 = LatexWalker(lineindeed, tolerant_parsing=False, macro_dict={MacrosDef('cite',False,4)})
+        lw2 = LatexWalker(lineindeed, tolerant_parsing=False, macro_dict={'cite': MacrosDef('cite',False,4)})
         self.assertEqual(lw2.get_latex_nodes(pos=0), ([
             LatexCharsNode('Indeed thanks to '),
             LatexMacroNode('cite', None, [
@@ -199,7 +199,7 @@ Also: {\itshape some italic text}.
             LatexCharsNode('ma 3]'),
             LatexGroupNode([LatexCharsNode('Author')]),
             LatexCharsNode(', we know that...'),
-            ]))
+            ], 0, len(lineindeed)))
        
         
     def test_errors(self):

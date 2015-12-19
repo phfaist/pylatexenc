@@ -501,7 +501,6 @@ class LatexWalker(object):
         #
         self.keep_inline_math = flags.pop('keep_inline_math', False)
         self.tolerant_parsing = flags.pop('tolerant_parsing', True)
-
         if flags:
             # any flags left which we haven't recognized
             logger.warning("LatexWalker(): Unknown flag(s) encountered: %r", flags.keys())
@@ -1162,7 +1161,7 @@ def math_node_to_latex(node):
     if (node.displaytype == 'inline'):
         return '$%s$' %(nodelist_to_latex(node.nodelist));
     if (node.displaytype == 'display'):
-        return '$$%s$$' %(nodelist_to_latex(node.nodelist));
+        return r'\[%s\]' %(nodelist_to_latex(node.nodelist));
 
     raise LatexWalkerError("Unkonwn displaytype: `%s'" %(node.displaytype));
 

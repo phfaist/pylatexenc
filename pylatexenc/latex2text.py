@@ -23,14 +23,14 @@
 #
 
 
+import os
+import re
+import unicodedata
+import latexwalker
+import logging
 
-import re;
-import unicodedata;
-import latexwalker;
-import logging;
 
-
-log = logging.getLogger(__name__);
+logger = logging.getLogger(__name__);
 
 
 
@@ -66,7 +66,7 @@ class MacroDef:
             self.simplify_repl = simplify_repl
 
 
-env_list = [
+_default_env_list = [
     EnvDef('', discard=False), # default for unknown environments
 
     EnvDef('equation', discard=False),
@@ -97,7 +97,7 @@ env_list = [
 # NOTE: macro will only be assigned arguments if they are explicitely defined as accepting arguments
 #       in latexwalker.py.
 
-macro_list = [
+_default_macro_list = [
     MacroDef('', discard=True), # default for unknown macros
 
     MacroDef('textbf', discard=False),
@@ -307,7 +307,7 @@ def _format_uebung(n):
     return s
 
 
-macro_list += [
+_default_macro_list += [
     # some ethuebung.sty macros
     ('exercise', _format_uebung),
     ('uebung', _format_uebung),
@@ -321,7 +321,7 @@ macro_list += [
 
 
 
-def greekletters(letterlist):
+def _greekletters(letterlist):
     for l in letterlist:
         ucharname = l.upper()
         if (ucharname == 'LAMBDA'):
@@ -331,16 +331,16 @@ def greekletters(letterlist):
             smallname = "GREEK LUNATE EPSILON SYMBOL"
         if (ucharname == 'PHI'):
             smallname = "GREEK PHI SYMBOL"
-        macro_list.append(
+        _default_macro_list.append(
             (l, unicodedata.lookup(smallname))
             );
-        macro_list.append(
+        _default_macro_list.append(
             (l[0].upper()+l[1:], unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
             );
-greekletters( ('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota', 'kappa',
-               'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma', 'tau', 'upsilon', 'phi',
-               'chi', 'psi', 'omega') )
-macro_list += [
+_greekletters( ('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota', 'kappa',
+                'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma', 'tau', 'upsilon', 'phi',
+                'chi', 'psi', 'omega') )
+_default_macro_list += [
     ('varepsilon', u'\N{GREEK SMALL LETTER EPSILON}'),
     ('vartheta', u'\N{GREEK THETA SYMBOL}'),
     ('varpi', u'\N{GREEK PI SYMBOL}'),
@@ -402,16 +402,16 @@ def make_accented_char(node, combining):
 
 for u in unicode_accents_list:
     (mname, mcombining) = u;
-    macro_list.append(
+    _default_macro_list.append(
         (mname, lambda x, c=mcombining: make_accented_char(x, c))
         );
 
 
 
+default_env_dict = dict([(e.envname, e) for e in _default_env_list])
+default_macro_dict = dict([(m.macname, m) for m in (MacroDef(m) for m in _default_macro_list)])
 
-
-
-text_replacements = (
+default_text_replacements = (
     # remove indentation provided by LaTeX
     #(re.compile(r'\n[ \t]*'), '\n'),
     
@@ -422,7 +422,179 @@ text_replacements = (
     (r'(?<!\\)&', '   '), # ignore tabular alignments, just add a little space
     ('\\&', '&'), # but preserve the \& escapes, that we before *hackingly* kept as '\&' for this purpose ...
 
-    );
+    )
+
+
+
+
+# ------------------------------------------------------------------------------
+
+class LatexNodes2Text(object):
+    def __init__(self, env_dict=None, macro_dict=None, text_replacements=None, **flags):
+        super(LatexNodes2Text, self).__init__()
+
+        if env_dict is None:  env_dict = default_env_dict
+        if macro_dict is None:  macro_dict = default_macro_dict
+        if text_replacements is None: text_replacements = default_text_replacements
+
+        self.env_dict = dict(env_dict)
+        self.macro_dict = dict(macro_dict)
+        self.text_replacements = text_replacements
+
+        self.tex_input_directory = None
+        self.strict_input = True
+
+        self.keep_inline_math = flags.pop('keep_inline_math', False)
+        self.keep_comments = flags.pop('keep_comments', False)
+        if flags:
+            # any flags left which we haven't recognized
+            logger.warning("LatexNodes2Text(): Unknown flag(s) encountered: %r", flags.keys())
+        
+
+    def set_tex_input_directory(self, tex_input_directory, latex_walker_init_args=None, strict_input=True):
+
+        self.tex_input_directory = tex_input_directory
+        self.latex_walker_init_args = latex_walker_init_args if latex_walker_init_args else {}
+        self.strict_input = strict_input
+        
+        if tex_input_directory:
+            self.macro_dict['input'] = MacroDef('input', lambda n: self._callback_input(n))
+            self.macro_dict['include'] = MacroDef('include', lambda n: self._callback_input(n))
+        else:
+            self.macro_dict['input'] = MacroDef('input', discard=True)
+            self.macro_dict['include'] = MacroDef('include', discard=True)
+
+
+    def read_input_file(self, fn):
+        fnfull = os.path.realpath(os.path.join(self.tex_input_directory, fn))
+        if self.strict_input:
+            # make sure that the input file is strictly within dirfull, and didn't escape with
+            # '../..' tricks or via symlinks.
+            dirfull = os.path.realpath(self.tex_input_directory)
+            if not fnfull.startswith(dirfull):
+                logger.warning("Can't access path '%s' leading outside of mandated directory [strict input mode]",
+                               fn)
+                return ''
+
+        if not os.path.exists(fnfull) and os.path.exists(fnfull + '.tex'):
+            fnfull = fnfull + '.tex'
+        if not os.path.exists(fnfull) and os.path.exists(fnfull + '.latex'):
+            fnfull = fnfull + '.latex'
+        if not os.path.isfile(fnfull):
+            logger.warning(u"Error, file doesn't exist: '%s'", fn)
+            return ''
+        
+        try:
+            with open(fnfull) as f:
+                return f.read()
+        except IOError as e:
+            logger.warning(u"Error, can't access '%s': %s", fn, e)
+            return ''
+
+
+    def _callback_input(self, n):
+        #
+        # recurse into files upon '\input{}'
+        #
+        
+        if (len(n.nodeargs) != 1):
+            logger.warning(ur"Expected exactly one argument for '\input' ! Got = %r", n.nodeargs)
+
+        inputtex = self.read_input_file(self.to_text([n.nodeargs[0]]).strip())
+
+        return self.to_text(latexwalker.LatexWalker(inputtex, **self.latex_walker_init_args).get_latex_nodes()[0])
+
+
+    def to_text(self, nodelist):
+        """
+        Extracts text from a node list. `nodelist` is a list of nodes as returned by
+        `latexwalker.get_latex_nodes()`.
+        """
+    
+        s = "".join( ( self.node_to_text(n) for n in nodelist ) )
+
+        # now, perform suitable replacements
+        for pattern, replacement in self.text_replacements:
+            if (hasattr(pattern, 'sub')):
+                s = pattern.sub(replacement, s)
+            else:
+                s = s.replace(pattern, replacement)
+
+        #  ###TODO: more clever handling of math modes??
+
+        if (not self.keep_inline_math):
+            s = s.replace('$', ''); # removing math mode inline signs, just keep their Unicode counterparts..
+
+        return s
+
+    
+    def node_to_text(self, node):
+        if (node is None):
+            return ""
+        
+        if (node.isNodeType(latexwalker.LatexCharsNode)):
+            return node.chars
+        
+        if (node.isNodeType(latexwalker.LatexCommentNode)):
+            if (self.keep_comments):
+                return '%'+node.comment+'\n'
+            return ""
+        
+        if (node.isNodeType(latexwalker.LatexGroupNode)):
+            return "".join([self.node_to_text(n) for n in node.nodelist])
+        
+        if (node.isNodeType(latexwalker.LatexMacroNode)):
+            # get macro behavior definition.
+            macroname = node.macroname.rstrip('*');
+            if (macroname in self.macro_dict):
+                mac = self.macro_dict[macroname]
+            else:
+                # no predefined behavior, use default:
+                mac = self.macro_dict['']
+            if mac.simplify_repl:
+                if (callable(mac.simplify_repl)):
+                    return mac.simplify_repl(node)
+                if ('%' in mac.simplify_repl):
+                    try:
+                        return mac.simplify_repl % tuple([self.node_to_text(nn) for nn in node.nodeargs])
+                    except (TypeError, ValueError):
+                        logger.warning("WARNING: Error in configuration: macro '%s' failed its substitution!",
+                                       macroname);
+                        return mac.simplify_repl; # too bad, keep the percent signs as they are...
+                return mac.simplify_repl
+            if mac.discard:
+                return ""
+            a = node.nodeargs;
+            if (node.nodeoptarg):
+                a.prepend(node.nodeoptarg)
+            return "".join([self.node_to_text(n) for n in a])
+
+        if (node.isNodeType(latexwalker.LatexEnvironmentNode)):
+            # get environment behavior definition.
+            envname = node.envname.rstrip('*');
+            if (envname in self.env_dict):
+                envdef = self.env_dict[envname]
+            else:
+                # no predefined behavior, use default:
+                envdef = self.env_dict['']
+            if envdef.simplify_repl:
+                if (callable(envdef.simplify_repl)):
+                    return envdef.simplify_repl(node)
+                if ('%' in envdef.simplify_repl):
+                    return envdef.simplify_repl % ("".join([self.node_to_text(nn) for nn in node.nodelist]))
+                return envdef.simplify_repl
+            if envdef.discard:
+                return ""
+            return "".join([self.node_to_text(n) for n in node.nodelist])
+
+        if (node.isNodeType(latexwalker.LatexMathNode)):
+            # if we have a math node, this means we care about math modes and we should keep this verbatim.
+            return latexwalker.math_node_to_latex(node);
+
+        logger.warning("LatexNodes2Text.node_to_text(): Unknown node: %r", node)
+
+        # discard anything else.
+        return ""
 
 
 
@@ -432,8 +604,8 @@ text_replacements = (
 
 
 
-default_env_dict = dict([(e.envname, e) for e in env_list])
-default_macro_dict = dict([(m.macname, m) for m in (MacroDef(m) for m in macro_list)])
+# ------------------------------------------------------------------------------
+
 
 
 
@@ -443,6 +615,9 @@ def latex2text(content, tolerant_parsing=False, keep_inline_math=False, keep_com
     """
     Extracts text from `content` meant for database indexing. `content` is
     some LaTeX code.
+
+    .. deprecated:: 1.0
+       Please use :py:class:`LatexNodes2Text` instead.
     """
 
     (nodelist, tpos, tlen) = latexwalker.get_latex_nodes(content, keep_inline_math=keep_inline_math,
@@ -455,91 +630,12 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
     """
     Extracts text from a node list. `nodelist` is a list of nodes as returned by
     `latexwalker.get_latex_nodes()`.
+
+    .. deprecated:: 1.0
+       Please use :py:class:`LatexNodes2Text` instead.
     """
-    
 
-    def text_from_node(node):
-        if (node is None):
-            return ""
-        
-        if (node.isNodeType(latexwalker.LatexCharsNode)):
-            return node.chars
-        if (node.isNodeType(latexwalker.LatexCommentNode)):
-            if (keep_comments):
-                return '%'+node.comment+'\n'
-            return ""
-        if (node.isNodeType(latexwalker.LatexGroupNode)):
-            return "".join([text_from_node(n) for n in node.nodelist]);
-        if (node.isNodeType(latexwalker.LatexMacroNode)):
-            # get macro behavior definition.
-            macroname = node.macroname.rstrip('*');
-            if (macroname in macro_dict):
-                mac = macro_dict[macroname]
-            else:
-                # no predefined behavior, use default:
-                mac = macro_dict['']
-            if mac.simplify_repl:
-                if (callable(mac.simplify_repl)):
-                    return mac.simplify_repl(node)
-                if ('%' in mac.simplify_repl):
-                    try:
-                        return mac.simplify_repl % tuple([text_from_node(nn) for nn in node.nodeargs])
-                    except (TypeError, ValueError):
-                        log.warning("WARNING: Error in configuration: macro '%s' failed its substitution!"
-                                    %(macroname));
-                        return mac.simplify_repl; # too bad, keep the percent signs as they are...
-                return mac.simplify_repl
-            if mac.discard:
-                return ""
-            a = node.nodeargs;
-            if (node.nodeoptarg):
-                a.prepend(node.nodeoptarg)
-            return "".join([text_from_node(n) for n in a])
-
-        if (node.isNodeType(latexwalker.LatexEnvironmentNode)):
-            # get environment behavior definition.
-            envname = node.envname.rstrip('*');
-            if (envname in env_dict):
-                envdef = env_dict[envname]
-            else:
-                # no predefined behavior, use default:
-                envdef = env_dict['']
-            if envdef.simplify_repl:
-                if (callable(envdef.simplify_repl)):
-                    return envdef.simplify_repl(node)
-                if ('%' in envdef.simplify_repl):
-                    return envdef.simplify_repl % ("".join([text_from_node(nn) for nn in node.nodelist]))
-                return envdef.simplify_repl
-            if envdef.discard:
-                return ""
-            return "".join([text_from_node(n) for n in node.nodelist])
-
-        if (node.isNodeType(latexwalker.LatexMathNode)):
-            # if we have a math node, this means we care about math modes and we should keep this verbatim.
-            return latexwalker.math_node_to_latex(node);
-
-        print "extract_from_latex(): IGNORING NODE: "+repr(node)
-
-        # discard anything else.
-        return ""
-    
-
-    s = "".join([text_from_node(n) for n in nodelist]);
-
-    # now, perform suitable replacements
-    for pattern, replacement in text_replacements:
-        if (hasattr(pattern, 'sub')):
-            s = pattern.sub(replacement, s)
-        else:
-            s = s.replace(pattern, replacement)
-
-
-    #  ###TODO: more clever handling of math modes??
-
-    if (not keep_inline_math):
-        s = s.replace('$', ''); # removing math mode inline signs, just keep their Unicode counterparts..
-
-    return s
+    return LatexNodes2Text(keep_inline_math=keep_inline_math, keep_comments=keep_comments).to_text(nodelist)
 
 
 
