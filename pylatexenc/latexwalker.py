@@ -50,10 +50,30 @@ class LatexWalkerEndOfStream(LatexWalkerError):
 
 
 MacrosDef = namedtuple('MacrosDef', ['macname', 'optarg', 'numargs'])
+"""
+Class which stores a Macro syntax.
+
+- `macname` stores the name of the macro, without the leading backslash.
+
+- `optarg` may be one of `True`, `False`, or `None`.
+
+  + if `True`, the macro expects as first argument an optional argument in square
+    brackets. Then, `numargs` specifies the number of additional mandatory arguments to
+    the command, given in usual curly braces (or simply as one TeX token)
+
+  + if `False`, the macro only expects a number of mandatory arguments given by
+    `numargs`. The mandatory arguments are given in usual curly braces (or simply as one
+    TeX token)
+
+  + if `None`, then `numargs` is a string of either characters "{" or "[", in which each
+    curly brace specifies a mandatory argument and each square bracket specifies an
+    optional argument in square brackets.  For example, "{{[{" expects two mandatory
+    arguments, then an optional argument in square brackets, and then another mandatory
+    argument.
+"""
 
 
-
-macro_list = (
+_default_macro_list = (
     MacrosDef('documentclass', True, 1),
     MacrosDef('usepackage', True, 1),
     MacrosDef('selectlanguage', True, 1),
@@ -71,6 +91,10 @@ macro_list = (
 
     MacrosDef('\\', True, 0), # (Note: single backslash) end of line with optional spacing, e.g.  \\[2mm]
     MacrosDef('item', True, 0),
+
+    # \input{someotherfile}
+    MacrosDef('input', False, 1),
+    MacrosDef('include', False, 1),
 
     MacrosDef('includegraphics', True, 1),
 
@@ -184,11 +208,85 @@ macro_list = (
 
     );
 
-macro_dict = dict([(m.macname, m) for m in macro_list]);
+default_macro_dict = dict([(m.macname, m) for m in macro_list]);
 
 
+# ------------------------------------------------
 
-LatexToken = namedtuple('LatexToken', ['tok', 'arg', 'pos', 'len', 'pre_space'])
+
+class LatexToken:
+    r"""
+    Represents a token read from the LaTeX input.
+
+    This is not quite a LaTeX token, it's just a part of the input which we treat in the
+    same way (e.g. a bunch of content characters, a comment, a macro, etc.)
+
+    Information about the object is stored into the fields `tok` and `arg`. The `tok`
+    field is a string which identifies the type of the token. The `arg` depends on what
+    `tok` is, and describes the actual input.
+
+    Additionally, this class stores information about the position of the token in the
+    input stream in the field `pos`.  This `pos` is an integer which corresponds to the
+    index in the input string.  The field `len` stores the length of the token in the
+    input string.  This means that this token spans in the input string from `pos` to
+    `pos+len`.
+
+    Leading whitespace before the token is not returned as a separate 'char'-type token,
+    but it is given in the `pre_space` field of the token which follows.
+
+    The `tok` field may be one of:
+
+      - 'char': raw characters which have no special LaTeX meaning; they are part of the
+        text content.
+        
+        The `arg` field contains the characters themselves.
+
+      - 'macro': a macro invokation, but not '\begin' or '\end'
+        
+        The `arg` field contains the name of the macro, without the leading backslash.
+
+      - 'begin_environment': an invokation of '\begin{environment}'.
+        
+        The `arg` field contains the name of the environment inside the braces.
+
+      - 'end_environment': an invokation of '\end{environment}'.
+        
+        The `arg` field contains the name of the environment inside the braces.
+
+      - 'comment': a LaTeX comment delimited by a percent sign up to the end of the line.
+        
+        The `arg` field contains the text in the comment line, not including the percent
+        sign nor the newline.
+
+      - 'brace_open': an opening brace.  This is usually a curly brace, and sometimes also
+        a square bracket.  What is parsed as a brace depends on the arguments to
+        :py:func:`get_token()`.
+        
+        The `arg` is a string which contains the relevant brace character.
+        
+      - 'brace_close': a closing brace.  This is usually a curly brace, and sometimes also
+        a square bracket.  What is parsed as a brace depends on the arguments to
+        :py:func:`get_token()`.
+        
+        The `arg` is a string which contains the relevant brace character.
+
+      - 'mathmode_inline': a delimiter which starts inline math.  This is (e.g.) a single
+        '$' character which is not part of a double '$$' display environment delimiter.
+
+        The `arg` is the string value of the delimiter in question ('$')
+    
+    """
+    def __init__(self, tok, arg, pos, len_, pre_space):
+        self.tok = tok
+        self.arg = arg
+        self.pos = pos
+        self.len = len_
+        self.pre_space = pre_space
+
+
+# ------------------------------------------------
+
+
 
 
 class LatexNode(object):
@@ -201,9 +299,18 @@ class LatexNode(object):
         super(LatexNode, self).__init__(**kwargs)
 
     def nodeType(self):
+        """
+        Returns the class which corresponds to the type of this node.  This is a Python class
+        object, that is one of :py:class:`~pylatexenc.latexwalker.LatexCharsNode`,
+        :py:class:`~pylatexenc.latexwalker.LatexGroupNode`, etc.
+        """
         return LatexNode
 
     def isNodeType(self, t):
+        """
+        Returns `True` if the current node is of the given type.  The argument `t` must be a
+        Python class such as, e.g. :py:class:`~pylatexenc.latexwalker.LatexGroupNode`.
+        """
         return isinstance(self, t)
         
 
@@ -238,6 +345,9 @@ class LatexGroupNode(LatexNode):
         return LatexGroupNode
 
 class LatexCommentNode(LatexNode):
+    """
+    A LaTeX comment, delimited by a percent sign until the end of line.
+    """
     def __init__(self, comment, **kwargs):
         super(LatexCommentNode, self).__init__(**kwargs)
         self.comment = comment
@@ -270,6 +380,12 @@ class LatexMacroNode(LatexNode):
         return LatexMacroNode
 
 class LatexEnvironmentNode(LatexNode):
+    r"""
+    A LaTeX Environment Node, i.e. `\begin{something} ... \end{something}`.
+
+    See :py:meth:`__init__`.
+    """
+    
     def __init__(self, envname, nodelist, optargs=[], args=[], **kwargs):
         r"""
         A LaTeX Environment Node, i.e. `\begin{something} ... \end{something}`.
@@ -298,6 +414,11 @@ class LatexEnvironmentNode(LatexNode):
         return LatexEnvironmentNode
 
 class LatexMathNode(LatexNode):
+    r"""
+    A Math node type.
+
+    See :py:meth:`__init__`.
+    """
     def __init__(self, displaytype, nodelist=[], **kwargs):
         r"""
         A Math node type.
@@ -323,11 +444,11 @@ def get_token(s, pos, brackets_are_chars=True, environments=True, **parse_flags)
 
     space = '';
     while (pos < len(s) and s[pos].isspace()):
-        space += s[pos];
-        pos += 1;
+        space += s[pos]
+        pos += 1
         if (space.endswith('\n\n')):  # two \n's indicate new paragraph.
             # pre-space is overkill here I think.
-            return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space='');
+            return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space='')
 
 
     if (pos >= len(s)):
@@ -341,7 +462,7 @@ def get_token(s, pos, brackets_are_chars=True, environments=True, **parse_flags)
         if (s[pos+1].isalpha()):
             while pos+i<len(s) and s[pos+i].isalpha():
                 macro += s[pos+i]
-                i += 1;
+                i += 1
         # possibly followed by a star
         if (pos+i<len(s) and s[pos+i] == '*'):
             macro += '*'
