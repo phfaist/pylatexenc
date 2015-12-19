@@ -466,7 +466,7 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
             return node.chars
         if (node.isNodeType(latexwalker.LatexCommentNode)):
             if (keep_comments):
-                return '%'+node.comment
+                return '%'+node.comment+'\n'
             return ""
         if (node.isNodeType(latexwalker.LatexGroupNode)):
             return "".join([text_from_node(n) for n in node.nodelist]);
