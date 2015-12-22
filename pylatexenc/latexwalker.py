@@ -484,6 +484,30 @@ class LatexMathNode(LatexNode):
 
 # ------------------------------------------------------------------------------
 
+
+class _PushPropOverride(object):
+    def __init__(self, obj, propname, new_value):
+        super(_PushPropOverride, self).__init__()
+        self.obj = obj
+        self.propname = propname
+        self.new_value = new_value
+
+
+    def __enter__(self):
+        if self.new_value is not None:
+            self.initval = getattr(self.obj, self.propname)
+            setattr(self.obj, self.propname, self.new_value)
+        return self
+
+    def __exit__(self, type, value, traceback):
+        # clean-up
+        if self.new_value is not None:
+            setattr(self.obj, self.propname, self.initval)
+
+
+
+# ------------------------------------------------------------------------------
+
 class LatexWalker(object):
     r"""
     A parser which walks through an input stream, parsing it as LaTeX markup.
@@ -501,6 +525,7 @@ class LatexWalker(object):
         #
         self.keep_inline_math = flags.pop('keep_inline_math', False)
         self.tolerant_parsing = flags.pop('tolerant_parsing', True)
+        self.strict_braces = flags.pop('strict_braces', False)
         if flags:
             # any flags left which we haven't recognized
             logger.warning("LatexWalker(): Unknown flag(s) encountered: %r", flags.keys())
@@ -511,101 +536,101 @@ class LatexWalker(object):
             'tolerant_parsing': self.tolerant_parsing,
         }
         
-    def get_token(self, pos, brackets_are_chars=True, environments=True, keep_inline_math_override=None):
+    def get_token(self, pos, brackets_are_chars=True, environments=True, keep_inline_math=None):
         """
         Parse the token in the stream pointed to at position `pos`.
 
         Returns a `LatexToken`. Raises `LatexWalkerEndOfStream` if end of stream reached.
 
-        If `keep_inline_math_override` is not `None`, then that value is used instead of
-        `self.keep_inline_math`.
+        If `keep_inline_math` is not `None`, then that value overrides that of
+        `self.keep_inline_math` for the duration of this method call.
         """
 
         s = self.s # shorthand
 
-        our_keep_inline_math = (keep_inline_math_override if keep_inline_math_override is not None
-                                else self.keep_inline_math)
+        with _PushPropOverride(self, 'keep_inline_math', keep_inline_math):
 
-        space = '';
-        while (pos < len(s) and s[pos].isspace()):
-            space += s[pos]
-            pos += 1
-            if (space.endswith('\n\n')):  # two \n's indicate new paragraph.
-                # pre-space is overkill here I think.
-                return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space='')
+            space = '';
+            while (pos < len(s) and s[pos].isspace()):
+                space += s[pos]
+                pos += 1
+                if (space.endswith('\n\n')):  # two \n's indicate new paragraph.
+                    # pre-space is overkill here I think.
+                    return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space='')
 
 
-        if (pos >= len(s)):
-            raise LatexWalkerEndOfStream()
+            if (pos >= len(s)):
+                raise LatexWalkerEndOfStream()
 
-        if (s[pos] == '\\'):
-            # escape sequence
-            i = 2
-            macro = s[pos+1] # next char is necessarily part of macro
-            # following chars part of macro only if all are alphabetical
-            if (s[pos+1].isalpha()):
-                while pos+i<len(s) and s[pos+i].isalpha():
-                    macro += s[pos+i]
+            if (s[pos] == '\\'):
+                # escape sequence
+                i = 2
+                macro = s[pos+1] # next char is necessarily part of macro
+                # following chars part of macro only if all are alphabetical
+                if (s[pos+1].isalpha()):
+                    while pos+i<len(s) and s[pos+i].isalpha():
+                        macro += s[pos+i]
+                        i += 1
+                # possibly followed by a star
+                if (pos+i<len(s) and s[pos+i] == '*'):
+                    macro += '*'
                     i += 1
-            # possibly followed by a star
-            if (pos+i<len(s) and s[pos+i] == '*'):
-                macro += '*'
-                i += 1
 
-            # see if we have a begin/end environment
-            if (environments and (macro == 'begin' or macro == 'end')):
-                # \begin{environment} or \end{environment}
-                envmatch = re.match(r'^\s*\{([\w*]+)\}', s[pos+i:])
-                if (envmatch is None):
-                    raise LatexWalkerParseError(s=s, pos=pos, msg="Bad \\%s macro: expected {environment}" %(macro))
+                # see if we have a begin/end environment
+                if (environments and (macro == 'begin' or macro == 'end')):
+                    # \begin{environment} or \end{environment}
+                    envmatch = re.match(r'^\s*\{([\w*]+)\}', s[pos+i:])
+                    if (envmatch is None):
+                        raise LatexWalkerParseError(s=s, pos=pos,
+                                                    msg="Bad \\%s macro: expected {environment}" %(macro))
 
-                return LatexToken(
-                    tok=('begin_environment' if macro == 'begin' else  'end_environment'),
-                    arg=envmatch.group(1),
-                    pos=pos,
-                    len=i+envmatch.end(), # !!envmatch.end() counts from pos+i
-                    pre_space=space
-                    );
+                    return LatexToken(
+                        tok=('begin_environment' if macro == 'begin' else  'end_environment'),
+                        arg=envmatch.group(1),
+                        pos=pos,
+                        len=i+envmatch.end(), # !!envmatch.end() counts from pos+i
+                        pre_space=space
+                        );
 
-            # # possibly eat one following whitespace
-            # if (s[pos+i].isspace()):
-            #     i += 1;
+                # # possibly eat one following whitespace
+                # if (s[pos+i].isspace()):
+                #     i += 1;
 
-            return LatexToken(tok='macro', arg=macro, pos=pos, len=i, pre_space=space);
+                return LatexToken(tok='macro', arg=macro, pos=pos, len=i, pre_space=space);
 
-        if (s[pos] == '%'):
-            # latex comment
-            m = re.search(r'(\n|\r|\n\r)\s*', s[pos:])
-            mlen = None
-            if (m is not None):
-                mlen = m.start(); # relative to pos already
-            else:
-                mlen = len(s)-pos;# [  ==len(s[pos:])  ]
-            return LatexToken(tok='comment', arg=s[pos+1:pos+mlen], pos=pos, len=mlen, pre_space=space)
+            if (s[pos] == '%'):
+                # latex comment
+                m = re.search(r'(\n|\r|\n\r)\s*', s[pos:])
+                mlen = None
+                if (m is not None):
+                    mlen = m.start(); # relative to pos already
+                else:
+                    mlen = len(s)-pos;# [  ==len(s[pos:])  ]
+                return LatexToken(tok='comment', arg=s[pos+1:pos+mlen], pos=pos, len=mlen, pre_space=space)
 
-        openbracechars = '{';
-        closebracechars = '}';
-        if (not brackets_are_chars):
-            openbracechars += '[';
-            closebracechars += ']';
+            openbracechars = '{';
+            closebracechars = '}';
+            if (not brackets_are_chars):
+                openbracechars += '[';
+                closebracechars += ']';
 
-        if (s[pos] in openbracechars):
-            return LatexToken(tok='brace_open', arg=s[pos], pos=pos, len=1, pre_space=space)
+            if (s[pos] in openbracechars):
+                return LatexToken(tok='brace_open', arg=s[pos], pos=pos, len=1, pre_space=space)
 
-        if (s[pos] in closebracechars):
-            return LatexToken(tok='brace_close', arg=s[pos], pos=pos, len=1, pre_space=space)
+            if (s[pos] in closebracechars):
+                return LatexToken(tok='brace_close', arg=s[pos], pos=pos, len=1, pre_space=space)
 
-        # check if it is an inline math char, if we care about inline math.
-        if (s[pos] == '$' and our_keep_inline_math):
-            # check that we don't have double-$$, which would be a display environment.
-            if not (pos+1 < len(s) and s[pos+1] == '$'):
-                return LatexToken(tok='mathmode_inline', arg=s[pos], pos=pos, len=1, pre_space=space);
-            # otherwise, proceed to 'char' type.
+            # check if it is an inline math char, if we care about inline math.
+            if (s[pos] == '$' and self.keep_inline_math):
+                # check that we don't have double-$$, which would be a display environment.
+                if not (pos+1 < len(s) and s[pos+1] == '$'):
+                    return LatexToken(tok='mathmode_inline', arg=s[pos], pos=pos, len=1, pre_space=space);
+                # otherwise, proceed to 'char' type.
 
-        return LatexToken(tok='char', arg=s[pos], pos=pos, len=1, pre_space=space)
+            return LatexToken(tok='char', arg=s[pos], pos=pos, len=1, pre_space=space)
 
 
-    def get_latex_expression(self, pos, strict_braces=False):
+    def get_latex_expression(self, pos, strict_braces=None):
         """
         Reads a latex expression, e.g. macro argument. This may be a single char, an escape
         sequence, or a expression placed in braces.  This is what TeX calls a "token" (and
@@ -615,29 +640,31 @@ class LatexWalker(object):
         expression, and `len` is its length.
         """
 
-        tok = self.get_token(pos, environments=False, keep_inline_math_override=False);
+        with _PushPropOverride(self, 'strict_braces', strict_braces):
 
-        if (tok.tok == 'macro'):
-            if (tok.arg == 'end'):
-                if (not self.tolerant_parsing):
-                    # error, this should be an \end{environment}, not an argument in itself
-                    raise LatexWalkerParseError("Expected expression, got \end", self.s, pos);
-                else:
-                    return (LatexCharsNode(chars=''), tok.pos, 0)
-            return (LatexMacroNode(macroname=tok.arg, nodeoptarg=None, nodeargs=[]),
-                    tok.pos, tok.len)
-        if (tok.tok == 'comment'):
-            return self.get_latex_expression(pos+tok.len)
-        if (tok.tok == 'brace_open'):
-            return self.get_latex_braced_group(tok.pos)
-        if (tok.tok == 'brace_close'):
-            if (strict_braces and not self.tolerant_parsing):
-                raise LatexWalkerParseError("Expected expression, got closing brace!", self.s, pos);
-            return (LatexCharsNode(chars=''), tok.pos, 0)
-        if (tok.tok == 'char'):
-            return (LatexCharsNode(chars=tok.arg), tok.pos, tok.len)
+            tok = self.get_token(pos, environments=False, keep_inline_math=False);
 
-        raise LatexWalkerParseError("Unknown token type: %s" %(tok.tok), self.s, pos)
+            if (tok.tok == 'macro'):
+                if (tok.arg == 'end'):
+                    if (not self.tolerant_parsing):
+                        # error, this should be an \end{environment}, not an argument in itself
+                        raise LatexWalkerParseError("Expected expression, got \end", self.s, pos);
+                    else:
+                        return (LatexCharsNode(chars=''), tok.pos, 0)
+                return (LatexMacroNode(macroname=tok.arg, nodeoptarg=None, nodeargs=[]),
+                        tok.pos, tok.len)
+            if (tok.tok == 'comment'):
+                return self.get_latex_expression(pos+tok.len)
+            if (tok.tok == 'brace_open'):
+                return self.get_latex_braced_group(tok.pos)
+            if (tok.tok == 'brace_close'):
+                if (self.strict_braces and not self.tolerant_parsing):
+                    raise LatexWalkerParseError("Expected expression, got closing brace!", self.s, pos);
+                return (LatexCharsNode(chars=''), tok.pos, 0)
+            if (tok.tok == 'char'):
+                return (LatexCharsNode(chars=tok.arg), tok.pos, tok.len)
+
+            raise LatexWalkerParseError("Unknown token type: %s" %(tok.tok), self.s, pos)
 
 
     def get_latex_maybe_optional_arg(self, pos):
@@ -991,7 +1018,7 @@ def get_token(s, pos, brackets_are_chars=True, environments=True, **parse_flags)
                                                    environments=environments)
 
 
-def get_latex_expression(s, pos, strict_braces=False, **parse_flags):
+def get_latex_expression(s, pos, **parse_flags):
     """
     Reads a latex expression, e.g. macro argument. This may be a single char, an escape
     sequence, or a expression placed in braces.
@@ -1003,7 +1030,7 @@ def get_latex_expression(s, pos, strict_braces=False, **parse_flags):
        Please use :py:meth:`LatexWalker.get_latex_expression()` instead.
     """
 
-    return LatexWalker(s, **parse_flags).get_latex_expression(pos=pos, strict_braces=strict_braces)
+    return LatexWalker(s, **parse_flags).get_latex_expression(pos=pos)
 
 
 def get_latex_maybe_optional_arg(s, pos, **parse_flags):
