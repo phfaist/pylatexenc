@@ -37,7 +37,7 @@ utf82latex={
 174:'\\textregistered', 	# character ®
 175:'\\textasciimacron', 	# character ¯
 176:'\\textdegree', 	# character °
-177:'\\textpm', 	# character ±
+177:'\\ensuremath{\\pm}', 	# character ±
 178:'\\texttwosuperior', 	# character ²
 179:'\\textthreesuperior', 	# character ³
 180:'\\textasciiacute', 	# character Ž
