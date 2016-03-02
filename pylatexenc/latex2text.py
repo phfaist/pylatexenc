@@ -392,7 +392,7 @@ def make_accented_char(node, combining):
         combining = unicode(combining)
         if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
             ch = u"i"
-        if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
+        if (ch == u"\N{LATIN SMALL LETTER DOTLESS J}"):
             ch = u"j"
         #print u"Accenting %s with %s"%(ch, combining) # this causes UnicdeDecodeError!!!
         return unicodedata.normalize('NFC', unicode(ch)+combining)
