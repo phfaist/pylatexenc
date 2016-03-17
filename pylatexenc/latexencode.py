@@ -568,6 +568,8 @@ utf82latex={
 # ADDED MANUALLY (PhF):
 # ---------------------
 
+0x02BC: r"'", # MODIFIER LETTER APOSTROPHE
+
 # Combining Diacritical Marks (!!TODO!! smarter)
 0x0307: r'\ensuremath{\dot{}}',
 0x0308: r'\ensuremath{\ddot{}}',
