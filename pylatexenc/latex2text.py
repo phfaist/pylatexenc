@@ -23,11 +23,13 @@
 #
 
 
+from __future__ import print_function, absolute_import
 import os
 import re
 import unicodedata
-import latexwalker
 import logging
+
+from pylatexenc import latexwalker
 
 
 logger = logging.getLogger(__name__);
@@ -498,7 +500,7 @@ class LatexNodes2Text(object):
         #
         
         if (len(n.nodeargs) != 1):
-            logger.warning(ur"Expected exactly one argument for '\input' ! Got = %r", n.nodeargs)
+            logger.warning(u"Expected exactly one argument for '\\input' ! Got = %r", n.nodeargs)
 
         inputtex = self.read_input_file(self.nodelist_to_text([n.nodeargs[0]]).strip())
 
@@ -663,17 +665,17 @@ if __name__ == '__main__':
 
         import fileinput
 
-        print "Please type some latex text (Ctrl+D twice to stop) ..."
+        print("Please type some latex text (Ctrl+D twice to stop) ...")
 
         latex = ''
         for line in fileinput.input():
             latex += line;
 
 
-        print '\n--- WORDS ---\n'
-        print latex2text(latex.decode('utf-8')#, keep_inline_math=True
-                         ).encode('utf-8')
-        print '\n-------------\n'
+        print('\n--- WORDS ---\n')
+        print(latex2text(latex.decode('utf-8')#, keep_inline_math=True
+                         ).encode('utf-8'))
+        print('\n-------------\n')
 
     except:
         import pdb;
@@ -681,7 +683,7 @@ if __name__ == '__main__':
         import sys;
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         
-        print "\nEXCEPTION: " + unicode(sys.exc_value) + "\n"
+        print("\nEXCEPTION: " + unicode(sys.exc_value) + "\n")
         
         pdb.post_mortem()
 

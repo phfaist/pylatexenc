@@ -23,6 +23,7 @@
 #
 
 
+from __future__ import print_function, absolute_import
 import logging
 logger = logging.getLogger(__name__)
 
@@ -1223,9 +1224,9 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
         title = '\\begin{%s}' %(n.envname)
         iterchildren.append(('* ', n.nodelist, False));
     else:
-        print "UNKNOWN NODE TYPE: %s"%(n.nodeType().__name__)
+        print("UNKNOWN NODE TYPE: %s"%(n.nodeType().__name__))
 
-    print ' '*indent + context + title + '  '+comment
+    print(' '*indent + context + title + '  '+comment)
 
     for context, nodelist, skip in iterchildren:
         for nn in nodelist:
@@ -1252,18 +1253,18 @@ if __name__ == '__main__':
 
         (nodes, pos, llen) = get_latex_nodes(latex);
 
-        print '\n--- NODES ---\n'
-        print repr(nodes);
-        print '\n-------------\n'
+        print('\n--- NODES ---\n')
+        print(repr(nodes))
+        print('\n-------------\n')
 
-        print '\n--- NODES ---\n'
+        print('\n--- NODES ---\n')
         for n in nodes:
             disp_node(n)
-        print '\n-------------\n'
+        print('\n-------------\n')
 
     except:
         import pdb;
         import sys;
-        print "\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n"
+        print("\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n")
         pdb.post_mortem()
 
