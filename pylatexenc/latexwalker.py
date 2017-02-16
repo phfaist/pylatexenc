@@ -31,8 +31,8 @@ import re
 from collections import namedtuple
 import sys
 if sys.version_info.major > 2:
+    def unicode(string): return string
     basestring = str
-
 
 
 class LatexWalkerError(Exception):

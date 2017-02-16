@@ -28,6 +28,10 @@ import os
 import re
 import unicodedata
 import logging
+import sys
+if sys.version_info.major > 2:
+    def unicode(string): return string
+    basestring = str
 
 from pylatexenc import latexwalker
 
