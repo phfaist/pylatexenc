@@ -687,8 +687,8 @@ if __name__ == '__main__':
         import sys;
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         
-        print("\nEXCEPTION: " + unicode(sys.exc_value) + "\n")
-        
+        print("\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n")
+
         pdb.post_mortem()
 
 
