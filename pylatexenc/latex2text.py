@@ -23,7 +23,7 @@
 #
 
 
-from __future__ import print_function, absolute_import
+from __future__ import print_function #, absolute_import
 import os
 import re
 import unicodedata
@@ -33,7 +33,7 @@ if sys.version_info.major > 2:
     def unicode(string): return string
     basestring = str
 
-from pylatexenc import latexwalker
+from . import latexwalker
 
 
 logger = logging.getLogger(__name__);
