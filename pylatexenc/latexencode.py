@@ -24,8 +24,13 @@
 #
 
 
+from __future__ import print_function, absolute_import
 import unicodedata;
 import logging
+import sys
+if sys.version_info.major > 2:
+    def unicode(string): return string
+    basestring = str
 
 log = logging.getLogger(__name__)
 
@@ -873,20 +878,20 @@ if __name__ == '__main__':
 
         import fileinput
 
-        print "Please type some unicode text (Ctrl+D twice to stop) ..."
+        print("Please type some unicode text (Ctrl+D twice to stop) ...")
 
         latex = ''
         for line in fileinput.input():
             latex += line;
 
-        print '\n--- LATEX ---\n'
-        print utf8tolatex(latex.decode('utf-8')).encode('utf-8')
-        print '\n-------------\n'
+        print('\n--- LATEX ---\n')
+        print(utf8tolatex(latex.decode('utf-8')).encode('utf-8'))
+        print('\n-------------\n')
 
     except:
         import pdb;
         import sys;
-        print "\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n"
+        print("\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n")
         pdb.post_mortem()
 
 
