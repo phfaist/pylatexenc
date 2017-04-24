@@ -25,9 +25,11 @@
 
 
 from __future__ import print_function #, absolute_import
-import unicodedata;
+
+import unicodedata
 import logging
 import sys
+
 if sys.version_info.major > 2:
     def unicode(string): return string
     basestring = str
@@ -810,21 +812,14 @@ utf82latex={
 }
 
 
-
-
-
-
 # ------------------------------------------------------------------------------------------------
 
 
 
 
-
-
-
 def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=False):
-    s = unicode(s); # make sure s is unicode
-    s = unicodedata.normalize('NFC', s);
+    s = unicode(s) # make sure s is unicode
+    s = unicodedata.normalize('NFC', s)
 
     if not s:
         return ""
@@ -858,15 +853,6 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
 
 
 
-
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
 
     try:
@@ -882,15 +868,15 @@ if __name__ == '__main__':
 
         latex = ''
         for line in fileinput.input():
-            latex += line;
+            latex += line
 
         print('\n--- LATEX ---\n')
         print(utf8tolatex(latex.decode('utf-8')).encode('utf-8'))
         print('\n-------------\n')
 
     except:
-        import pdb;
-        import sys;
+        import pdb
+        import sys
         print("\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n")
         pdb.post_mortem()
 

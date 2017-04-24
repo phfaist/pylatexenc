@@ -24,19 +24,20 @@
 
 
 from __future__ import print_function #, absolute_import
+
 import os
 import re
 import unicodedata
 import logging
 import sys
+
 if sys.version_info.major > 2:
     def unicode(string): return string
     basestring = str
 
 from . import latexwalker
 
-
-logger = logging.getLogger(__name__);
+logger = logging.getLogger(__name__)
 
 
 
@@ -63,12 +64,12 @@ class MacroDef:
             self.simplify_repl = o.simplify_repl
         elif (isinstance(macname, tuple)):
             (self.macname, self.simplify_repl) = macname
-            self.discard = True if (discard is None) else discard ;
+            self.discard = True if (discard is None) else discard
             if (simplify_repl is not None or discard is not None):
                 raise ValueError("macname=%r is tuple but other parameters specified" %(macname,))
         else:
             self.macname = macname
-            self.discard = True if (discard is None) else discard ;
+            self.discard = True if (discard is None) else discard
             self.simplify_repl = simplify_repl
 
 
@@ -97,7 +98,7 @@ _default_env_list = [
     EnvDef('subequations', discard=False),
     EnvDef('figure', discard=False),
     EnvDef('table', discard=False),
-    ];
+    ]
 
 
 # NOTE: macro will only be assigned arguments if they are explicitely defined as accepting arguments
@@ -301,15 +302,15 @@ _default_macro_list = [
     # we use these conventions as Identity operator (\mathbbm{1})
     ('id', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
     ('Ident', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
-    ];
+    ]
 
 
 
 def _format_uebung(n):
-    s = '\n%s\n' %(latexnodes2text([n.nodeargs[0]]));
-    optarg = n.nodeargs[1];
+    s = '\n%s\n' %(latexnodes2text([n.nodeargs[0]]))
+    optarg = n.nodeargs[1]
     if (optarg is not None):
-        s += '[%s]\n' %(latexnodes2text([optarg]));
+        s += '[%s]\n' %(latexnodes2text([optarg]))
     return s
 
 
@@ -321,7 +322,7 @@ _default_macro_list += [
     ('hints', 'Hints: %s'),
     ('hinweis', 'Hinweis: %s'),
     ('hinweise', 'Hinweise: %s'),
-    ];
+    ]
 
 
 
@@ -332,17 +333,17 @@ def _greekletters(letterlist):
         ucharname = l.upper()
         if (ucharname == 'LAMBDA'):
             ucharname = 'LAMDA'
-        smallname = "GREEK SMALL LETTER "+ucharname;
+        smallname = "GREEK SMALL LETTER "+ucharname
         if (ucharname == 'EPSILON'):
             smallname = "GREEK LUNATE EPSILON SYMBOL"
         if (ucharname == 'PHI'):
             smallname = "GREEK PHI SYMBOL"
         _default_macro_list.append(
             (l, unicodedata.lookup(smallname))
-            );
+            )
         _default_macro_list.append(
             (l[0].upper()+l[1:], unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
-            );
+            )
 _greekletters( ('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota', 'kappa',
                 'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma', 'tau', 'upsilon', 'phi',
                 'chi', 'psi', 'omega') )
@@ -386,12 +387,12 @@ unicode_accents_list = (
 
     ("not", u"\N{COMBINING LONG SOLIDUS OVERLAY}"),
 
-    );
+    )
 
 def make_accented_char(node, combining):
     nodearg = node.nodeargs[0] if len(node.nodeargs) else latexwalker.LatexCharsNode(chars=' ')
 
-    c = latexnodes2text([nodearg]).strip();
+    c = latexnodes2text([nodearg]).strip()
 
     def getaccented(ch, combining):
         ch = unicode(ch)
@@ -403,14 +404,14 @@ def make_accented_char(node, combining):
         #print u"Accenting %s with %s"%(ch, combining) # this causes UnicdeDecodeError!!!
         return unicodedata.normalize('NFC', unicode(ch)+combining)
 
-    return u"".join([getaccented(ch, combining) for ch in c]);
+    return u"".join([getaccented(ch, combining) for ch in c])
 
 
 for u in unicode_accents_list:
-    (mname, mcombining) = u;
+    (mname, mcombining) = u
     _default_macro_list.append(
         (mname, lambda x, c=mcombining: make_accented_char(x, c))
-        );
+        )
 
 
 
@@ -563,7 +564,7 @@ class LatexNodes2Text(object):
         
         if (node.isNodeType(latexwalker.LatexMacroNode)):
             # get macro behavior definition.
-            macroname = node.macroname.rstrip('*');
+            macroname = node.macroname.rstrip('*')
             if (macroname in self.macro_dict):
                 mac = self.macro_dict[macroname]
             else:
@@ -577,19 +578,19 @@ class LatexNodes2Text(object):
                         return mac.simplify_repl % tuple([self.node_to_text(nn) for nn in node.nodeargs])
                     except (TypeError, ValueError):
                         logger.warning("WARNING: Error in configuration: macro '%s' failed its substitution!",
-                                       macroname);
+                                       macroname)
                         return mac.simplify_repl; # too bad, keep the percent signs as they are...
                 return mac.simplify_repl
             if mac.discard:
                 return ""
-            a = node.nodeargs;
+            a = node.nodeargs
             if (node.nodeoptarg):
                 a.prepend(node.nodeoptarg)
             return "".join([self.node_to_text(n) for n in a])
 
         if (node.isNodeType(latexwalker.LatexEnvironmentNode)):
             # get environment behavior definition.
-            envname = node.envname.rstrip('*');
+            envname = node.envname.rstrip('*')
             if (envname in self.env_dict):
                 envdef = self.env_dict[envname]
             else:
@@ -607,7 +608,7 @@ class LatexNodes2Text(object):
 
         if (node.isNodeType(latexwalker.LatexMathNode)):
             # if we have a math node, this means we care about math modes and we should keep this verbatim.
-            return latexwalker.math_node_to_latex(node);
+            return latexwalker.math_node_to_latex(node)
 
         logger.warning("LatexNodes2Text.node_to_text(): Unknown node: %r", node)
 
@@ -639,9 +640,9 @@ def latex2text(content, tolerant_parsing=False, keep_inline_math=False, keep_com
     """
 
     (nodelist, tpos, tlen) = latexwalker.get_latex_nodes(content, keep_inline_math=keep_inline_math,
-                                                         tolerant_parsing=tolerant_parsing);
+                                                         tolerant_parsing=tolerant_parsing)
 
-    return latexnodes2text(nodelist, keep_inline_math=keep_inline_math, keep_comments=keep_comments);
+    return latexnodes2text(nodelist, keep_inline_math=keep_inline_math, keep_comments=keep_comments)
 
 
 def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
@@ -665,7 +666,7 @@ if __name__ == '__main__':
 
     try:
 
-        #latex = '\\textit{hi there!} This is {\em an equation}: \\begin{equation}\n a + bi = 0\n\\end{equation}\n\nwhere $i$ is the imaginary unit.\n';
+        #latex = '\\textit{hi there!} This is {\em an equation}: \\begin{equation}\n a + bi = 0\n\\end{equation}\n\nwhere $i$ is the imaginary unit.\n'
 
         import fileinput
 
@@ -673,7 +674,7 @@ if __name__ == '__main__':
 
         latex = ''
         for line in fileinput.input():
-            latex += line;
+            latex += line
 
 
         print('\n--- WORDS ---\n')
@@ -682,9 +683,9 @@ if __name__ == '__main__':
         print('\n-------------\n')
 
     except:
-        import pdb;
-        import traceback;
-        import sys;
+        import pdb
+        import traceback
+        import sys
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         
         print("\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n")
