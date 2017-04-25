@@ -22,6 +22,14 @@
 # THE SOFTWARE.
 #
 
+"""
+The ``latexwalker`` module provides a simple API for parsing LaTeX snippets, and
+representing the contents using a data structure based on nodes classes.
+
+LatexWalker will understand the syntax of most common macros.  However, ``latexwalker`` is
+NOT a replacement for a full LaTeX engine.  (Originally, ``latexwalker`` was desigend to
+extract useful text for indexing for text database searches of LaTeX content.)
+"""
 
 from __future__ import print_function #, absolute_import
 
@@ -39,9 +47,16 @@ logger = logging.getLogger(__name__)
 
 
 class LatexWalkerError(Exception):
+    """
+    Generic exception class raised by this module.
+    """
     pass
 
 class LatexWalkerParseError(LatexWalkerError):
+    """
+    Parse error.  The following attributes are available: `msg` (the error message), `s`
+    (the parsed string), `pos` (the position of the error in the string, 0-based index).
+    """
     def __init__(self, msg, s=None, pos=None):
         self.msg = msg
         self.s = s
@@ -53,6 +68,9 @@ class LatexWalkerParseError(LatexWalkerError):
             ))
 
 class LatexWalkerEndOfStream(LatexWalkerError):
+    """
+    Reached end of input stream (e.g., end of file).
+    """
     pass
 
 
@@ -217,6 +235,11 @@ _default_macro_list = (
     )
 
 default_macro_dict = dict([(m.macname, m) for m in _default_macro_list])
+"""
+The default context dictionary of known LaTeX macros.  The keys are the macro names
+(:py:class:`MacrosDef.macname <MacrosDef>`) and the values are :py:class:`MacrosDef`
+instances.
+"""
 
 
 # ------------------------------------------------
@@ -434,27 +457,22 @@ class LatexEnvironmentNode(LatexNode):
     r"""
     A LaTeX Environment Node, i.e. `\begin{something} ... \end{something}`.
 
-    See :py:meth:`__init__`.
+    Arguments:
+        - `envname`: the name of the environment ('itemize', 'equation', ...)
+        - `nodelist`: a list of :py:class:`LatexNode`'s that represent all the
+          contents between the `\begin{...}` instruction and the `\end{...}`
+          instruction.
+        - `optargs`: any possible optional argument passed to the `\begin{...}`
+          instruction, for example in `\begin{enumerate}[label=\roman*)]
+          (Currently, only a single optional argument is parsed, but this argument
+          still accepts anyway a list of :py:class:`LatexNode`'s.)
+        - `args`: any possible regular arguments passed to the `\begin{...}`
+          instruction, for example in `\begin{tabular}{clr}`. Currently, only a
+          single regular argument is parsed at maximum, but this is anyway a
+          list of :py:class:`LatexNode`'s.
     """
     
     def __init__(self, envname, nodelist, optargs=[], args=[], **kwargs):
-        r"""
-        A LaTeX Environment Node, i.e. `\begin{something} ... \end{something}`.
-
-        Arguments:
-            - `envname`: the name of the environment ('itemize', 'equation', ...)
-            - `nodelist`: a list of :py:class:`LatexNode`'s that represent all the
-              contents between the `\begin{...}` instruction and the `\end{...}`
-              instruction.
-            - `optargs`: any possible optional argument passed to the `\begin{...}`
-              instruction, for example in `\begin{enumerate}[label=\roman*)]
-              (Currently, only a single optional argument is parsed, but this argument
-              still accepts anyway a list of :py:class:`LatexNode`'s.)
-            - `args`: any possible regular arguments passed to the `\begin{...}`
-              instruction, for example in `\begin{tabular}{clr}`. Currently, only a
-              single regular argument is parsed at maximum, but this is anyway a
-              list of :py:class:`LatexNode`'s.
-        """
         super(LatexEnvironmentNode, self).__init__(**kwargs)
         self._fields = ('envname','nodelist','optargs','args',)
         self.envname = envname
@@ -469,17 +487,12 @@ class LatexMathNode(LatexNode):
     r"""
     A Math node type.
 
-    See :py:meth:`__init__`.
+    Note that currently only 'inline' math environments are detected.
+
+    Arguments:
+        - `displaytype`: either 'inline' or 'display'
     """
     def __init__(self, displaytype, nodelist=[], **kwargs):
-        r"""
-        A Math node type.
-
-        Note that currently only 'inline' math environments are detected.
-
-        Arguments:
-            - `displaytype`: either 'inline' or 'display'
-        """
         super(LatexMathNode, self).__init__(**kwargs)
         self._fields = ('displaytype','nodelist',)
         self.displaytype = displaytype
@@ -519,6 +532,28 @@ class LatexWalker(object):
     r"""
     A parser which walks through an input stream, parsing it as LaTeX markup.
 
+    Arguments:
+
+      - `s`: the string to parse as LaTeX code
+
+      - `macro_dict`: a context dictionary of known LaTeX macros.  By default, the default
+        global macro dictionary `default_macro_dict` is used.  This should be a dictionary
+        where the keys are macro names (see :py:attr:`MacrosDef.macname`) and values are
+        :py:class:`MacrosDef` instances.
+
+    Additional keyword arguments are flags which influence the parsing.  Accepted flags are:
+
+      - `keep_inline_math=True|False` If this option is set to `True`, then inline math is
+        parsed and stored using :py:class:`LatexMathNode` instances.  Otherwise, inline
+        math is not treated differently and is simply kept as text.
+
+      - `tolerant_parsing=True|False` If set to `True`, then the parser generally ignores
+        syntax errors rather than raising an exception.
+
+      - `strict_braces=True|False` This option refers specifically to reading a
+        encountering a closing brace when an expression is needed.  You generally won't
+        need to specify this flag, use `tolerant_parsing` instead.
+
     """
 
     def __init__(self, s, macro_dict=None, **flags):
@@ -538,9 +573,14 @@ class LatexWalker(object):
             logger.warning("LatexWalker(): Unknown flag(s) encountered: %r", flags.keys())
 
     def parse_flags(self):
+        """
+        The parse flags currently set on this object.  Returns a dictionary with keys
+        'keep_inline_math', 'tolerant_parsing' and 'strict_braces'.
+        """
         return {
             'keep_inline_math': self.keep_inline_math,
             'tolerant_parsing': self.tolerant_parsing,
+            'strict_braces': self.strict_braces,
         }
         
     def get_token(self, pos, brackets_are_chars=True, environments=True, keep_inline_math=None):
@@ -949,7 +989,7 @@ class LatexWalker(object):
                                                nodeargs=nodeargs))
                 return None
 
-            raise LatexWalkerParseError(s=self.s, pos=p.pos, msg="Uknown token: %r" %(tok))
+            raise LatexWalkerParseError(s=self.s, pos=p.pos, msg="Unknown token: %r" %(tok))
 
 
 
