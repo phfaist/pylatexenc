@@ -249,8 +249,8 @@ class LatexToken(object):
     r"""
     Represents a token read from the LaTeX input.
 
-    This is not quite a LaTeX token, it's just a part of the input which we treat in the
-    same way (e.g. a bunch of content characters, a comment, a macro, etc.)
+    This is not the same thing as a LaTeX token, it's just a part of the input which we
+    treat in the same way (e.g. a bunch of content characters, a comment, a macro, etc.)
 
     Information about the object is stored into the fields `tok` and `arg`. The `tok`
     field is a string which identifies the type of the token. The `arg` depends on what
@@ -306,7 +306,6 @@ class LatexToken(object):
         '$' character which is not part of a double '$$' display environment delimiter.
 
         The `arg` is the string value of the delimiter in question ('$')
-    
     """
     def __init__(self, tok, arg, pos, len, pre_space):
         self.tok = tok
@@ -587,7 +586,16 @@ class LatexWalker(object):
         """
         Parse the token in the stream pointed to at position `pos`.
 
-        Returns a `LatexToken`. Raises `LatexWalkerEndOfStream` if end of stream reached.
+        Returns a :py:class:`LatexToken`. Raises :py:exc:`LatexWalkerEndOfStream` if end
+        of stream reached.
+
+        If `brackets_are_chars=False`, then square bracket characters count as
+        'brace_open' and 'brace_close' token types (see :py:class:`LatexToken`); otherwise
+        (the default) they are considered just like other normal characters.
+
+        If `environments=False`, then '\\begin' and '\\end' tokens count as regular
+        'macro' tokens (see :py:class:`LatexToken`); otherwise (the default) they are
+        considered as the token types 'begin_environment' and 'end_environment'.
 
         If `keep_inline_math` is not `None`, then that value overrides that of
         `self.keep_inline_math` for the duration of this method call.
