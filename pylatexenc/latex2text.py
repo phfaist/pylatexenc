@@ -62,8 +62,8 @@ class EnvDef:
 
     - `simplify_repl`: the replacement text of the environment.  This is either a callable
        or a string.  If it is a callable, it must accept a single argument, the
-       :py:class:`latexwalker.LatexEnvironmentNode` representing the LaTeX environment.
-       If it is a string, it may contain '%s' which will be replaced by the
+       :py:class:`pylatexenc.latexwalker.LatexEnvironmentNode` representing the LaTeX
+       environment.  If it is a string, it may contain '%s' which will be replaced by the
        environment contents converted to text.
 
     - `discard`: if set to `True`, then the full environment is discarded, i.e., it is
@@ -82,7 +82,8 @@ class MacroDef:
 
     - `simplify_repl`: either a string or a callable. The string may contain '%s'
       replacements, in which the macro arguments will be substituted. The callable should
-      accept the corresponding :py:class:`latexwalker.LatexMacroNode` as an argument.
+      accept the corresponding :py:class:`pylatexenc.latexwalker.LatexMacroNode` as an
+      argument.
 
     - `discard`: if set to `True`, then the macro call is discarded, i.e., it is
        converted to an empty string.
@@ -551,7 +552,8 @@ class LatexNodes2Text(object):
         directory tree.
 
         The argument `latex_walker_init_args` allows you to specify the parse flags passed
-        to the constructor of :py:class:`latexwalker.LatexWalker` when parsing the input file.
+        to the constructor of :py:class:`pylatexenc.latexwalker.LatexWalker` when parsing
+        the input file.
         """
         self.tex_input_directory = tex_input_directory
         self.latex_walker_init_args = latex_walker_init_args if latex_walker_init_args else {}
@@ -576,7 +578,9 @@ class LatexNodes2Text(object):
         directory (after canonicalizing the paths and resolving all symlinks).
 
         You may override this method to obtain the input data in however way you see fit.
-        (In that case, a call to `set_tex_input_directory()` is not needed.)
+        (In that case, a call to `set_tex_input_directory()` may not be needed as that
+        function simply sets properties which are used by the default implementation of
+        `read_input_file()`.)
 
         This function accepts the referred filename as argument (the argument to the
         ``\\input`` macro), and should return a string with the file contents (or generate
@@ -627,7 +631,7 @@ class LatexNodes2Text(object):
         Parses the given `latex` code and returns its textual representation.
 
         The `parse_flags` are the flags to give on to the
-        :py:class:`latexwalker.LatexWalker` constructor.
+        :py:class:`pylatexenc.latexwalker.LatexWalker` constructor.
         """
         return self.nodelist_to_text(latexwalker.LatexWalker(latex, **parse_flags).get_latex_nodes()[0])
 
@@ -635,7 +639,7 @@ class LatexNodes2Text(object):
     def nodelist_to_text(self, nodelist):
         """
         Extracts text from a node list. `nodelist` is a list of nodes as returned by
-        :py:meth:`latexwalker.LatexWalker.get_latex_nodes()`.
+        :py:meth:`pylatexenc.latexwalker.LatexWalker.get_latex_nodes()`.
         """
     
         s = "".join( ( self.node_to_text(n) for n in nodelist ) )
@@ -756,7 +760,7 @@ def latex2text(content, tolerant_parsing=False, keep_inline_math=False, keep_com
 def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
     """
     Extracts text from a node list. `nodelist` is a list of nodes as returned by
-    `latexwalker.get_latex_nodes()`.
+    :py:func:`pylatexenc.latexwalker.get_latex_nodes()`.
 
     .. deprecated:: 1.0
        Please use :py:class:`LatexNodes2Text` instead.

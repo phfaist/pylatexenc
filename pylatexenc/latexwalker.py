@@ -537,8 +537,8 @@ class LatexWalker(object):
 
       - `macro_dict`: a context dictionary of known LaTeX macros.  By default, the default
         global macro dictionary `default_macro_dict` is used.  This should be a dictionary
-        where the keys are macro names (see :py:attr:`MacrosDef.macname`) and values are
-        :py:class:`MacrosDef` instances.
+        where the keys are macro names (see :py:class:`MacrosDef.macname <MacrosDef>`) and
+        values are :py:class:`MacrosDef` instances.
 
     Additional keyword arguments are flags which influence the parsing.  Accepted flags are:
 
@@ -552,7 +552,6 @@ class LatexWalker(object):
       - `strict_braces=True|False` This option refers specifically to reading a
         encountering a closing brace when an expression is needed.  You generally won't
         need to specify this flag, use `tolerant_parsing` instead.
-
     """
 
     def __init__(self, s, macro_dict=None, **flags):
@@ -737,12 +736,12 @@ class LatexWalker(object):
 
     def get_latex_braced_group(self, pos, brace_type='{'):
         """
-        Reads a latex expression enclosed in braces {...}. The first token of `s[pos:]` must
-        be an opening brace.
+        Reads a latex expression enclosed in braces ``{ ... }``. The first token of `s[pos:]`
+        must be an opening brace.
 
-        Returns a tuple `(node, pos, len)`. `pos` is the first char of the
-        expression (which has to be an opening brace), and `len` is its length,
-        including the closing brace.
+        Returns a tuple `(node, pos, len)`, where `node` is a :py:class:`LatexGroupNode`
+        instance, `pos` is the first char of the expression (which has to be an opening
+        brace), and `len` is its length, including the closing brace.
         """
 
         closing_brace = None
@@ -769,12 +768,16 @@ class LatexWalker(object):
 
     def get_latex_environment(self, pos, environmentname=None):
         """
-        Reads a latex expression enclosed in a \\begin{environment}...\\end{environment}. The first
-        token in the stream must be the \\begin{environment}.
+        Reads a latex expression enclosed in a ``\\begin{environment}...\\end{environment}``.
+        The first token in the stream must be the ``\\begin{environment}``.
 
         If `environmentname` is given and nonempty, then additionally a
         :py:exc:`LatexWalkerParseError` is raised if the environment in the input stream
         does not match the provided name.
+
+        This function will attempt to heuristically parse an optional argument, and
+        possibly a mandatory argument given to the environment.  No space is allowed
+        between ``\begin{environment}`` and an opening square bracket or opening brace.
 
         Returns a tuple (node, pos, len) with node being a :py:class:`LatexEnvironmentNode`.
         """
@@ -831,12 +834,14 @@ class LatexWalker(object):
         """
         Parses latex content stored in `self.s` into a list of nodes.
 
-        Returns a tuple `(nodelist, pos, len)` where nodelist is a list of `LatexNode` 's.
+        Returns a tuple `(nodelist, pos, len)` where nodelist is a list of
+        :py:class:`LatexNode`\ 's.
         
-        If `stop_upon_closing_brace` is given, then parsing stops once the given closing
-        brace is encountered (but not inside a subgroup).  The brace is given as a string,
-        e.g. '}'.  The returned `len` includes the closing brace, but the closing brace is
-        not included in any of the nodes in the `nodelist`.
+        If `stop_upon_closing_brace` is given and set to a character, then parsing stops
+        once the given closing brace is encountered (but not inside a subgroup).  The
+        brace is given as a character, ']' or '}'.  The returned `len` includes the
+        closing brace, but the closing brace is not included in any of the nodes in the
+        `nodelist`.
 
         If `stop_upon_end_environment` is provided, then parsing stops once the given
         environment was closed.  If there is an environment mismatch, then a
