@@ -1,5 +1,5 @@
 
-Encode LaTeX to Unicode
+Encode Unicode to LaTeX
 -----------------------
 
 .. automodule:: pylatexenc.latexencode
