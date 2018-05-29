@@ -303,6 +303,8 @@ utf82latex={
 381:'\\v{Z}',
 382:'\\v{z}',
 402:'\\textflorin',
+552:'\\c{E}',
+553:'\\c{e}',
 710:'\\textasciicircum',
 711:'\\textasciicaron',
 728:'\\textasciibreve',
