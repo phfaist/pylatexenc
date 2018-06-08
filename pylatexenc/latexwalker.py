@@ -893,7 +893,7 @@ class LatexWalker(object):
             #    p.lastchars += tok.pre_space # yields wayyy tooo much space in output!!
 
             # if it's not a char, push the last `p.lastchars` into the node list before anything else
-            if (len(p.lastchars)):
+            if (len(p.lastchars) or len(tok.pre_space)):
                 strnode = LatexCharsNode(chars=p.lastchars+tok.pre_space)
                 nodelist.append(strnode)
                 p.lastchars = '' # reset lastchars.
