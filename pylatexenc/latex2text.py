@@ -518,6 +518,10 @@ class LatexNodes2Text(object):
       (including the percent-sign); otherwise they are discarded.  (By default
       this is `False`)
 
+    - `strict_latex_behavior=True|False`: If set to `True`, then a whitespace following
+      a bare macro (i.e. w/o any delimiting characters like '}') is consumed/removed
+      like LaTeX; otherwise it is kept.
+
     - `keep_braced_groups=True|False`: If set to `True`, then braces delimiting
       a TeX group ``{Like this}`` will be kept in the output, with the contents
       of the group converted to text as usual.  (By default this is `False`)
@@ -530,7 +534,8 @@ class LatexNodes2Text(object):
       becomes ``{\N{LATIN SMALL LETTER E WITH ACUTE}tonnant}``.
 
     .. versionadded: 1.4
-       Added the `keep_braced_groups` flag
+       Added the `strict_latex_behavior` and the `keep_braced_groups` flags
+
     """
     def __init__(self, env_dict=None, macro_dict=None, text_replacements=None, **flags):
         super(LatexNodes2Text, self).__init__()
@@ -548,8 +553,10 @@ class LatexNodes2Text(object):
 
         self.keep_inline_math = flags.pop('keep_inline_math', False)
         self.keep_comments = flags.pop('keep_comments', False)
+        self.strict_latex_behavior = flags.pop('strict_latex_behavior', False)
         self.keep_braced_groups = flags.pop('keep_braced_groups', False)
         self.keep_braced_groups_minlen = flags.pop('keep_braced_groups_minlen', 2)
+
         if flags:
             # any flags left which we haven't recognized
             logger.warning("LatexNodes2Text(): Unknown flag(s) encountered: %r", flags.keys())
@@ -667,8 +674,12 @@ class LatexNodes2Text(object):
         Extracts text from a node list. `nodelist` is a list of nodes as returned by
         :py:meth:`pylatexenc.latexwalker.LatexWalker.get_latex_nodes()`.
         """
-    
-        s = "".join( ( self.node_to_text(n) for n in nodelist ) )
+
+        if self.strict_latex_behavior:
+            modlist = self._remove_a_whitespace_after_bare_macro(nodelist)
+            s = "".join( ( self.node_to_text(n) for n in modlist ) )
+        else:
+            s = "".join( ( self.node_to_text(n) for n in nodelist ) )
 
         # now, perform suitable replacements
         for pattern, replacement in self.text_replacements:
@@ -685,6 +696,32 @@ class LatexNodes2Text(object):
         return s
 
     
+    def _remove_a_whitespace_after_bare_macro(self, nodelist):
+        """ to strictly follow LaTeX's behavior
+
+        If the leftmost character in a :py:class:`pylatexenc.latexwalker.LatexCharsNode`
+        is a whitespace and the previous node is a BARE
+        :py:class:`pylatexenc.latexwalker.LatexMacroNode` (without a delimiting character,
+        e.g. '}', then the space is removed.
+        """
+        modlist = []
+        prevBareMacro = False
+        for node in nodelist:
+            if (node.isNodeType(latexwalker.LatexCharsNode)):
+                chars = node.chars
+                if prevBareMacro and chars[0] == ' ': chars = chars[1:]
+                if len(chars):
+                    modlist.append(latexwalker.LatexCharsNode(chars))
+                prevBareMacro = False
+            # if not, just append to modlist. also check and record whether it's bare macro or not
+            else:
+                modlist.append(node)
+                prevBareMacro = True if (node.isNodeType(latexwalker.LatexMacroNode) and len(node.nodeargs)==0) \
+                    else False
+
+        return modlist
+
+
     def node_to_text(self, node):
         """
         Return the textual representation of the given `node`.
