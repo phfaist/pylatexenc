@@ -255,8 +255,8 @@ utf82latex={
 333:'\\={o}',
 334:'\\u{O}',
 335:'\\u{o}',
-336:"\\'{O}",
-337:"\\'{o}",
+336:"\\H{O}",
+337:"\\H{o}",
 338:'\\OE',
 339:'\\oe',
 340:"\\'R",
@@ -302,12 +302,16 @@ utf82latex={
 380:'\\.z',
 381:'\\v{Z}',
 382:'\\v{z}',
-402:'\\textflorin',
-710:'\\textasciicircum',
+402:'\\textflorin', # 0x0192
+
+0x0228: r'\c{E}',
+0x0229: r'\c{e}',
+
+710:'\\textasciicircum', # 0x02C6
 711:'\\textasciicaron',
 728:'\\textasciibreve',
 732:'\\textasciitilde',
-733:'\\textacutedbl',
+733:'\\textacutedbl', # 0x02DD
 
 
 # ---------------------
