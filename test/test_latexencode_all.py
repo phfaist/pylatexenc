@@ -48,10 +48,8 @@ class TestLatexEncode(unittest.TestCase):
 
                 # try to encode it using utf8tolatex
                 try:
-                    enc = utf8tolatex(line, substitute_bad_chars=True)
+                    enc = utf8tolatex(line, fail_bad_chars=True)
                 except ValueError:
-                    continue
-                if r'{\bfseries ?}' in enc:
                     continue
                 testf.write(enc)
 
