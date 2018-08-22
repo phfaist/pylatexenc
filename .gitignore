@@ -1,2 +1,6 @@
-*.pyc
+pylatexenc.egg-info
+*.py[cdo]
 *~
+dist
+build
+doc/_build
