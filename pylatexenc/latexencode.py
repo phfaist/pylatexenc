@@ -308,7 +308,74 @@ utf82latex={
 728:'\\textasciibreve',
 732:'\\textasciitilde',
 733:'\\textacutedbl',
-1024:'\\`\\CYRE',
+
+
+# ---------------------
+
+0x02BC: r"'", # MODIFIER LETTER APOSTROPHE
+
+# Combining Diacritical Marks (!!TODO!! smarter)
+0x0307: r'\ensuremath{\dot{}}',
+0x0308: r'\ensuremath{\ddot{}}',
+
+0x0391: r'A', # GREEK CAPITAL LETTER ALPHA
+0x0392: r'B', # GREEK CAPITAL LETTER BETA
+0x0393: r'\ensuremath{\Gamma}', # GREEK CAPITAL LETTER GAMMA
+0x0394: r'\ensuremath{\Delta}', # ...
+0x0395: r'E',
+0x0396: r'Z',
+0x0397: r'H',
+0x0398: r'\ensuremath{\Theta}',
+0x0399: r'I',
+0x039A: r'K',
+0x039B: r'\ensuremath{\Lambda}',
+0x039C: r'M',
+0x039D: r'N',
+0x039E: r'\ensuremath{\Xi}',
+0x039F: r'O',
+0x03A0: r'\ensuremath{\Pi}',
+0x03A1: r'P',
+0x03A3: r'\ensuremath{\Sigma}',
+0x03A4: r'T',
+0x03A5: r'\ensuremath{\Upsilon}',
+0x03A6: r'\ensuremath{\Phi}',
+0x03A7: r'X',
+0x03A8: r'\ensuremath{\Psi}',
+0x03A9: r'\ensuremath{\Omega}',
+# tonos letters [ ... ]
+0x03B1: r'\ensuremath{\alpha}', # Greek Small Letter Alpha
+0x03B2: r'\ensuremath{\beta}',
+0x03B3: r'\ensuremath{\gamma}',
+0x03B4: r'\ensuremath{\delta}',
+0x03B5: r'\ensuremath{\varepsilon}',
+0x03B6: r'\ensuremath{\zeta}',
+0x03B7: r'\ensuremath{\eta}',
+0x03B8: r'\ensuremath{\theta}',
+0x03B9: r'\ensuremath{\i}',
+0x03BA: r'\ensuremath{\kappa}',
+0x03BB: r'\ensuremath{\lambda}',
+0x03BC: r'\ensuremath{\mu}',
+0x03BD: r'\ensuremath{\nu}',
+0x03BE: r'\ensuremath{\xi}',
+0x03BF: r'o',
+0x03C0: r'\ensuremath{\pi}',
+0x03C1: r'\ensuremath{\rho}',
+0x03C2: r'\ensuremath{\varsigma}',
+0x03C3: r'\ensuremath{\sigma}',
+0x03C4: r'\ensuremath{\tau}',
+0x03C5: r'\ensuremath{\upsilon}',
+0x03C6: r'\ensuremath{\varphi}',
+0x03C7: r'\ensuremath{\chi}',
+0x03C8: r'\ensuremath{\psi}',
+0x03C9: r'\ensuremath{\omega}',
+
+0x03D1: r'\ensuremath{\vartheta}', # Greek Theta Symbol
+0x03D5: r'\ensuremath{\phi}', # Greek Phi Symbol
+0x03D6: r'\ensuremath{\varpi}', # Greek Pi Symbol
+0x03F1: r'\ensuremath{\varrho}', # Greek rho symbol
+
+
+1024:'\\`\\CYRE', # 0x0400
 1025:'\\CYRYO',
 1026:'\\CYRDJE',
 1027:'\\`\\CYRG',
@@ -524,15 +591,37 @@ utf82latex={
 1276:'\\CYRHHK',
 1277:'\\cyrhhk',
 1278:'\\CYRHHCRS',
-1279:'\\cyrhhcrs',
-3647:'\\textbaht',
-8204:'\\textcompwordmark',
-8211:'\\textendash',
-8212:'\\textemdash',
-8214:'\\textbardbl',
-8216:'\\textquoteleft',
-8217:'\\textquoteright',
-8218:'\\quotesinglbase',
+1279:'\\cyrhhcrs', # 0x04FF
+
+    
+0x0E3F: r'\textbaht',
+
+
+# spaces
+0x2000: r'\enskip', # EN QUAD (= EN SPACE U+2002)
+0x2001: r'\quad', # EM QUAD (= EM SPACE U+2003)
+0x2002: r'\enskip', # EN SPACE
+0x2003: r'\quad', # EM SPACE
+0x2004: r'\hspace{0.33em}', # THREE-PER-EM SPACE
+0x2005: r'\hsapce{0.25em}', # FOUR-PER-EM SPACE
+0x2006: r'\hspace{0.167em}', # SIX-PER-EM SPACE
+0x2007: r'~', # FIGURE SPACE
+0x2008: r'\;', # PUNCTUATION SPACE
+0x2009: r'\,', # thin space
+0x200A: r'\hspace{1pt}', # supposed to be thinnest typographical space available
+
+0x200C: r'\textcompwordmark', # ZERO WIDTH NON-JOINER
+
+0x2010: r'-', # HYPHEN
+0x2011: r'\nobreakdash-', # NON-BREAKING HYPHEN, https://tex.stackexchange.com/a/330437/32188
+0x2012: r'-', # FIGURE DASH
+0x2013:'\\textendash', # 0x2013
+0x2014:'\\textemdash',
+0x2015:'\\textemdash', # HORIZONTAL BAR
+0x2016:'\\textbardbl',
+0x2018:'\\textquoteleft',
+0x2019:'\\textquoteright',
+8218:'\\quotesinglbase', # 0x201A
 8220:'\\textquotedblleft',
 8221:'\\textquotedblright',
 8222:'\\quotedblbase',
@@ -548,120 +637,65 @@ utf82latex={
 8253:'\\textinterrobang',
 8260:'\\textfractionsolidus',
 8270:'\\textasteriskcentered',
-8274:'\\textdiscount',
-8353:'\\textcolonmonetary',
+8274:'\\textdiscount', # 0x2052
+
+0x2061: r'', # FUNCTION APPLICATION
+
+8353:'\\textcolonmonetary', # 0x20A1
 8356:'\\textlira',
 8358:'\\textnaira',
 8361:'\\textwon',
 8363:'\\textdong',
 8364:'\\texteuro',
-8369:'\\textpeso',
-8451:'\\textcelsius',
-8470:'\\textnumero',
-8471:'\\textcircledP',
-8478:'\\textrecipe',
-8480:'\\textservicemark',
-8482:'\\texttrademark',
-8486:'\\textohm',
-8487:'\\textmho',
-8494:'\\textestimated',
-8592:'\\textleftarrow',
+8369:'\\textpeso', # 0x20B1
+
+
+# letter-like symbols
+0x2102: r'\ensuremath{\mathbb{C}}', # DOUBLE-STRUCK CAPITAL C
+0x2103: r'\textcelsius', # DEGREE CELSIUS
+0x2109: r'\ensuremath{^\circ}F', # DEGREE FARENHEIT
+0x210A: r'\ensuremath{g}', # SCRIPT SMALL G
+0x210B: r'\ensuremath{\mathscr{H}}', # SCRIPT CAPITAL H
+0x210C: r'\ensuremath{\mathfrak{H}}', # BLACK-LETTER CAPITAL H
+0x210D: r'\ensuremath{\mathbb{H}}', # DOUBLE-STRUCK CAPITAL H
+0x210E: r'\ensuremath{h}', # PLANCK CONSTANT
+0x210F: r'\ensuremath{\hbar}', # h bar, PLANCK CONSTANT OVER TWO PI
+0x2110: r'\ensuremath{\mathscr{I}}', # SCRIPT CAPITAL I
+0x2111: r'\ensuremath{\mathfrak{I}}', # BLACK-LETTER CAPITAL I
+0x2112: r'\ensuremath{\mathscr{L}}', # SCRIPT CAPITAL L
+0x2113: r'\ensuremath{\ell}', # SCRIPT SMALL L
+0x2115: r'\ensuremath{\mathbb{N}}', # DOUBLE-STRUCK CAPITAL N
+0x2116: r'\textnumero', # NUMERO SIGN
+0x2117: r'\textcircledP', # SOUND RECORDING COPYRIGHT
+0x211E: r'\textrecipe', # PRESCRIPTION TAKE
+0x2119: r'\ensuremath{\mathbb{P}}', # DOUBLE-STRUCK CAPITAL P
+0x211A: r'\ensuremath{\mathbb{Q}}', # DOUBLE-STRUCK CAPITAL Q
+0x211B: r'\ensuremath{\mathscr{R}}', # SCRIPT CAPITAL R
+0x211C: r'\ensuremath{\mathfrak{R}}', # BLACK-LETTER CAPITAL R
+0x211D: r'\ensuremath{\mathbb{R}}', # DOUBLE-STRUCK CAPITAL R
+0x2120: r'\textservicemark', # SERVICE MARK
+0x2122: r'\texttrademark', # TRADE MARK SIGN
+0x2124: r'\ensuremath{\mathbb{Z}}', # DOUBLE-STRUCK CAPITAL Z
+0x2126: r'\textohm', # OHM SIGN
+0x2127: r'\textmho', # OHM SIGN
+0x2128: r'\ensuremath{\mathfrak{Z}}', # BLACK-LETTER CAPITAL Z
+0x212A: r'K', # KELVIN SIGN
+0x212B: r'\r{A}', # ANGSTROM SIGN
+0x212C: r'\ensuremath{\mathscr{B}}', # SCRIPT CAPITAL B
+0x212D: r'\ensuremath{\mathfrak{C}}', # BLACK-LETTER CAPITAL C
+0x212E: r'\textestimated', # ESTIMATED SYMBOL
+0x212F: r'\ensuremath{e}', # SCRIPT SMALL E
+0x2130: r'\ensuremath{\mathscr{E}}', # SCRIPT CAPITAL E
+0x2131: r'\ensuremath{\mathscr{F}}', # SCRIPT CAPITAL F
+0x2133: r'\ensuremath{\mathscr{M}}', # SCRIPT CAPITAL M
+0x2134: r'\ensuremath{o}', # SCRIPT SMALL O
+
+
+8592:'\\textleftarrow', # 0x2190
 8593:'\\textuparrow',
 8594:'\\textrightarrow',
-8595:'\\textdownarrow',
-9001:'\\textlangle',
-9002:'\\textrangle',
-9250:'\\textblank',
-9251:'\\textvisiblespace',
-9702:'\\textopenbullet',
-9711:'\\textbigcircle',
-9834:'\\textmusicalnote',
+8595:'\\textdownarrow', # 0x2193
 
-
-# ADDED MANUALLY (PhF):
-# ---------------------
-
-0x02BC: r"'", # MODIFIER LETTER APOSTROPHE
-
-# Combining Diacritical Marks (!!TODO!! smarter)
-0x0307: r'\ensuremath{\dot{}}',
-0x0308: r'\ensuremath{\ddot{}}',
-
-0x0391: r'A', # GREEK CAPITAL LETTER ALPHA
-0x0392: r'B', # GREEK CAPITAL LETTER BETA
-0x0393: r'\ensuremath{\Gamma}', # GREEK CAPITAL LETTER GAMMA
-0x0394: r'\ensuremath{\Delta}', # ...
-0x0395: r'E',
-0x0396: r'Z',
-0x0397: r'H',
-0x0398: r'\ensuremath{\Theta}',
-0x0399: r'I',
-0x039A: r'K',
-0x039B: r'\ensuremath{\Lambda}',
-0x039C: r'M',
-0x039D: r'N',
-0x039E: r'\ensuremath{\Xi}',
-0x039F: r'O',
-0x03A0: r'\ensuremath{\Pi}',
-0x03A1: r'P',
-0x03A3: r'\ensuremath{\Sigma}',
-0x03A4: r'T',
-0x03A5: r'\ensuremath{\Upsilon}',
-0x03A6: r'\ensuremath{\Phi}',
-0x03A7: r'X',
-0x03A8: r'\ensuremath{\Psi}',
-0x03A9: r'\ensuremath{\Omega}',
-# tonos letters [ ... ]
-0x03B1: r'\ensuremath{\alpha}', # Greek Small Letter Alpha
-0x03B2: r'\ensuremath{\beta}',
-0x03B3: r'\ensuremath{\gamma}',
-0x03B4: r'\ensuremath{\delta}',
-0x03B5: r'\ensuremath{\varepsilon}',
-0x03B6: r'\ensuremath{\zeta}',
-0x03B7: r'\ensuremath{\eta}',
-0x03B8: r'\ensuremath{\theta}',
-0x03B9: r'\ensuremath{\i}',
-0x03BA: r'\ensuremath{\kappa}',
-0x03BB: r'\ensuremath{\lambda}',
-0x03BC: r'\ensuremath{\mu}',
-0x03BD: r'\ensuremath{\nu}',
-0x03BE: r'\ensuremath{\xi}',
-0x03BF: r'o',
-0x03C0: r'\ensuremath{\pi}',
-0x03C1: r'\ensuremath{\rho}',
-0x03C2: r'\ensuremath{\varsigma}',
-0x03C3: r'\ensuremath{\sigma}',
-0x03C4: r'\ensuremath{\tau}',
-0x03C5: r'\ensuremath{\upsilon}',
-0x03C6: r'\ensuremath{\varphi}',
-0x03C7: r'\ensuremath{\chi}',
-0x03C8: r'\ensuremath{\psi}',
-0x03C9: r'\ensuremath{\omega}',
-
-
-0x03D1: r'\ensuremath{\vartheta}', # Greek Theta Symbol
-0x03D5: r'\ensuremath{\phi}', # Greek Phi Symbol
-0x03D6: r'\ensuremath{\varpi}', # Greek Pi Symbol
-0x03F1: r'\ensuremath{\varrho}', # Greek rho symbol
-
-# spaces
-0x2000: r'\enskip', # EN QUAD (= EN SPACE U+2002)
-0x2001: r'\quad', # EM QUAD (= EM SPACE U+2003)
-0x2002: r'\enskip', # EN SPACE
-0x2003: r'\quad', # EM SPACE
-0x2004: r'\hspace{0.33em}', # THREE-PER-EM SPACE
-0x2005: r'\hsapce{0.25em}', # FOUR-PER-EM SPACE
-0x2006: r'\hspace{0.167em}', # SIX-PER-EM SPACE
-0x2007: r'~', # FIGURE SPACE
-0x2008: r'\;', # PUNCTUATION SPACE
-0x2009: r'\,', # thin space
-0x200A: r'\hspace{1pt}', # supposed to be thinnest typographical space available
-
-0x2010: r'-', # HYPHEN
-0x2061: r'', # FUNCTION APPLICATION
-
-0x210F: r'\ensuremath{\hbar}', # h bar
-0x2113: r'\ensuremath{\ell}', # SCRIPT SMALL L
 
 # Math operators and symbols (U+22XX)
 0x2200: r'\ensuremath{\forall}',
@@ -800,6 +834,19 @@ utf82latex={
 0x22F1: r'\ensuremath{\ddots}',
 # ...
 
+
+9001:'\\textlangle', # 0x2329
+9002:'\\textrangle',
+9250:'\\textblank',
+9251:'\\textvisiblespace',
+9702:'\\textopenbullet',
+9711:'\\textbigcircle',
+9834:'\\textmusicalnote', # 0x266A
+
+
+0x27E8: r'\ensureamth{\langle}', # MATHEMATICAL LEFT ANGLE BRACKET
+0x27E9: r'\ensureamth{\rangle}', # MATHEMATICAL RIGHT ANGLE BRACKET
+
 # Supplemental Mathematical Operators U+2AXX
 0x2A7D: r'\ensuremath{\leqslant}',
 0x2A7E: r'\ensuremath{\geqslant}',
@@ -823,7 +870,7 @@ utf82latex={
 
 
 
-def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=False):
+def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=False, fail_bad_chars=False):
     u"""
     Encode a UTF-8 string to a LaTeX snippet.
 
@@ -843,6 +890,9 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
     If `substitute_bad_chars=True`, then any non-ascii character for which no LaTeX escape
     sequence is known is replaced by a question mark in boldface. Otherwise (by default),
     the character is left as it is.
+
+    If `fail_bad_chars=True`, then a `ValueError` is raised if we cannot find a
+    character substitution for any non-ascii character.
     """
 
     s = unicode(s) # make sure s is unicode
@@ -869,8 +919,12 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
                 result += ch
             else:
                 # non-ascii char
-                log.warning(u"Character cannot be encoded into LaTeX: U+%04X - `%s'" % (ord(ch), ch))
-                if (substitute_bad_chars):
+                msg = u"Character cannot be encoded into LaTeX: U+%04X - `%s'" % (ord(ch), ch)
+                if fail_bad_chars:
+                    raise ValueError(msg)
+
+                log.warning(msg)
+                if substitute_bad_chars:
                     result += r'{\bfseries ?}'
                 else:
                     # keep unescaped char
