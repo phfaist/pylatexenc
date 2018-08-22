@@ -26,9 +26,9 @@
 0x0039 [DIGIT NINE]                                          |9|
 0x003A [COLON]                                               |:|
 0x003B [SEMICOLON]                                           |;|
-0x003C [LESS-THAN SIGN]                                      |<|
+0x003C [LESS-THAN SIGN]                                      |{\ensuremath{<}}|
 0x003D [EQUALS SIGN]                                         |=|
-0x003E [GREATER-THAN SIGN]                                   |>|
+0x003E [GREATER-THAN SIGN]                                   |{\ensuremath{>}}|
 0x003F [QUESTION MARK]                                       |?|
 0x0040 [COMMERCIAL AT]                                       |@|
 0x0041 [LATIN CAPITAL LETTER A]                              |A|
@@ -267,8 +267,8 @@
 0x014D [LATIN SMALL LETTER O WITH MACRON]                    |{\={o}}|
 0x014E [LATIN CAPITAL LETTER O WITH BREVE]                   |{\u{O}}|
 0x014F [LATIN SMALL LETTER O WITH BREVE]                     |{\u{o}}|
-0x0150 [LATIN CAPITAL LETTER O WITH DOUBLE ACUTE]            |{\'{O}}|
-0x0151 [LATIN SMALL LETTER O WITH DOUBLE ACUTE]              |{\'{o}}|
+0x0150 [LATIN CAPITAL LETTER O WITH DOUBLE ACUTE]            |{\H{O}}|
+0x0151 [LATIN SMALL LETTER O WITH DOUBLE ACUTE]              |{\H{o}}|
 0x0152 [LATIN CAPITAL LIGATURE OE]                           |{\OE}|
 0x0153 [LATIN SMALL LIGATURE OE]                             |{\oe}|
 0x0154 [LATIN CAPITAL LETTER R WITH ACUTE]                   |{\'R}|
@@ -315,6 +315,8 @@
 0x017D [LATIN CAPITAL LETTER Z WITH CARON]                   |{\v{Z}}|
 0x017E [LATIN SMALL LETTER Z WITH CARON]                     |{\v{z}}|
 0x0192 [LATIN SMALL LETTER F WITH HOOK]                      |{\textflorin}|
+0x0228 [LATIN CAPITAL LETTER E WITH CEDILLA]                 |{\c{E}}|
+0x0229 [LATIN SMALL LETTER E WITH CEDILLA]                   |{\c{e}}|
 0x02BC [MODIFIER LETTER APOSTROPHE]                          |'|
 0x02C6 [MODIFIER LETTER CIRCUMFLEX ACCENT]                   |{\textasciicircum}|
 0x02C7 [CARON]                                               |{\textasciicaron}|

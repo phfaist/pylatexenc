@@ -76,6 +76,8 @@ utf82latex={
 36:'\\$', 	# character $
 37:'\\%', 	# character %
 38:'\\&', 	# character &
+0x003C: r'\ensuremath{<}', # <
+0x003E: r'\ensuremath{>}', # >
 92:'\\textbackslash', # the \ character itself
 95:'\\_', 	# character _
 123:'\\{', 	# character {
