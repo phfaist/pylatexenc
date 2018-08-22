@@ -899,6 +899,10 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
 
     If `fail_bad_chars=True`, then a `ValueError` is raised if we cannot find a
     character substitution for any non-ascii character.
+
+    .. versionchanged:: 1.3
+
+        Added `fail_bad_chars` switch
     """
 
     s = unicode(s) # make sure s is unicode
