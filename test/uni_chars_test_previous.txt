@@ -243,7 +243,7 @@
 0x0135 [LATIN SMALL LETTER J WITH CIRCUMFLEX]                |{\^{j}}|
 0x0136 [LATIN CAPITAL LETTER K WITH CEDILLA]                 |{\c{K}}|
 0x0137 [LATIN SMALL LETTER K WITH CEDILLA]                   |{\c{k}}|
-0x0138 [LATIN SMALL LETTER KRA]                              |{\textsc\{k\}}|
+0x0138 [LATIN SMALL LETTER KRA]                              |{\textsc{k}}|
 0x0139 [LATIN CAPITAL LETTER L WITH ACUTE]                   |{\'L}|
 0x013A [LATIN SMALL LETTER L WITH ACUTE]                     |{\'l}|
 0x013B [LATIN CAPITAL LETTER L WITH CEDILLA]                 |{\c{L}}|
