@@ -594,7 +594,7 @@ utf82latex = {
 0x2002: r'\enskip',                              # EN SPACE
 0x2003: r'\quad',                                # EM SPACE
 0x2004: r'\hspace{0.33em}',                      # THREE-PER-EM SPACE
-0x2005: r'\hsapce{0.25em}',                      # FOUR-PER-EM SPACE
+0x2005: r'\hspace{0.25em}',                      # FOUR-PER-EM SPACE
 0x2006: r'\hspace{0.167em}',                     # SIX-PER-EM SPACE
 0x2007: r'~',                                    # FIGURE SPACE
 0x2008: r'\;',                                   # PUNCTUATION SPACE

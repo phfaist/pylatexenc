@@ -19,6 +19,8 @@ if PY3:
     def unicode(string): return string
     basestring = str
     unichr = chr
+else:
+    range = xrange
 
 
 from pylatexenc.latexencode import utf8tolatex
