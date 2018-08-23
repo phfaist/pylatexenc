@@ -819,3 +819,242 @@
 0xFB02 [LATIN SMALL LIGATURE FL]                             |fl|
 0xFB03 [LATIN SMALL LIGATURE FFI]                            |ffi|
 0xFB04 [LATIN SMALL LIGATURE FFL]                            |ffl|
+0x1D400 [MATHEMATICAL BOLD CAPITAL A]                         |{\ensuremath{\mathbf{A}}}|
+0x1D401 [MATHEMATICAL BOLD CAPITAL B]                         |{\ensuremath{\mathbf{B}}}|
+0x1D402 [MATHEMATICAL BOLD CAPITAL C]                         |{\ensuremath{\mathbf{C}}}|
+0x1D403 [MATHEMATICAL BOLD CAPITAL D]                         |{\ensuremath{\mathbf{D}}}|
+0x1D404 [MATHEMATICAL BOLD CAPITAL E]                         |{\ensuremath{\mathbf{E}}}|
+0x1D405 [MATHEMATICAL BOLD CAPITAL F]                         |{\ensuremath{\mathbf{F}}}|
+0x1D406 [MATHEMATICAL BOLD CAPITAL G]                         |{\ensuremath{\mathbf{G}}}|
+0x1D407 [MATHEMATICAL BOLD CAPITAL H]                         |{\ensuremath{\mathbf{H}}}|
+0x1D408 [MATHEMATICAL BOLD CAPITAL I]                         |{\ensuremath{\mathbf{I}}}|
+0x1D409 [MATHEMATICAL BOLD CAPITAL J]                         |{\ensuremath{\mathbf{J}}}|
+0x1D40A [MATHEMATICAL BOLD CAPITAL K]                         |{\ensuremath{\mathbf{K}}}|
+0x1D40B [MATHEMATICAL BOLD CAPITAL L]                         |{\ensuremath{\mathbf{L}}}|
+0x1D40C [MATHEMATICAL BOLD CAPITAL M]                         |{\ensuremath{\mathbf{M}}}|
+0x1D40D [MATHEMATICAL BOLD CAPITAL N]                         |{\ensuremath{\mathbf{N}}}|
+0x1D40E [MATHEMATICAL BOLD CAPITAL O]                         |{\ensuremath{\mathbf{O}}}|
+0x1D40F [MATHEMATICAL BOLD CAPITAL P]                         |{\ensuremath{\mathbf{P}}}|
+0x1D410 [MATHEMATICAL BOLD CAPITAL Q]                         |{\ensuremath{\mathbf{Q}}}|
+0x1D411 [MATHEMATICAL BOLD CAPITAL R]                         |{\ensuremath{\mathbf{R}}}|
+0x1D412 [MATHEMATICAL BOLD CAPITAL S]                         |{\ensuremath{\mathbf{S}}}|
+0x1D413 [MATHEMATICAL BOLD CAPITAL T]                         |{\ensuremath{\mathbf{T}}}|
+0x1D414 [MATHEMATICAL BOLD CAPITAL U]                         |{\ensuremath{\mathbf{U}}}|
+0x1D415 [MATHEMATICAL BOLD CAPITAL V]                         |{\ensuremath{\mathbf{V}}}|
+0x1D416 [MATHEMATICAL BOLD CAPITAL W]                         |{\ensuremath{\mathbf{W}}}|
+0x1D417 [MATHEMATICAL BOLD CAPITAL X]                         |{\ensuremath{\mathbf{X}}}|
+0x1D418 [MATHEMATICAL BOLD CAPITAL Y]                         |{\ensuremath{\mathbf{Y}}}|
+0x1D419 [MATHEMATICAL BOLD CAPITAL Z]                         |{\ensuremath{\mathbf{Z}}}|
+0x1D41A [MATHEMATICAL BOLD SMALL A]                           |{\ensuremath{\mathbf{a}}}|
+0x1D41B [MATHEMATICAL BOLD SMALL B]                           |{\ensuremath{\mathbf{b}}}|
+0x1D41C [MATHEMATICAL BOLD SMALL C]                           |{\ensuremath{\mathbf{c}}}|
+0x1D41D [MATHEMATICAL BOLD SMALL D]                           |{\ensuremath{\mathbf{d}}}|
+0x1D41E [MATHEMATICAL BOLD SMALL E]                           |{\ensuremath{\mathbf{e}}}|
+0x1D41F [MATHEMATICAL BOLD SMALL F]                           |{\ensuremath{\mathbf{f}}}|
+0x1D420 [MATHEMATICAL BOLD SMALL G]                           |{\ensuremath{\mathbf{g}}}|
+0x1D421 [MATHEMATICAL BOLD SMALL H]                           |{\ensuremath{\mathbf{h}}}|
+0x1D422 [MATHEMATICAL BOLD SMALL I]                           |{\ensuremath{\mathbf{i}}}|
+0x1D423 [MATHEMATICAL BOLD SMALL J]                           |{\ensuremath{\mathbf{j}}}|
+0x1D424 [MATHEMATICAL BOLD SMALL K]                           |{\ensuremath{\mathbf{k}}}|
+0x1D425 [MATHEMATICAL BOLD SMALL L]                           |{\ensuremath{\mathbf{l}}}|
+0x1D426 [MATHEMATICAL BOLD SMALL M]                           |{\ensuremath{\mathbf{m}}}|
+0x1D427 [MATHEMATICAL BOLD SMALL N]                           |{\ensuremath{\mathbf{n}}}|
+0x1D428 [MATHEMATICAL BOLD SMALL O]                           |{\ensuremath{\mathbf{o}}}|
+0x1D429 [MATHEMATICAL BOLD SMALL P]                           |{\ensuremath{\mathbf{p}}}|
+0x1D42A [MATHEMATICAL BOLD SMALL Q]                           |{\ensuremath{\mathbf{q}}}|
+0x1D42B [MATHEMATICAL BOLD SMALL R]                           |{\ensuremath{\mathbf{r}}}|
+0x1D42C [MATHEMATICAL BOLD SMALL S]                           |{\ensuremath{\mathbf{s}}}|
+0x1D42D [MATHEMATICAL BOLD SMALL T]                           |{\ensuremath{\mathbf{t}}}|
+0x1D42E [MATHEMATICAL BOLD SMALL U]                           |{\ensuremath{\mathbf{u}}}|
+0x1D42F [MATHEMATICAL BOLD SMALL V]                           |{\ensuremath{\mathbf{v}}}|
+0x1D430 [MATHEMATICAL BOLD SMALL W]                           |{\ensuremath{\mathbf{w}}}|
+0x1D431 [MATHEMATICAL BOLD SMALL X]                           |{\ensuremath{\mathbf{x}}}|
+0x1D432 [MATHEMATICAL BOLD SMALL Y]                           |{\ensuremath{\mathbf{y}}}|
+0x1D433 [MATHEMATICAL BOLD SMALL Z]                           |{\ensuremath{\mathbf{z}}}|
+0x1D434 [MATHEMATICAL ITALIC CAPITAL A]                       |{\ensuremath{\mathit{A}}}|
+0x1D435 [MATHEMATICAL ITALIC CAPITAL B]                       |{\ensuremath{\mathit{B}}}|
+0x1D436 [MATHEMATICAL ITALIC CAPITAL C]                       |{\ensuremath{\mathit{C}}}|
+0x1D437 [MATHEMATICAL ITALIC CAPITAL D]                       |{\ensuremath{\mathit{D}}}|
+0x1D438 [MATHEMATICAL ITALIC CAPITAL E]                       |{\ensuremath{\mathit{E}}}|
+0x1D439 [MATHEMATICAL ITALIC CAPITAL F]                       |{\ensuremath{\mathit{F}}}|
+0x1D43A [MATHEMATICAL ITALIC CAPITAL G]                       |{\ensuremath{\mathit{G}}}|
+0x1D43B [MATHEMATICAL ITALIC CAPITAL H]                       |{\ensuremath{\mathit{H}}}|
+0x1D43C [MATHEMATICAL ITALIC CAPITAL I]                       |{\ensuremath{\mathit{I}}}|
+0x1D43D [MATHEMATICAL ITALIC CAPITAL J]                       |{\ensuremath{\mathit{J}}}|
+0x1D43E [MATHEMATICAL ITALIC CAPITAL K]                       |{\ensuremath{\mathit{K}}}|
+0x1D43F [MATHEMATICAL ITALIC CAPITAL L]                       |{\ensuremath{\mathit{L}}}|
+0x1D440 [MATHEMATICAL ITALIC CAPITAL M]                       |{\ensuremath{\mathit{M}}}|
+0x1D441 [MATHEMATICAL ITALIC CAPITAL N]                       |{\ensuremath{\mathit{N}}}|
+0x1D442 [MATHEMATICAL ITALIC CAPITAL O]                       |{\ensuremath{\mathit{O}}}|
+0x1D443 [MATHEMATICAL ITALIC CAPITAL P]                       |{\ensuremath{\mathit{P}}}|
+0x1D444 [MATHEMATICAL ITALIC CAPITAL Q]                       |{\ensuremath{\mathit{Q}}}|
+0x1D445 [MATHEMATICAL ITALIC CAPITAL R]                       |{\ensuremath{\mathit{R}}}|
+0x1D446 [MATHEMATICAL ITALIC CAPITAL S]                       |{\ensuremath{\mathit{S}}}|
+0x1D447 [MATHEMATICAL ITALIC CAPITAL T]                       |{\ensuremath{\mathit{T}}}|
+0x1D448 [MATHEMATICAL ITALIC CAPITAL U]                       |{\ensuremath{\mathit{U}}}|
+0x1D449 [MATHEMATICAL ITALIC CAPITAL V]                       |{\ensuremath{\mathit{V}}}|
+0x1D44A [MATHEMATICAL ITALIC CAPITAL W]                       |{\ensuremath{\mathit{W}}}|
+0x1D44B [MATHEMATICAL ITALIC CAPITAL X]                       |{\ensuremath{\mathit{X}}}|
+0x1D44C [MATHEMATICAL ITALIC CAPITAL Y]                       |{\ensuremath{\mathit{Y}}}|
+0x1D44D [MATHEMATICAL ITALIC CAPITAL Z]                       |{\ensuremath{\mathit{Z}}}|
+0x1D44E [MATHEMATICAL ITALIC SMALL A]                         |{\ensuremath{\mathit{a}}}|
+0x1D44F [MATHEMATICAL ITALIC SMALL B]                         |{\ensuremath{\mathit{b}}}|
+0x1D450 [MATHEMATICAL ITALIC SMALL C]                         |{\ensuremath{\mathit{c}}}|
+0x1D451 [MATHEMATICAL ITALIC SMALL D]                         |{\ensuremath{\mathit{d}}}|
+0x1D452 [MATHEMATICAL ITALIC SMALL E]                         |{\ensuremath{\mathit{e}}}|
+0x1D453 [MATHEMATICAL ITALIC SMALL F]                         |{\ensuremath{\mathit{f}}}|
+0x1D454 [MATHEMATICAL ITALIC SMALL G]                         |{\ensuremath{\mathit{g}}}|
+0x1D456 [MATHEMATICAL ITALIC SMALL I]                         |{\ensuremath{\mathit{i}}}|
+0x1D457 [MATHEMATICAL ITALIC SMALL J]                         |{\ensuremath{\mathit{j}}}|
+0x1D458 [MATHEMATICAL ITALIC SMALL K]                         |{\ensuremath{\mathit{k}}}|
+0x1D459 [MATHEMATICAL ITALIC SMALL L]                         |{\ensuremath{\mathit{l}}}|
+0x1D45A [MATHEMATICAL ITALIC SMALL M]                         |{\ensuremath{\mathit{m}}}|
+0x1D45B [MATHEMATICAL ITALIC SMALL N]                         |{\ensuremath{\mathit{n}}}|
+0x1D45C [MATHEMATICAL ITALIC SMALL O]                         |{\ensuremath{\mathit{o}}}|
+0x1D45D [MATHEMATICAL ITALIC SMALL P]                         |{\ensuremath{\mathit{p}}}|
+0x1D45E [MATHEMATICAL ITALIC SMALL Q]                         |{\ensuremath{\mathit{q}}}|
+0x1D45F [MATHEMATICAL ITALIC SMALL R]                         |{\ensuremath{\mathit{r}}}|
+0x1D460 [MATHEMATICAL ITALIC SMALL S]                         |{\ensuremath{\mathit{s}}}|
+0x1D461 [MATHEMATICAL ITALIC SMALL T]                         |{\ensuremath{\mathit{t}}}|
+0x1D462 [MATHEMATICAL ITALIC SMALL U]                         |{\ensuremath{\mathit{u}}}|
+0x1D463 [MATHEMATICAL ITALIC SMALL V]                         |{\ensuremath{\mathit{v}}}|
+0x1D464 [MATHEMATICAL ITALIC SMALL W]                         |{\ensuremath{\mathit{w}}}|
+0x1D465 [MATHEMATICAL ITALIC SMALL X]                         |{\ensuremath{\mathit{x}}}|
+0x1D466 [MATHEMATICAL ITALIC SMALL Y]                         |{\ensuremath{\mathit{y}}}|
+0x1D467 [MATHEMATICAL ITALIC SMALL Z]                         |{\ensuremath{\mathit{z}}}|
+0x1D468 [MATHEMATICAL BOLD ITALIC CAPITAL A]                  |{\ensuremath{\boldsymbol{\mathit{A}}}}|
+0x1D469 [MATHEMATICAL BOLD ITALIC CAPITAL B]                  |{\ensuremath{\boldsymbol{\mathit{B}}}}|
+0x1D46A [MATHEMATICAL BOLD ITALIC CAPITAL C]                  |{\ensuremath{\boldsymbol{\mathit{C}}}}|
+0x1D46B [MATHEMATICAL BOLD ITALIC CAPITAL D]                  |{\ensuremath{\boldsymbol{\mathit{D}}}}|
+0x1D46C [MATHEMATICAL BOLD ITALIC CAPITAL E]                  |{\ensuremath{\boldsymbol{\mathit{E}}}}|
+0x1D46D [MATHEMATICAL BOLD ITALIC CAPITAL F]                  |{\ensuremath{\boldsymbol{\mathit{F}}}}|
+0x1D46E [MATHEMATICAL BOLD ITALIC CAPITAL G]                  |{\ensuremath{\boldsymbol{\mathit{G}}}}|
+0x1D46F [MATHEMATICAL BOLD ITALIC CAPITAL H]                  |{\ensuremath{\boldsymbol{\mathit{H}}}}|
+0x1D470 [MATHEMATICAL BOLD ITALIC CAPITAL I]                  |{\ensuremath{\boldsymbol{\mathit{I}}}}|
+0x1D471 [MATHEMATICAL BOLD ITALIC CAPITAL J]                  |{\ensuremath{\boldsymbol{\mathit{J}}}}|
+0x1D472 [MATHEMATICAL BOLD ITALIC CAPITAL K]                  |{\ensuremath{\boldsymbol{\mathit{K}}}}|
+0x1D473 [MATHEMATICAL BOLD ITALIC CAPITAL L]                  |{\ensuremath{\boldsymbol{\mathit{L}}}}|
+0x1D474 [MATHEMATICAL BOLD ITALIC CAPITAL M]                  |{\ensuremath{\boldsymbol{\mathit{M}}}}|
+0x1D475 [MATHEMATICAL BOLD ITALIC CAPITAL N]                  |{\ensuremath{\boldsymbol{\mathit{N}}}}|
+0x1D476 [MATHEMATICAL BOLD ITALIC CAPITAL O]                  |{\ensuremath{\boldsymbol{\mathit{O}}}}|
+0x1D477 [MATHEMATICAL BOLD ITALIC CAPITAL P]                  |{\ensuremath{\boldsymbol{\mathit{P}}}}|
+0x1D478 [MATHEMATICAL BOLD ITALIC CAPITAL Q]                  |{\ensuremath{\boldsymbol{\mathit{Q}}}}|
+0x1D479 [MATHEMATICAL BOLD ITALIC CAPITAL R]                  |{\ensuremath{\boldsymbol{\mathit{R}}}}|
+0x1D47A [MATHEMATICAL BOLD ITALIC CAPITAL S]                  |{\ensuremath{\boldsymbol{\mathit{S}}}}|
+0x1D47B [MATHEMATICAL BOLD ITALIC CAPITAL T]                  |{\ensuremath{\boldsymbol{\mathit{T}}}}|
+0x1D47C [MATHEMATICAL BOLD ITALIC CAPITAL U]                  |{\ensuremath{\boldsymbol{\mathit{U}}}}|
+0x1D47D [MATHEMATICAL BOLD ITALIC CAPITAL V]                  |{\ensuremath{\boldsymbol{\mathit{V}}}}|
+0x1D47E [MATHEMATICAL BOLD ITALIC CAPITAL W]                  |{\ensuremath{\boldsymbol{\mathit{W}}}}|
+0x1D47F [MATHEMATICAL BOLD ITALIC CAPITAL X]                  |{\ensuremath{\boldsymbol{\mathit{X}}}}|
+0x1D480 [MATHEMATICAL BOLD ITALIC CAPITAL Y]                  |{\ensuremath{\boldsymbol{\mathit{Y}}}}|
+0x1D481 [MATHEMATICAL BOLD ITALIC CAPITAL Z]                  |{\ensuremath{\boldsymbol{\mathit{Z}}}}|
+0x1D482 [MATHEMATICAL BOLD ITALIC SMALL A]                    |{\ensuremath{\boldsymbol{\mathit{a}}}}|
+0x1D483 [MATHEMATICAL BOLD ITALIC SMALL B]                    |{\ensuremath{\boldsymbol{\mathit{b}}}}|
+0x1D484 [MATHEMATICAL BOLD ITALIC SMALL C]                    |{\ensuremath{\boldsymbol{\mathit{c}}}}|
+0x1D485 [MATHEMATICAL BOLD ITALIC SMALL D]                    |{\ensuremath{\boldsymbol{\mathit{d}}}}|
+0x1D486 [MATHEMATICAL BOLD ITALIC SMALL E]                    |{\ensuremath{\boldsymbol{\mathit{e}}}}|
+0x1D487 [MATHEMATICAL BOLD ITALIC SMALL F]                    |{\ensuremath{\boldsymbol{\mathit{f}}}}|
+0x1D488 [MATHEMATICAL BOLD ITALIC SMALL G]                    |{\ensuremath{\boldsymbol{\mathit{g}}}}|
+0x1D489 [MATHEMATICAL BOLD ITALIC SMALL H]                    |{\ensuremath{\boldsymbol{\mathit{h}}}}|
+0x1D48A [MATHEMATICAL BOLD ITALIC SMALL I]                    |{\ensuremath{\boldsymbol{\mathit{i}}}}|
+0x1D48B [MATHEMATICAL BOLD ITALIC SMALL J]                    |{\ensuremath{\boldsymbol{\mathit{j}}}}|
+0x1D48C [MATHEMATICAL BOLD ITALIC SMALL K]                    |{\ensuremath{\boldsymbol{\mathit{k}}}}|
+0x1D48D [MATHEMATICAL BOLD ITALIC SMALL L]                    |{\ensuremath{\boldsymbol{\mathit{l}}}}|
+0x1D48E [MATHEMATICAL BOLD ITALIC SMALL M]                    |{\ensuremath{\boldsymbol{\mathit{m}}}}|
+0x1D48F [MATHEMATICAL BOLD ITALIC SMALL N]                    |{\ensuremath{\boldsymbol{\mathit{n}}}}|
+0x1D490 [MATHEMATICAL BOLD ITALIC SMALL O]                    |{\ensuremath{\boldsymbol{\mathit{o}}}}|
+0x1D491 [MATHEMATICAL BOLD ITALIC SMALL P]                    |{\ensuremath{\boldsymbol{\mathit{p}}}}|
+0x1D492 [MATHEMATICAL BOLD ITALIC SMALL Q]                    |{\ensuremath{\boldsymbol{\mathit{q}}}}|
+0x1D493 [MATHEMATICAL BOLD ITALIC SMALL R]                    |{\ensuremath{\boldsymbol{\mathit{r}}}}|
+0x1D494 [MATHEMATICAL BOLD ITALIC SMALL S]                    |{\ensuremath{\boldsymbol{\mathit{s}}}}|
+0x1D495 [MATHEMATICAL BOLD ITALIC SMALL T]                    |{\ensuremath{\boldsymbol{\mathit{t}}}}|
+0x1D496 [MATHEMATICAL BOLD ITALIC SMALL U]                    |{\ensuremath{\boldsymbol{\mathit{u}}}}|
+0x1D497 [MATHEMATICAL BOLD ITALIC SMALL V]                    |{\ensuremath{\boldsymbol{\mathit{v}}}}|
+0x1D498 [MATHEMATICAL BOLD ITALIC SMALL W]                    |{\ensuremath{\boldsymbol{\mathit{w}}}}|
+0x1D499 [MATHEMATICAL BOLD ITALIC SMALL X]                    |{\ensuremath{\boldsymbol{\mathit{x}}}}|
+0x1D49A [MATHEMATICAL BOLD ITALIC SMALL Y]                    |{\ensuremath{\boldsymbol{\mathit{y}}}}|
+0x1D49B [MATHEMATICAL BOLD ITALIC SMALL Z]                    |{\ensuremath{\boldsymbol{\mathit{z}}}}|
+0x1D49C [MATHEMATICAL SCRIPT CAPITAL A]                       |{\ensuremath{\mathscr{A}}}|
+0x1D49E [MATHEMATICAL SCRIPT CAPITAL C]                       |{\ensuremath{\mathscr{C}}}|
+0x1D49F [MATHEMATICAL SCRIPT CAPITAL D]                       |{\ensuremath{\mathscr{D}}}|
+0x1D4A2 [MATHEMATICAL SCRIPT CAPITAL G]                       |{\ensuremath{\mathscr{G}}}|
+0x1D4A5 [MATHEMATICAL SCRIPT CAPITAL J]                       |{\ensuremath{\mathscr{J}}}|
+0x1D4A6 [MATHEMATICAL SCRIPT CAPITAL K]                       |{\ensuremath{\mathscr{K}}}|
+0x1D4A9 [MATHEMATICAL SCRIPT CAPITAL N]                       |{\ensuremath{\mathscr{N}}}|
+0x1D4AA [MATHEMATICAL SCRIPT CAPITAL O]                       |{\ensuremath{\mathscr{O}}}|
+0x1D4AB [MATHEMATICAL SCRIPT CAPITAL P]                       |{\ensuremath{\mathscr{P}}}|
+0x1D4AC [MATHEMATICAL SCRIPT CAPITAL Q]                       |{\ensuremath{\mathscr{Q}}}|
+0x1D4AE [MATHEMATICAL SCRIPT CAPITAL S]                       |{\ensuremath{\mathscr{S}}}|
+0x1D4AF [MATHEMATICAL SCRIPT CAPITAL T]                       |{\ensuremath{\mathscr{T}}}|
+0x1D4B0 [MATHEMATICAL SCRIPT CAPITAL U]                       |{\ensuremath{\mathscr{U}}}|
+0x1D4B1 [MATHEMATICAL SCRIPT CAPITAL V]                       |{\ensuremath{\mathscr{V}}}|
+0x1D4B2 [MATHEMATICAL SCRIPT CAPITAL W]                       |{\ensuremath{\mathscr{W}}}|
+0x1D4B3 [MATHEMATICAL SCRIPT CAPITAL X]                       |{\ensuremath{\mathscr{X}}}|
+0x1D4B4 [MATHEMATICAL SCRIPT CAPITAL Y]                       |{\ensuremath{\mathscr{Y}}}|
+0x1D4B5 [MATHEMATICAL SCRIPT CAPITAL Z]                       |{\ensuremath{\mathscr{Z}}}|
+0x1D504 [MATHEMATICAL FRAKTUR CAPITAL A]                      |{\ensuremath{\mathfrak{A}}}|
+0x1D505 [MATHEMATICAL FRAKTUR CAPITAL B]                      |{\ensuremath{\mathfrak{B}}}|
+0x1D507 [MATHEMATICAL FRAKTUR CAPITAL D]                      |{\ensuremath{\mathfrak{D}}}|
+0x1D508 [MATHEMATICAL FRAKTUR CAPITAL E]                      |{\ensuremath{\mathfrak{E}}}|
+0x1D509 [MATHEMATICAL FRAKTUR CAPITAL F]                      |{\ensuremath{\mathfrak{F}}}|
+0x1D50A [MATHEMATICAL FRAKTUR CAPITAL G]                      |{\ensuremath{\mathfrak{G}}}|
+0x1D50D [MATHEMATICAL FRAKTUR CAPITAL J]                      |{\ensuremath{\mathfrak{J}}}|
+0x1D50E [MATHEMATICAL FRAKTUR CAPITAL K]                      |{\ensuremath{\mathfrak{K}}}|
+0x1D50F [MATHEMATICAL FRAKTUR CAPITAL L]                      |{\ensuremath{\mathfrak{L}}}|
+0x1D510 [MATHEMATICAL FRAKTUR CAPITAL M]                      |{\ensuremath{\mathfrak{M}}}|
+0x1D511 [MATHEMATICAL FRAKTUR CAPITAL N]                      |{\ensuremath{\mathfrak{N}}}|
+0x1D512 [MATHEMATICAL FRAKTUR CAPITAL O]                      |{\ensuremath{\mathfrak{O}}}|
+0x1D513 [MATHEMATICAL FRAKTUR CAPITAL P]                      |{\ensuremath{\mathfrak{P}}}|
+0x1D514 [MATHEMATICAL FRAKTUR CAPITAL Q]                      |{\ensuremath{\mathfrak{Q}}}|
+0x1D516 [MATHEMATICAL FRAKTUR CAPITAL S]                      |{\ensuremath{\mathfrak{S}}}|
+0x1D517 [MATHEMATICAL FRAKTUR CAPITAL T]                      |{\ensuremath{\mathfrak{T}}}|
+0x1D518 [MATHEMATICAL FRAKTUR CAPITAL U]                      |{\ensuremath{\mathfrak{U}}}|
+0x1D519 [MATHEMATICAL FRAKTUR CAPITAL V]                      |{\ensuremath{\mathfrak{V}}}|
+0x1D51A [MATHEMATICAL FRAKTUR CAPITAL W]                      |{\ensuremath{\mathfrak{W}}}|
+0x1D51B [MATHEMATICAL FRAKTUR CAPITAL X]                      |{\ensuremath{\mathfrak{X}}}|
+0x1D51C [MATHEMATICAL FRAKTUR CAPITAL Y]                      |{\ensuremath{\mathfrak{Y}}}|
+0x1D51E [MATHEMATICAL FRAKTUR SMALL A]                        |{\ensuremath{\mathfrak{a}}}|
+0x1D51F [MATHEMATICAL FRAKTUR SMALL B]                        |{\ensuremath{\mathfrak{b}}}|
+0x1D520 [MATHEMATICAL FRAKTUR SMALL C]                        |{\ensuremath{\mathfrak{c}}}|
+0x1D521 [MATHEMATICAL FRAKTUR SMALL D]                        |{\ensuremath{\mathfrak{d}}}|
+0x1D522 [MATHEMATICAL FRAKTUR SMALL E]                        |{\ensuremath{\mathfrak{e}}}|
+0x1D523 [MATHEMATICAL FRAKTUR SMALL F]                        |{\ensuremath{\mathfrak{f}}}|
+0x1D524 [MATHEMATICAL FRAKTUR SMALL G]                        |{\ensuremath{\mathfrak{g}}}|
+0x1D525 [MATHEMATICAL FRAKTUR SMALL H]                        |{\ensuremath{\mathfrak{h}}}|
+0x1D526 [MATHEMATICAL FRAKTUR SMALL I]                        |{\ensuremath{\mathfrak{i}}}|
+0x1D527 [MATHEMATICAL FRAKTUR SMALL J]                        |{\ensuremath{\mathfrak{j}}}|
+0x1D528 [MATHEMATICAL FRAKTUR SMALL K]                        |{\ensuremath{\mathfrak{k}}}|
+0x1D529 [MATHEMATICAL FRAKTUR SMALL L]                        |{\ensuremath{\mathfrak{l}}}|
+0x1D52A [MATHEMATICAL FRAKTUR SMALL M]                        |{\ensuremath{\mathfrak{m}}}|
+0x1D52B [MATHEMATICAL FRAKTUR SMALL N]                        |{\ensuremath{\mathfrak{n}}}|
+0x1D52C [MATHEMATICAL FRAKTUR SMALL O]                        |{\ensuremath{\mathfrak{o}}}|
+0x1D52D [MATHEMATICAL FRAKTUR SMALL P]                        |{\ensuremath{\mathfrak{p}}}|
+0x1D52E [MATHEMATICAL FRAKTUR SMALL Q]                        |{\ensuremath{\mathfrak{q}}}|
+0x1D52F [MATHEMATICAL FRAKTUR SMALL R]                        |{\ensuremath{\mathfrak{r}}}|
+0x1D530 [MATHEMATICAL FRAKTUR SMALL S]                        |{\ensuremath{\mathfrak{s}}}|
+0x1D531 [MATHEMATICAL FRAKTUR SMALL T]                        |{\ensuremath{\mathfrak{t}}}|
+0x1D532 [MATHEMATICAL FRAKTUR SMALL U]                        |{\ensuremath{\mathfrak{u}}}|
+0x1D533 [MATHEMATICAL FRAKTUR SMALL V]                        |{\ensuremath{\mathfrak{v}}}|
+0x1D534 [MATHEMATICAL FRAKTUR SMALL W]                        |{\ensuremath{\mathfrak{w}}}|
+0x1D535 [MATHEMATICAL FRAKTUR SMALL X]                        |{\ensuremath{\mathfrak{x}}}|
+0x1D536 [MATHEMATICAL FRAKTUR SMALL Y]                        |{\ensuremath{\mathfrak{y}}}|
+0x1D537 [MATHEMATICAL FRAKTUR SMALL Z]                        |{\ensuremath{\mathfrak{z}}}|
+0x1D538 [MATHEMATICAL DOUBLE-STRUCK CAPITAL A]                |{\ensuremath{\mathbb{A}}}|
+0x1D539 [MATHEMATICAL DOUBLE-STRUCK CAPITAL B]                |{\ensuremath{\mathbb{B}}}|
+0x1D53B [MATHEMATICAL DOUBLE-STRUCK CAPITAL D]                |{\ensuremath{\mathbb{D}}}|
+0x1D53C [MATHEMATICAL DOUBLE-STRUCK CAPITAL E]                |{\ensuremath{\mathbb{E}}}|
+0x1D53D [MATHEMATICAL DOUBLE-STRUCK CAPITAL F]                |{\ensuremath{\mathbb{F}}}|
+0x1D53E [MATHEMATICAL DOUBLE-STRUCK CAPITAL G]                |{\ensuremath{\mathbb{G}}}|
+0x1D540 [MATHEMATICAL DOUBLE-STRUCK CAPITAL I]                |{\ensuremath{\mathbb{I}}}|
+0x1D541 [MATHEMATICAL DOUBLE-STRUCK CAPITAL J]                |{\ensuremath{\mathbb{J}}}|
+0x1D542 [MATHEMATICAL DOUBLE-STRUCK CAPITAL K]                |{\ensuremath{\mathbb{K}}}|
+0x1D543 [MATHEMATICAL DOUBLE-STRUCK CAPITAL L]                |{\ensuremath{\mathbb{L}}}|
+0x1D544 [MATHEMATICAL DOUBLE-STRUCK CAPITAL M]                |{\ensuremath{\mathbb{M}}}|
+0x1D546 [MATHEMATICAL DOUBLE-STRUCK CAPITAL O]                |{\ensuremath{\mathbb{O}}}|
+0x1D54A [MATHEMATICAL DOUBLE-STRUCK CAPITAL S]                |{\ensuremath{\mathbb{S}}}|
+0x1D54B [MATHEMATICAL DOUBLE-STRUCK CAPITAL T]                |{\ensuremath{\mathbb{T}}}|
+0x1D54C [MATHEMATICAL DOUBLE-STRUCK CAPITAL U]                |{\ensuremath{\mathbb{U}}}|
+0x1D54D [MATHEMATICAL DOUBLE-STRUCK CAPITAL V]                |{\ensuremath{\mathbb{V}}}|
+0x1D54E [MATHEMATICAL DOUBLE-STRUCK CAPITAL W]                |{\ensuremath{\mathbb{W}}}|
+0x1D54F [MATHEMATICAL DOUBLE-STRUCK CAPITAL X]                |{\ensuremath{\mathbb{X}}}|
+0x1D550 [MATHEMATICAL DOUBLE-STRUCK CAPITAL Y]                |{\ensuremath{\mathbb{Y}}}|
