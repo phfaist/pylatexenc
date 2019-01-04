@@ -124,6 +124,7 @@ _default_macro_list = (
 
     MacrosDef('includegraphics', True, 1),
 
+    MacrosDef('emph', False, 1),
     MacrosDef('textit', False, 1),
     MacrosDef('textbf', False, 1),
     MacrosDef('textsc', False, 1),

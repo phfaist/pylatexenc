@@ -139,6 +139,7 @@ _default_env_list = [
 _default_macro_list = [
     MacroDef('', discard=True), # default for unknown macros
 
+    MacroDef('emph', discard=False),
     MacroDef('textbf', discard=False),
     MacroDef('textit', discard=False),
     MacroDef('textsl', discard=False),
@@ -176,7 +177,7 @@ _default_macro_list = [
     ("$", "$" ),
     ("{", "{" ),
     ("}", "}" ),
-    ("%", lambda arg: u"%" ), # careful: % is formatting substituion symbol...
+    ("%", lambda arg: u"%" ), # careful: % is formatting substitution symbol...
     ("#", "#" ),
     ("_", "_" ),
 
@@ -510,11 +511,27 @@ class LatexNodes2Text(object):
 
     Additional keyword arguments are flags which may influence the behavior:
 
-    - `keep_inline_math=True|False`: If set to `True`, then inline math is kept using
-      dollar signs, otherwise it is incorporated as normal text.
+    - `keep_inline_math=True|False`: If set to `True`, then inline math is kept
+      using dollar signs, otherwise it is incorporated as normal text.  (By
+      default this is `False`)
 
     - `keep_comments=True|False`: If set to `True`, then LaTeX comments are kept
-      (including the percent-sign); otherwise they are discarded.
+      (including the percent-sign); otherwise they are discarded.  (By default
+      this is `False`)
+
+    - `keep_braced_groups=True|False`: If set to `True`, then braces delimiting
+      a TeX group ``{Like this}`` will be kept in the output, with the contents
+      of the group converted to text as usual.  (By default this is `False`)
+
+    - `keep_braced_groups_minlen=<int>`: If `keep_braced_groups` is set to
+      `True`, then we keep braced groups only if their contents length (after
+      conversion to text) is longer than the given value.  E.g., if
+      `keep_braced_groups_minlen=2`, then ``{\'e}tonnant`` still goes to
+      ``\N{LATIN SMALL LETTER E WITH ACUTE}tonnant`` but ``{\'etonnant}``
+      becomes ``{\N{LATIN SMALL LETTER E WITH ACUTE}tonnant}``.
+
+    .. versionadded: 1.4
+       Added the `keep_braced_groups` flag
     """
     def __init__(self, env_dict=None, macro_dict=None, text_replacements=None, **flags):
         super(LatexNodes2Text, self).__init__()
@@ -532,6 +549,8 @@ class LatexNodes2Text(object):
 
         self.keep_inline_math = flags.pop('keep_inline_math', False)
         self.keep_comments = flags.pop('keep_comments', False)
+        self.keep_braced_groups = flags.pop('keep_braced_groups', False)
+        self.keep_braced_groups_minlen = flags.pop('keep_braced_groups_minlen', 2)
         if flags:
             # any flags left which we haven't recognized
             logger.warning("LatexNodes2Text(): Unknown flag(s) encountered: %r", flags.keys())
@@ -539,21 +558,24 @@ class LatexNodes2Text(object):
 
     def set_tex_input_directory(self, tex_input_directory, latex_walker_init_args=None, strict_input=True):
         """
-        Set where to look for input files when encountering the ``\\input`` or ``\\include`` macro.
+        Set where to look for input files when encountering the ``\\input`` or
+        ``\\include`` macro.
 
-        Alternatively, you may also override :py:meth:`read_input_file()` to implement a
-        custom file lookup mechanism.
+        Alternatively, you may also override :py:meth:`read_input_file()` to
+        implement a custom file lookup mechanism.
 
-        The argument `tex_input_directory` is the directory relative to which to search for input files.
+        The argument `tex_input_directory` is the directory relative to which to
+        search for input files.
 
-        If `strict_input` is set to `True`, then we always check that the referenced file
-        lies within the subtree of `tex_input_directory`, prohibiting for instance hacks
-        with '..' in filenames or using symbolic links to refer to files out of the
-        directory tree.
+        If `strict_input` is set to `True`, then we always check that the
+        referenced file lies within the subtree of `tex_input_directory`,
+        prohibiting for instance hacks with '..' in filenames or using symbolic
+        links to refer to files out of the directory tree.
 
-        The argument `latex_walker_init_args` allows you to specify the parse flags passed
-        to the constructor of :py:class:`pylatexenc.latexwalker.LatexWalker` when parsing
-        the input file.
+        The argument `latex_walker_init_args` allows you to specify the parse
+        flags passed to the constructor of
+        :py:class:`pylatexenc.latexwalker.LatexWalker` when parsing the input
+        file.
         """
         self.tex_input_directory = tex_input_directory
         self.latex_walker_init_args = latex_walker_init_args if latex_walker_init_args else {}
@@ -569,22 +591,23 @@ class LatexNodes2Text(object):
 
     def read_input_file(self, fn):
         """
-        This method may be overridden to implement a custom lookup mechanism when encountering
-        ``\\input`` or ``\\include`` directives.
+        This method may be overridden to implement a custom lookup mechanism when
+        encountering ``\\input`` or ``\\include`` directives.
 
-        The default implementation looks for a file of the given name relative to the
-        directory set by :py:meth:`set_tex_input_directory()`.  If `strict_input=True` was
-        set, we ensure strictly that the file resides in a subtree of the reference input
-        directory (after canonicalizing the paths and resolving all symlinks).
+        The default implementation looks for a file of the given name relative
+        to the directory set by :py:meth:`set_tex_input_directory()`.  If
+        `strict_input=True` was set, we ensure strictly that the file resides in
+        a subtree of the reference input directory (after canonicalizing the
+        paths and resolving all symlinks).
 
-        You may override this method to obtain the input data in however way you see fit.
-        (In that case, a call to `set_tex_input_directory()` may not be needed as that
-        function simply sets properties which are used by the default implementation of
-        `read_input_file()`.)
+        You may override this method to obtain the input data in however way you
+        see fit.  (In that case, a call to `set_tex_input_directory()` may not
+        be needed as that function simply sets properties which are used by the
+        default implementation of `read_input_file()`.)
 
-        This function accepts the referred filename as argument (the argument to the
-        ``\\input`` macro), and should return a string with the file contents (or generate
-        a warning or raise an error).
+        This function accepts the referred filename as argument (the argument to
+        the ``\\input`` macro), and should return a string with the file
+        contents (or generate a warning or raise an error).
         """
         fnfull = os.path.realpath(os.path.join(self.tex_input_directory, fn))
         if self.strict_input:
@@ -592,8 +615,10 @@ class LatexNodes2Text(object):
             # '../..' tricks or via symlinks.
             dirfull = os.path.realpath(self.tex_input_directory)
             if not fnfull.startswith(dirfull):
-                logger.warning("Can't access path '%s' leading outside of mandated directory [strict input mode]",
-                               fn)
+                logger.warning(
+                    "Can't access path '%s' leading outside of mandated directory [strict input mode]",
+                    fn
+                )
                 return ''
 
         if not os.path.exists(fnfull) and os.path.exists(fnfull + '.tex'):
@@ -622,8 +647,10 @@ class LatexNodes2Text(object):
 
         inputtex = self.read_input_file(self.nodelist_to_text([n.nodeargs[0]]).strip())
 
-        return self.nodelist_to_text(latexwalker.LatexWalker(inputtex,
-                                                             **self.latex_walker_init_args).get_latex_nodes()[0])
+        return self.nodelist_to_text(
+            latexwalker.LatexWalker(inputtex, **self.latex_walker_init_args)
+            .get_latex_nodes()[0]
+        )
 
 
     def latex_to_text(self, latex, **parse_flags):
@@ -675,7 +702,10 @@ class LatexNodes2Text(object):
             return ""
         
         if (node.isNodeType(latexwalker.LatexGroupNode)):
-            return "".join([self.node_to_text(n) for n in node.nodelist])
+            contents = self._groupnodecontents_to_text(node)
+            if self.keep_braced_groups and len(contents) >= self.keep_braced_groups_minlen:
+                return "{" + contents + "}"
+            return contents
         
         if (node.isNodeType(latexwalker.LatexMacroNode)):
             # get macro behavior definition.
@@ -690,18 +720,19 @@ class LatexNodes2Text(object):
                     return mac.simplify_repl(node)
                 if ('%' in mac.simplify_repl):
                     try:
-                        return mac.simplify_repl % tuple([self.node_to_text(nn) for nn in node.nodeargs])
+                        return mac.simplify_repl % tuple([self._groupnodecontents_to_text(nn)
+                                                          for nn in node.nodeargs])
                     except (TypeError, ValueError):
                         logger.warning("WARNING: Error in configuration: macro '%s' failed its substitution!",
                                        macroname)
-                        return mac.simplify_repl; # too bad, keep the percent signs as they are...
+                        return mac.simplify_repl # too bad, keep the percent signs as they are...
                 return mac.simplify_repl
             if mac.discard:
                 return ""
             a = node.nodeargs
             if (node.nodeoptarg):
                 a.prepend(node.nodeoptarg)
-            return "".join([self.node_to_text(n) for n in a])
+            return "".join([self._groupnodecontents_to_text(n) for n in a])
 
         if (node.isNodeType(latexwalker.LatexEnvironmentNode)):
             # get environment behavior definition.
@@ -729,6 +760,9 @@ class LatexNodes2Text(object):
 
         # discard anything else.
         return ""
+
+    def _groupnodecontents_to_text(self, groupnode):
+        return "".join([self.node_to_text(n) for n in groupnode.nodelist])
 
 
 

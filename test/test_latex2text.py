@@ -65,6 +65,25 @@ where $i$ is the imaginary unit.
         )
         
 
+    def test_keep_braced_groups(self):
+        self.assertEqual(
+            LatexNodes2Text(keep_braced_groups=True)
+            .nodelist_to_text(LatexWalker(r"\textit{Voil\`a du texte}. Il est \'{e}crit {en fran{\c{c}}ais}")
+                              .get_latex_nodes()[0]),
+            '''Voil\N{LATIN SMALL LETTER A WITH GRAVE} du texte. Il est \N{LATIN SMALL LETTER E WITH ACUTE}crit {en fran\N{LATIN SMALL LETTER C WITH CEDILLA}ais}'''
+        )
+
+        self.assertEqual(
+            LatexNodes2Text(keep_braced_groups=True, keep_braced_groups_minlen=4)
+            .nodelist_to_text(LatexWalker(r"A{XYZ}{ABCD}").get_latex_nodes()[0]),
+            '''AXYZ{ABCD}'''
+        )
+        self.assertEqual(
+            LatexNodes2Text(keep_braced_groups=True, keep_braced_groups_minlen=0)
+            .nodelist_to_text(LatexWalker(r"{A}{XYZ}{ABCD}").get_latex_nodes()[0]),
+            '''{A}{XYZ}{ABCD}'''
+        )
+
 
     def test_input(self):
         latex = r'''ABCDEF fdksanfkld safnkd anfklsa
