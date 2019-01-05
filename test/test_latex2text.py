@@ -8,6 +8,7 @@ import unittest
 import re
 import os
 import os.path
+import logging
 
 from pylatexenc.latexwalker import LatexWalker
 from pylatexenc.latex2text import LatexNodes2Text
@@ -358,6 +359,7 @@ MORENKFDNSN'''
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main()
 #
 

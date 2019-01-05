@@ -45,9 +45,13 @@ import logging
 import sys
 import inspect
 
-if sys.version_info.major > 2:
+if sys.version_info.major >= 3:
     def unicode(string): return string
     basestring = str
+    getfullargspec = inspect.getfullargspec
+else:
+    getfullargspec = inspect.getargspec
+
 
 from . import latexwalker
 
@@ -536,7 +540,7 @@ def _parse_strict_latex_spaces_dict(strict_latex_spaces):
     elif isinstance(strict_latex_spaces, dict):
         d.update(strict_latex_spaces)
         return d
-    elif isinstance(strict_latex_spaces, str):
+    elif isinstance(strict_latex_spaces, basestring):
         if strict_latex_spaces not in _strict_latex_spaces_predef:
             raise ValueError("invalid value for strict_latex_spaces preset: {}"
                              .format(strict_latex_spaces))
@@ -846,7 +850,7 @@ class LatexNodes2Text(object):
 
         def apply_simplify_repl(node, simplify_repl, nodelistargs, what):
             if callable(simplify_repl):
-                if 'l2tobj' in inspect.getfullargspec(simplify_repl)[0]:
+                if 'l2tobj' in getfullargspec(simplify_repl)[0]:
                     # callable accepts an argument named 'l2tobj', provide pointer to self
                     return simplify_repl(node, l2tobj=self)
                 return simplify_repl(node)

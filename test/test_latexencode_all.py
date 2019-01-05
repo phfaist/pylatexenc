@@ -1,5 +1,5 @@
 
-from __future__ import unicode_literals
+from __future__ import unicode_literals, print_function
 
 import unittest
 
@@ -9,7 +9,6 @@ import difflib
 import unicodedata
 import logging
 import os.path
-
 
 if sys.version_info.major >= 3:
     PY3 = True
@@ -34,13 +33,14 @@ class TestLatexEncode(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestLatexEncode, self).__init__(*args, **kwargs)
 
-    def test_pythonunicoderange(self):
-        self.assertGreater(sys.maxunicode, 0xFFFF+1,
-                           "Your python build only supports unicode characters up to U+FFFF."
-                           " Tests of unicode coverage will fail.")
+    # def test_pythonunicoderange(self):
+    #     self.assertGreater(sys.maxunicode, 0xFFFF+1,
+    #                        "Your python build only supports unicode characters up to U+FFFF."
+    #                        " Tests of unicode coverage will fail.")
 
     def test_all(self):
 
+        loglevel = logging.getLogger().level
         logging.getLogger().setLevel(logging.CRITICAL)
 
         def fn(x, bdir=os.path.realpath(os.path.abspath(os.path.dirname(__file__)))):
@@ -69,6 +69,17 @@ class TestLatexEncode(unittest.TestCase):
             a = reff.readlines()
             b = testf.readlines()
             
+        logging.getLogger().setLevel(loglevel)
+        logger = logging.getLogger(__name__)
+
+        # only check up to the supported unicode range
+        if sys.maxunicode < 0x10FFFF:
+            logger.warning("Only checking up to unicode U+%X, you python build doesn't support higher",
+                           sys.maxunicode)
+            afiltered = [ aline for aline in a
+                          if int(aline[:aline.find(' ')], 0) < sys.maxunicode ]
+            a = afiltered
+            
         s = difflib.unified_diff(a, b,
                                  fromfile='uni_chars_test_previous.txt',
                                  tofile='_tmp_uni_chars_test.temp.txt')
@@ -79,6 +90,7 @@ class TestLatexEncode(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main()
 #
 

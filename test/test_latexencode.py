@@ -1,5 +1,7 @@
 import unittest
 import sys
+import logging
+
 if sys.version_info.major > 2:
     def unicode(string): return string
     basestring = str
@@ -41,6 +43,7 @@ class TestLatexEncode(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     unittest.main()
 #
 
