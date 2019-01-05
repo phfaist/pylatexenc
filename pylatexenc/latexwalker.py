@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2015 Philippe Faist
+# Copyright (c) 2018 Philippe Faist
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -279,8 +280,8 @@ class LatexToken(object):
     newlines.
 
     The `post_space` is only used for 'macro' and 'comment' tokens, and it
-    stores any spaces encountered after a macro, or the newline followed by
-    spaces that terminates a LaTeX comment.
+    stores any spaces encountered after a macro, or the newline with any
+    following spaces that terminates a LaTeX comment.
 
     The `tok` field may be one of:
 
@@ -325,7 +326,6 @@ class LatexToken(object):
         environment delimiter.
 
         The `arg` is the string value of the delimiter in question ('$')
-
     """
     def __init__(self, tok, arg, pos, len, pre_space, post_space=''):
         self.tok = tok
@@ -335,7 +335,7 @@ class LatexToken(object):
         self.pre_space = pre_space
         self.post_space = post_space
         self._fields = ['tok', 'arg', 'pos', 'len', 'pre_space']
-        if self.tok == 'macro':
+        if self.tok in ('macro', 'comment'):
             self._fields.append('post_space')
         super(LatexToken, self).__init__()
 
@@ -370,7 +370,8 @@ class LatexNode(object):
     """
     Represents an abstract 'node' of the latex document.
 
-    Use :py:meth:`nodeType()` to figure out what type of node this is.
+    Use :py:meth:`nodeType()` to figure out what type of node this is, and
+    :py:meth:`isNodeType()` to test whether it is of a given type.
     """
     def __init__(self, **kwargs):
         """
@@ -415,12 +416,19 @@ class LatexNode(object):
 
 class LatexCharsNode(LatexNode):
     """
-    A string of characters in the LaTeX document, without any special meaning.
+    A string of characters in the LaTeX document, without any special LaTeX code.
+
+    .. py:attribute:: chars
+
+       The string of characters represented by this node.
+
     """
     def __init__(self, chars, **kwargs):
         r"""
-        Arguments:
+        Constructor arguments:
+
             - `chars`: the actual characters.
+
         """
         super(LatexCharsNode, self).__init__(**kwargs)
         self._fields = ('chars',)
@@ -431,13 +439,15 @@ class LatexCharsNode(LatexNode):
 
 class LatexGroupNode(LatexNode):
     r"""
-    A LaTeX group, i.e. `{...}`.
+    A LaTeX group delimited by braces, ``{like this}``.
+
+    .. py:attribute:: nodelist
+
+       A list of nodes describing the contents of the LaTeX braced group.  Each
+       item of the list is a :py:class:`LatexNode`.
+
     """
     def __init__(self, nodelist, **kwargs):
-        """
-        Arguments:
-            - `nodelist`: a list of nodes which comprise the group.
-        """
         super(LatexGroupNode, self).__init__(**kwargs)
         self._fields = ('nodelist',)
         self.nodelist = nodelist
@@ -446,8 +456,18 @@ class LatexGroupNode(LatexNode):
         return LatexGroupNode
 
 class LatexCommentNode(LatexNode):
-    """
+    r"""
     A LaTeX comment, delimited by a percent sign until the end of line.
+
+    .. py:attribute:: comment
+
+       The comment string, not including the '%' sign nor the following newline
+
+    .. py:attribute:: comment_post_space
+
+       The newline that terminated the comment possibly followed by spaces
+       (e.g., indentation spaces of the next line)
+
     """
     def __init__(self, comment, comment_post_space='', **kwargs):
         super(LatexCommentNode, self).__init__(**kwargs)
@@ -461,26 +481,27 @@ class LatexCommentNode(LatexNode):
 class LatexMacroNode(LatexNode):
     r"""
     Represents a 'macro' type node, e.g. '\textbf'
+
+    .. py:attribute:: macroname
+
+       The name of the macro (string), *without* the leading backslash.
+
+    .. py:attribute:: nodeoptarg
+
+       If non-`None`, this corresponds to the optional argument of the macro.
+
+    .. py:attribute:: nodeargs
+
+       A list of arguments to the macro. Each item in the list is a
+       :py:class:`LatexNode`.
+
+    .. py:attribute:: macro_post_space
+
+       Any spaces that were encountered immediately after the macro.
+
     """
     def __init__(self, macroname, nodeoptarg=None, nodeargs=[], macro_post_space='',
                  **kwargs):
-        r"""
-        Represents a 'macro' type node, e.g. '\textbf'
-
-        Arguments:
-
-            - `macroname`: the name of the macro (string), *without* the leading
-              backslash
-
-            - `nodeoptarg`: if non-`None`, this corresponds to the optional argument
-              of the macro
-
-            - `nodeargs`: a list of arguments to the macro. Each item in the list
-              should be a LatexNode.
-
-            - `macro_post_space`: the spaces encountered immediately after the
-              macro.
-        """
         super(LatexMacroNode, self).__init__(**kwargs)
         self._fields = ('macroname','nodeoptarg','nodeargs','macro_post_space')
         self.macroname = macroname
@@ -493,21 +514,31 @@ class LatexMacroNode(LatexNode):
 
 class LatexEnvironmentNode(LatexNode):
     r"""
-    A LaTeX Environment Node, i.e. `\begin{something} ... \end{something}`.
+    A LaTeX Environment Node, i.e. ``\begin{something} ... \end{something}``.
 
-    Arguments:
-        - `envname`: the name of the environment ('itemize', 'equation', ...)
-        - `nodelist`: a list of :py:class:`LatexNode`'s that represent all the
-          contents between the `\begin{...}` instruction and the `\end{...}`
-          instruction.
-        - `optargs`: any possible optional argument passed to the `\begin{...}`
-          instruction, for example in `\begin{enumerate}[label=\roman*)]
-          (Currently, only a single optional argument is parsed, but this argument
-          still accepts anyway a list of :py:class:`LatexNode`'s.)
-        - `args`: any possible regular arguments passed to the `\begin{...}`
-          instruction, for example in `\begin{tabular}{clr}`. Currently, only a
-          single regular argument is parsed at maximum, but this is anyway a
-          list of :py:class:`LatexNode`'s.
+    .. py:attribute:: envname
+
+       The name of the environment ('itemize', 'equation', ...)
+
+    .. py:attribute:: nodelist
+
+       A list of :py:class:`LatexNode`'s that represent all the contents between
+       the ``\begin{...}`` instruction and the ``\end{...}`` instruction.
+
+    .. py:attribute:: optargs
+
+       Any possible optional argument passed to the ``\begin{...}`` instruction,
+       for example in ``\begin{enumerate}[label=\roman*)]`` (Currently, only a
+       single optional argument is parsed, but this attribute is still a list of
+       :py:class:`LatexNode`'s.
+
+    .. py:attribute:: args
+
+       Any possible regular arguments passed to the ``\begin{...}`` instruction,
+       for example in ``\begin{tabular}{clr}``. Currently, at most a single
+       regular argument is parsed, but this is anyway a list of
+       :py:class:`LatexNode`'s
+
     """
     
     def __init__(self, envname, nodelist, optargs=[], args=[], **kwargs):
@@ -521,14 +552,31 @@ class LatexEnvironmentNode(LatexNode):
     def nodeType(self):
         return LatexEnvironmentNode
 
+
 class LatexMathNode(LatexNode):
     r"""
     A Math node type.
 
     Note that currently only 'inline' math environments are detected.
 
-    Arguments:
-        - `displaytype`: either 'inline' or 'display'
+    .. py:attribute:: displaytype
+
+       Either 'inline' or 'display', to indicate an inline math block or a
+       display math block. (Note that math environments such as
+       `\begin{equation}...\end{equation}`, are reported as
+       :py:class:`LatexEnvironmentNode`'s, and not as
+       :py:class:`LatexMathNode`'s.
+
+    .. note::
+
+       Currently, the 'display' type is never used.  Display blocks delimited
+       e.g. by ``$$ .. $$`` or ``\[ ... \]`` are always reported as regular text
+       with :py:class:`LatexCharsNode`.  This might change in the future.
+
+    .. py:attribute:: nodelist
+    
+       The contents of the environment, given as a list of
+       :py:class:`LatexNode`'s.
     """
     def __init__(self, displaytype, nodelist=[], **kwargs):
         super(LatexMathNode, self).__init__(**kwargs)

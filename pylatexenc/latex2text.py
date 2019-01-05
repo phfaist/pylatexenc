@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2015 Philippe Faist
+# Copyright (c) 2018 Philippe Faist
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +33,7 @@ The main class is :py:class:`LatexNodes2Text`.  For a quick start, try::
     from pylatexenc.latex2text import LatexNodes2Text
     
     latex = "... LaTeX code ..."
-    text = LatexNodes2Text().latex_to_text(latex)
+    text = LatexNodes2Text(strict_latex_spaces=True).latex_to_text(latex)
 
 """
 

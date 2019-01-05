@@ -36,19 +36,27 @@ Data Node Classes and Helpers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: pylatexenc.latexwalker.LatexToken
+   :members:
 
 .. autoclass:: pylatexenc.latexwalker.LatexNode
+   :members:
 
 .. autoclass:: pylatexenc.latexwalker.LatexCharsNode
+   :show-inheritance:
 
 .. autoclass:: pylatexenc.latexwalker.LatexGroupNode
+   :show-inheritance:
 
 .. autoclass:: pylatexenc.latexwalker.LatexCommentNode
+   :show-inheritance:
 
 .. autoclass:: pylatexenc.latexwalker.LatexMacroNode
+   :show-inheritance:
 
 .. autoclass:: pylatexenc.latexwalker.LatexEnvironmentNode
+   :show-inheritance:
 
 .. autoclass:: pylatexenc.latexwalker.LatexMathNode
+   :show-inheritance:
 
 

@@ -50,7 +50,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'pylatexenc'
-copyright = '2017, Philippe Faist'
+copyright = '2019, Philippe Faist'
 author = 'Philippe Faist'
 
 # The version info for the project you're documenting, acts as replacement for
