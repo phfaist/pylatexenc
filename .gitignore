@@ -4,3 +4,4 @@ pylatexenc.egg-info
 dist
 build
 doc/_build
+.cache

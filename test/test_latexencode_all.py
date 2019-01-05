@@ -8,6 +8,7 @@ import codecs
 import difflib
 import unicodedata
 import logging
+import os.path
 
 
 if sys.version_info.major >= 3:
@@ -42,7 +43,10 @@ class TestLatexEncode(unittest.TestCase):
 
         logging.getLogger().setLevel(logging.CRITICAL)
 
-        with codecs.open('_tmp_uni_chars_test.temp.txt', 'w', encoding='utf-8') as testf:
+        def fn(x, bdir=os.path.realpath(os.path.abspath(os.path.dirname(__file__)))):
+            return os.path.join(bdir, x)
+
+        with codecs.open(fn('_tmp_uni_chars_test.temp.txt'), 'w', encoding='utf-8') as testf:
             
             for i in range(0x10FFFF):
                 # iter over all valid unicode characters
@@ -60,8 +64,8 @@ class TestLatexEncode(unittest.TestCase):
                     continue
                 testf.write(enc)
 
-        with codecs.open('uni_chars_test_previous.txt', 'r', encoding='utf-8') as reff, \
-             codecs.open('_tmp_uni_chars_test.temp.txt', 'r', encoding='utf-8') as testf:
+        with codecs.open(fn('uni_chars_test_previous.txt'), 'r', encoding='utf-8') as reff, \
+             codecs.open(fn('_tmp_uni_chars_test.temp.txt'), 'r', encoding='utf-8') as testf:
             a = reff.readlines()
             b = testf.readlines()
             

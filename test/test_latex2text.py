@@ -6,7 +6,8 @@ from __future__ import unicode_literals, print_function
 import unittest
 
 import re
-
+import os
+import os.path
 
 from pylatexenc.latexwalker import LatexWalker
 from pylatexenc.latex2text import LatexNodes2Text
@@ -297,11 +298,15 @@ where i is the imaginary unit.
 
 MORENKFDNSN'''
 
+        testdir = os.path.realpath(os.path.abspath(os.path.dirname(__file__)))
+
         l2t = LatexNodes2Text()
-        l2t.set_tex_input_directory('.')
+        l2t.set_tex_input_directory(testdir)
+
+        output = l2t.nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0])
 
         self.assertEqualUpToWhitespace(
-            l2t.nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
+            output,
             correct_text
         )
 
@@ -329,13 +334,13 @@ MORENKFDNSN'''
 
         # make sure that the \input{} directive failed to include the file.
         l2t = LatexNodes2Text()
-        l2t.set_tex_input_directory('./dummy')
+        l2t.set_tex_input_directory(os.path.join(testdir, 'dummy'))
         self.assertEqualUpToWhitespace(
             l2t.nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
             correct_text_safe
         )
         # but without the strict_input flag, it can access it.
-        l2t.set_tex_input_directory('./dummy', strict_input=False)
+        l2t.set_tex_input_directory(os.path.join(testdir, 'dummy'), strict_input=False)
         self.assertEqualUpToWhitespace(
             l2t.nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
             correct_text_unsafe

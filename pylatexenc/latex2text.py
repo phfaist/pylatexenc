@@ -718,6 +718,8 @@ class LatexNodes2Text(object):
             logger.warning(u"Error, file doesn't exist: '%s'", fn)
             return ''
         
+        logger.debug("Reading input file %r", fnfull)
+
         try:
             with open(fnfull) as f:
                 return f.read()
@@ -731,12 +733,12 @@ class LatexNodes2Text(object):
         # recurse into files upon '\input{}'
         #
         
-        if (len(n.nodeargs) != 1):
+        if len(n.nodeargs) != 1:
             logger.warning(u"Expected exactly one argument for '\\input' ! Got = %r", n.nodeargs)
 
         inputtex = self.read_input_file(self.nodelist_to_text([n.nodeargs[0]]).strip())
 
-        return self.nodelist_to_text(
+        return self._nodelistcontents_to_text(
             latexwalker.LatexWalker(inputtex, **self.latex_walker_init_args)
             .get_latex_nodes()[0]
         )
