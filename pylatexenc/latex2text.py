@@ -972,7 +972,10 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
        Please use :py:class:`LatexNodes2Text` instead.
     """
 
-    return LatexNodes2Text(keep_inline_math=keep_inline_math, keep_comments=keep_comments).nodelist_to_text(nodelist)
+    return LatexNodes2Text(
+        keep_inline_math=keep_inline_math,
+        keep_comments=keep_comments
+    ).nodelist_to_text(nodelist)
 
 
 

@@ -728,7 +728,9 @@ class LatexWalker(object):
                 i = 2
                 macro = s[pos+1] # next char is necessarily part of macro
                 # following chars part of macro only if all are alphabetical
+                isalphamacro = False
                 if (s[pos+1].isalpha()):
+                    isalphamacro = True
                     while pos+i<len(s) and s[pos+i].isalpha():
                         macro += s[pos+i]
                         i += 1
@@ -758,9 +760,11 @@ class LatexWalker(object):
 
                 # get the following whitespace, and store it in the macro's post_space
                 post_space = ''
-                while pos+i<len(s) and s[pos+i].isspace():
-                    post_space += s[pos+i]
-                    i += 1
+                if isalphamacro:
+                    # important, LaTeX does not consume space after non-alpha macros, like \&
+                    while pos+i<len(s) and s[pos+i].isspace():
+                        post_space += s[pos+i]
+                        i += 1
 
                 return LatexToken(tok='macro', arg=macro, pos=pos, len=i,
                                   pre_space=space, post_space=post_space)
@@ -772,11 +776,13 @@ class LatexWalker(object):
                 if m is not None:
                     arglen = m.start() # relative to pos already
                     mlen = m.end() # relative to pos already
+                    mspace = m.group()
                 else:
                     arglen = len(s)-pos# [  ==len(s[pos:])  ]
                     mlen = arglen
+                    mspace = ''
                 return LatexToken(tok='comment', arg=s[pos+1:pos+arglen], pos=pos, len=mlen,
-                                  pre_space=space, post_space=m.group())
+                                  pre_space=space, post_space=mspace)
 
             openbracechars = '{'
             closebracechars = '}'

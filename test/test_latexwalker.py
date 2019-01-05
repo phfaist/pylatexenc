@@ -18,7 +18,7 @@ class TestLatexWalker(unittest.TestCase):
     
     def test_get_token(self):
         
-        latextext = r'''Text and \`accent and \textbf{bold text} and $\vec b$ more stuff for Fran\c cois
+        latextext = r'''Text \`accent and \textbf{bold text} and $\vec b$ vector \& also Fran\c cois
 \begin{enumerate}[(i)]
 \item Hi there!  % here goes a comment
 \item[a] Hello!  @@@
@@ -39,6 +39,9 @@ class TestLatexWalker(unittest.TestCase):
         p = latextext.find(r'\vec') # post-space
         self.assertEqual(lw.get_token(pos=p),
                          LatexToken(tok='macro', arg='vec', pos=p, len=5, pre_space='', post_space=' '))
+        p = latextext.find(r'\&')-1 # pre-space and *no* post-space
+        self.assertEqual(lw.get_token(pos=p),
+                         LatexToken(tok='macro', arg='&', pos=p+1, len=2, pre_space=' ', post_space=''))
         p = latextext.find(r'\begin')
         self.assertEqual(lw.get_token(pos=p, environments=False),
                          LatexToken(tok='macro', arg='begin', pos=p, len=6, pre_space=''))
