@@ -33,7 +33,7 @@ The main class is :py:class:`LatexNodes2Text`.  For a quick start, try::
     from pylatexenc.latex2text import LatexNodes2Text
     
     latex = "... LaTeX code ..."
-    text = LatexNodes2Text(strict_latex_spaces='fix-macros').latex_to_text(latex)
+    text = LatexNodes2Text(strict_latex_spaces='macros').latex_to_text(latex)
 
 """
 
@@ -510,7 +510,7 @@ _strict_latex_spaces_predef = {
         'after-comment': False,
         'in-equations': None,
     },
-    'fix-macros': {
+    'macros': {
         'between-macro-and-chars': True,
         'between-latex-constructs': True,
         'after-comment': False,
@@ -582,9 +582,9 @@ class LatexNodes2Text(object):
       aesthetic, but this behavior is mostly there for historical reasons].
 
       You may also use one of the presets
-      `strict_latex_spaces='default'|'fix-macros'|'except-in-equations'`, which
+      `strict_latex_spaces='default'|'macros'|'except-in-equations'`, which
       allow for finer control of how whitespace is handled. The 'default' is the
-      same as `False`. Using 'fix-macros' will make macros and other sequences
+      same as `False`. Using 'macros' will make macros and other sequences
       of LaTeX constructions obey LaTeX space rules, but will keep indentations
       after comments and more liberal whitespace rules in equations. The
       'except-in-equations' preset goes as you'd expect, setting strict latex
@@ -598,7 +598,7 @@ class LatexNodes2Text(object):
       be another dictionary with the same keys to override values in equations.
 
       In the future, the default value of this setting might change, e.g., to
-      'fix-macros'.
+      'macros'.
 
     - `keep_braced_groups=True|False`: If set to `True`, then braces delimiting
       a TeX group ``{Like this}`` will be kept in the output, with the contents
