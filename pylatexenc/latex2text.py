@@ -518,7 +518,7 @@ class LatexNodes2Text(object):
       (including the percent-sign); otherwise they are discarded.  (By default
       this is `False`)
 
-    - `strict_latex_behavior=True|False`: If set to `True`, then a whitespace following
+    - `strict_latex_spaces=True|False`: If set to `True`, then a whitespace following
       a bare macro (i.e. w/o any delimiting characters like '}') is consumed/removed
       like LaTeX; otherwise it is kept.
 
@@ -534,7 +534,7 @@ class LatexNodes2Text(object):
       becomes ``{\N{LATIN SMALL LETTER E WITH ACUTE}tonnant}``.
 
     .. versionadded: 1.4
-       Added the `strict_latex_behavior` and the `keep_braced_groups` flags
+       Added the `strict_latex_spaces` and the `keep_braced_groups` flags
 
     """
     def __init__(self, env_dict=None, macro_dict=None, text_replacements=None, **flags):
@@ -553,7 +553,7 @@ class LatexNodes2Text(object):
 
         self.keep_inline_math = flags.pop('keep_inline_math', False)
         self.keep_comments = flags.pop('keep_comments', False)
-        self.strict_latex_behavior = flags.pop('strict_latex_behavior', False)
+        self.strict_latex_spaces = flags.pop('strict_latex_spaces', False)
         self.keep_braced_groups = flags.pop('keep_braced_groups', False)
         self.keep_braced_groups_minlen = flags.pop('keep_braced_groups_minlen', 2)
 
@@ -673,13 +673,14 @@ class LatexNodes2Text(object):
         """
         Extracts text from a node list. `nodelist` is a list of nodes as returned by
         :py:meth:`pylatexenc.latexwalker.LatexWalker.get_latex_nodes()`.
+
+        In addition to converting each node in the list to text using
+        `node_to_text()`, we apply some global replacements and fine-tuning to
+        the resulting text to account for `text_replacements` (e.g., to fix
+        quotes, tab alignment ``&`` chars, etc.)
         """
 
-        if self.strict_latex_behavior:
-            modlist = self._remove_a_whitespace_after_bare_macro(nodelist)
-            s = "".join( ( self.node_to_text(n) for n in modlist ) )
-        else:
-            s = "".join( ( self.node_to_text(n) for n in nodelist ) )
+        s = self._nodelistcontents_to_text(nodelist)
 
         # now, perform suitable replacements
         for pattern, replacement in self.text_replacements:
@@ -695,82 +696,100 @@ class LatexNodes2Text(object):
 
         return s
 
-    
-    def _remove_a_whitespace_after_bare_macro(self, nodelist):
-        """ to strictly follow LaTeX's behavior
 
-        If the leftmost character in a :py:class:`pylatexenc.latexwalker.LatexCharsNode`
-        is a whitespace and the previous node is a BARE
-        :py:class:`pylatexenc.latexwalker.LatexMacroNode` (without a delimiting character,
-        e.g. '}', then the space is removed.
+    def _nodelistcontents_to_text(self, nodelist):
         """
-        modlist = []
-        prevBareMacro = False
+        Turn the node list to text representations of each node.  Basically apply
+        `node_to_text()` to each node.
+        """
+        s = ''
+        prev_node = None
         for node in nodelist:
-            if (node.isNodeType(latexwalker.LatexCharsNode)):
-                chars = node.chars
-                if prevBareMacro and chars[0] == ' ': chars = chars[1:]
-                if len(chars):
-                    modlist.append(latexwalker.LatexCharsNode(chars))
-                prevBareMacro = False
-            # if not, just append to modlist. also check and record whether it's bare macro or not
-            else:
-                modlist.append(node)
-                prevBareMacro = True if (node.isNodeType(latexwalker.LatexMacroNode) and len(node.nodeargs)==0) \
-                    else False
+            if self._is_bare_macro_node(prev_node) and node.isNodeType(latexwalker.LatexCharsNode):
+                if not self.strict_latex_spaces:
+                    # after a macro with absolutely no arguments, include post_space
+                    # in output by default if there are other chars that follow.
+                    # This is for more breathing space (especially in equations(?)),
+                    # and for compatibility with earlier versions of pylatexenc (<=
+                    # 1.3).  This is NOT LaTeX' default behavior (see issue #11), so
+                    # only do this if `strict_latex_spaces=False`.
+                    s += prev_node.macro_post_space
+            s += self.node_to_text(node)
+            prev_node = node
+        return s
 
-        return modlist
-
-
-    def node_to_text(self, node):
+    def node_to_text(self, node, prev_node_hint=None):
         """
         Return the textual representation of the given `node`.
+
+        If `prev_node_hint` is specified, then the current node is formatted
+        suitably as following the node given in `prev_node_hint`.  This might
+        affect how much space we keep/discard, etc.
         """
-        if (node is None):
+        if node is None:
             return ""
         
-        if (node.isNodeType(latexwalker.LatexCharsNode)):
+        if node.isNodeType(latexwalker.LatexCharsNode):
+            # Unless in strict latex spaces mode, ignore nodes consisting only
+            # of empty chars, as this tends to produce too much space...
+            if not self.strict_latex_spaces and len(node.chars.strip()) == 0:
+                return ""
             return node.chars
         
-        if (node.isNodeType(latexwalker.LatexCommentNode)):
-            if (self.keep_comments):
-                return '%'+node.comment+'\n'
-            return ""
+        if node.isNodeType(latexwalker.LatexCommentNode):
+            if self.keep_comments and self.strict_latex_spaces:
+                return '%' + node.comment + '\n'
+            elif self.keep_comments:
+                # default spaces, i.e., keep what spaces were already there after the comment
+                return '%' + node.comment + node.comment_post_space
+            else:
+                return "" # strict latex spaces: no spaces at all
         
-        if (node.isNodeType(latexwalker.LatexGroupNode)):
+        if node.isNodeType(latexwalker.LatexGroupNode):
             contents = self._groupnodecontents_to_text(node)
             if self.keep_braced_groups and len(contents) >= self.keep_braced_groups_minlen:
                 return "{" + contents + "}"
             return contents
+
+        def apply_simplify_repl(node, simplify_repl, nodelistargs, what):
+            if (callable(simplify_repl)):
+                return simplify_repl(node)
+            if ('%' in simplify_repl):
+                try:
+                    return simplify_repl % tuple([self._groupnodecontents_to_text(nn)
+                                                  for nn in nodelistargs])
+                except (TypeError, ValueError):
+                    logger.warning(
+                        "WARNING: Error in configuration: {} failed its substitution!".format(what)
+                    )
+                    return simplify_repl # too bad, keep the percent signs as they are...
+            return simplify_repl
+            
         
-        if (node.isNodeType(latexwalker.LatexMacroNode)):
+        if node.isNodeType(latexwalker.LatexMacroNode):
             # get macro behavior definition.
             macroname = node.macroname.rstrip('*')
-            if (macroname in self.macro_dict):
+            if macroname in self.macro_dict:
                 mac = self.macro_dict[macroname]
             else:
                 # no predefined behavior, use default:
                 mac = self.macro_dict['']
-            if mac.simplify_repl:
-                if (callable(mac.simplify_repl)):
-                    return mac.simplify_repl(node)
-                if ('%' in mac.simplify_repl):
-                    try:
-                        return mac.simplify_repl % tuple([self._groupnodecontents_to_text(nn)
-                                                          for nn in node.nodeargs])
-                    except (TypeError, ValueError):
-                        logger.warning("WARNING: Error in configuration: macro '%s' failed its substitution!",
-                                       macroname)
-                        return mac.simplify_repl # too bad, keep the percent signs as they are...
-                return mac.simplify_repl
-            if mac.discard:
-                return ""
-            a = node.nodeargs
-            if (node.nodeoptarg):
-                a.prepend(node.nodeoptarg)
-            return "".join([self._groupnodecontents_to_text(n) for n in a])
 
-        if (node.isNodeType(latexwalker.LatexEnvironmentNode)):
+            def get_macro_str_repl(node, macroname, mac):
+                if mac.simplify_repl:
+                    return apply_simplify_repl(node, mac.simplify_repl, node.nodeargs,
+                                               what="macro '%s'"%(macroname))
+                if mac.discard:
+                    return ""
+                a = node.nodeargs
+                if (node.nodeoptarg):
+                    a.prepend(node.nodeoptarg)
+                return "".join([self._groupnodecontents_to_text(n) for n in a])
+
+            macrostr = get_macro_str_repl(node, macroname, mac)
+            return macrostr
+
+        if node.isNodeType(latexwalker.LatexEnvironmentNode):
             # get environment behavior definition.
             envname = node.envname.rstrip('*')
             if (envname in self.env_dict):
@@ -779,16 +798,13 @@ class LatexNodes2Text(object):
                 # no predefined behavior, use default:
                 envdef = self.env_dict['']
             if envdef.simplify_repl:
-                if (callable(envdef.simplify_repl)):
-                    return envdef.simplify_repl(node)
-                if ('%' in envdef.simplify_repl):
-                    return envdef.simplify_repl % ("".join([self.node_to_text(nn) for nn in node.nodelist]))
-                return envdef.simplify_repl
+                return apply_simplify_repl(node, envdef.simplify_repl, node.nodelist,
+                                           what="environment '%s'"%(envname))
             if envdef.discard:
                 return ""
             return "".join([self.node_to_text(n) for n in node.nodelist])
 
-        if (node.isNodeType(latexwalker.LatexMathNode)):
+        if node.isNodeType(latexwalker.LatexMathNode):
             # if we have a math node, this means we care about math modes and we should keep this verbatim.
             return latexwalker.math_node_to_latex(node)
 
@@ -797,8 +813,14 @@ class LatexNodes2Text(object):
         # discard anything else.
         return ""
 
+    def _is_bare_macro_node(self, node):
+        return (node is not None and
+                node.isNodeType(latexwalker.LatexMacroNode) and 
+                node.nodeoptarg is None and 
+                len(node.nodeargs) == 0)
+
     def _groupnodecontents_to_text(self, groupnode):
-        return "".join([self.node_to_text(n) for n in groupnode.nodelist])
+        return self._nodelistcontents_to_text(groupnode.nodelist)
 
 
 

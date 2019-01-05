@@ -259,33 +259,40 @@ class LatexToken(object):
     r"""
     Represents a token read from the LaTeX input.
 
-    This is not the same thing as a LaTeX token, it's just a part of the input which we
-    treat in the same way (e.g. a bunch of content characters, a comment, a macro, etc.)
+    This is not the same thing as a LaTeX token, it's just a part of the input
+    which we treat in the same way (e.g. a bunch of content characters, a
+    comment, a macro, etc.)
 
-    Information about the object is stored into the fields `tok` and `arg`. The `tok`
-    field is a string which identifies the type of the token. The `arg` depends on what
-    `tok` is, and describes the actual input.
+    Information about the object is stored into the fields `tok` and `arg`. The
+    `tok` field is a string which identifies the type of the token. The `arg`
+    depends on what `tok` is, and describes the actual input.
 
-    Additionally, this class stores information about the position of the token in the
-    input stream in the field `pos`.  This `pos` is an integer which corresponds to the
-    index in the input string.  The field `len` stores the length of the token in the
-    input string.  This means that this token spans in the input string from `pos` to
-    `pos+len`.
+    Additionally, this class stores information about the position of the token
+    in the input stream in the field `pos`.  This `pos` is an integer which
+    corresponds to the index in the input string.  The field `len` stores the
+    length of the token in the input string.  This means that this token spans
+    in the input string from `pos` to `pos+len`.
 
-    Leading whitespace before the token is not returned as a separate 'char'-type token,
-    but it is given in the `pre_space` field of the token which follows.  Pre-space may
-    contain a newline, but not two consecutive newlines.
+    Leading whitespace before the token is not returned as a separate
+    'char'-type token, but it is given in the `pre_space` field of the token
+    which follows.  Pre-space may contain a newline, but not two consecutive
+    newlines.
+
+    The `post_space` is only used for 'macro' and 'comment' tokens, and it
+    stores any spaces encountered after a macro, or the newline followed by
+    spaces that terminates a LaTeX comment.
 
     The `tok` field may be one of:
 
-      - 'char': raw characters which have no special LaTeX meaning; they are part of the
-        text content.
+      - 'char': raw characters which have no special LaTeX meaning; they are
+        part of the text content.
         
         The `arg` field contains the characters themselves.
 
       - 'macro': a macro invokation, but not '\begin' or '\end'
         
-        The `arg` field contains the name of the macro, without the leading backslash.
+        The `arg` field contains the name of the macro, without the leading
+        backslash.
 
       - 'begin_environment': an invokation of '\begin{environment}'.
         
@@ -295,35 +302,41 @@ class LatexToken(object):
         
         The `arg` field contains the name of the environment inside the braces.
 
-      - 'comment': a LaTeX comment delimited by a percent sign up to the end of the line.
+      - 'comment': a LaTeX comment delimited by a percent sign up to the end of
+        the line.
         
-        The `arg` field contains the text in the comment line, not including the percent
-        sign nor the newline.
+        The `arg` field contains the text in the comment line, not including the
+        percent sign nor the newline.
 
-      - 'brace_open': an opening brace.  This is usually a curly brace, and sometimes also
-        a square bracket.  What is parsed as a brace depends on the arguments to
-        :py:func:`get_token()`.
+      - 'brace_open': an opening brace.  This is usually a curly brace, and
+        sometimes also a square bracket.  What is parsed as a brace depends on
+        the arguments to :py:func:`get_token()`.
         
         The `arg` is a string which contains the relevant brace character.
         
-      - 'brace_close': a closing brace.  This is usually a curly brace, and sometimes also
-        a square bracket.  What is parsed as a brace depends on the arguments to
-        :py:func:`get_token()`.
+      - 'brace_close': a closing brace.  This is usually a curly brace, and
+        sometimes also a square bracket.  What is parsed as a brace depends on
+        the arguments to :py:func:`get_token()`.
         
         The `arg` is a string which contains the relevant brace character.
 
-      - 'mathmode_inline': a delimiter which starts inline math.  This is (e.g.) a single
-        '$' character which is not part of a double '$$' display environment delimiter.
+      - 'mathmode_inline': a delimiter which starts inline math.  This is (e.g.)
+        a single '$' character which is not part of a double '$$' display
+        environment delimiter.
 
         The `arg` is the string value of the delimiter in question ('$')
+
     """
-    def __init__(self, tok, arg, pos, len, pre_space):
+    def __init__(self, tok, arg, pos, len, pre_space, post_space=''):
         self.tok = tok
         self.arg = arg
         self.pos = pos
         self.len = len
         self.pre_space = pre_space
+        self.post_space = post_space
         self._fields = ['tok', 'arg', 'pos', 'len', 'pre_space']
+        if self.tok == 'macro':
+            self._fields.append('post_space')
         super(LatexToken, self).__init__()
 
 
@@ -436,10 +449,11 @@ class LatexCommentNode(LatexNode):
     """
     A LaTeX comment, delimited by a percent sign until the end of line.
     """
-    def __init__(self, comment, **kwargs):
+    def __init__(self, comment, comment_post_space='', **kwargs):
         super(LatexCommentNode, self).__init__(**kwargs)
         self._fields = ('comment',)
         self.comment = comment
+        self.comment_post_space = comment_post_space
 
     def nodeType(self):
         return LatexCommentNode
@@ -448,23 +462,31 @@ class LatexMacroNode(LatexNode):
     r"""
     Represents a 'macro' type node, e.g. '\textbf'
     """
-    def __init__(self, macroname, nodeoptarg=None, nodeargs=[], **kwargs):
+    def __init__(self, macroname, nodeoptarg=None, nodeargs=[], macro_post_space='',
+                 **kwargs):
         r"""
         Represents a 'macro' type node, e.g. '\textbf'
 
         Arguments:
+
             - `macroname`: the name of the macro (string), *without* the leading
               backslash
+
             - `nodeoptarg`: if non-`None`, this corresponds to the optional argument
               of the macro
+
             - `nodeargs`: a list of arguments to the macro. Each item in the list
               should be a LatexNode.
+
+            - `macro_post_space`: the spaces encountered immediately after the
+              macro.
         """
         super(LatexMacroNode, self).__init__(**kwargs)
-        self._fields = ('macroname','nodeoptarg','nodeargs',)
+        self._fields = ('macroname','nodeoptarg','nodeargs','macro_post_space')
         self.macroname = macroname
         self.nodeoptarg = nodeoptarg
         self.nodeargs = nodeargs
+        self.macro_post_space = macro_post_space
 
     def nodeType(self):
         return LatexMacroNode
@@ -626,7 +648,7 @@ class LatexWalker(object):
                 space += s[pos]
                 pos += 1
                 if (space.endswith('\n\n')):  # two \n's indicate new paragraph.
-                    # pre-space is overkill here I think.
+                    # Adding pre-space is overkill here I think.
                     return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space='')
 
 
@@ -652,8 +674,11 @@ class LatexWalker(object):
                     # \begin{environment} or \end{environment}
                     envmatch = re.match(r'^\s*\{([\w*]+)\}', s[pos+i:])
                     if (envmatch is None):
-                        raise LatexWalkerParseError(s=s, pos=pos,
-                                                    msg="Bad \\%s macro: expected {environment}" %(macro))
+                        raise LatexWalkerParseError(
+                            s=s,
+                            pos=pos,
+                            msg="Bad \\%s macro: expected {environment}" %(macro)
+                        )
 
                     return LatexToken(
                         tok=('begin_environment' if macro == 'begin' else  'end_environment'),
@@ -663,32 +688,38 @@ class LatexWalker(object):
                         pre_space=space
                         )
 
-                # # possibly eat one following whitespace
-                # if (s[pos+i].isspace()):
-                #     i += 1
+                # get the following whitespace, and store it in the macro's post_space
+                post_space = ''
+                while pos+i<len(s) and s[pos+i].isspace():
+                    post_space += s[pos+i]
+                    i += 1
 
-                return LatexToken(tok='macro', arg=macro, pos=pos, len=i, pre_space=space)
+                return LatexToken(tok='macro', arg=macro, pos=pos, len=i,
+                                  pre_space=space, post_space=post_space)
 
             if (s[pos] == '%'):
                 # latex comment
                 m = re.search(r'(\n|\r|\n\r)\s*', s[pos:])
                 mlen = None
-                if (m is not None):
-                    mlen = m.start() # relative to pos already
+                if m is not None:
+                    arglen = m.start() # relative to pos already
+                    mlen = m.end() # relative to pos already
                 else:
-                    mlen = len(s)-pos# [  ==len(s[pos:])  ]
-                return LatexToken(tok='comment', arg=s[pos+1:pos+mlen], pos=pos, len=mlen, pre_space=space)
+                    arglen = len(s)-pos# [  ==len(s[pos:])  ]
+                    mlen = arglen
+                return LatexToken(tok='comment', arg=s[pos+1:pos+arglen], pos=pos, len=mlen,
+                                  pre_space=space, post_space=m.group())
 
             openbracechars = '{'
             closebracechars = '}'
-            if (not brackets_are_chars):
+            if not brackets_are_chars:
                 openbracechars += '['
                 closebracechars += ']'
 
-            if (s[pos] in openbracechars):
+            if s[pos] in openbracechars:
                 return LatexToken(tok='brace_open', arg=s[pos], pos=pos, len=1, pre_space=space)
 
-            if (s[pos] in closebracechars):
+            if s[pos] in closebracechars:
                 return LatexToken(tok='brace_close', arg=s[pos], pos=pos, len=1, pre_space=space)
 
             # check if it is an inline math char, if we care about inline math.
@@ -717,12 +748,13 @@ class LatexWalker(object):
 
             if (tok.tok == 'macro'):
                 if (tok.arg == 'end'):
-                    if (not self.tolerant_parsing):
+                    if not self.tolerant_parsing:
                         # error, this should be an \end{environment}, not an argument in itself
                         raise LatexWalkerParseError("Expected expression, got \end", self.s, pos)
                     else:
                         return (LatexCharsNode(chars=''), tok.pos, 0)
-                return (LatexMacroNode(macroname=tok.arg, nodeoptarg=None, nodeargs=[]),
+                return (LatexMacroNode(macroname=tok.arg, nodeoptarg=None, nodeargs=[],
+                                       macro_post_space=tok.post_space),
                         tok.pos, tok.len)
             if (tok.tok == 'comment'):
                 return self.get_latex_expression(pos+tok.len)
@@ -772,8 +804,11 @@ class LatexWalker(object):
 
         firsttok = self.get_token(pos, brackets_are_chars=brackets_are_chars)
         if (firsttok.tok != 'brace_open'  or  firsttok.arg != brace_type):
-            raise LatexWalkerParseError(s=self.s, pos=pos,
-                                        msg='get_latex_braced_group: not an opening brace/bracket: %s' %(self.s[pos]))
+            raise LatexWalkerParseError(
+                s=self.s,
+                pos=pos,
+                msg='get_latex_braced_group: not an opening brace/bracket: %s' %(self.s[pos])
+            )
 
         #pos = firsttok.pos + firsttok.len
 
@@ -818,8 +853,9 @@ class LatexWalker(object):
         optargs = []
         args = []
 
-        # see if the \begin{environment} is immediately followed by some options.
-        # BUG: Don't eat the brace of a commutator!! impose no space.
+        # see if the \begin{environment} is immediately followed by some
+        # options.  Important: Don't eat the brace of a commutator!! Don't allow
+        # any space between the environment and the open bracket.
         optargtuple = None
         if (self.s[pos] == '['):
             optargtuple = self.get_latex_maybe_optional_arg(pos)
@@ -828,8 +864,8 @@ class LatexWalker(object):
             optargs.append(optargtuple[0])
             pos = optargtuple[1]+optargtuple[2]
         else:
-            # try to see if we have a mandatory argument
-            # don't use get_token as we don't want to skip any space.
+            # Try to see if we have a mandatory argument.  Don't use get_token
+            # as we don't want to skip any space.
             if self.s[pos] == '{':
                 (argnode, apos, alen) = self.get_latex_braced_group(pos)
                 args.append(argnode)
@@ -905,15 +941,19 @@ class LatexWalker(object):
                 p.lastchars += tok.pre_space + tok.arg
                 return False
 
-            # maybe add the pre_space of the new token to lastchars, if applicable.
-            #if (len(tok.pre_space)):
-            #    p.lastchars += tok.pre_space # yields wayyy tooo much space in output!!
-
             # if it's not a char, push the last `p.lastchars` into the node list before anything else
-            if (len(p.lastchars) or len(tok.pre_space)):
+            if len(p.lastchars):
                 strnode = LatexCharsNode(chars=p.lastchars+tok.pre_space)
                 nodelist.append(strnode)
-                p.lastchars = '' # reset lastchars.
+                p.lastchars = ''
+            elif len(tok.pre_space):
+                # If we have pre_space, add a separate chars node that contains
+                # the spaces.  We do this seperately, so that latex2text can
+                # ignore these groups by default to avoid too much space on the
+                # output.  This allows latex2text to implement the
+                # `strict_latex_spaces=True` flag correctly.
+                spacestrnode = LatexCharsNode(chars=tok.pre_space)
+                nodelist.append(spacestrnode)
 
             # and see what the token is.
 
@@ -921,8 +961,11 @@ class LatexWalker(object):
                 # we've reached the end of the group. stop the parsing.
                 if (tok.arg != stop_upon_closing_brace):
                     if (not self.tolerant_parsing):
-                        raise LatexWalkerParseError(s=self.s, pos=tok.pos,
-                                                    msg='Unexpected mismatching closing brace: `%s\'' %(tok.arg))
+                        raise LatexWalkerParseError(
+                            s=self.s,
+                            pos=tok.pos,
+                            msg='Unexpected mismatching closing brace: `%s\'' %(tok.arg)
+                        )
                     return False
                 return True
 
@@ -930,10 +973,12 @@ class LatexWalker(object):
                 # we've reached the end of an environment.
                 if (tok.arg != stop_upon_end_environment):
                     if (not self.tolerant_parsing):
-                        raise LatexWalkerParseError(s=self.s, pos=tok.pos,
-                                                    msg=('Unexpected mismatching closing environment: `%s\', '
-                                                         'expecting `%s\'' %(tok.arg, stop_upon_end_environment))
-                                                    )
+                        raise LatexWalkerParseError(
+                            s=self.s,
+                            pos=tok.pos,
+                            msg=('Unexpected mismatching closing environment: `%s\', '
+                                 'expecting `%s\'' %(tok.arg, stop_upon_end_environment))
+                        )
                     return False
                 return True
 
@@ -941,8 +986,11 @@ class LatexWalker(object):
                 # if we care about keeping math mode inlines verbatim, gulp all of the expression.
                 if (stop_upon_closing_mathmode is not None):
                     if (stop_upon_closing_mathmode != '$'):
-                        raise LatexWalkerParseError(s=self.s, pos=tok.pos,
-                                                    msg='Unexpected mismatching closing math mode: `$\'')
+                        raise LatexWalkerParseError(
+                            s=self.s,
+                            pos=tok.pos,
+                            msg='Unexpected mismatching closing math mode: `$\''
+                        )
                     return True
 
                 # we have encountered a new math inline, so gulp all of the math expression
@@ -953,7 +1001,7 @@ class LatexWalker(object):
                 return
 
             if (tok.tok == 'comment'):
-                commentnode = LatexCommentNode(comment=tok.arg)
+                commentnode = LatexCommentNode(comment=tok.arg, comment_post_space=tok.post_space)
                 nodelist.append(commentnode)
                 return
 
@@ -976,39 +1024,45 @@ class LatexWalker(object):
                 # read a macro. see if it has arguments.
                 nodeoptarg = None
                 nodeargs = []
-                macname = tok.arg.rstrip('*')
-                if (macname in self.macro_dict):
+                macname = tok.arg.rstrip('*') # for lookup in macro_dict
+                if macname in self.macro_dict:
                     mac = self.macro_dict[macname]
 
                     def getoptarg(pos):
-                        """Gets a possibly optional argument. returns (argnode, new-pos) where argnode might
-                        be `None` if the argument was not specified."""
+                        """
+                        Gets a possibly optional argument. returns (argnode, new-pos) where argnode
+                        might be `None` if the argument was not specified.
+                        """
                         optarginfotuple = self.get_latex_maybe_optional_arg(pos)
-                        if (optarginfotuple is not None):
+                        if optarginfotuple is not None:
                             (nodeoptarg, optargpos, optarglen) = optarginfotuple
                             return (nodeoptarg, optargpos+optarglen)
                         return (None, pos)
 
                     def getarg(pos):
-                        """Gets a mandatory argument. returns (argnode, new-pos)"""
+                        """
+                        Gets a mandatory argument. returns (argnode, new-pos)
+                        """
                         (nodearg, npos, nlen) = self.get_latex_expression(pos, strict_braces=False)
                         return (nodearg, npos + nlen)
 
-                    if (mac.optarg):
+                    if mac.optarg:
                         (nodeoptarg, p.pos) = getoptarg(p.pos)
 
-                    if (isinstance(mac.numargs, _basestring)):
+                    if isinstance(mac.numargs, _basestring):
                         # specific argument specification
                         for arg in mac.numargs:
-                            if (arg == '{'):
+                            if arg == '{':
                                 (node, p.pos) = getarg(p.pos)
                                 nodeargs.append(node)
-                            elif (arg == '['):
+                            elif arg == '[':
                                 (node, p.pos) = getoptarg(p.pos)
                                 nodeargs.append(node)
                             else:
-                                raise LatexWalkerError("Unknown macro argument kind for macro %s: %s"
-                                                       % (mac.macroname, arg))
+                                raise LatexWalkerError(
+                                    "Unknown macro argument kind for macro %s: %s"
+                                    % (mac.macroname, arg)
+                                )
                     else:
                         for n in range(mac.numargs):
                             (nodearg, p.pos) = getarg(p.pos)
@@ -1016,7 +1070,8 @@ class LatexWalker(object):
 
                 nodelist.append(LatexMacroNode(macroname=tok.arg,
                                                nodeoptarg=nodeoptarg,
-                                               nodeargs=nodeargs))
+                                               nodeargs=nodeargs,
+                                               macro_post_space=tok.post_space))
                 return None
 
             raise LatexWalkerParseError(s=self.s, pos=p.pos, msg="Unknown token: %r" %(tok))
@@ -1027,7 +1082,7 @@ class LatexWalker(object):
             try:
                 r_endnow = do_read(nodelist, p)
             except LatexWalkerEndOfStream:
-                if (stop_upon_closing_brace or stop_upon_end_environment):
+                if stop_upon_closing_brace or stop_upon_end_environment:
                     # unexpected eof
                     if (not self.tolerant_parsing):
                         raise LatexWalkerError("Unexpected end of stream!")

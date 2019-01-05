@@ -1,4 +1,6 @@
 
+# -*- coding: utf-8 -*-
+
 from __future__ import unicode_literals, print_function
 
 import unittest
@@ -83,6 +85,86 @@ where $i$ is the imaginary unit.
             .nodelist_to_text(LatexWalker(r"{A}{XYZ}{ABCD}").get_latex_nodes()[0]),
             '''{A}{XYZ}{ABCD}'''
         )
+
+
+    def test_spaces_strictlatex(self):
+
+        def do_test(tex, uni, **kwargs):
+            self.assertEqual(
+                LatexNodes2Text(strict_latex_spaces=True, **kwargs).latex_to_text(tex, **kwargs),
+                uni,
+                msg="For TeX=r'{}'".format(tex)
+            )
+
+        # from https://github.com/phfaist/pylatexenc/issues/11
+
+        from itertools import combinations_with_replacement
+        chars = ((r'\"{o} ', 'ö '),
+                 (r'{\"o} ', 'ö '),
+                 (r'\L ', 'Ł'),
+                 (r'{\L} ', 'Ł '),
+                 ('u ', 'u '))
+
+        for cc in combinations_with_replacement(chars, 3):
+            ttex, uuni = list(zip(*cc))
+
+            tex = ''.join(ttex).strip()
+            uni = ''.join(uuni).strip()
+
+            do_test(tex, uni)
+
+        # from https://github.com/phfaist/pylatexenc/issues/15
+
+        do_test(r'$\alpha$ $\beta$ $\gamma$', r'$\alpha$ $\beta$ $\gamma$', keep_inline_math=True)
+        do_test(r'$\gamma$ detector', r'$\gamma$ detector', keep_inline_math=True)
+        do_test(r'$\gamma$ $\gamma$ coincidence', r'$\gamma$ $\gamma$ coincidence', keep_inline_math=True)
+
+
+    def test_spaces_default(self):
+
+        # from https://github.com/phfaist/pylatexenc/issues/11 --- ensure previous behavior
+
+        def do_test(tex, uni):
+            self.assertEqual(LatexNodes2Text().latex_to_text(tex), uni,
+                             msg="For TeX=r'{}'".format(tex))
+
+        do_test(r'\"{o} \"{o} \"{o}', 'ööö')
+        do_test(r'\"{o} \"{o} {\"o}', 'ööö')
+        do_test(r'\"{o} \"{o} \L', 'ööŁ')
+        do_test(r'\"{o} \"{o} {\L}', 'ööŁ')
+        do_test(r'\"{o} \"{o} u', 'öö u')
+        do_test(r'\"{o} {\"o} {\"o}', 'ööö')
+        do_test(r'\"{o} {\"o} \L', 'ööŁ')
+        do_test(r'\"{o} {\"o} {\L}', 'ööŁ')
+        do_test(r'\"{o} {\"o} u', 'öö u')
+        do_test(r'\"{o} \L \L', 'öŁŁ') #
+        do_test(r'\"{o} \L {\L}', 'öŁŁ') #
+        do_test(r'\"{o} \L u', 'öŁ u')
+        do_test(r'\"{o} {\L} {\L}', 'öŁŁ')
+        do_test(r'\"{o} {\L} u', 'öŁ u')
+        do_test(r'\"{o} u u', 'ö u u')
+        do_test(r'{\"o} {\"o} {\"o}', 'ööö')
+        do_test(r'{\"o} {\"o} \L', 'ööŁ')
+        do_test(r'{\"o} {\"o} {\L}', 'ööŁ')
+        do_test(r'{\"o} {\"o} u', 'öö u')
+        do_test(r'{\"o} \L \L', 'öŁŁ') #
+        do_test(r'{\"o} \L {\L}', 'öŁŁ') #
+        do_test(r'{\"o} \L u', 'öŁ u')
+        do_test(r'{\"o} {\L} {\L}', 'öŁŁ')
+        do_test(r'{\"o} {\L} u', 'öŁ u')
+        do_test(r'{\"o} u u', 'ö u u')
+        do_test(r'\L \L \L', 'ŁŁŁ') #
+        do_test(r'\L \L {\L}', 'ŁŁŁ') #
+        do_test(r'\L \L u', 'ŁŁ u') #
+        do_test(r'\L {\L} {\L}', 'ŁŁŁ') #
+        do_test(r'\L {\L} u', 'ŁŁ u') #
+        do_test(r'\L u u', 'Ł u u')
+        do_test(r'{\L} {\L} {\L}', 'ŁŁŁ')
+        do_test(r'{\L} {\L} u', 'ŁŁ u')
+        do_test(r'{\L} u u', 'Ł u u')
+        do_test(r'u u u', 'u u u')
+
+
 
 
     def test_input(self):
