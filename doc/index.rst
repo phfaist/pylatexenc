@@ -19,14 +19,15 @@ Quick example::
     ... """
     >>> print(LatexNodes2Text().latex_to_text(latex))
     Hi there! Here is an equation:
-    ζ = x + i y
+
+        ζ = x + i y
     
     where i is the imaginary unit.
 
 And the other way around::
 
     >>> from pylatexenc.latexencode import utf8tolatex
-    >>> text = u"À votre santé!"
+    >>> text = "À votre santé!"
     >>> print(utf8tolatex(text))
     {\`A} votre sant{\'e}!
 
