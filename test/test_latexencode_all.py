@@ -33,6 +33,11 @@ class TestLatexEncode(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestLatexEncode, self).__init__(*args, **kwargs)
 
+    def test_pythonunicoderange(self):
+        self.assertGreater(sys.maxunicode, 0xFFFF+1,
+                           "Your python build only supports unicode characters up to U+FFFF."
+                           " Tests of unicode coverage will fail.")
+
     def test_all(self):
 
         logging.getLogger().setLevel(logging.CRITICAL)

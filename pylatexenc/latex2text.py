@@ -39,7 +39,6 @@ The main class is :py:class:`LatexNodes2Text`.  For a quick start, try::
 from __future__ import print_function #, absolute_import
 
 import os
-import re
 import unicodedata
 import logging
 import sys
@@ -828,9 +827,8 @@ if __name__ == '__main__':
                          ).encode('utf-8'))
         print('\n-------------\n')
 
-    except:
+    except BaseException:
         import pdb
-        import traceback
         import sys
         (exc_type, exc_value, exc_traceback) = sys.exc_info()
         

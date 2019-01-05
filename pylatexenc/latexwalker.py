@@ -39,8 +39,17 @@ import sys
 import logging
 
 if sys.version_info.major > 2:
+    # Py3
     def unicode(string): return string
-    basestring = str
+    _basestring = str
+    _str_from_unicode = lambda x: x
+    _unicode_from_str = lambda x: x
+else:
+    # Py2
+    _basestring = basestring
+    _str_from_unicode = lambda x: unicode(x).encode('utf-8')
+    _unicode_from_str = lambda x: x.decode('utf-8')
+
 
 logger = logging.getLogger(__name__)
 
@@ -319,21 +328,25 @@ class LatexToken(object):
 
 
     def __unicode__(self):
-        return self.__repr__()
+        return _unicode_from_str(self.__str__())
 
     def __repr__(self):
         return (
-            u"LatexToken(" +
-            u", ".join([ u"%s=%r"%(k,getattr(self,k))
+            "LatexToken(" +
+            ", ".join([ "%s=%r"%(k,getattr(self,k))
                         for k in self._fields ]) +
-            u")"
+            ")"
             )
 
     def __str__(self):
-        return self.__unicode__().encode('utf-8')
+        return self.__repr__()
 
     def __eq__(self, other):
         return all( ( getattr(self, f) == getattr(other, f)  for f in self._fields ) )
+
+    def __ne__(self, other): return NotImplemented
+    __hash__ = None
+
 
 # ------------------------------------------------
 
@@ -372,15 +385,18 @@ class LatexNode(object):
         return other is not None  and  self.nodeType() == other.nodeType()  and  all(
             ( getattr(self, f) == getattr(other, f)  for f in self._fields )
         )
+    def __ne__(self, other): return NotImplemented
+    __hash__ = None
+
     def __unicode__(self):
-        return self.__repr__()
+        return _unicode_from_str(self.__str__())
     def __str__(self):
-        return self.__unicode__().encode('utf-8')
+        return self.__repr__()
     def __repr__(self):
         return (
-            self.nodeType().__name__ + u"(" +
-            u", ".join([ u"%s=%r"%(k,getattr(self,k))  for k in self._fields ]) +
-            u")"
+            self.nodeType().__name__ + "(" +
+            ", ".join([ "%s=%r"%(k,getattr(self,k))  for k in self._fields ]) +
+            ")"
             )
 
 
@@ -409,7 +425,7 @@ class LatexGroupNode(LatexNode):
         Arguments:
             - `nodelist`: a list of nodes which comprise the group.
         """
-        super(LatexNode, self).__init__(**kwargs)
+        super(LatexGroupNode, self).__init__(**kwargs)
         self._fields = ('nodelist',)
         self.nodelist = nodelist
 
@@ -981,7 +997,7 @@ class LatexWalker(object):
                     if (mac.optarg):
                         (nodeoptarg, p.pos) = getoptarg(p.pos)
 
-                    if (isinstance(mac.numargs, basestring)):
+                    if (isinstance(mac.numargs, _basestring)):
                         # specific argument specification
                         for arg in mac.numargs:
                             if (arg == '{'):
@@ -1027,8 +1043,10 @@ class LatexWalker(object):
                     nodelist.append(strnode)
                 return (nodelist, origpos, p.pos - origpos)
 
-        raise LatexWalkerError("CONGRATULATIONS !! "
-                               "You are the first human to telepathically break an infinite loop !!!!!!!")
+        raise LatexWalkerError(                # lgtm [py/unreachable-statement]
+            "CONGRATULATIONS !! "
+            "You are the first human to telepathically break an infinite loop !!!!!!!"
+        )
 
 
 
@@ -1201,11 +1219,10 @@ def nodelist_to_latex(nodelist):
                 latex += '[%s]' %(nodelist_to_latex([n.nodeoptarg]))
 
             if mac is not None:
-                macbraces = (mac.numargs if isinstance(mac.numargs, basestring) else '{'*mac.numargs)
+                macbraces = (mac.numargs if isinstance(mac.numargs, _basestring) else '{'*mac.numargs)
             else:
                 macbraces = '{'*len(n.nodeargs)
                 
-            i = 0
             if (len(n.nodeargs) != len(macbraces)):
                 raise LatexWalkerError("Error: number of arguments (%d) provided to macro `\\%s' does not "
                                        "match its specification of `%s'"
@@ -1322,7 +1339,7 @@ if __name__ == '__main__':
             disp_node(n)
         print('\n-------------\n')
 
-    except:
+    except BaseException:
         import pdb
         import sys
         print("\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n")

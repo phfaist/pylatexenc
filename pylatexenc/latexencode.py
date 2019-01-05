@@ -139,7 +139,7 @@ if __name__ == '__main__':
         print(utf8tolatex(latex.decode('utf-8')).encode('utf-8'))
         print('\n-------------\n')
 
-    except:
+    except BaseException:
         import pdb
         import sys
         print("\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n")

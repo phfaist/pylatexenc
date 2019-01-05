@@ -24,7 +24,7 @@
 
 import os
 import os.path
-import sys
+#import sys
 
 from setuptools import setup, find_packages
 
