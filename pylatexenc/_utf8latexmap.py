@@ -94,9 +94,9 @@ utf82latex = {
 0x00B9: r'\textonesuperior',                     # character ¹
 0x00BA: r'\textordmasculine',                    # character º
 0x00BB: r'\guillemotright',                      # character »
-0x00BC: r'\textonequarter',                      # character Œ
-0x00BD: r'\textonehalf',                         # character œ
-0x00BE: r'\textthreequarters',                   # character Ÿ
+0x00BC: r'\textonequarter',                      # character ¼
+0x00BD: r'\textonehalf',                         # character ½
+0x00BE: r'\textthreequarters',                   # character ¾
 0x00BF: r'\textquestiondown',                    # character ¿
 0x00C0: r'\`A',                                  # character À
 0x00C1: "\\'A",                                  # character Á
@@ -293,6 +293,11 @@ utf82latex = {
 
 0x0228: r'\c{E}',
 0x0229: r'\c{e}',
+
+# chars in linguistics, thanks @roedoejet (https://github.com/roedoejet/pylatexenc)
+0x0259: r'\textschwa',
+0x0294: r'\textglotstop',
+0x02B7: r'\textsuperscript{w}',
 
 0x02C6: r'\textasciicircum',                     # 0x02C6
 0x02C7: r'\textasciicaron',

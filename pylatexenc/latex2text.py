@@ -536,7 +536,10 @@ def _parse_strict_latex_spaces_dict(strict_latex_spaces):
     elif isinstance(strict_latex_spaces, dict):
         d.update(strict_latex_spaces)
         return d
-    elif strict_latex_spaces in _strict_latex_spaces_predef:
+    elif isinstance(strict_latex_spaces, str):
+        if strict_latex_spaces not in _strict_latex_spaces_predef:
+            raise ValueError("invalid value for strict_latex_spaces preset: {}"
+                             .format(strict_latex_spaces))
         return _strict_latex_spaces_predef[strict_latex_spaces]
     else:
         for k in d.keys():

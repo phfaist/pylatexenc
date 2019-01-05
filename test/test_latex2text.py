@@ -185,7 +185,7 @@ line with comment % comment here
     ζ = a + i b
 
 the end.''',
-                strict_latex_spaces='fix-macros', keep_comments=True)
+                strict_latex_spaces='macros', keep_comments=True)
         do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ = x + i y
 line with comment 
@@ -194,7 +194,7 @@ line with comment
     ζ = a + i b
 
 the end.''',
-                strict_latex_spaces='fix-macros', keep_comments=False)
+                strict_latex_spaces='macros', keep_comments=False)
         
         do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ = x + i y
