@@ -604,7 +604,6 @@ class _PushPropOverride(object):
         self.propname = propname
         self.new_value = new_value
 
-
     def __enter__(self):
         if self.new_value is not None:
             self.initval = getattr(self.obj, self.propname)
@@ -1358,7 +1357,7 @@ def nodelist_to_latex(nodelist):
             latex += n.chars
             continue
         if n.isNodeType(LatexMacroNode):
-            latex += r'\%s' %(n.macroname)
+            latex += r'\%s%s' %(n.macroname, n.macro_post_space)
 
             mac = None
             if (n.macroname in default_macro_dict):
@@ -1384,7 +1383,7 @@ def nodelist_to_latex(nodelist):
             continue
         
         if n.isNodeType(LatexCommentNode):
-            latex += '%'+n.comment+'\n'
+            latex += '%'+n.comment+n.comment_post_space
             continue
         
         if n.isNodeType(LatexGroupNode):

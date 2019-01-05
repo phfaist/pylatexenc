@@ -120,6 +120,120 @@ where $i$ is the imaginary unit.
         do_test(r'$\gamma$ $\gamma$ coincidence', r'$\gamma$ $\gamma$ coincidence', keep_inline_math=True)
 
 
+    def test_spaces_strictlatex_options(self):
+
+        def do_test(tex, uni, strict_latex_spaces=None, keep_comments=None, **kwargs):
+            self.assertEqual(
+                LatexNodes2Text(strict_latex_spaces=strict_latex_spaces, keep_comments=keep_comments,
+                                keep_inline_math=False, **kwargs)
+                .latex_to_text(tex, keep_inline_math=True, **kwargs),
+                uni
+            )
+
+        testlatex = r'''{A} {B} \L \AA xyz:
+inline math $\alpha\beta \gamma = x + i y$
+line with comment % comment here
+	  indented line.
+\begin{equation}
+    \zeta = a + i b
+\end{equation}
+the end.'''
+
+        do_test(testlatex, r'''ABŁÅ xyz:
+inline math αβγ = x + i y
+line with comment % comment here
+	  indented line.
+
+    ζ = a + i b
+
+the end.''',
+                strict_latex_spaces=False, keep_comments=True)
+        do_test(testlatex, r'''ABŁÅ xyz:
+inline math αβγ = x + i y
+line with comment 
+	  indented line.
+
+    ζ = a + i b
+
+the end.''',
+                strict_latex_spaces=False, keep_comments=False)
+        
+        do_test(testlatex, r'''ABŁÅ xyz:
+inline math αβγ = x + i y
+line with comment % comment here
+	  indented line.
+
+    ζ = a + i b
+
+the end.''',
+                strict_latex_spaces='default', keep_comments=True)
+        do_test(testlatex, r'''ABŁÅ xyz:
+inline math αβγ = x + i y
+line with comment 
+	  indented line.
+
+    ζ = a + i b
+
+the end.''',
+                strict_latex_spaces='default', keep_comments=False)
+        
+        do_test(testlatex, r'''A B ŁÅxyz:
+inline math αβγ = x + i y
+line with comment % comment here
+	  indented line.
+
+    ζ = a + i b
+
+the end.''',
+                strict_latex_spaces='fix-macros', keep_comments=True)
+        do_test(testlatex, r'''A B ŁÅxyz:
+inline math αβγ = x + i y
+line with comment 
+	  indented line.
+
+    ζ = a + i b
+
+the end.''',
+                strict_latex_spaces='fix-macros', keep_comments=False)
+        
+        do_test(testlatex, r'''A B ŁÅxyz:
+inline math αβγ = x + i y
+line with comment % comment here
+indented line.
+
+    ζ = a + i b
+
+the end.''',
+                strict_latex_spaces='except-in-equations', keep_comments=True)
+        do_test(testlatex, r'''A B ŁÅxyz:
+inline math αβγ = x + i y
+line with comment indented line.
+
+    ζ = a + i b
+
+the end.''',
+                strict_latex_spaces='except-in-equations', keep_comments=False)
+
+        do_test(testlatex, r'''A B ŁÅxyz:
+inline math αβγ= x + i y
+line with comment % comment here
+indented line.
+
+    ζ= a + i b
+
+the end.''',
+                strict_latex_spaces=True, keep_comments=True)
+        do_test(testlatex, r'''A B ŁÅxyz:
+inline math αβγ= x + i y
+line with comment indented line.
+
+    ζ= a + i b
+
+the end.''',
+                strict_latex_spaces=True, keep_comments=False)
+        
+
+
     def test_spaces_default(self):
 
         # from https://github.com/phfaist/pylatexenc/issues/11 --- ensure previous behavior

@@ -33,7 +33,7 @@ The main class is :py:class:`LatexNodes2Text`.  For a quick start, try::
     from pylatexenc.latex2text import LatexNodes2Text
     
     latex = "... LaTeX code ..."
-    text = LatexNodes2Text(strict_latex_spaces=True).latex_to_text(latex)
+    text = LatexNodes2Text(strict_latex_spaces='fix-macros').latex_to_text(latex)
 
 """
 
@@ -43,6 +43,7 @@ import os
 import unicodedata
 import logging
 import sys
+import inspect
 
 if sys.version_info.major > 2:
     def unicode(string): return string
@@ -60,19 +61,21 @@ class EnvDef:
 
     - `envname`: the name of the environment
 
-    - `simplify_repl`: the replacement text of the environment.  This is either a callable
-       or a string.  If it is a callable, it must accept a single argument, the
-       :py:class:`pylatexenc.latexwalker.LatexEnvironmentNode` representing the LaTeX
-       environment.  If it is a string, it may contain '%s' which will be replaced by the
-       environment contents converted to text.
+    - `simplify_repl`: the replacement text of the environment.  This is either
+       a callable or a string.  If it is a callable, it must accept a single
+       argument, the :py:class:`pylatexenc.latexwalker.LatexEnvironmentNode`
+       representing the LaTeX environment.  If it is a string, it may contain
+       '%s' which will be replaced by the environment contents converted to
+       text.
 
-    - `discard`: if set to `True`, then the full environment is discarded, i.e., it is
-       converted to an empty string.
+    - `discard`: if set to `True`, then the full environment is discarded, i.e.,
+       it is converted to an empty string.
     """
     def __init__(self, envname, simplify_repl=None, discard=False):
         self.envname = envname
         self.simplify_repl = simplify_repl
         self.discard = discard
+
 
 class MacroDef:
     """
@@ -105,13 +108,24 @@ class MacroDef:
             self.simplify_repl = simplify_repl
 
 
+def _fmt_equation(n, l2tobj):
+    with _PushEquationContext(l2tobj):
+
+        contents = l2tobj._nodelistcontents_to_text(n.nodelist).strip()
+        # indent equation, separate by newlines
+        indent = ' '*4
+        return ("\n"+indent + contents.replace("\n", "\n"+indent) + "\n")
+
+
 _default_env_list = [
     EnvDef('', discard=False), # default for unknown environments
 
-    EnvDef('equation', discard=False),
-    EnvDef('eqnarray', discard=False),
-    EnvDef('align', discard=False),
-    EnvDef('multline', discard=False),
+    EnvDef('equation', simplify_repl=_fmt_equation),
+    EnvDef('eqnarray', simplify_repl=_fmt_equation),
+    EnvDef('align', simplify_repl=_fmt_equation),
+    EnvDef('multline', simplify_repl=_fmt_equation),
+    EnvDef('gather', simplify_repl=_fmt_equation),
+    EnvDef('dmath', simplify_repl=_fmt_equation),
 
     # spaces added so that database indexing doesn't index the word "array" or "pmatrix"
     EnvDef('array', simplify_repl='< a r r a y >'),
@@ -489,6 +503,47 @@ to perform.
 
 # ------------------------------------------------------------------------------
 
+_strict_latex_spaces_predef = {
+    'default': {
+        'between-macro-and-chars': False,
+        'between-latex-constructs': False,
+        'after-comment': False,
+        'in-equations': None,
+    },
+    'fix-macros': {
+        'between-macro-and-chars': True,
+        'between-latex-constructs': True,
+        'after-comment': False,
+        'in-equations': False,
+    },
+    'except-in-equations': {
+        'between-macro-and-chars': True,
+        'between-latex-constructs': True,
+        'after-comment': True,
+        'in-equations': False,
+    },
+}
+
+def _parse_strict_latex_spaces_dict(strict_latex_spaces):
+    d = {
+        'between-macro-and-chars': False,
+        'between-latex-constructs': False,
+        'after-comment': False,
+        'in-equations': None,
+    }
+    if strict_latex_spaces is None:
+        return d
+    elif isinstance(strict_latex_spaces, dict):
+        d.update(strict_latex_spaces)
+        return d
+    elif strict_latex_spaces in _strict_latex_spaces_predef:
+        return _strict_latex_spaces_predef[strict_latex_spaces]
+    else:
+        for k in d.keys():
+            d[k] = bool(strict_latex_spaces)
+        return d
+
+
 class LatexNodes2Text(object):
     """
     Simplistic Latex-To-Text Converter.
@@ -519,9 +574,31 @@ class LatexNodes2Text(object):
       (including the percent-sign); otherwise they are discarded.  (By default
       this is `False`)
 
-    - `strict_latex_spaces=True|False`: If set to `True`, then a whitespace following
-      a bare macro (i.e. w/o any delimiting characters like '}') is consumed/removed
-      like LaTeX; otherwise it is kept.
+    - `strict_latex_spaces=True|False`: If set to `True`, then we follow closely
+      LaTeX's handling of whitespace.  For instance, whitespace following a bare
+      macro (i.e. w/o any delimiting characters like '{') is consumed/removed.
+      If set to `False` (the default), then some liberties are taken with
+      respect to whitespace [hopefully making the result slightly more
+      aesthetic, but this behavior is mostly there for historical reasons].
+
+      You may also use one of the presets
+      `strict_latex_spaces='default'|'fix-macros'|'except-in-equations'`, which
+      allow for finer control of how whitespace is handled. The 'default' is the
+      same as `False`. Using 'fix-macros' will make macros and other sequences
+      of LaTeX constructions obey LaTeX space rules, but will keep indentations
+      after comments and more liberal whitespace rules in equations. The
+      'except-in-equations' preset goes as you'd expect, setting strict latex
+      spacing only outside of equation contexts.
+
+      Finally, the argument `strict_latex_spaces` may also be set to a
+      dictionary with keys 'between-macro-and-chars', 'after-comment', and
+      'between-latex-constructs', 'in-equations', with individual values either
+      `True` or `False`, dictating whitespace behavior in specific cases (`True`
+      indicates strict latex behavior).  The value for 'in-equations' may even
+      be another dictionary with the same keys to override values in equations.
+
+      In the future, the default value of this setting might change, e.g., to
+      'fix-macros'.
 
     - `keep_braced_groups=True|False`: If set to `True`, then braces delimiting
       a TeX group ``{Like this}`` will be kept in the output, with the contents
@@ -536,7 +613,6 @@ class LatexNodes2Text(object):
 
     .. versionadded: 1.4
        Added the `strict_latex_spaces` and the `keep_braced_groups` flags
-
     """
     def __init__(self, env_dict=None, macro_dict=None, text_replacements=None, **flags):
         super(LatexNodes2Text, self).__init__()
@@ -554,7 +630,10 @@ class LatexNodes2Text(object):
 
         self.keep_inline_math = flags.pop('keep_inline_math', False)
         self.keep_comments = flags.pop('keep_comments', False)
-        self.strict_latex_spaces = flags.pop('strict_latex_spaces', False)
+
+        strict_latex_spaces = flags.pop('strict_latex_spaces', False)
+        self.strict_latex_spaces = _parse_strict_latex_spaces_dict(strict_latex_spaces)
+
         self.keep_braced_groups = flags.pop('keep_braced_groups', False)
         self.keep_braced_groups_minlen = flags.pop('keep_braced_groups_minlen', 2)
 
@@ -690,9 +769,7 @@ class LatexNodes2Text(object):
             else:
                 s = s.replace(pattern, replacement)
 
-        #  ###TODO: more clever handling of math modes??
-
-        if (not self.keep_inline_math):
+        if not self.keep_inline_math:
             s = s.replace('$', ''); # removing math mode inline signs, just keep their Unicode counterparts..
 
         return s
@@ -701,13 +778,14 @@ class LatexNodes2Text(object):
     def _nodelistcontents_to_text(self, nodelist):
         """
         Turn the node list to text representations of each node.  Basically apply
-        `node_to_text()` to each node.
+        `node_to_text()` to each node.  (But not quite actually, since we take
+        some care as to where we add whitespace.)
         """
         s = ''
         prev_node = None
         for node in nodelist:
             if self._is_bare_macro_node(prev_node) and node.isNodeType(latexwalker.LatexCharsNode):
-                if not self.strict_latex_spaces:
+                if not self.strict_latex_spaces['between-macro-and-chars']:
                     # after a macro with absolutely no arguments, include post_space
                     # in output by default if there are other chars that follow.
                     # This is for more breathing space (especially in equations(?)),
@@ -732,19 +810,28 @@ class LatexNodes2Text(object):
         
         if node.isNodeType(latexwalker.LatexCharsNode):
             # Unless in strict latex spaces mode, ignore nodes consisting only
-            # of empty chars, as this tends to produce too much space...
-            if not self.strict_latex_spaces and len(node.chars.strip()) == 0:
+            # of empty chars, as this tends to produce too much space...  These
+            # have been inserted by LatexWalker() in some occasions to keep
+            # track of all relevant pre_space of tokens, such as between two
+            # braced groups ("{one} {two}") or other such situations.
+            if not self.strict_latex_spaces['between-latex-constructs'] and len(node.chars.strip()) == 0:
                 return ""
             return node.chars
         
         if node.isNodeType(latexwalker.LatexCommentNode):
-            if self.keep_comments and self.strict_latex_spaces:
-                return '%' + node.comment + '\n'
-            elif self.keep_comments:
-                # default spaces, i.e., keep what spaces were already there after the comment
-                return '%' + node.comment + node.comment_post_space
+            if self.keep_comments:
+                if self.strict_latex_spaces['after-comment']:
+                    return '%' + node.comment + '\n'
+                else:
+                    # default spaces, i.e., keep what spaces were already there after the comment
+                    return '%' + node.comment + node.comment_post_space
             else:
-                return "" # strict latex spaces: no spaces at all
+                if self.strict_latex_spaces['after-comment']:
+                    return ""
+                else:
+                    # default spaces, i.e., keep what spaces were already there after the comment
+                    # This can be useful to preserve e.g. indentation of the next line
+                    return node.comment_post_space
         
         if node.isNodeType(latexwalker.LatexGroupNode):
             contents = self._groupnodecontents_to_text(node)
@@ -753,9 +840,12 @@ class LatexNodes2Text(object):
             return contents
 
         def apply_simplify_repl(node, simplify_repl, nodelistargs, what):
-            if (callable(simplify_repl)):
+            if callable(simplify_repl):
+                if 'l2tobj' in inspect.getfullargspec(simplify_repl)[0]:
+                    # callable accepts an argument named 'l2tobj', provide pointer to self
+                    return simplify_repl(node, l2tobj=self)
                 return simplify_repl(node)
-            if ('%' in simplify_repl):
+            if '%' in simplify_repl:
                 try:
                     return simplify_repl % tuple([self._groupnodecontents_to_text(nn)
                                                   for nn in nodelistargs])
@@ -798,16 +888,22 @@ class LatexNodes2Text(object):
             else:
                 # no predefined behavior, use default:
                 envdef = self.env_dict['']
+
             if envdef.simplify_repl:
                 return apply_simplify_repl(node, envdef.simplify_repl, node.nodelist,
                                            what="environment '%s'"%(envname))
             if envdef.discard:
                 return ""
-            return "".join([self.node_to_text(n) for n in node.nodelist])
+            return self._nodelistcontents_to_text(node.nodelist)
 
         if node.isNodeType(latexwalker.LatexMathNode):
-            # if we have a math node, this means we care about math modes and we should keep this verbatim.
-            return latexwalker.math_node_to_latex(node)
+            if self.keep_inline_math:
+                # we care about math modes and we should keep this verbatim
+                return latexwalker.math_node_to_latex(node)
+            else:
+                # note, this here only happens if the latexwalker had keep_inline_math=True
+                with _PushEquationContext(self):
+                    return self._nodelistcontents_to_text(node.nodelist)
 
         logger.warning("LatexNodes2Text.node_to_text(): Unknown node: %r", node)
 
@@ -823,6 +919,20 @@ class LatexNodes2Text(object):
     def _groupnodecontents_to_text(self, groupnode):
         return self._nodelistcontents_to_text(groupnode.nodelist)
 
+
+
+
+class _PushEquationContext(latexwalker._PushPropOverride):
+    def __init__(self, l2t):
+
+        new_strict_latex_spaces = None
+        if l2t.strict_latex_spaces['in-equations'] is not None:
+            new_strict_latex_spaces = _parse_strict_latex_spaces_dict(
+                l2t.strict_latex_spaces['in-equations']
+            )
+
+        super(_PushEquationContext, self).__init__(l2t, 'strict_latex_spaces',
+                                                   new_strict_latex_spaces)
 
 
 
