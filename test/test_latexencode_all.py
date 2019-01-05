@@ -71,7 +71,7 @@ class TestLatexEncode(unittest.TestCase):
         diffmsg = "".join(list(s)).strip()
         if diffmsg:
             print(diffmsg)
-            assert False
+            raise self.failureException("Unicode coverage tests failed. See full diff above.")
 
 
 if __name__ == '__main__':
