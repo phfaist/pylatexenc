@@ -32,11 +32,8 @@ Macro Definitions
    :annotation:
 
 
-Data Node Classes and Helpers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: pylatexenc.latexwalker.LatexToken
-   :members:
+Data Node Classes
+~~~~~~~~~~~~~~~~~
 
 .. autoclass:: pylatexenc.latexwalker.LatexNode
    :members:
@@ -59,4 +56,8 @@ Data Node Classes and Helpers
 .. autoclass:: pylatexenc.latexwalker.LatexMathNode
    :show-inheritance:
 
+
+
+.. autoclass:: pylatexenc.latexwalker.LatexToken
+   :members:
 

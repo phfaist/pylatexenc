@@ -260,6 +260,12 @@ class LatexToken(object):
     r"""
     Represents a token read from the LaTeX input.
 
+    This is used internally by :py:class:`LatexWalker`'s methods.  You probably
+    don't need to worry about individual tokens.  Rather, you should use the
+    high-level functions provided by :py:class:`LatexWalker` (e.g.,
+    :py:meth:`~latexwalker.LatexWalker.get_latex_nodes()`).  So most likely, you
+    can ignore this class entirely.
+
     This is not the same thing as a LaTeX token, it's just a part of the input
     which we treat in the same way (e.g. a bunch of content characters, a
     comment, a macro, etc.)
@@ -639,6 +645,17 @@ class LatexWalker(object):
       - `strict_braces=True|False` This option refers specifically to reading a
         encountering a closing brace when an expression is needed.  You generally won't
         need to specify this flag, use `tolerant_parsing` instead.
+
+    The methods provided in this class perform various parsing of the given
+    string `s`.  These methods typically accept a `pos` parameter, which must be
+    an integer, which defines the position in the string `s` to start parsing.
+
+    These methods, unless otherwise documented, return a tuple `(node, pos,
+    len)`, where node is a :py:class:`LatexNode` describing the parsed content,
+    `pos` is the position at which the LaTeX element of iterest was encountered,
+    and `len` is the length of the string that is considered to be part of the
+    `node`.  That is, the position in the string that is immediately after the
+    node is `pos+len`.
     """
 
     def __init__(self, s, macro_dict=None, **flags):
@@ -670,6 +687,10 @@ class LatexWalker(object):
         
     def get_token(self, pos, brackets_are_chars=True, environments=True, keep_inline_math=None):
         """
+        Parses the latex content given to the constructor (and stored in `self.s`),
+        starting at position `pos`, to parse a single "token", as defined by
+        :py:class:`LatexToken`.
+
         Parse the token in the stream pointed to at position `pos`.
 
         Returns a :py:class:`LatexToken`. Raises :py:exc:`LatexWalkerEndOfStream` if end
@@ -782,12 +803,15 @@ class LatexWalker(object):
 
     def get_latex_expression(self, pos, strict_braces=None):
         """
+        Parses the latex content given to the constructor (and stored in `self.s`),
+        starting at position `pos`, to parse a single LaTeX expression.
+
         Reads a latex expression, e.g. macro argument. This may be a single char, an escape
         sequence, or a expression placed in braces.  This is what TeX calls a "token" (and
         not what we call a token... anyway).
 
-        Returns a tuple `(<LatexNode instance>, pos, len)`. `pos` is the first char of the
-        expression, and `len` is its length.
+        Returns a tuple `(node, pos, len)`, where `pos` is the position of the
+        first char of the expression and `len` the length of the expression.
         """
 
         with _PushPropOverride(self, 'strict_braces', strict_braces):
@@ -820,8 +844,12 @@ class LatexWalker(object):
 
     def get_latex_maybe_optional_arg(self, pos):
         """
-        Attempts to parse an optional argument. Returns a tuple `(groupnode, pos, len)` if
-        success, otherwise returns None.
+        Parses the latex content given to the constructor (and stored in `self.s`),
+        starting at position `pos`, to attempt to parse an optional argument.
+
+        Attempts to parse an optional argument. If this is successful, we return
+        a tuple `(node, pos, len)` if success where `node` is a
+        :py:class:`LatexGroupNode`.  Otherwise, this method returns None.
         """
 
         tok = self.get_token(pos, brackets_are_chars=False, environments=False)
@@ -833,12 +861,17 @@ class LatexWalker(object):
 
     def get_latex_braced_group(self, pos, brace_type='{'):
         """
-        Reads a latex expression enclosed in braces ``{ ... }``. The first token of `s[pos:]`
-        must be an opening brace.
+        Parses the latex content given to the constructor (and stored in `self.s`),
+        starting at position `pos`, to read a latex group delimited by braces.
 
-        Returns a tuple `(node, pos, len)`, where `node` is a :py:class:`LatexGroupNode`
-        instance, `pos` is the first char of the expression (which has to be an opening
-        brace), and `len` is its length, including the closing brace.
+        Reads a latex expression enclosed in braces ``{ ... }``. The first token of
+        `s[pos:]` must be an opening brace.
+
+        Returns a tuple `(node, pos, len)`, where `node` is a
+        :py:class:`LatexGroupNode` instance, `pos` is the position of the first
+        char of the expression (which has to be an opening brace), and `len` is
+        the length of the group, including the closing brace (relative to the
+        starting position).
         """
 
         closing_brace = None
@@ -867,19 +900,25 @@ class LatexWalker(object):
 
 
     def get_latex_environment(self, pos, environmentname=None):
-        """
-        Reads a latex expression enclosed in a ``\\begin{environment}...\\end{environment}``.
-        The first token in the stream must be the ``\\begin{environment}``.
+        r"""
+        Parses the latex content given to the constructor (and stored in `self.s`),
+        starting at position `pos`, to read a latex environment.
+
+        Reads a latex expression enclosed in a
+        ``\begin{environment}...\end{environment}``.  The first token in the
+        stream must be the ``\begin{environment}``.
 
         If `environmentname` is given and nonempty, then additionally a
-        :py:exc:`LatexWalkerParseError` is raised if the environment in the input stream
-        does not match the provided name.
+        :py:exc:`LatexWalkerParseError` is raised if the environment in the
+        input stream does not match the provided name.
 
-        This function will attempt to heuristically parse an optional argument, and
-        possibly a mandatory argument given to the environment.  No space is allowed
-        between ``\begin{environment}`` and an opening square bracket or opening brace.
+        This function will attempt to heuristically parse an optional argument,
+        and possibly a mandatory argument given to the environment.  No space is
+        allowed between ``\begin{environment}`` and an opening square bracket or
+        opening brace.
 
-        Returns a tuple (node, pos, len) with node being a :py:class:`LatexEnvironmentNode`.
+        Returns a tuple (node, pos, len) with node being a
+        :py:class:`LatexEnvironmentNode`.
         """
 
         startpos = pos
@@ -933,7 +972,8 @@ class LatexWalker(object):
     def get_latex_nodes(self, pos=0, stop_upon_closing_brace=None, stop_upon_end_environment=None,
                         stop_upon_closing_mathmode=None):
         """
-        Parses latex content stored in `self.s` into a list of nodes.
+        Parses the latex content given to the constructor (and stored in `self.s`)
+        into a list of nodes.
 
         Returns a tuple `(nodelist, pos, len)` where nodelist is a list of
         :py:class:`LatexNode`\ 's.
@@ -949,6 +989,12 @@ class LatexWalker(object):
         `LatexWalkerParseError` is raised except in tolerant parsing mode (see
         py:meth:`parse_flags()`).  Again, the closing environment is included in the
         length count but not the nodes.
+
+        If `stop_upon_closing_mathmode` is specified, then the parsing stops
+        once the corresponding math mode (assumed already open) is closed.
+        Currently, only inline math modes delimited by ``$`` are supported.
+        I.e., currently, if set, only the value
+        ``stop_upon_closing_mathmode='$'`` is valid.
         """
 
         nodelist = []
@@ -1032,8 +1078,8 @@ class LatexWalker(object):
 
             if (tok.tok == 'mathmode_inline'):
                 # if we care about keeping math mode inlines verbatim, gulp all of the expression.
-                if (stop_upon_closing_mathmode is not None):
-                    if (stop_upon_closing_mathmode != '$'):
+                if stop_upon_closing_mathmode is not None:
+                    if stop_upon_closing_mathmode != '$':
                         raise LatexWalkerParseError(
                             s=self.s,
                             pos=tok.pos,
