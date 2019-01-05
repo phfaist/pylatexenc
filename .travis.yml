@@ -12,5 +12,5 @@ python:
 
 # command to run tests
 script:
-  - pytest
+  - PYTHONPATH=. pytest
 
