@@ -9,6 +9,9 @@ text.
 
 .. image:: https://img.shields.io/travis/phfaist/pylatexenc.svg?style=flat
    :target: https://travis-ci.org/phfaist/pylatexenc
+   
+.. image:: https://img.shields.io/pypi/v/pylatexenc.svg?style=flat
+   :target: https://pypi.org/project/pylatexenc/
 
 .. image:: https://img.shields.io/lgtm/alerts/g/phfaist/pylatexenc.svg?logo=lgtm&logoWidth=18&style=flat
    :target: https://lgtm.com/projects/g/phfaist/pylatexenc/alerts/
@@ -41,3 +44,8 @@ given LaTeX code to plain text with unicode characters.
 Note that you can also run `latex2text.py` as a script to convert LaTeX input (either from
 the standard input, or from files given on the command line) into plain text, written on
 the standard output.
+
+Documentation
+-------------
+
+Full documentation is available at https://pylatexenc.readthedocs.io/ .
