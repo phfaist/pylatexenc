@@ -122,27 +122,27 @@ if __name__ == '__main__':
 
     try:
 
-        # create console handler and set level to debug
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
-        log.addHandler(ch)
+        logging.basicConfig(level=logging.DEBUG)
 
         import fileinput
+        import argparse
 
-        print("Please type some unicode text (Ctrl+D twice to stop) ...")
+        parser = argparse.ArgumentParser()
+        parser.add_argument('files', metavar="FILE", nargs='*',
+                            help='Input files (if none specified, read from stdandard input)')
 
-        latex = ''
-        for line in fileinput.input():
+        args = parser.parse_args()
+
+        latex = u''
+        for line in fileinput.input(files=args.files):
             latex += line
 
-        print('\n--- LATEX ---\n')
-        print(utf8tolatex(latex.decode('utf-8')).encode('utf-8'))
-        print('\n-------------\n')
+        print(utf8tolatex(latex))
 
-    except BaseException:
+    except: # lgtm [py/catch-base-exception]
         import pdb
-        import sys
-        print("\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n")
+        import traceback
+        traceback.print_exc()
         pdb.post_mortem()
 
 
