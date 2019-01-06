@@ -7,6 +7,9 @@ text.
 .. image:: https://travis-ci.org/phfaist/pylatexenc.svg?branch=master
    :target: https://travis-ci.org/phfaist/pylatexenc
 
+.. image:: https://img.shields.io/lgtm/alerts/g/phfaist/pylatexenc.svg?logo=lgtm&logoWidth=18
+   :target: https://lgtm.com/projects/g/phfaist/pylatexenc/alerts/
+
 
 Unicode Text to LaTeX code
 --------------------------
