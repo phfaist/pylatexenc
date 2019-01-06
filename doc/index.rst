@@ -32,6 +32,16 @@ And the other way around::
     {\`A} votre sant{\'e}!
 
 
+You can also use these utilities directly in command line, e.g.::
+
+    $ echo 'À votre santé!' | python -m pylatexenc.latexencode
+    {\`A} votre sant{\'e}!
+
+
+Documentation
+=============
+
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:

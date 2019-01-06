@@ -23,21 +23,36 @@
 # THE SOFTWARE.
 #
 
-"""
-The ``latexwalker`` module provides a simple API for parsing LaTeX snippets, and
-representing the contents using a data structure based on nodes classes.
+r"""
+The ``latexwalker`` module provides a simple API for parsing LaTeX snippets,
+and representing the contents using a data structure based on nodes classes.
 
-LatexWalker will understand the syntax of most common macros.  However, ``latexwalker`` is
-NOT a replacement for a full LaTeX engine.  (Originally, ``latexwalker`` was desigend to
-extract useful text for indexing for text database searches of LaTeX content.)
+LatexWalker will understand the syntax of most common macros.  However,
+``latexwalker`` is NOT a replacement for a full LaTeX engine.  (Originally,
+``latexwalker`` was desigend to extract useful text for indexing for text
+database searches of LaTeX content.)
+
+You can also use `latexwalker` directly in command-line, producing JSON or a
+human-readable node tree::
+
+    $ echo '\textit{italic} text' | python -m pylatexenc.latexwalker  \ 
+                                    --output-format=json --json-compact
+    [{"nodetype": "LatexMacroNode", "macroname": "textit", "nodeoptarg": null,
+    "nodeargs": [{"nodetype": "LatexGroupNode", "nodelist": [{"nodetype":
+    "LatexCharsNode", "chars": "italic"}]}], "macro_post_space": ""},
+    {"nodetype": "LatexCharsNode", "chars": " text"}]
+
+    $ python -m pylatexenc.latexwalker --help
+    [...]
 """
 
-from __future__ import print_function #, absolute_import
+from __future__ import print_function
 
 import re
 from collections import namedtuple
 import sys
 import logging
+import json
 
 if sys.version_info.major > 2:
     # Py3
@@ -1433,7 +1448,7 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
     if n is None:
         title = '<None>'
     elif n.isNodeType(LatexCharsNode):
-        title = "'%s'" %(n.chars.strip())
+        title = "'%s'" %(n.chars) #.strip())
     elif n.isNodeType(LatexMacroNode):
         title = '\\'+n.macroname
         #comment = 'opt arg?: %d; %d args' % (n.arg.nodeoptarg is not None, len(n.arg.nodeargs))
@@ -1450,9 +1465,11 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
             return
         title = 'Group: '
         iterchildren.append(('* ', n.nodelist, False))
-
     elif n.isNodeType(LatexEnvironmentNode):
         title = '\\begin{%s}' %(n.envname)
+        iterchildren.append(('* ', n.nodelist, False))
+    elif n.isNodeType(LatexMathNode):
+        title = '$inline math$'
         iterchildren.append(('* ', n.nodelist, False))
     else:
         print("UNKNOWN NODE TYPE: %s"%(n.nodeType().__name__))
@@ -1464,6 +1481,88 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
             disp_node(nn, indent=indent+4, context=context, skip_group=skip)
 
 
+class LatexNodesJSONEncoder(json.JSONEncoder):
+    """
+    A :py:class:`json.JSONEncoder` that can encode :py:class:`LatexNode` objects
+    (and subclasses).
+    """
+    def default(self, obj):
+        if not isinstance(obj, LatexNode):
+            return super(LatexNodesJSONEncoder, self).default(obj)
+
+        # Prepare a dictionary with the correct keys and values.
+        n = obj
+        d = {
+            'nodetype': n.__class__.__name__,
+        }
+        for fld in n._fields:
+            d[fld] = n.__dict__[fld]
+        return d
+
+
+def main(argv):
+    import fileinput
+    import argparse
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--output-format', metavar="FORMAT", dest="output_format",
+                        choices=["human", "json"], default='human',
+                        help='Requested output format for the node tree')
+    parser.add_argument('--json-indent', metavar="NUMSPACES", dest="json_indent",
+                        type=int, default=2,
+                        help='Indentation in JSON output (specify number of spaces per indentation level)')
+    parser.add_argument('--json-compact', dest="json_indent", default=2,
+                        action='store_const', const=None,
+                        help='Output compact JSON')
+
+    parser.add_argument('--keep-inline-math', action='store_const', const=True,
+                        dest='keep_inline_math', default=True)
+    parser.add_argument('--no-keep-inline-math', action='store_const', const=False,
+                        dest='keep_inline_math',
+                        help="Keep inline math between $ signs as a special math node (default yes)")
+
+    parser.add_argument('--tolerant-parsing', action='store_const', const=True,
+                        dest='tolerant_parsing', default=True)
+    parser.add_argument('--no-tolerant-parsing', action='store_const', const=False,
+                        dest='tolerant_parsing',
+                        help="Tolerate syntax errors when parsing, and attempt to continue (default yes)")
+
+    parser.add_argument('--strict-braces', action='store_const', const=True,
+                        dest='strict_braces', default=False)
+    parser.add_argument('--no-strict-braces', action='store_const', const=False,
+                        dest='strict_braces',
+                        help="Report errors for mismatching LaTeX braces (default no)")
+
+    parser.add_argument('files', metavar="FILE", nargs='*',
+                        help='Input files (if none specified, read from stdandard input)')
+
+    args = parser.parse_args(argv)
+
+    latex = ''
+    for line in fileinput.input(files=args.files):
+        latex += line
+    
+    latexwalker = LatexWalker(latex,
+                              keep_inline_math=args.keep_inline_math,
+                              tolerant_parsing=args.tolerant_parsing,
+                              strict_braces=args.strict_braces)
+
+    (nodelist, pos, len_) = latexwalker.get_latex_nodes()
+
+    if args.output_format == 'human':
+        print('\n--- NODES ---\n')
+        for n in nodelist:
+            disp_node(n)
+        print('\n-------------\n')
+        return
+
+    if args.output_format == 'json':
+        print(json.dumps(nodelist, cls=LatexNodesJSONEncoder,
+                         indent=args.json_indent) + "\n")
+        return
+    
+    raise ValueError("Invalid output format: "+args.output_format)
 
 
 if __name__ == '__main__':
@@ -1471,31 +1570,13 @@ if __name__ == '__main__':
 
     try:
 
-        #latex = '\\textit{hi there!} This is {\em an equation}: \\begin{equation}\n a + bi = 0\n\\end{equation}\n\nwhere $i$ is the imaginary unit.\n'
-        #nodelist = get_latex_nodes_debug(latex)
-        #print repr(nodelist)
+        main(sys.argv[1:])
 
-
-        import fileinput
-
-        latex = ''
-        for line in fileinput.input():
-            latex += line
-
-        (nodes, pos, llen) = get_latex_nodes(latex)
-
-        print('\n--- NODES ---\n')
-        print(repr(nodes))
-        print('\n-------------\n')
-
-        print('\n--- NODES ---\n')
-        for n in nodes:
-            disp_node(n)
-        print('\n-------------\n')
-
-    except BaseException:
+    except SystemExit:
+        raise
+    except: # lgtm [py/catch-base-exception]
         import pdb
-        import sys
-        print("\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n")
+        import traceback
+        traceback.print_exc()
         pdb.post_mortem()
 

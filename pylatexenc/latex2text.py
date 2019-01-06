@@ -541,6 +541,10 @@ def _parse_strict_latex_spaces_dict(strict_latex_spaces):
         d.update(strict_latex_spaces)
         return d
     elif isinstance(strict_latex_spaces, basestring):
+        if strict_latex_spaces == 'on':
+            return _parse_strict_latex_spaces_dict(True)
+        if strict_latex_spaces == 'off':
+            return _parse_strict_latex_spaces_dict(False)
         if strict_latex_spaces not in _strict_latex_spaces_predef:
             raise ValueError("invalid value for strict_latex_spaces preset: {}"
                              .format(strict_latex_spaces))
@@ -986,6 +990,86 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
 
 
 
+def main(argv):
+    import fileinput
+    import argparse
+
+    parser = argparse.ArgumentParser()
+
+    group = parser.add_argument_group("LatexWalker options")
+
+    group.add_argument('--parser-keep-inline-math', action='store_const', const=True,
+                       dest='parser_keep_inline_math', default=True)
+    group.add_argument('--no-parser-keep-inline-math', action='store_const', const=False,
+                       dest='parser_keep_inline_math',
+                       help="Parse inline math between $ signs specially (default yes)")
+
+    group.add_argument('--tolerant-parsing', action='store_const', const=True,
+                       dest='tolerant_parsing', default=True)
+    group.add_argument('--no-tolerant-parsing', action='store_const', const=False,
+                       dest='tolerant_parsing',
+                       help="Tolerate syntax errors when parsing, and attempt to continue (default yes)")
+
+    group.add_argument('--strict-braces', action='store_const', const=True,
+                       dest='strict_braces', default=False)
+    group.add_argument('--no-strict-braces', action='store_const', const=False,
+                       dest='strict_braces',
+                       help="Report errors for mismatching LaTeX braces (default no)")
+
+    group = parser.add_argument_group("LatexNodes2Text options")
+
+    group.add_argument('--text-keep-inline-math', action='store_const', const=True,
+                       dest='text_keep_inline_math', default=False)
+    group.add_argument('--no-text-keep-inline-math', action='store_const', const=False,
+                       dest='text_keep_inline_math',
+                       help="Keep inline math between $ signs verbatim in text output (default no)")
+
+    group.add_argument('--keep-comments', action='store_const', const=True,
+                       dest='keep_comments', default=False)
+    group.add_argument('--no-keep-comments', action='store_const', const=False,
+                       dest='keep_comments',
+                       help="Keep LaTeX comments in text output (default no)")
+
+    group.add_argument('--strict-latex-spaces',
+                       choices=['off', 'on']+list(_strict_latex_spaces_predef.keys()),
+                       dest='strict_latex_spaces', default='macros',
+                       help="How to handle whitespace. See documentation for the class "
+                       "LatexNodes2Text().")
+
+    group.add_argument('--keep-braced-groups', action='store_const', const=True,
+                       dest='keep_braced_groups', default=False)
+    group.add_argument('--no-keep-braced-groups', action='store_const', const=False,
+                       dest='keep_braced_groups',
+                       help="Keep LaTeX {braced groups} in text output (default no)")
+
+    group.add_argument('--keep-braced-groups-minlen', type=int, default=2,
+                       dest='keep_braced_groups_minlen',
+                       help="Only apply --keep-braced-groups to groups that contain at least"
+                       "this many characters")
+
+    parser.add_argument('files', metavar="FILE", nargs='*',
+                        help='Input files (if none specified, read from stdandard input)')
+
+    args = parser.parse_args(argv)
+
+    latex = ''
+    for line in fileinput.input(files=args.files):
+        latex += line
+    
+    lw = latexwalker.LatexWalker(latex,
+                                 keep_inline_math=args.parser_keep_inline_math,
+                                 tolerant_parsing=args.tolerant_parsing,
+                                 strict_braces=args.strict_braces)
+
+    (nodelist, pos, len_) = lw.get_latex_nodes()
+
+    ln2t = LatexNodes2Text(keep_inline_math=args.text_keep_inline_math,
+                           keep_comments=args.keep_comments,
+                           strict_latex_spaces=args.strict_latex_spaces,
+                           keep_braced_groups=args.keep_braced_groups,
+                           keep_braced_groups_minlen=args.keep_braced_groups_minlen)
+
+    print(ln2t.nodelist_to_text(nodelist) + "\n")
 
 
 
@@ -993,29 +1077,14 @@ if __name__ == '__main__':
 
     try:
 
-        #latex = '\\textit{hi there!} This is {\em an equation}: \\begin{equation}\n a + bi = 0\n\\end{equation}\n\nwhere $i$ is the imaginary unit.\n'
+        main(sys.argv[1:])
 
-        import fileinput
-
-        print("Please type some latex text (Ctrl+D twice to stop) ...")
-
-        latex = ''
-        for line in fileinput.input():
-            latex += line
-
-
-        print('\n--- WORDS ---\n')
-        print(latex2text(latex.decode('utf-8')#, keep_inline_math=True
-                         ).encode('utf-8'))
-        print('\n-------------\n')
-
-    except BaseException:
+    except SystemExit:
+        raise
+    except: # lgtm [py/catch-base-exception]
         import pdb
-        import sys
-        (exc_type, exc_value, exc_traceback) = sys.exc_info()
-        
-        print("\nEXCEPTION: " + unicode(sys.exc_info()[1]) + "\n")
-
+        import traceback
+        traceback.print_exc()
         pdb.post_mortem()
 
 
