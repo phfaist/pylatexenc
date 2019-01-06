@@ -4,6 +4,9 @@ pylatexenc
 Python library for encoding unicode to latex and for parsing LaTeX to generate unicode
 text.
 
+.. image:: https://travis-ci.org/phfaist/pylatexenc.svg?branch=master
+   :target: https://travis-ci.org/phfaist/pylatexenc
+
 
 Unicode Text to LaTeX code
 --------------------------
