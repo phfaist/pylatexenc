@@ -23,16 +23,30 @@
 # THE SOFTWARE.
 #
 
-"""
-The ``latexwalker`` module provides a simple API for parsing LaTeX snippets, and
-representing the contents using a data structure based on nodes classes.
+r"""
+The ``latexwalker`` module provides a simple API for parsing LaTeX snippets,
+and representing the contents using a data structure based on nodes classes.
 
-LatexWalker will understand the syntax of most common macros.  However, ``latexwalker`` is
-NOT a replacement for a full LaTeX engine.  (Originally, ``latexwalker`` was desigend to
-extract useful text for indexing for text database searches of LaTeX content.)
+LatexWalker will understand the syntax of most common macros.  However,
+``latexwalker`` is NOT a replacement for a full LaTeX engine.  (Originally,
+``latexwalker`` was desigend to extract useful text for indexing for text
+database searches of LaTeX content.)
+
+You can also use `latexwalker` directly in command-line, producing JSON or a
+human-readable node tree::
+
+    $ echo '\textit{italic} text' | python -m pylatexenc.latexwalker  \ 
+                                    --output-format=json --json-compact
+    [{"nodetype": "LatexMacroNode", "macroname": "textit", "nodeoptarg": null,
+    "nodeargs": [{"nodetype": "LatexGroupNode", "nodelist": [{"nodetype":
+    "LatexCharsNode", "chars": "italic"}]}], "macro_post_space": ""},
+    {"nodetype": "LatexCharsNode", "chars": " text"}]
+
+    $ python -m pylatexenc.latexwalker --help
+    [...]
 """
 
-from __future__ import print_function #, absolute_import
+from __future__ import print_function
 
 import re
 from collections import namedtuple

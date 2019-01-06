@@ -38,6 +38,10 @@ You can also use these utilities directly in command line, e.g.::
     {\`A} votre sant{\'e}!
 
 
+Documentation
+=============
+
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
