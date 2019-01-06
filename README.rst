@@ -4,10 +4,13 @@ pylatexenc
 Python library for encoding unicode to latex and for parsing LaTeX to generate unicode
 text.
 
-.. image:: https://travis-ci.org/phfaist/pylatexenc.svg?branch=master
+.. image:: https://img.shields.io/github/license/phfaist/pylatexenc.svg?style=flat
+   :target: https://github.com/phfaist/pylatexenc/blob/master/LICENSE.txt
+
+.. image:: https://img.shields.io/travis/phfaist/pylatexenc.svg?style=flat
    :target: https://travis-ci.org/phfaist/pylatexenc
 
-.. image:: https://img.shields.io/lgtm/alerts/g/phfaist/pylatexenc.svg?logo=lgtm&logoWidth=18
+.. image:: https://img.shields.io/lgtm/alerts/g/phfaist/pylatexenc.svg?logo=lgtm&logoWidth=18&style=flat
    :target: https://lgtm.com/projects/g/phfaist/pylatexenc/alerts/
 
 
