@@ -685,6 +685,7 @@ utf82latex = {
 0x2131: r'\ensuremath{\mathscr{F}}',             # SCRIPT CAPITAL F
 0x2133: r'\ensuremath{\mathscr{M}}',             # SCRIPT CAPITAL M
 0x2134: r'\ensuremath{o}',                       # SCRIPT SMALL O
+0x2135: r'\ensuremath{\aleph}',                  # ALEF SYMBOL
 
 
 0x2190: r'\textleftarrow',                       # 0x2190
