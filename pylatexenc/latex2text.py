@@ -225,6 +225,7 @@ _default_macro_list = [
     ('nexists', u"\N{THERE DOES NOT EXIST}"),
     ('varnothing', u"\N{EMPTY SET}"),
     ('emptyset', u"\N{EMPTY SET}"),
+    ('aleph', u"\N{ALEF SYMBOL}"),
     # increment?
     ('nabla', u"\N{NABLA}"),
     #

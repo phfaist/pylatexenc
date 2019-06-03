@@ -25,7 +25,8 @@
 
 
 #
-# CHARACTER MAP TAKEN FROM latexcodec 0.2, by Peter Troeger
+# CHARACTER MAP ADAPTED FROM:
+# latexcodec 0.2, by Peter Troeger
 #    https://pypi.python.org/pypi/latexcodec
 #
 #
