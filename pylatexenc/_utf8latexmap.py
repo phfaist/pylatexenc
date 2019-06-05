@@ -65,6 +65,7 @@ utf82latex = {
 0x003C: r'\ensuremath{<}',                       # <
 0x003E: r'\ensuremath{>}',                       # >
 0x005C: r'\textbackslash',                       # the \ character itself
+0x005E: r'\textasciicircum',                     # character ^
 0x005F: r'\_',                                   # character _
 0x007B: r'\{',                                   # character {
 0x007D: r'\}',                                   # character }

@@ -60,7 +60,7 @@
 0x005B [LEFT SQUARE BRACKET]                                 |[|
 0x005C [REVERSE SOLIDUS]                                     |{\textbackslash}|
 0x005D [RIGHT SQUARE BRACKET]                                |]|
-0x005E [CIRCUMFLEX ACCENT]                                   |^|
+0x005E [CIRCUMFLEX ACCENT]                                   |{\textasciicircum}|
 0x005F [LOW LINE]                                            |{\_}|
 0x0060 [GRAVE ACCENT]                                        |`|
 0x0061 [LATIN SMALL LETTER A]                                |a|
