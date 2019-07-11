@@ -354,7 +354,7 @@ _default_macro_list = [
     # we use these conventions as Identity operator (\mathbbm{1})
     ('id', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
     ('Ident', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
-    ]
+]
 
 
 
@@ -784,7 +784,8 @@ class LatexNodes2Text(object):
                 s = s.replace(pattern, replacement)
 
         if not self.keep_inline_math:
-            s = s.replace('$', ''); # removing math mode inline signs, just keep their Unicode counterparts..
+            s = s.replace('$', ''); # removing math mode inline signs, just keep
+                                    # their Unicode counterparts..
 
         return s
 
@@ -991,9 +992,12 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
 
 
 
-def main(argv):
+def main(argv=None):
     import fileinput
     import argparse
+
+    if argv is None:
+        argv = sys.argv[1:]
 
     parser = argparse.ArgumentParser()
 
@@ -1074,11 +1078,11 @@ def main(argv):
 
 
 
-if __name__ == '__main__':
+def run_main():
 
     try:
 
-        main(sys.argv[1:])
+        main()
 
     except SystemExit:
         raise
@@ -1089,3 +1093,8 @@ if __name__ == '__main__':
         pdb.post_mortem()
 
 
+
+
+if __name__ == '__main__':
+
+    run_main()

@@ -35,7 +35,7 @@ database searches of LaTeX content.)
 You can also use `latexwalker` directly in command-line, producing JSON or a
 human-readable node tree::
 
-    $ echo '\textit{italic} text' | python -m pylatexenc.latexwalker  \ 
+    $ echo '\textit{italic} text' | latexwalker  \ 
                                     --output-format=json --json-compact
     [{"nodetype": "LatexMacroNode", "macroname": "textit", "nodeoptarg": null,
     "nodeargs": [{"nodetype": "LatexGroupNode", "nodelist": [{"nodetype":
@@ -100,165 +100,16 @@ class LatexWalkerEndOfStream(LatexWalkerError):
 
 
 
-MacrosDef = namedtuple('MacrosDef', ['macname', 'optarg', 'numargs'])
-"""
-Class which stores a Macro syntax.
-
-- `macname` stores the name of the macro, without the leading backslash.
-
-- `optarg` may be one of `True`, `False`, or `None`.
-
-  + if `True`, the macro expects as first argument an optional argument in square
-    brackets. Then, `numargs` specifies the number of additional mandatory arguments to
-    the command, given in usual curly braces (or simply as one TeX token)
-
-  + if `False`, the macro only expects a number of mandatory arguments given by
-    `numargs`. The mandatory arguments are given in usual curly braces (or simply as one
-    TeX token)
-
-  + if `None`, then `numargs` is a string of either characters "{" or "[", in which each
-    curly brace specifies a mandatory argument and each square bracket specifies an
-    optional argument in square brackets.  For example, "{{[{" expects two mandatory
-    arguments, then an optional argument in square brackets, and then another mandatory
-    argument.
-"""
 
 
-_default_macro_list = (
-    MacrosDef('documentclass', True, 1),
-    MacrosDef('usepackage', True, 1),
-    MacrosDef('selectlanguage', True, 1),
-    MacrosDef('setlength', True, 2),
-    MacrosDef('addlength', True, 2),
-    MacrosDef('setcounter', True, 2),
-    MacrosDef('addcounter', True, 2),
-    MacrosDef('newcommand', None, "{[{"),
-    MacrosDef('renewcommand', None, "{[{"),
-    MacrosDef('DeclareMathOperator', False, 2),
-    MacrosDef('input', False, 1),
-
-    MacrosDef('hspace', False, 1),
-    MacrosDef('vspace', False, 1),
-
-    MacrosDef('\\', True, 0), # (Note: single backslash) end of line with optional spacing, e.g.  \\[2mm]
-    MacrosDef('item', True, 0),
-
-    # \input{someotherfile}
-    MacrosDef('input', False, 1),
-    MacrosDef('include', False, 1),
-
-    MacrosDef('includegraphics', True, 1),
-
-    MacrosDef('emph', False, 1),
-    MacrosDef('textit', False, 1),
-    MacrosDef('textbf', False, 1),
-    MacrosDef('textsc', False, 1),
-    MacrosDef('textsl', False, 1),
-    MacrosDef('text', False, 1),
-    MacrosDef('mathrm', False, 1),
-
-    MacrosDef('label', False, 1),
-    MacrosDef('ref', False, 1),
-    MacrosDef('eqref', False, 1),
-    MacrosDef('url', False, 1),
-    MacrosDef('hypersetup', False, 1),
-    MacrosDef('footnote', True, 1),
-
-    MacrosDef('keywords', False, 1),
-
-    MacrosDef('hphantom', True, 1),
-    MacrosDef('vphantom', True, 1),
-
-    MacrosDef("'", False, 1),
-    MacrosDef("`", False, 1),
-    MacrosDef('"', False, 1),
-    MacrosDef("c", False, 1),
-    MacrosDef("^", False, 1),
-    MacrosDef("~", False, 1),
-    MacrosDef("H", False, 1),
-    MacrosDef("k", False, 1),
-    MacrosDef("=", False, 1),
-    MacrosDef("b", False, 1),
-    MacrosDef(".", False, 1),
-    MacrosDef("d", False, 1),
-    MacrosDef("r", False, 1),
-    MacrosDef("u", False, 1),
-    MacrosDef("v", False, 1),
-
-    MacrosDef("vec", False, 1),
-    MacrosDef("dot", False, 1),
-    MacrosDef("hat", False, 1),
-    MacrosDef("check", False, 1),
-    MacrosDef("breve", False, 1),
-    MacrosDef("acute", False, 1),
-    MacrosDef("grave", False, 1),
-    MacrosDef("tilde", False, 1),
-    MacrosDef("bar", False, 1),
-    MacrosDef("ddot", False, 1),
+from . import _latexwalker_defs
 
 
-    MacrosDef('frac', False, 2),
-    MacrosDef('nicefrac', False, 2),
+MacroDef = _latexwalker_defs.MacroDef
 
-    MacrosDef('sqrt', True, 1),
-
-    MacrosDef('ket', False, 1),
-    MacrosDef('bra', False, 1),
-    MacrosDef('braket', False, 2),
-    MacrosDef('ketbra', False, 2),
-
-    MacrosDef('texorpdfstring', False, 2),
-
-    # ethuebung
-    MacrosDef('UebungLoesungFont', False, 1),
-    MacrosDef('UebungHinweisFont', False, 1),
-    MacrosDef('UebungExTitleFont', False, 1),
-    MacrosDef('UebungSubExTitleFont', False, 1),
-    MacrosDef('UebungTipsFont', False, 1),
-    MacrosDef('UebungLabel', False, 1),
-    MacrosDef('UebungSubLabel', False, 1),
-    MacrosDef('UebungLabelEnum', False, 1),
-    MacrosDef('UebungLabelEnumSub', False, 1),
-    MacrosDef('UebungSolLabel', False, 1),
-    MacrosDef('UebungHinweisLabel', False, 1),
-    MacrosDef('UebungHinweiseLabel', False, 1),
-    MacrosDef('UebungSolEquationLabel', False, 1),
-    MacrosDef('UebungTipsLabel', False, 1),
-    MacrosDef('UebungTipsEquationLabel', False, 1),
-    MacrosDef('UebungsblattTitleSeries', False, 1),
-    MacrosDef('UebungsblattTitleSolutions', False, 1),
-    MacrosDef('UebungsblattTitleTips', False, 1),
-    MacrosDef('UebungsblattNumber', False, 1),
-    MacrosDef('UebungsblattTitleFont', False, 1),
-    MacrosDef('UebungTitleCenterVSpacing', False, 1),
-    MacrosDef('UebungAttachedSolutionTitleTop', False, 1),
-    MacrosDef('UebungAttachedSolutionTitleFont', False, 1),
-    MacrosDef('UebungAttachedSolutionTitle', False, 1),
-    MacrosDef('UebungTextAttachedSolution', False, 1),
-    MacrosDef('UebungDueByLabel', False, 1),
-    MacrosDef('UebungDueBy', False, 1),
-    MacrosDef('UebungLecture', False, 1),
-    MacrosDef('UebungProf', False, 1),
-    MacrosDef('UebungLecturer', False, 1),
-    MacrosDef('UebungSemester', False, 1),
-    MacrosDef('UebungLogoFile', False, 1),
-    MacrosDef('UebungLanguage', False, 1),
-    MacrosDef('UebungStyle', False, 1),
-    #
-    MacrosDef('uebung', False, '{['),
-    MacrosDef('exercise', False, '{['),
-    MacrosDef('keywords', False, 1),
-    MacrosDef('subuebung', False, 1),
-    MacrosDef('subexercise', False, 1),
-    MacrosDef('pdfloesung', True, 1),
-    MacrosDef('pdfsolution', True, 1),
-    MacrosDef('exenumfulllabel', False, 1),
-    MacrosDef('hint', False, 1),
-    MacrosDef('hints', False, 1),
-    MacrosDef('hinweis', False, 1),
-    MacrosDef('hinweise', False, 1),
-
-    )
+def MacrosDef(...):
+    
+    ,.......
 
 default_macro_dict = dict([(m.macname, m) for m in _default_macro_list])
 """
@@ -378,7 +229,9 @@ class LatexToken(object):
     def __eq__(self, other):
         return all( ( getattr(self, f) == getattr(other, f)  for f in self._fields ) )
 
+    # see https://docs.python.org/3/library/constants.html#NotImplemented
     def __ne__(self, other): return NotImplemented
+
     __hash__ = None
 
 
@@ -420,7 +273,10 @@ class LatexNode(object):
         return other is not None  and  self.nodeType() == other.nodeType()  and  all(
             ( getattr(self, f) == getattr(other, f)  for f in self._fields )
         )
+
+    # see https://docs.python.org/3/library/constants.html#NotImplemented
     def __ne__(self, other): return NotImplemented
+
     __hash__ = None
 
     def __unicode__(self):
@@ -490,9 +346,12 @@ class LatexCommentNode(LatexNode):
        (e.g., indentation spaces of the next line)
 
     """
-    def __init__(self, comment, comment_post_space='', **kwargs):
+    def __init__(self, comment, **kwargs):
+        comment_post_space = kwargs.pop('comment_post_space', '')
+
         super(LatexCommentNode, self).__init__(**kwargs)
-        self._fields = ('comment',)
+
+        self._fields = ('comment', 'comment_post_space', )
         self.comment = comment
         self.comment_post_space = comment_post_space
 
@@ -501,7 +360,7 @@ class LatexCommentNode(LatexNode):
 
 class LatexMacroNode(LatexNode):
     r"""
-    Represents a 'macro' type node, e.g. '\textbf'
+    Represents a macro type node, e.g. ``\textbf``
 
     .. py:attribute:: macroname
 
@@ -521,10 +380,15 @@ class LatexMacroNode(LatexNode):
        Any spaces that were encountered immediately after the macro.
 
     """
-    def __init__(self, macroname, nodeoptarg=None, nodeargs=[], macro_post_space='',
-                 **kwargs):
+    def __init__(self, macroname, **kwargs):
+        nodeoptarg=kwargs.pop('nodeoptarg', None)
+        nodeargs=kwargs.pop('nodeargs', [])
+        macro_post_space=kwargs.pop('macro_post_space', '')
+
         super(LatexMacroNode, self).__init__(**kwargs)
+
         self._fields = ('macroname','nodeoptarg','nodeargs','macro_post_space')
+
         self.macroname = macroname
         self.nodeoptarg = nodeoptarg
         self.nodeargs = nodeargs
@@ -562,8 +426,12 @@ class LatexEnvironmentNode(LatexNode):
 
     """
     
-    def __init__(self, envname, nodelist, optargs=[], args=[], **kwargs):
+    def __init__(self, envname, nodelist, **kwargs):
+        optargs = kwargs.pop('optargs', [])
+        args = kwargs.pop('args', [])
+
         super(LatexEnvironmentNode, self).__init__(**kwargs)
+
         self._fields = ('envname','nodelist','optargs','args',)
         self.envname = envname
         self.nodelist = nodelist
@@ -672,7 +540,7 @@ class LatexWalker(object):
     node is `pos+len`.
     """
 
-    def __init__(self, s, macro_dict=None, **flags):
+    def __init__(self, s, macro_dict=None, **kwargs):
         self.s = s
         if macro_dict is not None:
             self.macro_dict = macro_dict
@@ -681,12 +549,12 @@ class LatexWalker(object):
         #
         # now parsing flags:
         #
-        self.keep_inline_math = flags.pop('keep_inline_math', False)
-        self.tolerant_parsing = flags.pop('tolerant_parsing', True)
-        self.strict_braces = flags.pop('strict_braces', False)
-        if flags:
+        self.keep_inline_math = kwargs.pop('keep_inline_math', False)
+        self.tolerant_parsing = kwargs.pop('tolerant_parsing', True)
+        self.strict_braces = kwargs.pop('strict_braces', False)
+        if kwargs:
             # any flags left which we haven't recognized
-            logger.warning("LatexWalker(): Unknown flag(s) encountered: %r", flags.keys())
+            logger.warning("LatexWalker(): Unknown flag(s) encountered: %r", kwargs.keys())
 
     def parse_flags(self):
         """
@@ -842,7 +710,7 @@ class LatexWalker(object):
                 if (tok.arg == 'end'):
                     if not self.tolerant_parsing:
                         # error, this should be an \end{environment}, not an argument in itself
-                        raise LatexWalkerParseError("Expected expression, got \end", self.s, pos)
+                        raise LatexWalkerParseError(r"Expected expression, got \end", self.s, pos)
                     else:
                         return (LatexCharsNode(chars=''), tok.pos, 0)
                 return (LatexMacroNode(macroname=tok.arg, nodeoptarg=None, nodeargs=[],
@@ -910,8 +778,6 @@ class LatexWalker(object):
                 pos=pos,
                 msg='get_latex_braced_group: not an opening brace/bracket: %s' %(self.s[pos])
             )
-
-        #pos = firsttok.pos + firsttok.len
 
         (nodelist, npos, nlen) = self.get_latex_nodes(firsttok.pos + firsttok.len,
                                                       stop_upon_closing_brace=closing_brace)
@@ -991,7 +857,7 @@ class LatexWalker(object):
 
     def get_latex_nodes(self, pos=0, stop_upon_closing_brace=None, stop_upon_end_environment=None,
                         stop_upon_closing_mathmode=None):
-        """
+        r"""
         Parses the latex content given to the constructor (and stored in `self.s`)
         into a list of nodes.
 
@@ -1142,45 +1008,8 @@ class LatexWalker(object):
                 if macname in self.macro_dict:
                     mac = self.macro_dict[macname]
 
-                    def getoptarg(pos):
-                        """
-                        Gets a possibly optional argument. returns (argnode, new-pos) where argnode
-                        might be `None` if the argument was not specified.
-                        """
-                        optarginfotuple = self.get_latex_maybe_optional_arg(pos)
-                        if optarginfotuple is not None:
-                            (nodeoptarg, optargpos, optarglen) = optarginfotuple
-                            return (nodeoptarg, optargpos+optarglen)
-                        return (None, pos)
+..........................
 
-                    def getarg(pos):
-                        """
-                        Gets a mandatory argument. returns (argnode, new-pos)
-                        """
-                        (nodearg, npos, nlen) = self.get_latex_expression(pos, strict_braces=False)
-                        return (nodearg, npos + nlen)
-
-                    if mac.optarg:
-                        (nodeoptarg, p.pos) = getoptarg(p.pos)
-
-                    if isinstance(mac.numargs, _basestring):
-                        # specific argument specification
-                        for arg in mac.numargs:
-                            if arg == '{':
-                                (node, p.pos) = getarg(p.pos)
-                                nodeargs.append(node)
-                            elif arg == '[':
-                                (node, p.pos) = getoptarg(p.pos)
-                                nodeargs.append(node)
-                            else:
-                                raise LatexWalkerError(
-                                    "Unknown macro argument kind for macro %s: %s"
-                                    % (mac.macroname, arg)
-                                )
-                    else:
-                        for n in range(mac.numargs):
-                            (nodearg, p.pos) = getarg(p.pos)
-                            nodeargs.append(nodearg)
 
                 nodelist.append(LatexMacroNode(macroname=tok.arg,
                                                nodeoptarg=nodeoptarg,
@@ -1374,9 +1203,11 @@ def nodelist_to_latex(nodelist):
     for n in nodelist:
         if n is None:
             continue
+
         if n.isNodeType(LatexCharsNode):
             latex += n.chars
             continue
+
         if n.isNodeType(LatexMacroNode):
             latex += r'\%s%s' %(n.macroname, n.macro_post_space)
 
@@ -1392,7 +1223,7 @@ def nodelist_to_latex(nodelist):
             else:
                 macbraces = '{'*len(n.nodeargs)
                 
-            if (len(n.nodeargs) != len(macbraces)):
+            if len(n.nodeargs) != len(macbraces):
                 raise LatexWalkerError("Error: number of arguments (%d) provided to macro `\\%s' does not "
                                        "match its specification of `%s'"
                                        %(len(n.nodeargs), n.macroname, macbraces))
@@ -1500,9 +1331,12 @@ class LatexNodesJSONEncoder(json.JSONEncoder):
         return d
 
 
-def main(argv):
+def main(argv=None):
     import fileinput
     import argparse
+
+    if argv is None:
+        argv = sys.argv[1:]
 
     parser = argparse.ArgumentParser()
 
@@ -1565,12 +1399,11 @@ def main(argv):
     raise ValueError("Invalid output format: "+args.output_format)
 
 
-if __name__ == '__main__':
-
+def run_main():
 
     try:
 
-        main(sys.argv[1:])
+        main()
 
     except SystemExit:
         raise
@@ -1580,3 +1413,7 @@ if __name__ == '__main__':
         traceback.print_exc()
         pdb.post_mortem()
 
+
+if __name__ == '__main__':
+
+    run_main()

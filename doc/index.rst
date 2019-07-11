@@ -1,12 +1,13 @@
 .. pylatexenc documentation master file, created by
    sphinx-quickstart on Mon Apr 24 16:32:21 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+   You can adapt this file completely to your liking,
+   but it should at least contain the root `toctree` directive.
 
 Welcome to pylatexenc's documentation!
 ======================================
 
-This package provides simple and heuristic conversion of LaTeX to unicode and vice versa.
+This package provides simple and heuristic conversion of LaTeX to unicode and
+vice versa.
 
 Quick example::
 

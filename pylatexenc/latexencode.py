@@ -38,7 +38,7 @@ if sys.version_info.major > 2:
     def unicode(string): return string
     basestring = str
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 
@@ -87,7 +87,7 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
 
     result = u""
     for ch in s:
-        #log.longdebug("Encoding char %r", ch)
+        #logger.longdebug("Encoding char %r", ch)
         if (non_ascii_only and ord(ch) < 127):
             result += ch
         else:
@@ -107,7 +107,7 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
                 if fail_bad_chars:
                     raise ValueError(msg)
 
-                log.warning(msg)
+                logger.warning(msg)
                 if substitute_bad_chars:
                     result += r'{\bfseries ?}'
                 else:
@@ -118,27 +118,35 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
 
 
 
-if __name__ == '__main__':
+def main(argv=None):
+    import fileinput
+    import argparse
 
+    if argv is None:
+        argv = sys.argv[1:]
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('files', metavar="FILE", nargs='*',
+                        help='Input files (if none specified, read from stdandard input)')
+
+    args = parser.parse_args(argv)
+
+    latex = u''
+    for line in fileinput.input(files=args.files):
+        latex += line
+
+    print(utf8tolatex(latex))
+
+
+def run_main():
     try:
 
         logging.basicConfig(level=logging.DEBUG)
 
-        import fileinput
-        import argparse
+        main()
 
-        parser = argparse.ArgumentParser()
-        parser.add_argument('files', metavar="FILE", nargs='*',
-                            help='Input files (if none specified, read from stdandard input)')
-
-        args = parser.parse_args()
-
-        latex = u''
-        for line in fileinput.input(files=args.files):
-            latex += line
-
-        print(utf8tolatex(latex))
-
+    except SystemExit:
+        raise
     except: # lgtm [py/catch-base-exception]
         import pdb
         import traceback
@@ -146,3 +154,6 @@ if __name__ == '__main__':
         pdb.post_mortem()
 
 
+if __name__ == '__main__':
+
+    run_main()
