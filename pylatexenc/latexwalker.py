@@ -445,31 +445,44 @@ class LatexEnvironmentNode(LatexNode):
        A list of :py:class:`LatexNode`'s that represent all the contents between
        the ``\begin{...}`` instruction and the ``\end{...}`` instruction.
 
+    .. py:attribute:: nodeargd
+
+       The :py:class:`macrospec.ParsedMacroArgs` object that represents the
+       macro arguments.
+
+    The following attributes are obsolete since `pylatexenc 2.0`.
+
     .. py:attribute:: optargs
 
-       Any possible optional argument passed to the ``\begin{...}`` instruction,
-       for example in ``\begin{enumerate}[label=\roman*)]`` (Currently, only a
-       single optional argument is parsed, but this attribute is still a list of
-       :py:class:`LatexNode`'s.
+       .. deprecated:: 2.0
+
+          Macro arguments are stored in `nodeargd` in `pylatexenc 2`.  Accessing
+          the argument `optargs` will still give a list of initial optional
+          arguments for standard latex macros, for backwards compatibility.
 
     .. py:attribute:: args
 
-       Any possible regular arguments passed to the ``\begin{...}`` instruction,
-       for example in ``\begin{tabular}{clr}``. Currently, at most a single
-       regular argument is parsed, but this is anyway a list of
-       :py:class:`LatexNode`'s
+       .. deprecated:: 2.0
 
+          Macro arguments are stored in `nodeargd` in `pylatexenc 2`.  Accessing
+          the argument `args` will still give a list of curly-brace-delimited
+          arguments for standard latex macros, for backwards compatibility.
     """
     
     def __init__(self, envname, nodelist, **kwargs):
+        nodeargd = kwargs.pop('nodeargd', macrospec.ParsedMacroArgs())
+        # legacy:
         optargs = kwargs.pop('optargs', [])
         args = kwargs.pop('args', [])
 
         super(LatexEnvironmentNode, self).__init__(**kwargs)
 
-        self._fields = ('envname','nodelist','optargs','args',)
+        self._fields = ('envname','nodelist','nodeargd','optargs','args',)
+        self._realfields = ('envname','nodelist','nodeargd',)
         self.envname = envname
         self.nodelist = nodelist
+        self.nodeargd = nodeargd
+        # legacy:
         self.optargs = optargs
         self.args = args
 
@@ -545,11 +558,19 @@ class LatexWalker(object):
 
       - `s`: the string to parse as LaTeX code
 
-      - `macro_dict`: a context dictionary of known LaTeX macros.  By default,
-        the default global macro dictionary `default_macro_dict` is used.  This
-        should be a dictionary where the keys are macro names (see
+      - `macro_dict`: a context dictionary of known LaTeX macros.  By default, a
+        macro dictionary built from the default
+        :py:data:`macrospec.macro_spec_db` database is used.  This should be a
+        dictionary where the keys are macro names (see
         :py:class:`macrospec.MacroSpec.macroname <MacrosDef>`) and values are
         :py:class:`macrospec.MacroSpec` instances.
+
+      - `environment_dict`: a context dictionary of macro specifications
+        corresponding to beginning of known LaTeX environments.  For example,
+        for the ``{tabular}`` environment, we can provide a
+        :py:class:`~macrospec.MacroSpec` instance for a macro called ``tabular``
+        and whose argspec is a single mandatory argument (the column
+        alignments).
 
     Additional keyword arguments are flags which influence the parsing.
     Accepted flags are:
@@ -579,9 +600,15 @@ class LatexWalker(object):
     node is `pos+len`.
     """
 
-    def __init__(self, s, macro_dict=None, macro_spec_unknown=None, **kwargs):
+    def __init__(self, s, **kwargs):
 
         self.s = s
+
+        # ### FIXME: this shouldn't be macro_dict, it should be a
+        # ### MacroSpecDb object directly!
+        macro_dict = kwargs.pop('macro_dict', None)
+        macro_spec_unknown = kwargs.pop('macro_spec_unknown', None)
+        environment_dict = kwargs.pop('environment_dict', None)
 
         if macro_dict is not None:
             self.macro_dict = macro_dict
@@ -597,6 +624,15 @@ class LatexWalker(object):
         else:
             self.macro_spec_unknown = macrospec.std_macro('', None)
         
+        if environment_dict is not None:
+            self.environment_dict = environment_dict
+        else:
+            self.environment_dict = dict(
+                [ (m.macroname, m)
+                  for m in macrospec.environment_spec_db.specs() # all known specs
+                ]
+            )
+
         #
         # now parsing flags:
         #
@@ -848,14 +884,13 @@ class LatexWalker(object):
 
         If `environmentname` is given and nonempty, then additionally a
         :py:exc:`LatexWalkerParseError` is raised if the environment in the
-        input stream does not match the provided name.
+        input stream does not match the provided environment name.
 
-        This function will attempt to heuristically parse an optional argument,
-        and possibly a mandatory argument given to the environment.  No space is
-        allowed between ``\begin{environment}`` and an opening square bracket or
-        opening brace.
+        Arguments to the begin environment command are parsed according to the
+        corresponding specification in `environment_dict`.  The environment name
+        is looked up as a "macro name" in the macro spec.
 
-        Returns a tuple (node, pos, len) with node being a
+        Returns a tuple (node, pos, len) where node is a
         :py:class:`LatexEnvironmentNode`.
         """
 
@@ -874,34 +909,48 @@ class LatexWalker(object):
 
         pos = firsttok.pos + firsttok.len
 
+        env_spec = self.environment_dict.get(environmentname,
+                                             macrospec.MacroSpec(environmentname, None))
 
-        optargs = []
-        args = []
+        (argd, apos, alen) = env_spec.parse_args(self, pos) # self = latex walker instance
 
-        # see if the \begin{environment} is immediately followed by some
-        # options.  Important: Don't eat the brace of a commutator!! Don't allow
-        # any space between the environment and the open bracket.
-        optargtuple = None
-        if (self.s[pos] == '['):
-            optargtuple = self.get_latex_maybe_optional_arg(pos)
+        pos = apos + alen
 
-        if (optargtuple is not None):
-            optargs.append(optargtuple[0])
-            pos = optargtuple[1]+optargtuple[2]
-        else:
-            # Try to see if we have a mandatory argument.  Don't use get_token
-            # as we don't want to skip any space.
-            if self.s[pos] == '{':
-                (argnode, apos, alen) = self.get_latex_braced_group(pos)
-                args.append(argnode)
-                pos = apos+alen
+        # optargs = []
+        # args = []
+        #
+        # # see if the \begin{environment} is immediately followed by some
+        # # options.  Important: Don't eat the brace of a commutator!! Don't allow
+        # # any space between the environment and the open bracket.
+        # optargtuple = None
+        # if (self.s[pos] == '['):
+        #     optargtuple = self.get_latex_maybe_optional_arg(pos)
+        #
+        # if (optargtuple is not None):
+        #     optargs.append(optargtuple[0])
+        #     pos = optargtuple[1]+optargtuple[2]
+        # else:
+        #     # Try to see if we have a mandatory argument.  Don't use get_token
+        #     # as we don't want to skip any space.
+        #     if self.s[pos] == '{':
+        #         (argnode, apos, alen) = self.get_latex_braced_group(pos)
+        #         args.append(argnode)
+        #         pos = apos+alen
 
         (nodelist, npos, nlen) = self.get_latex_nodes(pos, stop_upon_end_environment=environmentname)
 
+        if argd.legacy_nodeoptarg_nodeargs:
+            legnodeoptarg = argd.legacy_nodeoptarg_nodeargs[0]
+            legnodeargs = argd.legacy_nodeoptarg_nodeargs[1]
+        else:
+            legnodeoptarg, legnodeargs = None, []
+
         return (LatexEnvironmentNode(envname=environmentname,
                                      nodelist=nodelist,
-                                     optargs=optargs,
-                                     args=args),
+                                     nodeargd=argd,
+                                     # legacy:
+                                     optargs=[legnodeoptarg],
+                                     args=legnodeargs),
                 startpos, npos+nlen-startpos)
 
 

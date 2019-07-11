@@ -371,12 +371,20 @@ macro_spec_db = MacroSpecDb({
         std_macro('addcounter', True, 2),
         std_macro('newcommand', "*{[{"),
         std_macro('renewcommand', "*{[{"),
-        std_macro('DeclareMathOperator', False, 2),
+        std_macro('providecommand', "*{[{"),
+        std_macro('newenvironment', "*{[{{"),
+        std_macro('renewenvironment', "*{[{{"),
+        std_macro('provideenvironment', "*{[{{"),
+
+        std_macro('DeclareMathOperator', '*{{'),
 
         std_macro('hspace', False, 1),
         std_macro('vspace', False, 1),
 
-        std_macro('\\', True, 0), # (Note: single backslash) end of line with optional spacing, e.g. \\[2mm]
+        # (Note: single backslash) end of line with optional no-break ('*') and
+        # additional vertical spacing, e.g. \\*[2mm]
+        std_macro('\\', '*['),
+
         std_macro('item', True, 0),
 
         # \input{someotherfile}
@@ -502,5 +510,26 @@ macro_spec_db = MacroSpecDb({
         std_macro('hints', False, 1),
         std_macro('hinweis', False, 1),
         std_macro('hinweise', False, 1),
+    ]
+})
+
+
+environment_spec_db = MacroSpecDb({
+    'latex-base': [
+        std_macro('figure', '['),
+        std_macro('table', '['),
+
+        std_macro('abstract', None),
+
+        std_macro('tabular', '{'),
+
+        std_macro('array', '[{'),
+        std_macro('alignat', '{'),
+        
+    ],
+    'enumitem': [
+        std_macro('enumerate', '['),
+        std_macro('itemize', '['),
+        std_macro('description', '['),
     ]
 })

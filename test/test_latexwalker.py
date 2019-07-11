@@ -200,8 +200,7 @@ Also: {\itshape some italic text}.
                     ),
                     LatexCharsNode(' Hello!  @@@\n     ')
                 ],
-                optargs=[LatexGroupNode([LatexCharsNode('(i)')])],
-                args=[]),
+                nodeargd=macrospec.ParsedMacroArgs([LatexGroupNode([LatexCharsNode('(i)')])]) ),
              p,
              latextext.find(r'\end{enumerate}')+len(r'\end{enumerate}')-p,)
         )
@@ -220,8 +219,7 @@ Also: {\itshape some italic text}.
                     ),
                     LatexCharsNode(' Hello!  @@@\n     ')
                 ],
-                optargs=[LatexGroupNode([LatexCharsNode('(i)')])],
-                args=[]),
+                nodeargd=macrospec.ParsedMacroArgs([LatexGroupNode([LatexCharsNode('(i)')])]) ),
              p, latextext.find(r'\end{enumerate}')+len(r'\end{enumerate}')-p,))
         with self.assertRaises(LatexWalkerParseError):
             dummy = lw.get_latex_environment(pos=p, environmentname='XYZNFKLD-WRONG')
