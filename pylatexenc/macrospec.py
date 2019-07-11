@@ -143,13 +143,10 @@ class MacroSpec(object):
         The `argspec` may also be `None`, which is the same as specifying an
         empty string.
 
-      - `convert_policy`: a dictionary of conversion policies into various
-        formats.
-
       - additional unrecognized keyword arguments are passed on to superclasses
         in case of multiple inheritance
     """
-    def __init__(self, macroname, argspec=None, convert_policy={}, **kwargs):
+    def __init__(self, macroname, argspec=None, **kwargs):
         super(MacroSpec, self).__init__(**kwargs)
         self.macroname = macroname
         self.argspec = argspec if argspec else ''
@@ -180,6 +177,9 @@ class MacroSpec(object):
           same as the `pos` argument, except if there is whitespace at that
           position in which case the returned `pos` would have to be the
           position where the argument contents start.
+
+        - `len` is the length of the parsed expression.  You will probably want
+          to continue parsing stuff at the index `pos+len` in the string.
         """
 
         from . import latexwalker
@@ -206,7 +206,7 @@ class MacroSpec(object):
             elif argt == '*':
                 # possible star.
                 tok = w.get_token(p)
-                if tok.tok == 'chars' and tok.arg.lstrip().startswith('*'):
+                if tok.tok == 'char' and tok.arg.lstrip().startswith('*'):
                     # has star
                     argnlist.append(latexwalker.LatexCharsNode('*'))
                     p = tok.pos + 1
