@@ -7,9 +7,15 @@ if sys.version_info.major > 2:
     basestring = str
 
 from pylatexenc.latexwalker import (
-    MacrosDef, LatexWalker, LatexToken, LatexCharsNode, LatexGroupNode, LatexCommentNode,
+    LatexWalker, LatexToken, LatexCharsNode, LatexGroupNode, LatexCommentNode,
     LatexMacroNode, LatexEnvironmentNode, LatexMathNode, LatexWalkerParseError
 )
+
+from pylatexenc import macrospec
+
+def _tmp1133(a, b):
+    return a.argnlist == b.argnlist
+macrospec.ParsedMacroArgs.__eq__ = _tmp1133
 
 
 class TestLatexWalker(unittest.TestCase):
@@ -17,7 +23,7 @@ class TestLatexWalker(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestLatexWalker, self).__init__(*args, **kwargs)
         self.maxDiff = None
-    
+        
     def test_get_token(self):
         
         latextext = r'''Text \`accent and \textbf{bold text} and $\vec b$ vector \& also Fran\c cois
@@ -92,21 +98,23 @@ class TestLatexWalker(unittest.TestCase):
 '''
         lw = LatexWalker(latextext, tolerant_parsing=True)
 
+        emptyargs = macrospec.ParsedMacroArgs()
+
         self.assertEqual(lw.get_latex_expression(pos=0),
                          (LatexCharsNode('T'),0,1,))
         p = latextext.find(r'\`')
         self.assertEqual(lw.get_latex_expression(pos=p),
-                         (LatexMacroNode('`',None,[]),p,2,))
+                         (LatexMacroNode('`',nodeargd=emptyargs),p,2,))
         p = latextext.find(r'{')
         self.assertEqual(lw.get_latex_expression(pos=p),
                          (LatexGroupNode([LatexCharsNode('bold text')]),p,11,))
         p = latextext.find(r'%') # check: correctly skips comments
         self.assertEqual(lw.get_latex_expression(pos=p),
-                         (LatexMacroNode('item',None,[]),
+                         (LatexMacroNode('item',nodeargd=emptyargs),
                           p+len('% here goes a comment\n'),5,))
         p = latextext.find(r'%') # check: correctly skips comments
         self.assertEqual(lw.get_latex_expression(pos=p),
-                         (LatexMacroNode('item',None,[]),
+                         (LatexMacroNode('item',nodeargd=emptyargs),
                           p+len('% here goes a comment\n'),5,))
         # check correct behavior if directly on brace close
         p = latextext.find(r'}')
@@ -151,13 +159,13 @@ Also: {\itshape some italic text}.
 
         p = latextext.find(r'Also: {')+len('Also:') # points on space after 'Also:'
         self.assertEqual(lw.get_latex_braced_group(pos=p, brace_type='{'),
-                         (LatexGroupNode([LatexMacroNode('itshape',None,[],macro_post_space=' '),
+                         (LatexGroupNode([LatexMacroNode('itshape',macro_post_space=' '),
                                           LatexCharsNode('some italic text')]),
-                          p+1, len('{\itshape some italic text}'),))
+                          p+1, len(r'{\itshape some italic text}'),))
         self.assertEqual(lw.get_latex_braced_group(pos=p+1, brace_type='{'),
-                         (LatexGroupNode([LatexMacroNode('itshape',None,[],macro_post_space=' '),
+                         (LatexGroupNode([LatexMacroNode('itshape',macro_post_space=' '),
                                           LatexCharsNode('some italic text')]),
-                          p+1, len('{\itshape some italic text}'),))
+                          p+1, len(r'{\itshape some italic text}'),))
         p = latextext.find(r'[(i)]')
         self.assertEqual(lw.get_latex_braced_group(pos=p, brace_type='['),
                          (LatexGroupNode([LatexCharsNode('(i)')]), p, 5,))
@@ -167,7 +175,7 @@ Also: {\itshape some italic text}.
         latextext = r'''Text and \`accent and \textbf{bold text} and $\vec b$ more stuff for Fran\c cois
 \begin{enumerate}[(i)]
 \item Hi there!  % here goes a comment
-\item[a] Hello!  @@@
+ \item[a] Hello!  @@@
      \end{enumerate}
 Indeed thanks to \cite[Lemma 3]{Author}, we know that...
 Also: {\itshape some italic text}.
@@ -175,26 +183,46 @@ Also: {\itshape some italic text}.
         lw = LatexWalker(latextext, tolerant_parsing=False)
 
         p = latextext.find(r'\begin{enumerate}')
-        self.assertEqual(lw.get_latex_environment(pos=p, environmentname='enumerate'),
-                         (LatexEnvironmentNode('enumerate', [
-                             LatexCharsNode('\n'),
-                             LatexMacroNode('item',None,[],macro_post_space=' '),
-                             LatexCharsNode('Hi there!  '),
-                             LatexCommentNode(' here goes a comment'),
-                             LatexMacroNode('item',LatexGroupNode([LatexCharsNode('a')]),[]),
-                             LatexCharsNode(' Hello!  @@@\n     ')
-                         ], [LatexGroupNode([LatexCharsNode('(i)')])], []),
-                          p, latextext.find(r'\end{enumerate}')+len(r'\end{enumerate}')-p,))
-        self.assertEqual(lw.get_latex_environment(pos=p),
-                         (LatexEnvironmentNode('enumerate', [
-                             LatexCharsNode('\n'),
-                             LatexMacroNode('item',None,[],macro_post_space=' '),
-                             LatexCharsNode('Hi there!  '),
-                             LatexCommentNode(' here goes a comment'),
-                             LatexMacroNode('item',LatexGroupNode([LatexCharsNode('a')]),[]),
-                             LatexCharsNode(' Hello!  @@@\n     ')
-                         ], [LatexGroupNode([LatexCharsNode('(i)')])], []),
-                          p, latextext.find(r'\end{enumerate}')+len(r'\end{enumerate}')-p,))
+        self.assertEqual(
+            lw.get_latex_environment(pos=p, environmentname='enumerate'),
+            (LatexEnvironmentNode(
+                'enumerate',
+                nodelist=[
+                    LatexCharsNode('\n'),
+                    LatexMacroNode('item',
+                                   nodeargd=macrospec.ParsedMacroArgs([None]),
+                                   macro_post_space=' '),
+                    LatexCharsNode('Hi there!  '),
+                    LatexCommentNode(' here goes a comment', comment_post_space='\n '),
+                    LatexMacroNode(
+                        'item',
+                        nodeargd=macrospec.ParsedMacroArgs([LatexGroupNode([LatexCharsNode('a')])])
+                    ),
+                    LatexCharsNode(' Hello!  @@@\n     ')
+                ],
+                optargs=[LatexGroupNode([LatexCharsNode('(i)')])],
+                args=[]),
+             p,
+             latextext.find(r'\end{enumerate}')+len(r'\end{enumerate}')-p,)
+        )
+        self.assertEqual(
+            lw.get_latex_environment(pos=p),
+            (LatexEnvironmentNode(
+                'enumerate',
+                nodelist=[
+                    LatexCharsNode('\n'),
+                    LatexMacroNode('item', nodeargd=macrospec.ParsedMacroArgs([None]), macro_post_space=' '),
+                    LatexCharsNode('Hi there!  '),
+                    LatexCommentNode(' here goes a comment', comment_post_space='\n '),
+                    LatexMacroNode(
+                        'item',
+                        nodeargd=macrospec.ParsedMacroArgs([LatexGroupNode([LatexCharsNode('a')])])
+                    ),
+                    LatexCharsNode(' Hello!  @@@\n     ')
+                ],
+                optargs=[LatexGroupNode([LatexCharsNode('(i)')])],
+                args=[]),
+             p, latextext.find(r'\end{enumerate}')+len(r'\end{enumerate}')-p,))
         with self.assertRaises(LatexWalkerParseError):
             dummy = lw.get_latex_environment(pos=p, environmentname='XYZNFKLD-WRONG')
 
@@ -216,28 +244,28 @@ Also: {\itshape some italic text}.
         p = latextext.find('Also: {')
         self.assertEqual(lw.get_latex_nodes(pos=p), ([
             LatexCharsNode('Also: '),
-            LatexGroupNode([ LatexMacroNode('itshape', None, [], macro_post_space=' '),
+            LatexGroupNode([ LatexMacroNode('itshape', macro_post_space=' '),
                              LatexCharsNode('some italic text') ]),
             LatexCharsNode('.')
             ], p, len(latextext)-p-1)) # trailing '\n' is not included
 
         p = latextext.find('Also: {')+len('Also: {') # points inside right after open brace
         self.assertEqual(lw.get_latex_nodes(pos=p, stop_upon_closing_brace='}'), ([
-            LatexMacroNode('itshape', None, [], macro_post_space=' '),
+            LatexMacroNode('itshape', macro_post_space=' '),
             LatexCharsNode('some italic text')
-            ], p, len('\itshape some italic text}')))
+            ], p, len(r'\itshape some italic text}')))
 
         # test our own macro lists etc.
         pindeed = latextext.find('Indeed thanks to')
         lineindeed = latextext[pindeed:latextext.find('\n', pindeed)]
         lw2 = LatexWalker(lineindeed, tolerant_parsing=False,
-                          macro_dict={'cite': MacrosDef('cite',False,4)})
+                          macro_dict={'cite': macrospec.std_macro('cite',False,4)})
         self.assertEqual(lw2.get_latex_nodes(pos=0), ([
             LatexCharsNode('Indeed thanks to '),
-            LatexMacroNode('cite', None, [
+            LatexMacroNode('cite', nodeargd=macrospec.ParsedMacroArgs([
                 LatexCharsNode('['),LatexCharsNode('L'),
                 LatexCharsNode('e'),LatexCharsNode('m'),
-                ]),
+                ])),
             LatexCharsNode('ma 3]'),
             LatexGroupNode([LatexCharsNode('Author')]),
             LatexCharsNode(', we know that...'),

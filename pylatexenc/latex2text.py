@@ -23,7 +23,7 @@
 # THE SOFTWARE.
 #
 
-"""
+r"""
 A simplistic, heuristic LaTeX code parser allowing to returns a text-only
 approximation.  Suitable, e.g. for indexing tex code in a database for full text
 searching.
@@ -34,6 +34,11 @@ The main class is :py:class:`LatexNodes2Text`.  For a quick start, try::
     
     latex = "... LaTeX code ..."
     text = LatexNodes2Text(strict_latex_spaces='macros').latex_to_text(latex)
+
+You may also use the command-line version of `latex2text`::
+
+    $ echo '\textit{italic} \`acc\^ented text' | latex2text
+    italic àccênted text
 
 """
 

@@ -1,7 +1,7 @@
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2015 Philippe Faist
+# Copyright (c) 2019 Philippe Faist
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ setup(
     # metadata for upload to PyPI
     author = "Philippe Faist",
     author_email = "philippe.faist@bluewin.ch",
-    description = "Python library for encoding unicode to latex and for parsing LaTeX to generate unicode text",
+    description = "Simple LaTeX parser providing heuristic latex-to-unicode and unicode-to-latex conversion",
     long_description = read("README.rst"),
     license = "MIT",
     keywords = "latex text unicode encode parse expression",
@@ -65,7 +65,13 @@ setup(
 
     # files
     packages = find_packages(),
-    scripts = [],
+    entry_points = {
+        'console_scripts': [
+            'latexwalker=pylatexenc.latexwalker:main',
+            'latex2text=pylatexenc.latex2text:main',
+            'latexencode=pylatexenc.latexencode:main',
+        ],
+    },
     install_requires = [],
     package_data = {
     },

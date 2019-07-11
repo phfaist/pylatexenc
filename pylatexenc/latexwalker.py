@@ -25,7 +25,7 @@
 
 r"""
 The ``latexwalker`` module provides a simple API for parsing LaTeX snippets,
-and representing the contents using a data structure based on nodes classes.
+and representing the contents using a data structure based on node classes.
 
 LatexWalker will understand the syntax of most common macros.  However,
 ``latexwalker`` is NOT a replacement for a full LaTeX engine.  (Originally,
@@ -42,7 +42,7 @@ human-readable node tree::
     "LatexCharsNode", "chars": "italic"}]}], "macro_post_space": ""},
     {"nodetype": "LatexCharsNode", "chars": " text"}]
 
-    $ python -m pylatexenc.latexwalker --help
+    $ latexwalker --help
     [...]
 """
 
@@ -100,14 +100,10 @@ class LatexWalkerEndOfStream(LatexWalkerError):
 
 
 
-
-
 from . import macrospec
 
 
-MacroDef = macrospec.MacroDef
-
-# compatibility with pylatexenc < 2
+# provide an interface compatibile with pylatexenc < 2
 MacrosDef = macrospec.std_macro
 r"""
 .. deprecated:: 2.0
@@ -117,11 +113,11 @@ r"""
 """
 
 
-default_macro_dict = dict([(m.macroname, m) for m in macrospec._macro_spec_db.values()])
+default_macro_dict = dict([(m.macroname, m) for m in macrospec.macro_spec_db.iter_specs()])
 """
-The default context dictionary of known LaTeX macros.  The keys are the macro names
-(:py:class:`MacrosDef.macname <MacrosDef>`) and the values are :py:class:`MacrosDef`
-instances.
+.. deprecated:: 2.0
+
+  Use :py:data:`macrospec.macro_spec_db.specs()` instead.
 """
 
 
@@ -276,8 +272,16 @@ class LatexNode(object):
         return isinstance(self, t)
 
     def __eq__(self, other):
+        if hasattr(self, '_realfields'):
+            # in case some fields are "fake fields", provided for an alternative
+            # interface for backwards compatibility, for example.  Cf. for
+            # instance LatexMacroNode.
+            realfields = self._realfields
+        else:
+            realfields = self._fields
+
         return other is not None  and  self.nodeType() == other.nodeType()  and  all(
-            ( getattr(self, f) == getattr(other, f)  for f in self._fields )
+            ( getattr(self, f) == getattr(other, f)  for f in realfields )
         )
 
     # see https://docs.python.org/3/library/constants.html#NotImplemented
@@ -372,36 +376,61 @@ class LatexMacroNode(LatexNode):
 
        The name of the macro (string), *without* the leading backslash.
 
-    .. py:attribute:: nodeoptarg
+    .. py:attribute:: nodeargd
 
-       If non-`None`, this corresponds to the optional argument of the macro.
-
-    .. py:attribute:: nodeargs
-
-       A list of arguments to the macro. Each item in the list is a
-       :py:class:`LatexNode`.
+       The :py:class:`macrospec.ParsedMacroArgs` object that represents the
+       macro arguments.
 
     .. py:attribute:: macro_post_space
 
        Any spaces that were encountered immediately after the macro.
 
+    The following attributes are obsolete since `pylatexenc 2.0`.
+
+    .. py:attribute:: nodeoptarg
+
+       .. deprecated:: 2.0
+
+          Macro arguments are stored in `nodeargd` in `pylatexenc 2`.  Accessing
+          the argument `nodeoptarg` will still give a first optional argument
+          for standard latex macros, for backwards compatibility.
+
+       If non-`None`, this corresponds to the optional argument of the macro.
+
+    .. py:attribute:: nodeargs
+
+       .. deprecated:: 2.0
+
+          Macro arguments are stored in `nodeargd` in pylatexenc 2.  Accessing
+          the argument `nodeargs` will still provide a list of argument nodes
+          for standard latex macros, for backwards compatibility.
+
+       A list of arguments to the macro. Each item in the list is a
+       :py:class:`LatexNode`.
     """
     def __init__(self, macroname, **kwargs):
+        nodeargd=kwargs.pop('nodeargd', macrospec.ParsedMacroArgs())
+        macro_post_space=kwargs.pop('macro_post_space', '')
+        # legacy:
         nodeoptarg=kwargs.pop('nodeoptarg', None)
         nodeargs=kwargs.pop('nodeargs', [])
-        macro_post_space=kwargs.pop('macro_post_space', '')
 
         super(LatexMacroNode, self).__init__(**kwargs)
 
-        self._fields = ('macroname','nodeoptarg','nodeargs','macro_post_space')
+        self._fields = ('macroname','nodeargd','macro_post_space','nodeoptarg','nodeargs')
+        self._realfields = ('macroname','nodeargd','macro_post_space')
 
         self.macroname = macroname
+        self.nodeargd = nodeargd
+        self.macro_post_space = macro_post_space
+        # legacy:
         self.nodeoptarg = nodeoptarg
         self.nodeargs = nodeargs
-        self.macro_post_space = macro_post_space
 
     def nodeType(self):
         return LatexMacroNode
+
+
 
 class LatexEnvironmentNode(LatexNode):
     r"""
@@ -516,23 +545,27 @@ class LatexWalker(object):
 
       - `s`: the string to parse as LaTeX code
 
-      - `macro_dict`: a context dictionary of known LaTeX macros.  By default, the default
-        global macro dictionary `default_macro_dict` is used.  This should be a dictionary
-        where the keys are macro names (see :py:class:`MacrosDef.macname <MacrosDef>`) and
-        values are :py:class:`MacrosDef` instances.
+      - `macro_dict`: a context dictionary of known LaTeX macros.  By default,
+        the default global macro dictionary `default_macro_dict` is used.  This
+        should be a dictionary where the keys are macro names (see
+        :py:class:`macrospec.MacroSpec.macroname <MacrosDef>`) and values are
+        :py:class:`macrospec.MacroSpec` instances.
 
-    Additional keyword arguments are flags which influence the parsing.  Accepted flags are:
+    Additional keyword arguments are flags which influence the parsing.
+    Accepted flags are:
 
-      - `keep_inline_math=True|False` If this option is set to `True`, then inline math is
-        parsed and stored using :py:class:`LatexMathNode` instances.  Otherwise, inline
-        math is not treated differently and is simply kept as text.
+      - `keep_inline_math=True|False` If this option is set to `True`, then
+        inline math is parsed and stored using :py:class:`LatexMathNode`
+        instances.  Otherwise, inline math is not treated differently and is
+        simply kept as text.
 
-      - `tolerant_parsing=True|False` If set to `True`, then the parser generally ignores
-        syntax errors rather than raising an exception.
+      - `tolerant_parsing=True|False` If set to `True`, then the parser
+        generally ignores syntax errors rather than raising an exception.
 
       - `strict_braces=True|False` This option refers specifically to reading a
-        encountering a closing brace when an expression is needed.  You generally won't
-        need to specify this flag, use `tolerant_parsing` instead.
+        encountering a closing brace when an expression is needed.  You
+        generally won't need to specify this flag, use `tolerant_parsing`
+        instead.
 
     The methods provided in this class perform various parsing of the given
     string `s`.  These methods typically accept a `pos` parameter, which must be
@@ -546,12 +579,24 @@ class LatexWalker(object):
     node is `pos+len`.
     """
 
-    def __init__(self, s, macro_dict=None, **kwargs):
+    def __init__(self, s, macro_dict=None, macro_spec_unknown=None, **kwargs):
+
         self.s = s
+
         if macro_dict is not None:
             self.macro_dict = macro_dict
         else:
-            self.macro_dict = default_macro_dict
+            self.macro_dict = dict(
+                [ (m.macroname, m)
+                  for m in macrospec.macro_spec_db.specs() # all known specs
+                ]
+            )
+
+        if macro_spec_unknown is not None:
+            self.macro_spec_unknown = macro_spec_unknown
+        else:
+            self.macro_spec_unknown = macrospec.std_macro('', None)
+        
         #
         # now parsing flags:
         #
@@ -601,18 +646,16 @@ class LatexWalker(object):
         with _PushPropOverride(self, 'keep_inline_math', keep_inline_math):
 
             space = ''
-            while (pos < len(s) and s[pos].isspace()):
+            while pos < len(s) and s[pos].isspace():
                 space += s[pos]
                 pos += 1
-                if (space.endswith('\n\n')):  # two \n's indicate new paragraph.
-                    # Adding pre-space is overkill here I think.
-                    return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space='')
+                if space.endswith('\n\n'):  # two \n's indicate new paragraph.
+                    return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space=space)
 
-
-            if (pos >= len(s)):
+            if pos >= len(s):
                 raise LatexWalkerEndOfStream()
 
-            if (s[pos] == '\\'):
+            if s[pos] == '\\':
                 # escape sequence
                 i = 2
                 macro = s[pos+1] # next char is necessarily part of macro
@@ -623,24 +666,24 @@ class LatexWalker(object):
                     while pos+i<len(s) and s[pos+i].isalpha():
                         macro += s[pos+i]
                         i += 1
-                # possibly followed by a star
-                if (pos+i<len(s) and s[pos+i] == '*'):
-                    macro += '*'
-                    i += 1
+                # # possibly followed by a star  ### no, now part of macro arg parsing
+                # if pos+i<len(s) and s[pos+i] == '*':
+                #     macro += '*'
+                #     i += 1
 
                 # see if we have a begin/end environment
-                if (environments and (macro == 'begin' or macro == 'end')):
+                if environments and (macro in ['begin', 'end']):
                     # \begin{environment} or \end{environment}
                     envmatch = re.match(r'^\s*\{([\w*]+)\}', s[pos+i:])
-                    if (envmatch is None):
+                    if envmatch is None:
                         raise LatexWalkerParseError(
                             s=s,
                             pos=pos,
-                            msg="Bad \\%s macro: expected {environment}" %(macro)
+                            msg=r"Bad \{} macro: expected {{<environment-name>}}".format(macro)
                         )
 
                     return LatexToken(
-                        tok=('begin_environment' if macro == 'begin' else  'end_environment'),
+                        tok=('begin_environment' if macro == 'begin' else 'end_environment'),
                         arg=envmatch.group(1),
                         pos=pos,
                         len=i+envmatch.end(), # !!envmatch.end() counts from pos+i
@@ -658,7 +701,7 @@ class LatexWalker(object):
                 return LatexToken(tok='macro', arg=macro, pos=pos, len=i,
                                   pre_space=space, post_space=post_space)
 
-            if (s[pos] == '%'):
+            if s[pos] == '%':
                 # latex comment
                 m = re.search(r'(\n|\r|\n\r)\s*', s[pos:])
                 mlen = None
@@ -696,7 +739,7 @@ class LatexWalker(object):
 
 
     def get_latex_expression(self, pos, strict_braces=None):
-        """
+        r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to parse a single LaTeX expression.
 
@@ -715,7 +758,7 @@ class LatexWalker(object):
             if (tok.tok == 'macro'):
                 if (tok.arg == 'end'):
                     if not self.tolerant_parsing:
-                        # error, this should be an \end{environment}, not an argument in itself
+                        # error, we were expecting a single token
                         raise LatexWalkerParseError(r"Expected expression, got \end", self.s, pos)
                     else:
                         return (LatexCharsNode(chars=''), tok.pos, 0)
@@ -728,16 +771,19 @@ class LatexWalker(object):
                 return self.get_latex_braced_group(tok.pos)
             if (tok.tok == 'brace_close'):
                 if (self.strict_braces and not self.tolerant_parsing):
-                    raise LatexWalkerParseError("Expected expression, got closing brace!", self.s, pos)
+                    raise LatexWalkerParseError(
+                        "Expected expression, got closing brace '{}'".format(tok.arg),
+                        self.s, pos
+                    )
                 return (LatexCharsNode(chars=''), tok.pos, 0)
             if (tok.tok == 'char'):
                 return (LatexCharsNode(chars=tok.arg), tok.pos, tok.len)
 
-            raise LatexWalkerParseError("Unknown token type: %s" %(tok.tok), self.s, pos)
+            raise LatexWalkerParseError("Unknown token type: {}".format(tok.tok), self.s, pos)
 
 
     def get_latex_maybe_optional_arg(self, pos):
-        """
+        r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to attempt to parse an optional argument.
 
@@ -754,7 +800,7 @@ class LatexWalker(object):
 
 
     def get_latex_braced_group(self, pos, brace_type='{'):
-        """
+        r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to read a latex group delimited by braces.
 
@@ -870,17 +916,17 @@ class LatexWalker(object):
         Returns a tuple `(nodelist, pos, len)` where nodelist is a list of
         :py:class:`LatexNode`\ 's.
         
-        If `stop_upon_closing_brace` is given and set to a character, then parsing stops
-        once the given closing brace is encountered (but not inside a subgroup).  The
-        brace is given as a character, ']' or '}'.  The returned `len` includes the
-        closing brace, but the closing brace is not included in any of the nodes in the
-        `nodelist`.
+        If `stop_upon_closing_brace` is given and set to a character, then
+        parsing stops once the given closing brace is encountered (but not
+        inside a subgroup).  The brace is given as a character, ']' or '}'.  The
+        returned `len` includes the closing brace, but the closing brace is not
+        included in any of the nodes in the `nodelist`.
 
-        If `stop_upon_end_environment` is provided, then parsing stops once the given
-        environment was closed.  If there is an environment mismatch, then a
-        `LatexWalkerParseError` is raised except in tolerant parsing mode (see
-        py:meth:`parse_flags()`).  Again, the closing environment is included in the
-        length count but not the nodes.
+        If `stop_upon_end_environment` is provided, then parsing stops once the
+        given environment was closed.  If there is an environment mismatch, then
+        a `LatexWalkerParseError` is raised except in tolerant parsing mode (see
+        py:meth:`parse_flags()`).  Again, the closing environment is included in
+        the length count but not the nodes.
 
         If `stop_upon_closing_mathmode` is specified, then the parsing stops
         once the corresponding math mode (assumed already open) is closed.
@@ -905,12 +951,12 @@ class LatexWalker(object):
         p = PosPointer(pos)
 
         def do_read(nodelist, p):
-            """
-            Read a single token and process it, recursing into brace blocks and environments etc if
-            needed, and appending stuff to nodelist.
+            r"""
+            Read a single token and process it, recursing into brace blocks and
+            environments etc if needed, and appending stuff to nodelist.
 
-            Return True whenever we should stop trying to read more. (e.g. upon reaching the a matched
-            stop_upon_end_environment etc.)
+            Return True whenever we should stop trying to read more. (e.g. upon
+            reaching the a matched stop_upon_end_environment etc.)
             """
 
             try:
@@ -962,8 +1008,8 @@ class LatexWalker(object):
                         raise LatexWalkerParseError(
                             s=self.s,
                             pos=tok.pos,
-                            msg=('Unexpected mismatching closing environment: `%s\', '
-                                 'expecting `%s\'' %(tok.arg, stop_upon_end_environment))
+                            msg=("Unexpected mismatching closing environment: '{}', "
+                                 "was expecting '{}'".format(tok.arg, stop_upon_end_environment))
                         )
                     return False
                 return True
@@ -975,12 +1021,13 @@ class LatexWalker(object):
                         raise LatexWalkerParseError(
                             s=self.s,
                             pos=tok.pos,
-                            msg='Unexpected mismatching closing math mode: `$\''
+                            msg="Unexpected mismatching closing math mode: '$'"
                         )
                     return True
 
                 # we have encountered a new math inline, so gulp all of the math expression
-                (mathinline_nodelist, mpos, mlen) = self.get_latex_nodes(p.pos, stop_upon_closing_mathmode='$')
+                (mathinline_nodelist, mpos, mlen) = \
+                    self.get_latex_nodes(p.pos, stop_upon_closing_mathmode='$')
                 p.pos = mpos + mlen
 
                 nodelist.append(LatexMathNode(displaytype='inline', nodelist=mathinline_nodelist))
@@ -1008,19 +1055,27 @@ class LatexWalker(object):
 
             if (tok.tok == 'macro'):
                 # read a macro. see if it has arguments.
-                nodeoptarg = None
-                nodeargs = []
-                macname = tok.arg.rstrip('*') # for lookup in macro_dict
-                if macname in self.macro_dict:
-                    mac = self.macro_dict[macname]
+                macroname = tok.arg
+                mspec = self.macro_dict.get(macroname, self.macro_spec_unknown)
 
-..........................
+                (nodeargd, mapos, malen) = \
+                    mspec.parse_args(self, tok.pos + tok.len) # self = walker instance
 
+                p.pos = mapos + malen
 
-                nodelist.append(LatexMacroNode(macroname=tok.arg,
-                                               nodeoptarg=nodeoptarg,
-                                               nodeargs=nodeargs,
-                                               macro_post_space=tok.post_space))
+                if nodeargd.legacy_nodeoptarg_nodeargs:
+                    nodeoptarg = nodeargd.legacy_nodeoptarg_nodeargs[0]
+                    nodeargs = nodeargd.legacy_nodeoptarg_nodeargs[1]
+                else:
+                    nodeoptarg, nodeargs = None, []
+                node = LatexMacroNode(
+                    macroname=tok.arg,
+                    nodeargd=nodeargd,
+                    macro_post_space=tok.post_space,
+                    # legacy data:
+                    nodeoptarg=nodeoptarg,
+                    nodeargs=nodeargs)
+                nodelist.append(node)
                 return None
 
             raise LatexWalkerParseError(s=self.s, pos=p.pos, msg="Unknown token: %r" %(tok))
@@ -1274,7 +1329,7 @@ def math_node_to_latex(node):
     if (node.displaytype == 'display'):
         return r'\[%s\]' %(nodelist_to_latex(node.nodelist))
 
-    raise LatexWalkerError("Unkonwn displaytype: `%s'" %(node.displaytype))
+    raise LatexWalkerError("Unknown displaytype: `%s'" %(node.displaytype))
 
 
 
@@ -1289,6 +1344,7 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
     elif n.isNodeType(LatexMacroNode):
         title = '\\'+n.macroname
         #comment = 'opt arg?: %d; %d args' % (n.arg.nodeoptarg is not None, len(n.arg.nodeargs))
+        # FIXME: handle more general case with n.nodeargd
         if (n.nodeoptarg):
             iterchildren.append(('[...]: ', [n.nodeoptarg], False))
         if (len(n.nodeargs)):
@@ -1324,17 +1380,22 @@ class LatexNodesJSONEncoder(json.JSONEncoder):
     (and subclasses).
     """
     def default(self, obj):
-        if not isinstance(obj, LatexNode):
-            return super(LatexNodesJSONEncoder, self).default(obj)
+        if isinstance(obj, LatexNode):
+            # Prepare a dictionary with the correct keys and values.
+            n = obj
+            d = {
+                'nodetype': n.__class__.__name__,
+            }
+            for fld in n._fields:
+                d[fld] = n.__dict__[fld]
+            return d
 
-        # Prepare a dictionary with the correct keys and values.
-        n = obj
-        d = {
-            'nodetype': n.__class__.__name__,
-        }
-        for fld in n._fields:
-            d[fld] = n.__dict__[fld]
-        return d
+        if isinstance(obj, macrospec.ParsedMacroArgs):
+            return obj.to_json_object()
+
+        # else:
+        return super(LatexNodesJSONEncoder, self).default(obj)
+
 
 
 def main(argv=None):
@@ -1398,8 +1459,10 @@ def main(argv=None):
         return
 
     if args.output_format == 'json':
-        print(json.dumps(nodelist, cls=LatexNodesJSONEncoder,
-                         indent=args.json_indent) + "\n")
+        json.dump(nodelist, sys.stdout,
+                  cls=LatexNodesJSONEncoder,
+                  indent=args.json_indent)
+        sys.stdout.write("\n")
         return
     
     raise ValueError("Invalid output format: "+args.output_format)

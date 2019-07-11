@@ -57,10 +57,17 @@ class ParsedMacroArgs(object):
 
     Arguments:
 
-      - `nodeargs` is a list of latexwalker nodes that represent macro
+      - `argnlist` is a list of latexwalker nodes that represent macro
         arguments.  If the macro arguments are too complicated to store in a
         list, leave this as `None`.  (But then code that uses the latexwalker
         must be aware of your own API to access the macro arguments.)
+
+        The difference between `argnlist` and the legacy `nodeargs` is that all
+        options, regardless of optional or mandatory, are stored in the list
+        `argnlist` with possible `None`\ 's at places where optional arguments
+        were not provided.  Previously, whether a first optional argument was
+        included in `nodeoptarg` or `nodeargs` depended on how the macro
+        specification was given.
 
       - `latex_repr` is the LaTeX represention of the macro arguments.  This is
         used to reconstruct the latex code from the parsed representation in
@@ -77,13 +84,37 @@ class ParsedMacroArgs(object):
         is a list of nodes that represents subsequent arguments (optional or
         mandatory).
     """
-    def __init__(self, nodeargs=[], latex_repr='', legacy_nodeoptarg_nodeargs=None,
+    def __init__(self, argnlist=[], latex_repr='', legacy_nodeoptarg_nodeargs=None,
                  **kwargs):
         super(ParsedMacroArgs, self).__init__(**kwargs)
-        self.nodeargs = nodeargs
+        
+        self.argnlist = argnlist
         self.latex_repr = latex_repr
         self.legacy_nodeoptarg_nodeargs = legacy_nodeoptarg_nodeargs
         
+    def to_json_object(self):
+        r"""
+        Return a representation of the current parsed arguments in an object that
+        our main JSON exporter (:py:class:`latexwalker.LatexNodesJSONEncoder`)
+        can understand and export to JSON.
+
+        Called when we export the node structure to JSON (e.g., latexwalker in
+        command-line).
+        """
+        legacystuff = {}
+        if self.legacy_nodeoptarg_nodeargs:
+            legacystuff['nodeoptarg'] = self.legacy_nodeoptarg_nodeargs[0]
+            legacystuff['nodeargs'] = self.legacy_nodeoptarg_nodeargs[1]
+
+        return dict(
+            argnlist=self.argnlist,
+            # stuff for compatibility with pylatexenc < 2
+            **legacystuff
+        )
+
+    def __repr__(self):
+        return "ParsedMacroArgs(argnlist={!r},latex_repr={!r})".format(self.argnlist, self.latex_repr)
+
 
 
 class MacroSpec(object):
@@ -123,10 +154,10 @@ class MacroSpec(object):
         self.macroname = macroname
         self.argspec = argspec if argspec else ''
         # catch bugs, make sure that argspec is a string with only accepted chars
-        if not isinstance(argspec, _basestring) or \
+        if not isinstance(self.argspec, _basestring) or \
            not all(x in '*[{' for x in self.argspec):
             raise TypeError(
-                "argspec must be a string containing chars '*', '[', '{' only: {!r}"
+                "argspec must be a string containing chars '*', '[', '{{' only: {!r}"
                 .format(self.argspec)
             )
 
@@ -151,34 +182,36 @@ class MacroSpec(object):
           position where the argument contents start.
         """
 
-        nargs = []
+        from . import latexwalker
+
+        argnlist = []
 
         p = pos
 
         for argt in self.argspec:
             if argt == '{':
-                (node, np, nl) = walker.get_latex_expression(p, strict_braces=False)
+                (node, np, nl) = w.get_latex_expression(p, strict_braces=False)
                 p = np + nl
-                nargs.append(node)
+                argnlist.append(node)
 
             elif argt == '[':
-                optarginfotuple = walker.get_latex_maybe_optional_arg(p)
+                optarginfotuple = w.get_latex_maybe_optional_arg(p)
                 if optarginfotuple is None:
-                    nargs.append(None)
+                    argnlist.append(None)
                     continue
                 (node, np, nl) = optarginfotuple
                 p = np + nl
-                nargs.append(node)
+                argnlist.append(node)
 
             elif argt == '*':
                 # possible star.
                 tok = w.get_token(p)
                 if tok.tok == 'chars' and tok.arg.lstrip().startswith('*'):
                     # has star
-                    nargs.append(latexwalker.LatexCharsNode('*'))
+                    argnlist.append(latexwalker.LatexCharsNode('*'))
                     p = tok.pos + 1
                 else:
-                    nargs.append(None)
+                    argnlist.append(None)
 
             else:
                 raise LatexWalkerError(
@@ -189,13 +222,13 @@ class MacroSpec(object):
                 )
 
         # for LatexMacroNode to provide some kind of compatibility with pylatexenc < 2
-        (legacy_nodeoptarg, legacy_nodeargs) = (None, nargs)
+        (legacy_nodeoptarg, legacy_nodeargs) = (None, argnlist)
         if self.argspec[0:1] == '[' and all(x == '{' for x in self.argspec[1:]):
-            legacy_nodeoptarg = nargs[0]
-            legacy_nodeargs = nargs[1:]
+            legacy_nodeoptarg = argnlist[0]
+            legacy_nodeargs = argnlist[1:]
 
         parsed = ParsedMacroArgs(
-            nargs,
+            argnlist,
             latex_repr=w.s[pos:p-pos],
             legacy_nodeoptarg_nodeargs=(legacy_nodeoptarg, legacy_nodeargs),
         )
@@ -258,7 +291,7 @@ def std_macro(macname, *args):
             "Wrong number of arguments for std_macro, macname={!r}, args={!r}".format(
                 macname, args
             ))
-    elif args[0] is None:
+    elif not args[0] and isinstance(args[1], _basestring):
         # argspec given in numargs
         argspec = args[1]
     else:
@@ -267,13 +300,67 @@ def std_macro(macname, *args):
             argspec = '['
         argspec += '{'*args[1]
 
-    return MacroArgsParser(macname, argspec)
+    return MacroSpec(macname, argspec)
 
 
 
 
+class MacroSpecDb(object):
+    r"""
+    Store a list of macro specifications (stored as :py:class:`MacroSpec`
+    objects), organized by categories.
 
-_macro_spec_db = {
+    This class is used to store the default list of known latex macros and
+    environments.
+    """
+    def __init__(self, d, **kwargs):
+        super(MacroSpecDb, self).__init__(**kwargs)
+        self._d = d
+
+    def categories(self):
+        r"""
+        Return a list of valid category names that can be used as arguments to,
+        e.g., :py:meth:`specs()`.
+        """
+        return list(self._d.keys())
+    
+    def specs(self, cat=None):
+        r"""
+        Return the macro specs corresponding to all macros in the given categories.
+
+        If `cat` is `None`, then the known macro specs from *all* categories are
+        returned in one long list.  Otherwise, `cat` should be a list of
+        category names (e.g., 'latex-base') of macro specs to return.
+
+        The macro specs from the different categories specified are concatenated
+        into one long list which is returned.
+        """
+        return list(self.iter_specs(cat))
+
+    def iter_specs(self, cat=None):
+        r"""
+        Yield the macro specs corresponding to all macros in the given categories.
+
+        If `cat` is `None`, then the known macro specs from *all* categories are
+        provided in one long iterable sequence.  Otherwise, `cat` should be a
+        list of category names (e.g., 'latex-base') of macro specs to return.
+
+        The macro specs from the different categories specified are concatenated
+        into one long sequence which is yielded spec by spec.
+        """
+
+        if cat is None:
+            cat = self._d.keys()
+
+        for c in cat:
+            if c not in self._d:
+                raise ValueError("Invalid latex macro spec db category: {!r} (Expected one of {!r})"
+                                 .format(c, list(self._d.keys())))
+            for spec in self._d[c]:
+                yield spec
+    
+
+macro_spec_db = MacroSpecDb({
     'latex-base': [
         std_macro('documentclass', True, 1),
         std_macro('usepackage', True, 1),
@@ -403,8 +490,8 @@ _macro_spec_db = {
         std_macro('UebungLanguage', False, 1),
         std_macro('UebungStyle', False, 1),
         #
-        std_macro('uebung', False, '{['),
-        std_macro('exercise', False, '{['),
+        std_macro('uebung', '{['),
+        std_macro('exercise', '{['),
         std_macro('keywords', False, 1),
         std_macro('subuebung', False, 1),
         std_macro('subexercise', False, 1),
@@ -416,4 +503,4 @@ _macro_spec_db = {
         std_macro('hinweis', False, 1),
         std_macro('hinweise', False, 1),
     ]
-}
+})
