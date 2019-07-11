@@ -273,20 +273,7 @@ def std_macro(macname, *args):
 
 
 
-
-# compatibility with pylatexenc < 2
-def MacrosDef(macname, optarg=False, numargs=0):
-    r"""
-    .. deprecated:: 2.0
-
-       Use `std_macro` instead which does the same thing, or invoke the
-       `MacroSpec` class directly (or a subclass).
-    """
-    return std_macro(macname, optarg, numargs)
-
-
-
-_macros_parser_db = {
+_macro_spec_db = {
     'latex-base': [
         std_macro('documentclass', True, 1),
         std_macro('usepackage', True, 1),

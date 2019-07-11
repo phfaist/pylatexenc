@@ -102,16 +102,22 @@ class LatexWalkerEndOfStream(LatexWalkerError):
 
 
 
-from . import _latexwalker_defs
+from . import macrospec
 
 
-MacroDef = _latexwalker_defs.MacroDef
+MacroDef = macrospec.MacroDef
 
-def MacrosDef(...):
-    
-    ,.......
+# compatibility with pylatexenc < 2
+MacrosDef = macrospec.std_macro
+r"""
+.. deprecated:: 2.0
 
-default_macro_dict = dict([(m.macname, m) for m in _default_macro_list])
+   Use `macrospec.std_macro` instead which does the same thing, or invoke the
+   `MacroSpec` class directly (or a subclass).
+"""
+
+
+default_macro_dict = dict([(m.macroname, m) for m in macrospec._macro_spec_db.values()])
 """
 The default context dictionary of known LaTeX macros.  The keys are the macro names
 (:py:class:`MacrosDef.macname <MacrosDef>`) and the values are :py:class:`MacrosDef`
