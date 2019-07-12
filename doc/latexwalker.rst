@@ -26,7 +26,7 @@ Exception Classes
 Macro Definitions
 ~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pylatexenc.latexwalker.MacrosDef
+.. autodata:: pylatexenc.latexwalker.MacrosDef
 
 .. autodata:: pylatexenc.latexwalker.default_macro_dict
    :annotation:

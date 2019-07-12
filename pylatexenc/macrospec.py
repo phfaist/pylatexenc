@@ -24,8 +24,6 @@
 #
 
 
-# Internal module. May change without notice.  See
-# `latexwalker.get_default_defs()` for access to stuff here.
 
 import sys
 
@@ -42,6 +40,7 @@ else:
     _unicode_from_str = lambda x: x.decode('utf-8')
 
 
+# ------------------------------------------------------------------------------
 
 
 class ParsedMacroArgs(object):
@@ -111,13 +110,12 @@ class ParsedMacroArgs(object):
         return "ParsedMacroArgs(argnlist={!r})".format(self.argnlist)
 
 
-
-class MacroSpec(object):
+class MacroStandardArgsParser(object):
     r"""
     Parses the arguments to a LaTeX macro.
 
-    This base class parses a simple macro argument specification with a
-    specified arrangement of optional and mandatory arguments.
+    This class parses a simple macro argument specification with a specified
+    arrangement of optional and mandatory arguments.
 
     Arguments:
 
@@ -141,9 +139,8 @@ class MacroSpec(object):
       - additional unrecognized keyword arguments are passed on to superclasses
         in case of multiple inheritance
     """
-    def __init__(self, macroname, argspec=None, **kwargs):
-        super(MacroSpec, self).__init__(**kwargs)
-        self.macroname = macroname
+    def __init__(self, argspec=None, **kwargs):
+        super(MacroStandardArgsParser, self).__init__(**kwargs)
         self.argspec = argspec if argspec else ''
         # catch bugs, make sure that argspec is a string with only accepted chars
         if not isinstance(self.argspec, _basestring) or \
@@ -165,8 +162,9 @@ class MacroSpec(object):
 
         This function should return a tuple `(argd, pos, len)` where:
 
-        - `argd` is a :py:class:`ParsedMacroArgs` instance (or a subclass
-          instance).
+        - `argd` is a :py:class:`ParsedMacroArgs` instance, or an instance of a
+          subclass of :py:class:`ParsedMacroArgs`.  The base `parse_args()`
+          provided here returns a :py:class:`ParsedMacroArgs` instance.
 
         - `pos` is the position of the first parsed content.  It should be the
           same as the `pos` argument, except if there is whitespace at that
@@ -210,10 +208,7 @@ class MacroSpec(object):
 
             else:
                 raise LatexWalkerError(
-                    "Unknown macro argument kind for macro {}: {!r}".format(
-                        self.macroname,
-                        argt
-                    )
+                    "Unknown macro argument kind for macro: {!r}".format(argt)
                 )
 
         # for LatexMacroNode to provide some kind of compatibility with pylatexenc < 2
@@ -230,9 +225,108 @@ class MacroSpec(object):
         return (parsed, pos, p-pos)
 
 
-def std_macro(macname, *args):
+
+# ------------------------------------------------------------------------------
+
+class MacroSpec(object):
     r"""
-    Return a parser for the given macro.  Syntax::
+    Stores the specification of a macro.
+
+    This stores the macro name and instructions on how to parse the macro
+    arguments.
+
+    .. py:attribute:: macroname
+
+       The name of the macro, without the leading backslash.
+
+    .. py:attribute:: args_parser
+
+       The parser instance that can understand this macro's arguments.  For
+       standard LaTeX macros this is usually a
+       :py:class:`MacroStandardArgsParser` instance.
+
+       If you specify a string, then for convenience this is interpreted as an
+       argspec argument for :py:class:`MacroStandardArgsParser` and such an
+       instance is automatically created.
+    """
+    def __init__(self, macroname, args_parser=MacroStandardArgsParser(), **kwargs):
+        super(MacroSpec, self).__init__(**kwargs)
+        self.macroname = macroname
+        if isinstance(args_parser, _basestring):
+            self.args_parser = MacroStandardArgsParser(args_parser)
+        else:
+            self.args_parser = args_parser
+
+    def parse_args(self, *args, **kwargs):
+        r"""
+        Shorthand for calling the :py:attr:`args_parser`\ 's `parse_args()` method.
+        See :py:class:`MacroStandardArgsParser`.
+        """
+        return self.args_parser.parse_args(*args, **kwargs)
+
+
+
+
+class EnvironmentSpec(object):
+    r"""
+    Stores the specification of a LaTeX environment.
+
+    This stores the environment name and instructions on how to parse any
+    arguments provided after ``\begin{environment}<args>``.
+
+    .. py:attribute:: environmentname
+
+       The name of the environment, i.e., the argument of ``\begin{...}`` and
+       ``\end{...}``.
+
+    .. py:attribute:: args_parser
+
+       The parser instance that can understand this environment's arguments.
+       For standard LaTeX environment this is usually a
+       :py:class:`MacroStandardArgsParser` instance.
+
+    .. py:attribute:: is_math_mode
+
+       A boolean that indicates whether or not the contents is to be interpreted
+       in Math Mode.  This would be True for environments like
+       ``\begin{equation}``, ``\begin{align}``, etc., but False for
+       ``\begin{figure}``, etc.
+
+    .. note::
+
+       Starred variants of environments (as in ``\begin{equation*}``) must not
+       be specified using an argspec as for macros (e.g., `argspec='*'`).
+       Rather, we need to define a separate environment spec for the starred
+       variant with the star in the name itself (``EnvironmentSpec('equation*',
+       None)``) because the star really is part of the environment name.  If you
+       happened to use ``EnvironmentSpec('equation', '*')``, then the parser
+       would recognize the expression ``\begin{equation}*`` but not
+       ``\begin{equation*}``.
+    """
+    def __init__(self, environmentname, args_parser=MacroStandardArgsParser(),
+                 is_math_mode=False, **kwargs):
+        super(EnvironmentSpec, self).__init__(**kwargs)
+        self.environmentname = environmentname
+        self.args_parser = args_parser
+        self.is_math_mode = is_math_mode
+
+    def parse_args(self, *args, **kwargs):
+        r"""
+        Shorthand for calling the :py:attr:`args_parser`\ 's `parse_args()` method.
+        See :py:class:`MacroStandardArgsParser`.
+        """
+        return self.args_parser.parse_args(*args, **kwargs)
+
+
+
+
+
+# ------------------------------------------------------------------------------
+
+
+def std_macro(macname, *args, **kwargs):
+    r"""
+    Return a macro specification for the given macro.  Syntax::
 
       spec = std_macro(macname, argspec)
       #  or
@@ -241,6 +335,8 @@ def std_macro(macname, *args):
       spec = std_macro( (macname, argspec), )
       #  or
       spec = std_macro( (macname, optarg, numargs), )
+      #  or
+      spec = std_macro( spec ) # spec is already a `MacroSpec` -- no-op
 
     - `macname` is the name of the macro, without the leading backslash.
 
@@ -270,13 +366,34 @@ def std_macro(macname, *args):
         ``std_macro(macname, argspec)``.
 
     - `numargs`: depends on `optarg`, see above.
+    
+    To make environment specifications (:py:class:`EnvironmentSpec`) instead of
+    a macro specification, use the function :py:func:`std_environment()`
+    instead.
+
+    The helper function :py:func:`std_environment()` is a shorthand for calling
+    this function with additional keyword arguments.  An optional keyword
+    argument `make_environment_spec=True` to the present function may be
+    specified to return an `EnvironmentSpec` instead of a `MacroSpec`.  In this
+    case, you can further specify the `environment_is_math_mode=True|False` to
+    specify whether of not the environment represents a math mode.
     """
 
     if isinstance(macname, tuple):
         if len(args) != 0:
             raise TypeError("No positional arguments expected if first argument is a tuple")
         args = macname
+
+    if isinstance(macname, MacroSpec):
+        if len(args) != 0:
+            raise TypeError("No positional arguments expected if first argument is a MacroSpec")
+        return macname
     
+    if isinstance(macname, EnvironmentSpec):
+        if len(args) != 0:
+            raise TypeError("No positional arguments expected if first argument is a EnvironmentSpec")
+        return macname
+
     if len(args) == 1:
         # std_macro(macname, argspec)
         argspec = args[0]
@@ -294,236 +411,298 @@ def std_macro(macname, *args):
             argspec = '['
         argspec += '{'*args[1]
 
-    return MacroSpec(macname, argspec)
+    if kwargs.get('make_environment_spec', False):
+        return EnvironmentSpec(macname, args_parser=MacroStandardArgsParser(argspec),
+                               is_math_mode=kwargs.get('environment_is_math_mode', False))
+    return MacroSpec(macname, args_parser=MacroStandardArgsParser(argspec))
 
 
-
-
-class MacroSpecDb(object):
+def std_environment(envname, *args, **kwargs):
     r"""
-    Store a list of macro specifications (stored as :py:class:`MacroSpec`
-    objects), organized by categories.
+    Return an environment specification for the given environment.  Syntax::
 
-    This class is used to store the default list of known latex macros and
-    environments.
+      spec = std_environment(envname, argspec, is_math_mode=True|False)
+      #  or
+      spec = std_environment(envname, optarg, numargs, is_math_mode=True|False)
+      #  or
+      spec = std_environment( (envname, argspec), is_math_mode=True|False)
+      #  or
+      spec = std_environment( (envname, optarg, numargs), is_math_mode=True|False)
+      #  or
+      spec = std_environment( spec ) # spec is already a `EnvironmentSpec` -- no-op
+
+    - `envname` is the name of the environment, i.e., the argument to
+      ``\begin{...}``.
+
+    - `argspec` is a string either characters "*", "{" or "[", in which star
+      indicates an optional asterisk character (e.g. starred environment variants),
+      each curly brace specifies a mandatory argument and each square bracket
+      specifies an optional argument in square brackets.  For example, "{{*[{"
+      expects two mandatory arguments, then an optional star, an optional
+      argument in square brackets, and then another mandatory argument.
+
+      `argspec` may also be `None`, which is the same as ``argspec=''``.
+
+    .. note::
+
+       See :py:class:`EnvironmentSpec` for an important remark about starred
+       variants for environments.  TL;DR: a starred verison of an environment is
+       defined as a separate `EnvironmentSpec` with the star in the name and
+       *not* using an ``argspec='*'``.
+
+    - `optarg` may be one of `True`, `False`, or `None`, corresponding to these
+      possibilities:
+
+      + if `True`, the environment expects as first argument an optional argument in
+        square brackets. Then, `numargs` specifies the number of additional
+        mandatory arguments to the command, given in usual curly braces (or
+        simply as one TeX token like a single environment)
+
+      + if `False`, the environment only expects a number of mandatory arguments given
+        by `numargs`. The mandatory arguments are given in usual curly braces
+        (or simply as one TeX token like a single environment)
+
+      + if `None`, then `numargs` is a string like `argspec` above.  I.e.,
+        ``std_environment(envname, None, argspec)`` is the same as
+        ``std_environment(envname, argspec)``.
+
+    - `numargs`: depends on `optarg`, see above.
+
+    - `is_math_mode`: if set to True, then the environment represents a math
+      mode environment (e.g., 'equation', 'align', 'gather', etc.), i.e., whose
+      contents should be parsed in an appropriate math mode.  Note that
+      `is_math_mode` *must* be given as a keyword argument, in contrast to all
+      other arguments which must be positional (non-keyword) arguments.
     """
-    def __init__(self, d, **kwargs):
-        super(MacroSpecDb, self).__init__(**kwargs)
-        self._d = d
+    is_math_mode = kwargs.pop('is_math_mode', False)
+    kwargs2 = dict(kwargs)
+    kwargs2.update(make_environment_spec=True,
+                   environment_is_math_mode=is_math_mode)
+    return std_macro(envname, *args, **kwargs2)
+
+
+
+
+# ------------------------------------------------------------------------------
+
+
+
+
+class LatexContextDb(object):
+    r"""
+    Store a database of macro specifications (stored as :py:class:`MacroSpec`
+    objects), environment specifications (stored as :py:class:`EnvironSpec`, a
+    subclass of :py:class:`MacroSpec`), each organized in different categories.
+    
+    TODO: In the future, this class will also store special/active/ligature
+    chars, etc.
+
+    See :py:func:`default_latex_context()` for the default latex context with a
+    default collection of known latex macros and environments.
+    """
+    def __init__(self, **kwargs):
+        super(LatexContextDb, self).__init__(**kwargs)
+
+        self.category_list = []
+        self.d = {}
+
+        self.unknown_macro_spec = MacroSpec('')
+        self.unknown_environment_spec = EnvironmentSpec('')
+        
+    def add_context_category(self, category, macros, environments, prepend=False):
+        r"""
+        Register a category of macro and environment specifications in the context
+        database.
+
+        The category name `category` must not already exist in the database.
+
+        The argument `macros` is an iterable (e.g., a list) of
+        :py:class:`MacroSpec` objects.  The argument `environments` is an
+        iterable (e.g., a list) of :py:class:`EnvironmentSpec` objects.
+
+        If you specify `prepend=True`, then macro and environment lookups will
+        prioritize this category over other categories.  Categories are normally
+        searched for in the order they are registered to the database; if you
+        specify `prepend=True`, then the new category is prepended to the
+        existing list so that it is searched first.
+        """
+        
+        if category in self.category_list:
+            raise ValueError("Category {} is already registered in the context database"
+                             .format(category))
+
+        if prepend:
+            self.category_list.prepend(category)
+        else:
+            self.category_list.append(category)
+
+        self.d[category] = {
+            'macros': dict( (m.macroname, m) for m in macros ),
+            'environments': dict( (e.environmentname, e) for e in environments),
+        }
+
+    def set_unknown_macro_spec(self, macrospec):
+        r"""
+        Set the macro spec (a `MacroSpec` instance) to use when encountering a macro
+        that is not in the database.
+        """
+        self.unknown_macro_spec = macrospec
+
+    def set_unknown_environment_spec(self, environmentspec):
+        r"""
+        Set the environment spec (a `EnvironmentSpec` instance) to use when
+        encountering a LaTeX environment that is not in the database.
+        """
+        self.unknown_environment_spec = environmentspec
 
     def categories(self):
         r"""
-        Return a list of valid category names that can be used as arguments to,
-        e.g., :py:meth:`specs()`.
+        Return a list of valid category names that are registered in the current
+        database context.
         """
-        return list(self._d.keys())
-    
-    def specs(self, cat=None):
+        return self.category_list
+
+    def get_macro_spec(self, macroname):
         r"""
-        Return the macro specs corresponding to all macros in the given categories.
+        Look up a macro specification by macro name.  The macro name is searched for
+        in all categories one by one and the first match is returned.
 
-        If `cat` is `None`, then the known macro specs from *all* categories are
-        returned in one long list.  Otherwise, `cat` should be a list of
-        category names (e.g., 'latex-base') of macro specs to return.
-
-        The macro specs from the different categories specified are concatenated
-        into one long list which is returned.
+        Returns a :py:class:`MacroSpec` instance.  If the macro name was not
+        found, we return a default macro specification or the one set by
+        :py:meth:`set_unknown_macro_spec()`.
         """
-        return list(self.iter_specs(cat))
+        for cat in self.category_list:
+            # search categories in the given order
+            if macroname in self.d[cat]['macros']:
+                return self.d[cat]['macros'][macroname]
+        return self.unknown_macro_spec
+    
+    def get_environment_spec(self, environmentname):
+        r"""
+        Look up an environment specification by environment name.  The environment
+        name is searched for in all categories one by one and the first match is
+        returned.
 
-    def iter_specs(self, cat=None):
+        Returns a :py:class:`EnvironmentSpec` instance.  If the environment name
+        was not found, we return a default environment specification or the one
+        set by :py:meth:`set_unknown_environment_spec()`.
+        """
+        for cat in self.category_list:
+            # search categories in the given order
+            if environmentname in self.d[cat]['environments']:
+                return self.d[cat]['environments'][environmentname]
+        return self.unknown_environment_spec
+
+    def iter_macro_specs(self, categories=None):
         r"""
         Yield the macro specs corresponding to all macros in the given categories.
 
-        If `cat` is `None`, then the known macro specs from *all* categories are
-        provided in one long iterable sequence.  Otherwise, `cat` should be a
-        list of category names (e.g., 'latex-base') of macro specs to return.
+        If `categories` is `None`, then the known macro specs from all
+        categories are provided in one long iterable sequence.  Otherwise,
+        `categories` should be a list or iterable of category names (e.g.,
+        'latex-base') of macro specs to return.
 
         The macro specs from the different categories specified are concatenated
         into one long sequence which is yielded spec by spec.
         """
 
-        if cat is None:
-            cat = self._d.keys()
+        if categories is None:
+            categories = self.category_list
 
-        for c in cat:
-            if c not in self._d:
+        for c in categories:
+            if c not in self.category_list:
                 raise ValueError("Invalid latex macro spec db category: {!r} (Expected one of {!r})"
-                                 .format(c, list(self._d.keys())))
-            for spec in self._d[c]:
+                                 .format(c, self.category_list))
+            for spec in self.d[c]['macros'].values():
                 yield spec
+
+    def iter_environment_specs(self, categories=None):
+        r"""
+        Yield the environment specs corresponding to all environments in the given
+        categories.
+
+        If `categories` is `None`, then the known environment specs from all
+        categories are provided in one long iterable sequence.  Otherwise,
+        `categories` should be a list or iterable of category names (e.g.,
+        'latex-base') of environment specs to return.
+
+        The environment specs from the different categories specified are
+        concatenated into one long sequence which is yielded spec by spec.
+        """
+
+        if categories is None:
+            categories = self.category_list
+
+        for c in categories:
+            if c not in self.category_list:
+                raise ValueError("Invalid latex environment spec db category: {!r} (Expected one of {!r})"
+                                 .format(c, self.category_list))
+            for spec in self.d[c]['environments'].values():
+                yield spec
+
+
+    def filter_context(self, keep_categories=[], exclude_categories=[],
+                       keep_which=[]):
+        r"""
+        Return a new :py:class:`LatexContextDb` instance where we only keep
+        certain categories of macro and environment specifications.
+        
+        If `keep_categories` is set to a nonempty list, then the returned
+        context will not contain any definitions that do not correspond to the
+        specified categories.
+
+        If `exclude_categories` is set to a nonempty list, then the returned
+        context will not contain any definitions that correspond to the
+        specified categories.
+
+        The argument `keep_which`, if non-empty, specifies which definitions to
+        keep.  It should be a subset of the list ['macros', 'environments'].
+        
+        The returned context will make a copy of the dictionaries that store the
+        macro and environment specifications, but the specification classes (and
+        corresponding argument parsers) might correspond to the same instances.
+        I.e., the returned context is not a full deep copy.
+        """
+        
+        new_context = LatexContextDb()
+
+        new_context.unknown_macro_spec = self.unknown_macro_spec
+        new_context.unknown_environment_spec = self.unknown_environment_spec
+
+        keep_macros = not keep_which or 'macros' in keep_which
+        keep_environments = not keep_which or 'environments' in keep_which
+
+        for cat in self.category_list:
+            if keep_categories and cat not in keep_categories:
+                continue
+            if exclude_categories and cat in exclude_categories:
+                continue
+
+            # include this category
+            new_context.add_context_category(
+                cat,
+                self.d[cat]['macros'].values() if keep_macros else [],
+                self.d[cat]['environments'].values() if keep_environments else [],
+            )
+
+        return new_context
+
+
+
+
+def get_default_latex_context_db():
+    db = LatexContextDb()
+    
+    from ._macrospec_defaults import specs
+
+    for cat, catspecs in specs:
+        db.add_context_category(cat, catspecs['macros'], catspecs['environments'])
+    
+    return db
     
 
-macro_spec_db = MacroSpecDb({
-    'latex-base': [
-        std_macro('documentclass', True, 1),
-        std_macro('usepackage', True, 1),
-        std_macro('selectlanguage', True, 1),
-        std_macro('setlength', True, 2),
-        std_macro('addlength', True, 2),
-        std_macro('setcounter', True, 2),
-        std_macro('addcounter', True, 2),
-        std_macro('newcommand', "*{[{"),
-        std_macro('renewcommand', "*{[{"),
-        std_macro('providecommand', "*{[{"),
-        std_macro('newenvironment', "*{[{{"),
-        std_macro('renewenvironment', "*{[{{"),
-        std_macro('provideenvironment', "*{[{{"),
 
-        std_macro('DeclareMathOperator', '*{{'),
-
-        std_macro('hspace', False, 1),
-        std_macro('vspace', False, 1),
-
-        # (Note: single backslash) end of line with optional no-break ('*') and
-        # additional vertical spacing, e.g. \\*[2mm]
-        std_macro('\\', '*['),
-
-        std_macro('item', True, 0),
-
-        # \input{someotherfile}
-        std_macro('input', False, 1),
-        std_macro('include', False, 1),
-
-        std_macro('includegraphics', True, 1),
-
-        std_macro('chapter', '*[{'),
-        std_macro('section', '*[{'),
-        std_macro('subsection', '*[{'),
-        std_macro('subsubsection', '*[{'),
-        std_macro('pagagraph', '*[{'),
-        std_macro('subparagraph', '*[{'),
-
-
-        std_macro('emph', False, 1),
-        std_macro('textit', False, 1),
-        std_macro('textbf', False, 1),
-        std_macro('textsc', False, 1),
-        std_macro('textsl', False, 1),
-        std_macro('text', False, 1),
-        std_macro('mathrm', False, 1),
-
-        std_macro('label', False, 1),
-        std_macro('ref', False, 1),
-        std_macro('eqref', False, 1),
-        std_macro('url', False, 1),
-        std_macro('hypersetup', False, 1),
-        std_macro('footnote', True, 1),
-
-        std_macro('keywords', False, 1),
-
-        std_macro('hphantom', True, 1),
-        std_macro('vphantom', True, 1),
-
-        std_macro("'", False, 1),
-        std_macro("`", False, 1),
-        std_macro('"', False, 1),
-        std_macro("c", False, 1),
-        std_macro("^", False, 1),
-        std_macro("~", False, 1),
-        std_macro("H", False, 1),
-        std_macro("k", False, 1),
-        std_macro("=", False, 1),
-        std_macro("b", False, 1),
-        std_macro(".", False, 1),
-        std_macro("d", False, 1),
-        std_macro("r", False, 1),
-        std_macro("u", False, 1),
-        std_macro("v", False, 1),
-
-        std_macro("vec", False, 1),
-        std_macro("dot", False, 1),
-        std_macro("hat", False, 1),
-        std_macro("check", False, 1),
-        std_macro("breve", False, 1),
-        std_macro("acute", False, 1),
-        std_macro("grave", False, 1),
-        std_macro("tilde", False, 1),
-        std_macro("bar", False, 1),
-        std_macro("ddot", False, 1),
-
-        std_macro('frac', False, 2),
-        std_macro('nicefrac', False, 2),
-
-        std_macro('sqrt', True, 1),
-
-        std_macro('ket', False, 1),
-        std_macro('bra', False, 1),
-        std_macro('braket', False, 2),
-        std_macro('ketbra', False, 2),
-
-        std_macro('texorpdfstring', False, 2),
-    ],
-
-    'latex-ethuebung': [
-        # ethuebung
-        std_macro('UebungLoesungFont', False, 1),
-        std_macro('UebungHinweisFont', False, 1),
-        std_macro('UebungExTitleFont', False, 1),
-        std_macro('UebungSubExTitleFont', False, 1),
-        std_macro('UebungTipsFont', False, 1),
-        std_macro('UebungLabel', False, 1),
-        std_macro('UebungSubLabel', False, 1),
-        std_macro('UebungLabelEnum', False, 1),
-        std_macro('UebungLabelEnumSub', False, 1),
-        std_macro('UebungSolLabel', False, 1),
-        std_macro('UebungHinweisLabel', False, 1),
-        std_macro('UebungHinweiseLabel', False, 1),
-        std_macro('UebungSolEquationLabel', False, 1),
-        std_macro('UebungTipsLabel', False, 1),
-        std_macro('UebungTipsEquationLabel', False, 1),
-        std_macro('UebungsblattTitleSeries', False, 1),
-        std_macro('UebungsblattTitleSolutions', False, 1),
-        std_macro('UebungsblattTitleTips', False, 1),
-        std_macro('UebungsblattNumber', False, 1),
-        std_macro('UebungsblattTitleFont', False, 1),
-        std_macro('UebungTitleCenterVSpacing', False, 1),
-        std_macro('UebungAttachedSolutionTitleTop', False, 1),
-        std_macro('UebungAttachedSolutionTitleFont', False, 1),
-        std_macro('UebungAttachedSolutionTitle', False, 1),
-        std_macro('UebungTextAttachedSolution', False, 1),
-        std_macro('UebungDueByLabel', False, 1),
-        std_macro('UebungDueBy', False, 1),
-        std_macro('UebungLecture', False, 1),
-        std_macro('UebungProf', False, 1),
-        std_macro('UebungLecturer', False, 1),
-        std_macro('UebungSemester', False, 1),
-        std_macro('UebungLogoFile', False, 1),
-        std_macro('UebungLanguage', False, 1),
-        std_macro('UebungStyle', False, 1),
-        #
-        std_macro('uebung', '{['),
-        std_macro('exercise', '{['),
-        std_macro('keywords', False, 1),
-        std_macro('subuebung', False, 1),
-        std_macro('subexercise', False, 1),
-        std_macro('pdfloesung', True, 1),
-        std_macro('pdfsolution', True, 1),
-        std_macro('exenumfulllabel', False, 1),
-        std_macro('hint', False, 1),
-        std_macro('hints', False, 1),
-        std_macro('hinweis', False, 1),
-        std_macro('hinweise', False, 1),
-    ]
-})
-
-
-environment_spec_db = MacroSpecDb({
-    'latex-base': [
-        std_macro('figure', '['),
-        std_macro('table', '['),
-
-        std_macro('abstract', None),
-
-        std_macro('tabular', '{'),
-
-        std_macro('array', '[{'),
-        std_macro('alignat', '{'),
-        
-    ],
-    'enumitem': [
-        std_macro('enumerate', '['),
-        std_macro('itemize', '['),
-        std_macro('description', '['),
-    ]
-})
+legacy_default_macro_dict = dict([
+    (m.macroname, m)
+    for m in get_default_latex_context_db().iter_macro_specs()
+])

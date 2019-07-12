@@ -108,16 +108,23 @@ MacrosDef = macrospec.std_macro
 r"""
 .. deprecated:: 2.0
 
-   Use `macrospec.std_macro` instead which does the same thing, or invoke the
-   `MacroSpec` class directly (or a subclass).
+   Use :py:func:`pylatexenc.macrospec.std_macro` instead which does the same
+   thing, or invoke the :py:class:`~pylatexenc.macrospec.MacroSpec` class
+   directly (or a subclass).
+
+   Since `pylatexenc 2.0`, `MacrosDef` is an alias to the function
+   :py:func:`pylatexenc.macrospec.std_macro` which returns a
+   :py:class:`~pylatexenc.macrospec.MacroSpec` instance.  In this way the
+   earlier idiom ``MacrosDef(...)`` still works in `pylatexenc 2`.
 """
 
 
-default_macro_dict = dict([(m.macroname, m) for m in macrospec.macro_spec_db.iter_specs()])
-"""
+default_macro_dict = macrospec.legacy_default_macro_dict
+r"""
 .. deprecated:: 2.0
 
-  Use :py:data:`macrospec.macro_spec_db.specs()` instead.
+   Use :py:func:`macrospec.get_default_latex_context_db()` instead, or create
+   your own :py:class:`macrospec.LatexContextDb` object.
 """
 
 
@@ -558,19 +565,11 @@ class LatexWalker(object):
 
       - `s`: the string to parse as LaTeX code
 
-      - `macro_dict`: a context dictionary of known LaTeX macros.  By default, a
-        macro dictionary built from the default
-        :py:data:`macrospec.macro_spec_db` database is used.  This should be a
-        dictionary where the keys are macro names (see
-        :py:class:`macrospec.MacroSpec.macroname <MacrosDef>`) and values are
-        :py:class:`macrospec.MacroSpec` instances.
-
-      - `environment_dict`: a context dictionary of macro specifications
-        corresponding to beginning of known LaTeX environments.  For example,
-        for the ``{tabular}`` environment, we can provide a
-        :py:class:`~macrospec.MacroSpec` instance for a macro called ``tabular``
-        and whose argspec is a single mandatory argument (the column
-        alignments).
+      - `latex_context`: a :py:class:`macrospec.LatexContextDb` object that
+        provides macro and environment specifications with instructions on how
+        to parse arguments, etc.  If you don't specify this argument, or if you
+        specify `None`, then the default database is used.  The default database
+        is obtained using :py:func:`macrospec.get_default_latex_context_db()`.
 
     Additional keyword arguments are flags which influence the parsing.
     Accepted flags are:
@@ -598,40 +597,52 @@ class LatexWalker(object):
     and `len` is the length of the string that is considered to be part of the
     `node`.  That is, the position in the string that is immediately after the
     node is `pos+len`.
+
+    The following obsolete flag is accepted by the constructor for backwards
+    compatibility with `pylatexenc < 2`:
+
+      - `macro_dict`: a dictionary of known LaTeX macro specifications.  If
+        specified, this should be a dictionary where the keys are macro names
+        and values are :py:class:`macrospec.MacroSpec` instances.  If you
+        specify this argument, you cannot provide a custom `latex_context`.
+        This argument is superseded by the `latex_context` argument.
+
+        .. deprecated:: 2.0
+    
+           The `macro_dict` argument has been replaced by the much more powerful
+           `latex_context` argument which allows you to further provide
+           environment specifications, etc.
     """
 
-    def __init__(self, s, **kwargs):
+    def __init__(self, s, latex_context=None, **kwargs):
 
         self.s = s
 
-        # ### FIXME: this shouldn't be macro_dict, it should be a
-        # ### MacroSpecDb object directly!
-        macro_dict = kwargs.pop('macro_dict', None)
-        macro_spec_unknown = kwargs.pop('macro_spec_unknown', None)
-        environment_dict = kwargs.pop('environment_dict', None)
+        if latex_context is None:
+            if 'macro_dict' in kwargs:
+                # LEGACY -- build a latex context using the given macro_dict
+                macro_dict = kwargs.pop('macro_dict', None)
 
-        if macro_dict is not None:
-            self.macro_dict = macro_dict
-        else:
-            self.macro_dict = dict(
-                [ (m.macroname, m)
-                  for m in macrospec.macro_spec_db.specs() # all known specs
-                ]
-            )
+                default_latex_context = macrospec.get_default_latex_context_db()
 
-        if macro_spec_unknown is not None:
-            self.macro_spec_unknown = macro_spec_unknown
+                latex_context = default_latex_context.filter_context(
+                       keep_which=['environments']
+                )
+                latex_context.add_context_category('custom',
+                                                   macro_dict.values(),
+                                                   default_latex_context.iter_environment_specs())
+
+            else:
+                # default -- use default
+                latex_context = macrospec.get_default_latex_context_db()
+
         else:
-            self.macro_spec_unknown = macrospec.std_macro('', None)
-        
-        if environment_dict is not None:
-            self.environment_dict = environment_dict
-        else:
-            self.environment_dict = dict(
-                [ (m.macroname, m)
-                  for m in macrospec.environment_spec_db.specs() # all known specs
-                ]
-            )
+            # make sure the user didn't also provide a macro_dict= argument
+            if 'macro_dict' in kwargs:
+                raise TypeError("Cannot specify both `latex_context` and `macro_dict` arguments")
+
+        self.latex_context = latex_context
+
 
         #
         # now parsing flags:
@@ -639,9 +650,13 @@ class LatexWalker(object):
         self.keep_inline_math = kwargs.pop('keep_inline_math', False)
         self.tolerant_parsing = kwargs.pop('tolerant_parsing', True)
         self.strict_braces = kwargs.pop('strict_braces', False)
+
         if kwargs:
             # any flags left which we haven't recognized
             logger.warning("LatexWalker(): Unknown flag(s) encountered: %r", kwargs.keys())
+
+        super(LatexWalker, self).__init__()
+
 
     def parse_flags(self):
         """
@@ -887,8 +902,9 @@ class LatexWalker(object):
         input stream does not match the provided environment name.
 
         Arguments to the begin environment command are parsed according to the
-        corresponding specification in `environment_dict`.  The environment name
-        is looked up as a "macro name" in the macro spec.
+        corresponding specification in the given latex context `latex_context`
+        provided to the constructor.  The environment name is looked up as a
+        "macro name" in the macro spec.
 
         Returns a tuple (node, pos, len) where node is a
         :py:class:`LatexEnvironmentNode`.
@@ -909,8 +925,7 @@ class LatexWalker(object):
 
         pos = firsttok.pos + firsttok.len
 
-        env_spec = self.environment_dict.get(environmentname,
-                                             macrospec.MacroSpec(environmentname, None))
+        env_spec = self.latex_context.get_environment_spec(environmentname)
 
         (argd, apos, alen) = env_spec.parse_args(self, pos) # self = latex walker instance
 
@@ -974,8 +989,8 @@ class LatexWalker(object):
         If `stop_upon_end_environment` is provided, then parsing stops once the
         given environment was closed.  If there is an environment mismatch, then
         a `LatexWalkerParseError` is raised except in tolerant parsing mode (see
-        py:meth:`parse_flags()`).  Again, the closing environment is included in
-        the length count but not the nodes.
+        :py:meth:`parse_flags()`).  Again, the closing environment is included
+        in the length count but not the nodes.
 
         If `stop_upon_closing_mathmode` is specified, then the parsing stops
         once the corresponding math mode (assumed already open) is closed.
@@ -1105,7 +1120,7 @@ class LatexWalker(object):
             if (tok.tok == 'macro'):
                 # read a macro. see if it has arguments.
                 macroname = tok.arg
-                mspec = self.macro_dict.get(macroname, self.macro_spec_unknown)
+                mspec = self.latex_context.get_macro_spec(macroname)
 
                 (nodeargd, mapos, malen) = \
                     mspec.parse_args(self, tok.pos + tok.len) # self = walker instance

@@ -7,7 +7,7 @@ if sys.version_info.major > 2:
     basestring = str
 
 from pylatexenc.macrospec import (
-    ParsedMacroArgs, MacroSpec, std_macro
+    ParsedMacroArgs, MacroSpec, MacroStandardArgsParser, std_macro, std_environment
 )
 
 from pylatexenc import latexwalker
