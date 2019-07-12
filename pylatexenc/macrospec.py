@@ -382,7 +382,8 @@ def std_macro(macname, *args, **kwargs):
     if isinstance(macname, tuple):
         if len(args) != 0:
             raise TypeError("No positional arguments expected if first argument is a tuple")
-        args = macname
+        args = tuple(macname[1:])
+        macname = macname[0]
 
     if isinstance(macname, MacroSpec):
         if len(args) != 0:
@@ -532,7 +533,7 @@ class LatexContextDb(object):
                              .format(category))
 
         if prepend:
-            self.category_list.prepend(category)
+            self.category_list.insert(0, category)
         else:
             self.category_list.append(category)
 

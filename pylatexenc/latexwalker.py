@@ -123,8 +123,8 @@ default_macro_dict = macrospec.legacy_default_macro_dict
 r"""
 .. deprecated:: 2.0
 
-   Use :py:func:`macrospec.get_default_latex_context_db()` instead, or create
-   your own :py:class:`macrospec.LatexContextDb` object.
+   Use :py:func:`pylatexenc.macrospec.get_default_latex_context_db()` instead,
+   or create your own :py:class:`pylatexenc.macrospec.LatexContextDb` object.
 """
 
 
@@ -385,8 +385,8 @@ class LatexMacroNode(LatexNode):
 
     .. py:attribute:: nodeargd
 
-       The :py:class:`macrospec.ParsedMacroArgs` object that represents the
-       macro arguments.
+       The :py:class:`pylatexenc.macrospec.ParsedMacroArgs` object that
+       represents the macro arguments.
 
     .. py:attribute:: macro_post_space
 
@@ -454,8 +454,8 @@ class LatexEnvironmentNode(LatexNode):
 
     .. py:attribute:: nodeargd
 
-       The :py:class:`macrospec.ParsedMacroArgs` object that represents the
-       macro arguments.
+       The :py:class:`pylatexenc.macrospec.ParsedMacroArgs` object that
+       represents the macro arguments.
 
     The following attributes are obsolete since `pylatexenc 2.0`.
 
@@ -565,11 +565,12 @@ class LatexWalker(object):
 
       - `s`: the string to parse as LaTeX code
 
-      - `latex_context`: a :py:class:`macrospec.LatexContextDb` object that
-        provides macro and environment specifications with instructions on how
-        to parse arguments, etc.  If you don't specify this argument, or if you
-        specify `None`, then the default database is used.  The default database
-        is obtained using :py:func:`macrospec.get_default_latex_context_db()`.
+      - `latex_context`: a :py:class:`pylatexenc.macrospec.LatexContextDb`
+        object that provides macro and environment specifications with
+        instructions on how to parse arguments, etc.  If you don't specify this
+        argument, or if you specify `None`, then the default database is used.
+        The default database is obtained using
+        :py:func:`pylatexenc.macrospec.get_default_latex_context_db()`.
 
     Additional keyword arguments are flags which influence the parsing.
     Accepted flags are:
@@ -603,8 +604,8 @@ class LatexWalker(object):
 
       - `macro_dict`: a dictionary of known LaTeX macro specifications.  If
         specified, this should be a dictionary where the keys are macro names
-        and values are :py:class:`macrospec.MacroSpec` instances.  If you
-        specify this argument, you cannot provide a custom `latex_context`.
+        and values are :py:class:`pylatexenc.macrospec.MacroSpec` instances.  If
+        you specify this argument, you cannot provide a custom `latex_context`.
         This argument is superseded by the `latex_context` argument.
 
         .. deprecated:: 2.0
