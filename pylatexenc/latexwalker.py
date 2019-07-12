@@ -88,9 +88,9 @@ class LatexWalkerParseError(LatexWalkerError):
         self.pos = pos
         disp = '...'+s[max(pos-25,0):pos]
         disp = '\n%s\n'%(disp)  +  (' '*len(disp)) + s[pos:pos+25]+'...'
-        LatexWalkerError.__init__(self, msg + (
-            " @ %d:\n%s" %(pos, disp)
-            ))
+        super(LatexWalkerParseError, self).__init__(
+            msg + ( " @ %d:\n%s" %(pos, disp) )
+        )
 
 class LatexWalkerEndOfStream(LatexWalkerError):
     """
@@ -258,23 +258,25 @@ class LatexNode(object):
     """
     def __init__(self, **kwargs):
         """
-        Important: subclasses must set `self._fields` to a list (or tuple or iterable) of the
-        fields stored in this object.
+        Important: subclasses must set `self._fields` to a list (or tuple or
+        iterable) of the fields stored in this object.
         """
         super(LatexNode, self).__init__(**kwargs)
 
     def nodeType(self):
         """
-        Returns the class which corresponds to the type of this node.  This is a Python class
-        object, that is one of :py:class:`~pylatexenc.latexwalker.LatexCharsNode`,
+        Returns the class which corresponds to the type of this node.  This is a
+        Python class object, that is one of
+        :py:class:`~pylatexenc.latexwalker.LatexCharsNode`,
         :py:class:`~pylatexenc.latexwalker.LatexGroupNode`, etc.
         """
         return LatexNode
 
     def isNodeType(self, t):
         """
-        Returns `True` if the current node is of the given type.  The argument `t` must be a
-        Python class such as, e.g. :py:class:`~pylatexenc.latexwalker.LatexGroupNode`.
+        Returns `True` if the current node is of the given type.  The argument `t`
+        must be a Python class such as,
+        e.g. :py:class:`~pylatexenc.latexwalker.LatexGroupNode`.
         """
         return isinstance(self, t)
 
@@ -310,20 +312,14 @@ class LatexNode(object):
 
 class LatexCharsNode(LatexNode):
     """
-    A string of characters in the LaTeX document, without any special LaTeX code.
+    A string of characters in the LaTeX document, without any special LaTeX
+    code.
 
     .. py:attribute:: chars
 
        The string of characters represented by this node.
-
     """
     def __init__(self, chars, **kwargs):
-        r"""
-        Constructor arguments:
-
-            - `chars`: the actual characters.
-
-        """
         super(LatexCharsNode, self).__init__(**kwargs)
         self._fields = ('chars',)
         self.chars = chars
