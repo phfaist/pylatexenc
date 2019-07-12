@@ -69,10 +69,6 @@ class ParsedMacroArgs(object):
         included in `nodeoptarg` or `nodeargs` depended on how the macro
         specification was given.
 
-      - `latex_repr` is the LaTeX represention of the macro arguments.  This is
-        used to reconstruct the latex code from the parsed representation in
-        e.g. :py:func:`latexwalker.nodelist_to_latex()`.
-
       - `legacy_nodeoptarg_nodeargs` is a tuple `(nodeoptarg, nodeargs)` that
         should be exposed as properties in
         :py:class:`~latexwalker.LatexMacroNode` to provide (as best as possible)
@@ -84,12 +80,11 @@ class ParsedMacroArgs(object):
         is a list of nodes that represents subsequent arguments (optional or
         mandatory).
     """
-    def __init__(self, argnlist=[], latex_repr='', legacy_nodeoptarg_nodeargs=None,
+    def __init__(self, argnlist=[], legacy_nodeoptarg_nodeargs=None,
                  **kwargs):
         super(ParsedMacroArgs, self).__init__(**kwargs)
         
         self.argnlist = argnlist
-        self.latex_repr = latex_repr
         self.legacy_nodeoptarg_nodeargs = legacy_nodeoptarg_nodeargs
         
     def to_json_object(self):
@@ -113,7 +108,7 @@ class ParsedMacroArgs(object):
         )
 
     def __repr__(self):
-        return "ParsedMacroArgs(argnlist={!r},latex_repr={!r})".format(self.argnlist, self.latex_repr)
+        return "ParsedMacroArgs(argnlist={!r})".format(self.argnlist)
 
 
 
@@ -229,7 +224,6 @@ class MacroSpec(object):
 
         parsed = ParsedMacroArgs(
             argnlist,
-            latex_repr=w.s[pos:p-pos],
             legacy_nodeoptarg_nodeargs=(legacy_nodeoptarg, legacy_nodeargs),
         )
 
