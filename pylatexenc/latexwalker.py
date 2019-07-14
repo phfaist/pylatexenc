@@ -202,11 +202,22 @@ class LatexToken(object):
         
         The `arg` is a string which contains the relevant brace character.
 
-      - 'mathmode_inline': a delimiter which starts inline math.  This is (e.g.)
-        a single '$' character which is not part of a double '$$' display
-        environment delimiter.
+      - 'mathmode_inline': a delimiter which starts/ends inline math.  This is
+        (e.g.) a single '$' character which is not part of a double '$$'
+        display environment delimiter.
 
         The `arg` is the string value of the delimiter in question ('$')
+
+        ### FIXME: remove this token type? --> single token type 'mathmode'
+
+      - 'mathmode_display': a delimiter which starts/ends display math, e.g.,
+        ``\[``.
+
+        The `arg` is the string value of the delimiter in question (e.g.,
+        ``\[`` or ``$$``)
+
+        ### FIXME: remove this token type? --> single token type 'mathmode'
+
     """
     def __init__(self, tok, arg, pos, len, pre_space, post_space=''):
         self.tok = tok
@@ -281,16 +292,8 @@ class LatexNode(object):
         return isinstance(self, t)
 
     def __eq__(self, other):
-        if hasattr(self, '_realfields'):
-            # in case some fields are "fake fields", provided for an alternative
-            # interface for backwards compatibility, for example.  Cf. for
-            # instance LatexMacroNode.
-            realfields = self._realfields
-        else:
-            realfields = self._fields
-
         return other is not None  and  self.nodeType() == other.nodeType()  and  all(
-            ( getattr(self, f) == getattr(other, f)  for f in realfields )
+            ( getattr(self, f) == getattr(other, f)  for f in self._fields )
         )
 
     # see https://docs.python.org/3/library/constants.html#NotImplemented
@@ -420,8 +423,8 @@ class LatexMacroNode(LatexNode):
 
         super(LatexMacroNode, self).__init__(**kwargs)
 
-        self._fields = ('macroname','nodeargd','macro_post_space','nodeoptarg','nodeargs')
-        self._realfields = ('macroname','nodeargd','macro_post_space')
+        self._fields = ('macroname','nodeargd','macro_post_space')
+        self._redundant_fields = ('macroname','nodeargd','macro_post_space','nodeoptarg','nodeargs')
 
         self.macroname = macroname
         self.nodeargd = nodeargd
@@ -480,8 +483,8 @@ class LatexEnvironmentNode(LatexNode):
 
         super(LatexEnvironmentNode, self).__init__(**kwargs)
 
-        self._fields = ('envname','nodelist','nodeargd','optargs','args',)
-        self._realfields = ('envname','nodelist','nodeargd',)
+        self._fields = ('envname','nodelist','nodeargd',)
+        self._redundant_fields = ('envname','nodelist','nodeargd','optargs','args',)
         self.envname = envname
         self.nodelist = nodelist
         self.nodeargd = nodeargd
@@ -507,11 +510,10 @@ class LatexMathNode(LatexNode):
        :py:class:`LatexEnvironmentNode`'s, and not as
        :py:class:`LatexMathNode`'s.
 
-    .. note::
+    .. py:attribute:: delimiters
 
-       Currently, the 'display' type is never used.  Display blocks delimited
-       e.g. by ``$$ .. $$`` or ``\[ ... \]`` are always reported as regular text
-       with :py:class:`LatexCharsNode`.  This might change in the future.
+       A 2-item tuple containing the begin and end delimiters used to delimit
+       this math mode section.
 
     .. py:attribute:: nodelist
     
@@ -520,9 +522,10 @@ class LatexMathNode(LatexNode):
     """
     def __init__(self, displaytype, nodelist=[], **kwargs):
         super(LatexMathNode, self).__init__(**kwargs)
-        self._fields = ('displaytype','nodelist',)
+        self._fields = ('displaytype','nodelist','delimiters')
         self.displaytype = displaytype
         self.nodelist = nodelist
+        self.delimiters = kwargs.pop('delimiters', None)
 
     def nodeType(self):
         return LatexMathNode
@@ -571,11 +574,6 @@ class LatexWalker(object):
     Additional keyword arguments are flags which influence the parsing.
     Accepted flags are:
 
-      - `keep_inline_math=True|False` If this option is set to `True`, then
-        inline math is parsed and stored using :py:class:`LatexMathNode`
-        instances.  Otherwise, inline math is not treated differently and is
-        simply kept as text.
-
       - `tolerant_parsing=True|False` If set to `True`, then the parser
         generally ignores syntax errors rather than raising an exception.
 
@@ -609,6 +607,18 @@ class LatexWalker(object):
            The `macro_dict` argument has been replaced by the much more powerful
            `latex_context` argument which allows you to further provide
            environment specifications, etc.
+
+      - `keep_inline_math=True|False`: Obsolete option.  In `pylatexenc < 2`,
+        this option triggered a weird behavior especially since there is a
+        similarly named option in
+        :py:class:`pylatexenc.latex2text.LatexNodes2Text` with a different
+        meaning.
+
+        .. deprecated:: 2.0
+
+           This option is ignored starting from `pylatexenc 2`.  Instead, you
+           should set the option `math_mode=` accordingly in
+           :py:class:`pylatexenc.latex2text.LatexNodes2Text`.
     """
 
     def __init__(self, s, latex_context=None, **kwargs):
@@ -645,6 +655,7 @@ class LatexWalker(object):
         # now parsing flags:
         #
         self.keep_inline_math = kwargs.pop('keep_inline_math', False)
+        self.keep_display_math = kwargs.pop('keep_display_math', False)
         self.tolerant_parsing = kwargs.pop('tolerant_parsing', True)
         self.strict_braces = kwargs.pop('strict_braces', False)
 
@@ -657,41 +668,48 @@ class LatexWalker(object):
 
     def parse_flags(self):
         """
-        The parse flags currently set on this object.  Returns a dictionary with keys
-        'keep_inline_math', 'tolerant_parsing' and 'strict_braces'.
+        The parse flags currently set on this object.  Returns a dictionary with
+        keys 'keep_inline_math', 'keep_display_math', 'tolerant_parsing' and
+        'strict_braces'.
         """
         return {
             'keep_inline_math': self.keep_inline_math,
+            'keep_display_math': self.keep_display_math,
             'tolerant_parsing': self.tolerant_parsing,
             'strict_braces': self.strict_braces,
         }
         
-    def get_token(self, pos, brackets_are_chars=True, environments=True, keep_inline_math=None):
-        """
+    def get_token(self, pos, brackets_are_chars=True, environments=True,
+                  keep_inline_math=None, keep_display_math=None):
+        r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to parse a single "token", as defined by
         :py:class:`LatexToken`.
 
         Parse the token in the stream pointed to at position `pos`.
 
-        Returns a :py:class:`LatexToken`. Raises :py:exc:`LatexWalkerEndOfStream` if end
-        of stream reached.
+        Returns a :py:class:`LatexToken`. Raises
+        :py:exc:`LatexWalkerEndOfStream` if end of stream reached.
 
         If `brackets_are_chars=False`, then square bracket characters count as
-        'brace_open' and 'brace_close' token types (see :py:class:`LatexToken`); otherwise
-        (the default) they are considered just like other normal characters.
+        'brace_open' and 'brace_close' token types (see :py:class:`LatexToken`);
+        otherwise (the default) they are considered just like other normal
+        characters.
 
-        If `environments=False`, then '\\begin' and '\\end' tokens count as regular
-        'macro' tokens (see :py:class:`LatexToken`); otherwise (the default) they are
-        considered as the token types 'begin_environment' and 'end_environment'.
+        If `environments=False`, then ``\begin`` and ``\end`` tokens count as
+        regular 'macro' tokens (see :py:class:`LatexToken`); otherwise (the
+        default) they are considered as the token types 'begin_environment' and
+        'end_environment'.
 
-        If `keep_inline_math` is not `None`, then that value overrides that of
-        `self.keep_inline_math` for the duration of this method call.
+        If `keep_inline_math` (resp. `keep_display_math) is not `None`, then
+        that value overrides that of `self.keep_inline_math`
+        (resp. `self.keep_display_math`) for the duration of this method call.
         """
 
         s = self.s # shorthand
 
-        with _PushPropOverride(self, 'keep_inline_math', keep_inline_math):
+        with _PushPropOverride(self, 'keep_inline_math', keep_inline_math), \
+             _PushPropOverride(self, 'keep_display_math', keep_display_math):
 
             space = ''
             while pos < len(s) and s[pos].isspace():
@@ -705,19 +723,25 @@ class LatexWalker(object):
 
             if s[pos] == '\\':
                 # escape sequence
-                i = 2
+                if pos+1 >= len(s):
+                    raise LatexWalkerEndOfStream()
                 macro = s[pos+1] # next char is necessarily part of macro
                 # following chars part of macro only if all are alphabetical
                 isalphamacro = False
-                if (s[pos+1].isalpha()):
+                i = 2
+                if s[pos+1].isalpha():
                     isalphamacro = True
                     while pos+i<len(s) and s[pos+i].isalpha():
                         macro += s[pos+i]
                         i += 1
-                # # possibly followed by a star  ### no, now part of macro arg parsing
-                # if pos+i<len(s) and s[pos+i] == '*':
-                #     macro += '*'
-                #     i += 1
+
+                # special treatment for \( ... \) and \[ ... \] -- inline/display math modes
+                if macro in ('(',')') and self.keep_inline_math:
+                    return LatexToken(tok='mathmode_inline', arg='\\'+macro,
+                                      pos=pos, len=i, pre_space=space)
+                if macro in ('[',']') and self.keep_display_math:
+                    return LatexToken(tok='mathmode_display', arg='\\'+macro,
+                                      pos=pos, len=i, pre_space=space)
 
                 # see if we have a begin/end environment
                 if environments and (macro in ['begin', 'end']):
@@ -776,12 +800,16 @@ class LatexWalker(object):
             if s[pos] in closebracechars:
                 return LatexToken(tok='brace_close', arg=s[pos], pos=pos, len=1, pre_space=space)
 
-            # check if it is an inline math char, if we care about inline math.
-            if (s[pos] == '$' and self.keep_inline_math):
-                # check that we don't have double-$$, which would be a display environment.
-                if not (pos+1 < len(s) and s[pos+1] == '$'):
-                    return LatexToken(tok='mathmode_inline', arg=s[pos], pos=pos, len=1, pre_space=space)
-                # otherwise, proceed to 'char' type.
+            # check for math-mode dollar signs
+            if s[pos].startswith('$$') and self.keep_display_math:
+                return LatexToken(tok='mathmode_display', arg=s[pos], pos=pos, len=2, pre_space=space)
+            elif s[pos] == '$' and not s[pos].startswith('$$') and self.keep_inline_math:
+                return LatexToken(tok='mathmode_inline', arg=s[pos], pos=pos, len=1, pre_space=space)
+                    
+            ### TODO: here we should check for special/active/ligature-category
+            ### chars (to be implemented)
+
+            # otherwise, the token is a normal 'char' type.
 
             return LatexToken(tok='char', arg=s[pos], pos=pos, len=1, pre_space=space)
 
@@ -928,27 +956,6 @@ class LatexWalker(object):
 
         pos = apos + alen
 
-        # optargs = []
-        # args = []
-        #
-        # # see if the \begin{environment} is immediately followed by some
-        # # options.  Important: Don't eat the brace of a commutator!! Don't allow
-        # # any space between the environment and the open bracket.
-        # optargtuple = None
-        # if (self.s[pos] == '['):
-        #     optargtuple = self.get_latex_maybe_optional_arg(pos)
-        #
-        # if (optargtuple is not None):
-        #     optargs.append(optargtuple[0])
-        #     pos = optargtuple[1]+optargtuple[2]
-        # else:
-        #     # Try to see if we have a mandatory argument.  Don't use get_token
-        #     # as we don't want to skip any space.
-        #     if self.s[pos] == '{':
-        #         (argnode, apos, alen) = self.get_latex_braced_group(pos)
-        #         args.append(argnode)
-        #         pos = apos+alen
-
         (nodelist, npos, nlen) = self.get_latex_nodes(pos, stop_upon_end_environment=environmentname)
 
         if argd.legacy_nodeoptarg_nodeargs:
@@ -1030,11 +1037,12 @@ class LatexWalker(object):
             p.pos = tok.pos + tok.len
 
             # if it's a char, just append it to the stream of last characters.
-            if (tok.tok == 'char'):
+            if tok.tok == 'char':
                 p.lastchars += tok.pre_space + tok.arg
                 return False
 
-            # if it's not a char, push the last `p.lastchars` into the node list before anything else
+            # if it's not a char, push the last `p.lastchars` into the node list
+            # before we do anything else
             if len(p.lastchars):
                 strnode = LatexCharsNode(chars=p.lastchars+tok.pre_space)
                 nodelist.append(strnode)
@@ -1050,7 +1058,7 @@ class LatexWalker(object):
 
             # and see what the token is.
 
-            if (tok.tok == 'brace_close'):
+            if tok.tok == 'brace_close':
                 # we've reached the end of the group. stop the parsing.
                 if (tok.arg != stop_upon_closing_brace):
                     if (not self.tolerant_parsing):
@@ -1062,7 +1070,7 @@ class LatexWalker(object):
                     return False
                 return True
 
-            if (tok.tok == 'end_environment'):
+            if tok.tok == 'end_environment':
                 # we've reached the end of an environment.
                 if (tok.arg != stop_upon_end_environment):
                     if (not self.tolerant_parsing):
@@ -1075,8 +1083,8 @@ class LatexWalker(object):
                     return False
                 return True
 
-            if (tok.tok == 'mathmode_inline'):
-                # if we care about keeping math mode inlines verbatim, gulp all of the expression.
+            if tok.tok in ('mathmode_inline', 'mathmode_display'):
+                # if we care about keeping math modes verbatim, gulp all of the expression.
                 if stop_upon_closing_mathmode is not None:
                     if stop_upon_closing_mathmode != '$':
                         raise LatexWalkerParseError(
@@ -1447,7 +1455,8 @@ class LatexNodesJSONEncoder(json.JSONEncoder):
             d = {
                 'nodetype': n.__class__.__name__,
             }
-            for fld in n._fields:
+            redundant_fields = getattr(n, '_redundant_fields', n._fields)
+            for fld in redundant_fields:
                 d[fld] = n.__dict__[fld]
             return d
 
@@ -1479,10 +1488,11 @@ def main(argv=None):
                         help='Output compact JSON')
 
     parser.add_argument('--keep-inline-math', action='store_const', const=True,
-                        dest='keep_inline_math', default=True)
+                        dest='keep_inline_math', default=True,
+                        help=argparse.SUPPRESS)
     parser.add_argument('--no-keep-inline-math', action='store_const', const=False,
                         dest='keep_inline_math',
-                        help="Keep inline math between $ signs as a special math node (default yes)")
+                        help=argparse.SUPPRESS)
 
     parser.add_argument('--tolerant-parsing', action='store_const', const=True,
                         dest='tolerant_parsing', default=True)

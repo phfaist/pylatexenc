@@ -23,9 +23,25 @@
 # THE SOFTWARE.
 #
 
+r"""
+Provides classes and helper functions to describe a LaTeX context of known
+macros and environments, specifying how they should be parsed by
+:py:mod:`latexwalker`.
+
+.. versionadded:: 2.0
+
+   Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
+"""
 
 
 import sys
+
+try:
+    # Python >= 3.3
+    from collections.abc import Mapping
+except ImportError:
+    from collections import Mapping
+
 
 if sys.version_info.major > 2:
     # Py3
@@ -78,6 +94,11 @@ class ParsedMacroArgs(object):
         possible first optional value, or `None` and the second item `nodeargs`
         is a list of nodes that represents subsequent arguments (optional or
         mandatory).
+
+
+    .. versionadded:: 2.0
+ 
+       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     def __init__(self, argnlist=[], legacy_nodeoptarg_nodeargs=None,
                  **kwargs):
@@ -138,6 +159,11 @@ class MacroStandardArgsParser(object):
 
       - additional unrecognized keyword arguments are passed on to superclasses
         in case of multiple inheritance
+
+
+    .. versionadded:: 2.0
+ 
+       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     def __init__(self, argspec=None, **kwargs):
         super(MacroStandardArgsParser, self).__init__(**kwargs)
@@ -248,6 +274,11 @@ class MacroSpec(object):
        If you specify a string, then for convenience this is interpreted as an
        argspec argument for :py:class:`MacroStandardArgsParser` and such an
        instance is automatically created.
+
+
+    .. versionadded:: 2.0
+ 
+       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     def __init__(self, macroname, args_parser=MacroStandardArgsParser(), **kwargs):
         super(MacroSpec, self).__init__(**kwargs)
@@ -302,6 +333,11 @@ class EnvironmentSpec(object):
        happened to use ``EnvironmentSpec('equation', '*')``, then the parser
        would recognize the expression ``\begin{equation}*`` but not
        ``\begin{equation*}``.
+
+
+    .. versionadded:: 2.0
+ 
+       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     def __init__(self, environmentname, args_parser=MacroStandardArgsParser(),
                  is_math_mode=False, **kwargs):
@@ -377,6 +413,11 @@ def std_macro(macname, *args, **kwargs):
     specified to return an `EnvironmentSpec` instead of a `MacroSpec`.  In this
     case, you can further specify the `environment_is_math_mode=True|False` to
     specify whether of not the environment represents a math mode.
+
+
+    .. versionadded:: 2.0
+ 
+       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
 
     if isinstance(macname, tuple):
@@ -474,6 +515,11 @@ def std_environment(envname, *args, **kwargs):
       contents should be parsed in an appropriate math mode.  Note that
       `is_math_mode` *must* be given as a keyword argument, in contrast to all
       other arguments which must be positional (non-keyword) arguments.
+
+
+    .. versionadded:: 2.0
+ 
+       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     is_math_mode = kwargs.pop('is_math_mode', False)
     kwargs2 = dict(kwargs)
@@ -500,6 +546,11 @@ class LatexContextDb(object):
 
     See :py:func:`default_latex_context()` for the default latex context with a
     default collection of known latex macros and environments.
+
+
+    .. versionadded:: 2.0
+ 
+       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     def __init__(self, **kwargs):
         super(LatexContextDb, self).__init__(**kwargs)
@@ -692,6 +743,20 @@ class LatexContextDb(object):
 
 
 def get_default_latex_context_db():
+    r"""
+    Return a :py:class:`LatexContextDb` instance initialized with a collection
+    of known macros and environments.
+
+    TODO: document categories.
+
+    If there are too many macro/environment definitions, or if there are some
+    irrelevant ones, you can always filter the returned database using
+    :py:meth:`LatexContextDb.filter_context()`.
+
+    .. versionadded:: 2.0
+ 
+       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
+    """
     db = LatexContextDb()
     
     from ._macrospec_defaults import specs
@@ -703,7 +768,59 @@ def get_default_latex_context_db():
     
 
 
-legacy_default_macro_dict = dict([
-    (m.macroname, m)
-    for m in get_default_latex_context_db().iter_macro_specs()
-])
+#
+# Use a lazy dictionary to store the default_macro_dict, so that we only access the 
+#
+
+
+class _LegacyDefaultMacroLazyDict(Mapping):
+    def __init__(self):
+        self._full_dict = None
+
+    def _ensure_instance(self):
+        if self._full_dict is not None:
+            return
+        self._full_dict = dict([
+            (m.macroname, m)
+            for m in get_default_latex_context_db().iter_macro_specs()
+        ])
+
+    def __getitem__(self, key):
+        self._ensure_instance()
+        return self._full_dict.__getitem__(key)
+
+    def __setitem__(self, key, val):
+        self._ensure_instance()
+        return self._full_dict.__setitem__(key, val)
+
+    def __delitem__(self, key):
+        self._ensure_instance()
+        return self._full_dict.__delitem__(key)
+
+    def __iter__(self):
+        self._ensure_instance()
+        return iter(self._full_dict)
+
+    def __len__(self):
+        self._ensure_instance()
+        return len(self._full_dict)
+
+
+legacy_default_macro_dict = _LegacyDefaultMacroLazyDict()
+r"""
+Provide an access to the default macro dictionary in a form that is
+compatible with `pylatexenc 1.x`\ 's `default_macro_dict` module-level
+dictionary.
+
+This is implemented using a custom lazy mutable mapping, which behaves just like
+a regular dictionary but that loads the data only once the dictionary is
+accessed.  In this way the default latex specs into a python dictionary unless
+they are actually queried or modified, and thus users of `pylatexenc 2.0` that
+don't rely on the default macro/environment definitions shouldn't notice any
+decrease in performance.
+
+
+.. versionadded:: 2.0
+
+   Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
+"""
