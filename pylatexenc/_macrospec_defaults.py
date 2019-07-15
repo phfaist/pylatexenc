@@ -54,6 +54,8 @@ specs = [
             std_macro('hspace', False, 1),
             std_macro('vspace', False, 1),
 
+            std_macro('mbox', False, 1),
+
             # (Note: single backslash) end of line with optional no-break ('*') and
             # additional vertical spacing, e.g. \\*[2mm]
             std_macro('\\', '*['),

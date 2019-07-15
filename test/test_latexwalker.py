@@ -78,14 +78,47 @@ class TestLatexWalker(unittest.TestCase):
         p = latextext.find(r']')
         self.assertEqual(lw.get_token(pos=p, brackets_are_chars=False),
                          LatexToken(tok='brace_close', arg=']', pos=p, len=1, pre_space=''))
+        p = latextext.find(r'[')
+        self.assertEqual(lw.get_token(pos=p, brackets_are_chars=True),
+                         LatexToken(tok='char', arg='[', pos=p, len=1, pre_space=''))
+        p = latextext.find(r']')
+        self.assertEqual(lw.get_token(pos=p, brackets_are_chars=True),
+                         LatexToken(tok='char', arg=']', pos=p, len=1, pre_space=''))
+
+    def test_get_token_mathmodes(self):
+        
+        latextext = r"""
+Here is an inline expression like $\vec{x} + \hat p$ and a display equation $$
+   ax + b = y
+$$ and another, with a subtle inner math mode:
+\[ cx^2+z=-d\quad\text{if $x<0$} \]
+And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
+"""
+
+        lw = LatexWalker(latextext)
+
         p = latextext.find(r'$')
         self.assertEqual(lw.get_token(pos=p),
-                         LatexToken(tok='char', arg='$', pos=p, len=1, pre_space=''))
-
-        lw2 = LatexWalker(latextext, keep_inline_math=True)
-        p = latextext.find(r'$')
-        self.assertEqual(lw2.get_token(pos=p),
                          LatexToken(tok='mathmode_inline', arg='$', pos=p, len=1, pre_space=''))
+        p = latextext.find(r' \(')
+        self.assertEqual(lw.get_token(pos=p),
+                         LatexToken(tok='mathmode_inline', arg=r'\(', pos=p+1, len=2, pre_space=' '))
+        p = latextext.find(r'\)')
+        self.assertEqual(lw.get_token(pos=p),
+                         LatexToken(tok='mathmode_inline', arg=r'\)', pos=p, len=2, pre_space=''))
+
+        p = latextext.find(r'$$')
+        self.assertEqual(lw.get_token(pos=p),
+                         LatexToken(tok='mathmode_display', arg='$$', pos=p, len=2, pre_space=''))
+
+        p = latextext.find('\n'+r'\[')
+        self.assertEqual(lw.get_token(pos=p),
+                         LatexToken(tok='mathmode_display', arg=r'\[', pos=p+1, len=2, pre_space='\n'))
+
+        p = latextext.find(r'\]')
+        self.assertEqual(lw.get_token(pos=p),
+                         LatexToken(tok='mathmode_display', arg=r'\]', pos=p, len=2, pre_space=''))
+
 
 
     def test_get_latex_expression(self):
@@ -158,10 +191,12 @@ Also: {\itshape some italic text}.
         lw = LatexWalker(latextext, tolerant_parsing=False)
 
         p = latextext.find(r'Also: {')+len('Also:') # points on space after 'Also:'
-        self.assertEqual(lw.get_latex_braced_group(pos=p, brace_type='{'),
-                         (LatexGroupNode([LatexMacroNode('itshape',macro_post_space=' '),
-                                          LatexCharsNode('some italic text')]),
-                          p+1, len(r'{\itshape some italic text}'),))
+        self.assertEqual(
+            lw.get_latex_braced_group(pos=p, brace_type='{'),
+            ( LatexGroupNode([LatexMacroNode('itshape',macro_post_space=' '),
+                              LatexCharsNode('some italic text')]),
+              p+1, len(r'{\itshape some italic text}'), )
+        )
         self.assertEqual(lw.get_latex_braced_group(pos=p+1, brace_type='{'),
                          (LatexGroupNode([LatexMacroNode('itshape',macro_post_space=' '),
                                           LatexCharsNode('some italic text')]),
@@ -269,6 +304,117 @@ Also: {\itshape some italic text}.
             LatexCharsNode(', we know that...'),
             ], 0, len(lineindeed)))
        
+
+    def test_get_latex_nodes_mathmodes(self):
+
+        latextext = r"""
+Here is an inline expression like $\vec{x} + \hat p$ and a display equation $$
+   ax + b = y
+$$ and another, with a subtle inner math mode:
+\[ cx^2+z=-d\quad\text{if $x<0$} \]
+And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
+"""
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+
+        p = latextext.find('$')
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p+1, stop_upon_closing_mathmode='$'),
+            ( [ LatexMacroNode(r'vec',
+                               nodeargd=macrospec.ParsedMacroArgs([LatexGroupNode([LatexCharsNode('x')])]),
+                               macro_post_space=''),
+                LatexCharsNode(r' + '),
+                LatexMacroNode(r'hat', nodeargd=macrospec.ParsedMacroArgs([LatexCharsNode('p')]),
+                               macro_post_space=' '), ] ,
+              p+1, len(r'\vec{x} + \hat p$') ) # len includes closing token
+        )
+        # check that first node is math mode node when parsing starting from & including first '$'
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p)[0][0],
+            LatexMathNode('inline', nodelist=[
+                LatexMacroNode(r'vec',
+                               nodeargd=macrospec.ParsedMacroArgs([LatexGroupNode([LatexCharsNode('x')])]),
+                               macro_post_space=''),
+                LatexCharsNode(r' + '),
+                LatexMacroNode(r'hat', nodeargd=macrospec.ParsedMacroArgs([LatexCharsNode('p')]),
+                               macro_post_space=' '), ], delimiters=('$','$'))
+        )
+
+
+        p = latextext.find('$$')
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p+2, stop_upon_closing_mathmode='$$'),
+            ( [ LatexCharsNode('\n   ax + b = y\n'), ] ,
+              p+2, len('\n   ax + b = y\n$$') ) # len includes closing token
+        )
+        # check that first node is math mode node when parsing including the math mode start
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p)[0][0],
+            LatexMathNode('display', nodelist=[ LatexCharsNode('\n   ax + b = y\n'), ],
+                          delimiters=('$$', '$$'))
+        )
+
+
+        p = latextext.find(r'\[')
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p+2, stop_upon_closing_mathmode=r'\]'),
+            ( [ LatexCharsNode(' cx^2+z=-d'),
+                LatexMacroNode('quad'),
+                LatexMacroNode('text', nodeargd=macrospec.ParsedMacroArgs([
+                    LatexGroupNode([LatexCharsNode('if '),
+                                    LatexMathNode('inline', nodelist=[LatexCharsNode('x<0')],
+                                                  delimiters=('$','$'))])])),
+                LatexCharsNode(' '), ] ,
+              p+2, latextext.find(r'\]', p+2) - (p+2) + 2 ) # len includes closing token
+        )
+        # check that first node is math mode node when parsing including the math mode start
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p)[0][0],
+            LatexMathNode('display', nodelist=[
+                LatexCharsNode(' cx^2+z=-d'),
+                LatexMacroNode('quad'),
+                LatexMacroNode('text', nodeargd=macrospec.ParsedMacroArgs([
+                    LatexGroupNode([LatexCharsNode('if '),
+                                    LatexMathNode('inline', nodelist=[LatexCharsNode('x<0')],
+                                                  delimiters=('$','$'))])])),
+                LatexCharsNode(' '), ], delimiters=(r'\[', r'\]'))
+        )
+
+        p = latextext.find(r'\(')
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p+2, stop_upon_closing_mathmode=r'\)'),
+            ( [ LatexMacroNode('mbox', nodeargd=macrospec.ParsedMacroArgs([
+                    LatexGroupNode([LatexCharsNode('Prob')])
+                ])),
+                LatexCharsNode('('),
+                LatexMacroNode('mbox', nodeargd=macrospec.ParsedMacroArgs([
+                    LatexGroupNode([
+                        LatexCharsNode('some event if '),
+                        LatexMathNode('inline', nodelist=[ LatexCharsNode('x>0') ],
+                                      delimiters=(r'\(', r'\)')),
+                    ])
+                ])),
+                LatexCharsNode(')=1'), ] ,
+              p+2, latextext.rfind(r'\)') - (p+2) + 2 ) # len includes closing token
+        )
+        # check that first node is math mode node when parsing including the math mode start
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p)[0][0],
+            LatexMathNode('inline', nodelist=[
+                LatexMacroNode('mbox', nodeargd=macrospec.ParsedMacroArgs([
+                    LatexGroupNode([LatexCharsNode('Prob')])
+                ])),
+                LatexCharsNode('('),
+                LatexMacroNode('mbox', nodeargd=macrospec.ParsedMacroArgs([
+                    LatexGroupNode([
+                        LatexCharsNode('some event if '),
+                        LatexMathNode('inline', nodelist=[ LatexCharsNode('x>0') ],
+                                      delimiters=(r'\(', r'\)')),
+                    ])
+                ])),
+                LatexCharsNode(')=1'), ] , delimiters=(r'\(', r'\)'))
+        )
+
         
     def test_errors(self):
         latextext = get_test_latex_data_with_possible_inconsistencies()

@@ -86,8 +86,8 @@ class ParsedMacroArgs(object):
 
       - `legacy_nodeoptarg_nodeargs` is a tuple `(nodeoptarg, nodeargs)` that
         should be exposed as properties in
-        :py:class:`~latexwalker.LatexMacroNode` to provide (as best as possible)
-        compatibility with pylatexenc < 2.
+        :py:class:`~pylatexenc.latexwalker.LatexMacroNode` to provide (as best
+        as possible) compatibility with pylatexenc < 2.
 
         This is to be used in cases where the macro arguments structure is
         relatively standard.  The first tuple item `nodeoptarg` should be a
@@ -110,8 +110,9 @@ class ParsedMacroArgs(object):
     def to_json_object(self):
         r"""
         Return a representation of the current parsed arguments in an object that
-        our main JSON exporter (:py:class:`latexwalker.LatexNodesJSONEncoder`)
-        can understand and export to JSON.
+        our main JSON exporter
+        (:py:class:`pylatexenc.latexwalker.LatexNodesJSONEncoder`) can
+        understand and export to JSON.
 
         Called when we export the node structure to JSON (e.g., latexwalker in
         command-line).
@@ -140,18 +141,16 @@ class MacroStandardArgsParser(object):
 
     Arguments:
 
-      - `macroname`: the name of the macro, without the leading backslash.
-
       - `argspec`: must be a string in which each character corresponds to an
         argument.  The character '{' represents a mandatory argument (single
         token or LaTeX group) and the character '[' denotes an optional argument
-        delimited by braces.  The character '*' denotes a possible star char at
+        delimited by braces.  The character '\*' denotes a possible star char at
         that position in the argument list, a corresponding
         ``latexwalker.LatexCharsNode('*')`` (or `None` if no star) will be
-        inserted in the argument node list.  For instance, the string '*{[{'
-        would be suitable to specify the signature of the '\newcommand' macro.
+        inserted in the argument node list.  For instance, the string '\*{[{'
+        would be suitable to specify the signature of the '\\newcommand' macro.
 
-        Currently, the argspec string may only contain the characters '*', '{'
+        Currently, the argspec string may only contain the characters '\*', '{'
         and '['.
 
         The `argspec` may also be `None`, which is the same as specifying an
@@ -181,8 +180,8 @@ class MacroStandardArgsParser(object):
         Parse the arguments encountered at position `pos` in the LatexWalker
         instance `w`.
 
-        The argument `w` is the `latexwalker.LatexWalker` object that is
-        currently parsing LaTeX code.  You can call methods like
+        The argument `w` is the :py:class:`pylatexenc.latexwalker.LatexWalker`
+        object that is currently parsing LaTeX code.  You can call methods like
         `w.get_goken()`, `w.get_latex_expression()` etc., to parse and read
         arguments.
 
@@ -363,7 +362,7 @@ class EnvironmentSpec(object):
 def std_macro(macname, *args, **kwargs):
     r"""
     Return a macro specification for the given macro.  Syntax::
-
+    
       spec = std_macro(macname, argspec)
       #  or
       spec = std_macro(macname, optarg, numargs)
@@ -376,10 +375,10 @@ def std_macro(macname, *args, **kwargs):
 
     - `macname` is the name of the macro, without the leading backslash.
 
-    - `argspec` is a string either characters "*", "{" or "[", in which star
+    - `argspec` is a string either characters "\*", "{" or "[", in which star
       indicates an optional asterisk character (e.g. starred macro variants),
       each curly brace specifies a mandatory argument and each square bracket
-      specifies an optional argument in square brackets.  For example, "{{*[{"
+      specifies an optional argument in square brackets.  For example, "{{\*[{"
       expects two mandatory arguments, then an optional star, an optional
       argument in square brackets, and then another mandatory argument.
 
@@ -476,12 +475,12 @@ def std_environment(envname, *args, **kwargs):
     - `envname` is the name of the environment, i.e., the argument to
       ``\begin{...}``.
 
-    - `argspec` is a string either characters "*", "{" or "[", in which star
-      indicates an optional asterisk character (e.g. starred environment variants),
-      each curly brace specifies a mandatory argument and each square bracket
-      specifies an optional argument in square brackets.  For example, "{{*[{"
-      expects two mandatory arguments, then an optional star, an optional
-      argument in square brackets, and then another mandatory argument.
+    - `argspec` is a string either characters "\*", "{" or "[", in which star
+      indicates an optional asterisk character (e.g. starred environment
+      variants), each curly brace specifies a mandatory argument and each square
+      bracket specifies an optional argument in square brackets.  For example,
+      "{{\*[{" expects two mandatory arguments, then an optional star, an
+      optional argument in square brackets, and then another mandatory argument.
 
       `argspec` may also be `None`, which is the same as ``argspec=''``.
 
@@ -538,14 +537,14 @@ def std_environment(envname, *args, **kwargs):
 class LatexContextDb(object):
     r"""
     Store a database of macro specifications (stored as :py:class:`MacroSpec`
-    objects), environment specifications (stored as :py:class:`EnvironSpec`, a
-    subclass of :py:class:`MacroSpec`), each organized in different categories.
+    objects), environment specifications (stored as
+    :py:class:`EnvironmentSpec`), each organized in different categories.
     
     TODO: In the future, this class will also store special/active/ligature
     chars, etc.
 
-    See :py:func:`default_latex_context()` for the default latex context with a
-    default collection of known latex macros and environments.
+    See :py:func:`get_default_latex_context_db()` for the default latex context
+    with a default collection of known latex macros and environments.
 
 
     .. versionadded:: 2.0
@@ -595,15 +594,15 @@ class LatexContextDb(object):
 
     def set_unknown_macro_spec(self, macrospec):
         r"""
-        Set the macro spec (a `MacroSpec` instance) to use when encountering a macro
-        that is not in the database.
+        Set the macro spec (a :py:class:`MacroSpec` instance) to use when
+        encountering a macro that is not in the database.
         """
         self.unknown_macro_spec = macrospec
 
     def set_unknown_environment_spec(self, environmentspec):
         r"""
-        Set the environment spec (a `EnvironmentSpec` instance) to use when
-        encountering a LaTeX environment that is not in the database.
+        Set the environment spec (a :py:class:`EnvironmentSpec` instance) to use
+        when encountering a LaTeX environment that is not in the database.
         """
         self.unknown_environment_spec = environmentspec
 
@@ -620,7 +619,7 @@ class LatexContextDb(object):
         in all categories one by one and the first match is returned.
 
         Returns a :py:class:`MacroSpec` instance.  If the macro name was not
-        found, we return a default macro specification or the one set by
+        found, we return the default macro specification set by
         :py:meth:`set_unknown_macro_spec()`.
         """
         for cat in self.category_list:
@@ -636,8 +635,8 @@ class LatexContextDb(object):
         returned.
 
         Returns a :py:class:`EnvironmentSpec` instance.  If the environment name
-        was not found, we return a default environment specification or the one
-        set by :py:meth:`set_unknown_environment_spec()`.
+        was not found, we return the default environment specification set by
+        :py:meth:`set_unknown_environment_spec()`.
         """
         for cat in self.category_list:
             # search categories in the given order

@@ -44,6 +44,13 @@ human-readable node tree::
 
     $ latexwalker --help
     [...]
+
+This module provides the main machinery to parse a chunk of LaTeX code.  The
+parser can be influenced by specifying a collection of known macros and
+environments (the "latex context") that are specified using
+:py:class:`macrospec.MacroSpec` and :py:class:`macrospec.EnvironmentSpec`
+objects in a :py:class:`macrospec.LatexContextDb` object.  See the doc of the
+module :py:mod:`macrospec` for more information.
 """
 
 from __future__ import print_function
@@ -141,6 +148,10 @@ class LatexToken(object):
     :py:meth:`~latexwalker.LatexWalker.get_latex_nodes()`).  So most likely, you
     can ignore this class entirely.
 
+    Instances of this class are what the method
+    :py:meth:`LatexWalker.get_token()` returns.  See the doc of that function
+    for more information on how tokens are parsed.
+
     This is not the same thing as a LaTeX token, it's just a part of the input
     which we treat in the same way (e.g. a bunch of content characters, a
     comment, a macro, etc.)
@@ -166,8 +177,8 @@ class LatexToken(object):
 
     The `tok` field may be one of:
 
-      - 'char': raw characters which have no special LaTeX meaning; they are
-        part of the text content.
+      - 'char': raw character(s) which have no special LaTeX meaning and which
+        are part of the text content.
         
         The `arg` field contains the characters themselves.
 
@@ -217,7 +228,6 @@ class LatexToken(object):
         ``\[`` or ``$$``)
 
         ### FIXME: remove this token type? --> single token type 'mathmode'
-
     """
     def __init__(self, tok, arg, pos, len, pre_space, post_space=''):
         self.tok = tok
@@ -521,11 +531,13 @@ class LatexMathNode(LatexNode):
        :py:class:`LatexNode`'s.
     """
     def __init__(self, displaytype, nodelist=[], **kwargs):
+        delimiters = kwargs.pop('delimiters', (None, None))
+
         super(LatexMathNode, self).__init__(**kwargs)
         self._fields = ('displaytype','nodelist','delimiters')
         self.displaytype = displaytype
         self.nodelist = nodelist
-        self.delimiters = kwargs.pop('delimiters', None)
+        self.delimiters = delimiters
 
     def nodeType(self):
         return LatexMathNode
@@ -628,6 +640,11 @@ class LatexWalker(object):
         if latex_context is None:
             if 'macro_dict' in kwargs:
                 # LEGACY -- build a latex context using the given macro_dict
+                logger.warning("Deprecated (pylatexenc 2.0): "
+                               "The `macro_dict=...` option in LatexWalker() is obsolete since "
+                               "pylatexenc 2.  It'll still work, but please consider using instead "
+                               "the more versatile option `latex_context=...`.")
+
                 macro_dict = kwargs.pop('macro_dict', None)
 
                 default_latex_context = macrospec.get_default_latex_context_db()
@@ -654,10 +671,15 @@ class LatexWalker(object):
         #
         # now parsing flags:
         #
-        self.keep_inline_math = kwargs.pop('keep_inline_math', False)
-        self.keep_display_math = kwargs.pop('keep_display_math', False)
         self.tolerant_parsing = kwargs.pop('tolerant_parsing', True)
         self.strict_braces = kwargs.pop('strict_braces', False)
+
+        if 'keep_inline_math' in kwargs:
+            logger.warning("Deprecated (pylatexenc 2.0): "
+                           "The keep_inline_math=... option in LatexWalker() has no effect "
+                           "in pylatexenc 2.  Please use instead the more versatile option "
+                           "keep_math=... in LatexNodes2Text().")
+            del kwargs['keep_inline_math']
 
         if kwargs:
             # any flags left which we haven't recognized
@@ -669,24 +691,32 @@ class LatexWalker(object):
     def parse_flags(self):
         """
         The parse flags currently set on this object.  Returns a dictionary with
-        keys 'keep_inline_math', 'keep_display_math', 'tolerant_parsing' and
-        'strict_braces'.
+        keys 'keep_inline_math', 'tolerant_parsing' and 'strict_braces'.
+
+        .. deprecated:: 2.0
+
+           The 'keep_inline_math' key is always set to `None` starting in
+          `pylatexenc 2` and might be removed entirely in future versions.
         """
         return {
-            'keep_inline_math': self.keep_inline_math,
-            'keep_display_math': self.keep_display_math,
             'tolerant_parsing': self.tolerant_parsing,
             'strict_braces': self.strict_braces,
+            # compatibility with pylatexenc < 2
+            'keep_inline_math': None,
         }
         
     def get_token(self, pos, brackets_are_chars=True, environments=True,
-                  keep_inline_math=None, keep_display_math=None):
+                  keep_inline_math=None):
         r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to parse a single "token", as defined by
         :py:class:`LatexToken`.
 
         Parse the token in the stream pointed to at position `pos`.
+
+        For tokens of type 'char', usually a single character is returned.  The
+        only exception is at paragraph boundaries, where a single 'char'-type
+        token has argument '\\n\\n'.
 
         Returns a :py:class:`LatexToken`. Raises
         :py:exc:`LatexWalkerEndOfStream` if end of stream reached.
@@ -701,117 +731,117 @@ class LatexWalker(object):
         default) they are considered as the token types 'begin_environment' and
         'end_environment'.
 
-        If `keep_inline_math` (resp. `keep_display_math) is not `None`, then
-        that value overrides that of `self.keep_inline_math`
-        (resp. `self.keep_display_math`) for the duration of this method call.
+        .. deprecated:: 2.0
+
+           The flag `keep_inline_math` is only accepted for compatibiltiy with
+           earlier versions of `pylatexenc`, but it has no effect starting in
+           `pylatexenc 2`.  See the :py:class:`LatexWalker` class doc.
         """
 
         s = self.s # shorthand
 
-        with _PushPropOverride(self, 'keep_inline_math', keep_inline_math), \
-             _PushPropOverride(self, 'keep_display_math', keep_display_math):
+        space = ''
+        while pos < len(s) and s[pos].isspace():
+            space += s[pos]
+            pos += 1
+            if space.endswith('\n\n'):  # two \n's indicate new paragraph.
+                return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space=space)
 
-            space = ''
-            while pos < len(s) and s[pos].isspace():
-                space += s[pos]
-                pos += 1
-                if space.endswith('\n\n'):  # two \n's indicate new paragraph.
-                    return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space=space)
+        if pos >= len(s):
+            raise LatexWalkerEndOfStream()
 
-            if pos >= len(s):
+        if s[pos] == '\\':
+            # escape sequence
+            if pos+1 >= len(s):
                 raise LatexWalkerEndOfStream()
+            macro = s[pos+1] # next char is necessarily part of macro
+            # following chars part of macro only if all are alphabetical
+            isalphamacro = False
+            i = 2
+            if s[pos+1].isalpha():
+                isalphamacro = True
+                while pos+i<len(s) and s[pos+i].isalpha():
+                    macro += s[pos+i]
+                    i += 1
 
-            if s[pos] == '\\':
-                # escape sequence
-                if pos+1 >= len(s):
-                    raise LatexWalkerEndOfStream()
-                macro = s[pos+1] # next char is necessarily part of macro
-                # following chars part of macro only if all are alphabetical
-                isalphamacro = False
-                i = 2
-                if s[pos+1].isalpha():
-                    isalphamacro = True
-                    while pos+i<len(s) and s[pos+i].isalpha():
-                        macro += s[pos+i]
-                        i += 1
+            # special treatment for \( ... \) and \[ ... \] -- "macros" for
+            # inline/display math modes
+            if macro in ['[', ']']:
+                return LatexToken(tok='mathmode_display', arg='\\'+macro,
+                                  pos=pos, len=i, pre_space=space)
+            if macro in ['(', ')']:
+                return LatexToken(tok='mathmode_inline', arg='\\'+macro,
+                                  pos=pos, len=i, pre_space=space)
 
-                # special treatment for \( ... \) and \[ ... \] -- inline/display math modes
-                if macro in ('(',')') and self.keep_inline_math:
-                    return LatexToken(tok='mathmode_inline', arg='\\'+macro,
-                                      pos=pos, len=i, pre_space=space)
-                if macro in ('[',']') and self.keep_display_math:
-                    return LatexToken(tok='mathmode_display', arg='\\'+macro,
-                                      pos=pos, len=i, pre_space=space)
-
-                # see if we have a begin/end environment
-                if environments and (macro in ['begin', 'end']):
-                    # \begin{environment} or \end{environment}
-                    envmatch = re.match(r'^\s*\{([\w*]+)\}', s[pos+i:])
-                    if envmatch is None:
-                        raise LatexWalkerParseError(
-                            s=s,
-                            pos=pos,
-                            msg=r"Bad \{} macro: expected {{<environment-name>}}".format(macro)
-                        )
-
-                    return LatexToken(
-                        tok=('begin_environment' if macro == 'begin' else 'end_environment'),
-                        arg=envmatch.group(1),
+            # see if we have a begin/end environment
+            if environments and macro in ['begin', 'end']:
+                # \begin{environment} or \end{environment}
+                envmatch = re.match(r'^\s*\{([\w*]+)\}', s[pos+i:])
+                if envmatch is None:
+                    raise LatexWalkerParseError(
+                        s=s,
                         pos=pos,
-                        len=i+envmatch.end(), # !!envmatch.end() counts from pos+i
-                        pre_space=space
-                        )
+                        msg=r"Bad \{} macro: expected {{<environment-name>}}".format(macro)
+                    )
 
-                # get the following whitespace, and store it in the macro's post_space
-                post_space = ''
-                if isalphamacro:
-                    # important, LaTeX does not consume space after non-alpha macros, like \&
-                    while pos+i<len(s) and s[pos+i].isspace():
-                        post_space += s[pos+i]
-                        i += 1
+                return LatexToken(
+                    tok=('begin_environment' if macro == 'begin' else 'end_environment'),
+                    arg=envmatch.group(1),
+                    pos=pos,
+                    len=i+envmatch.end(), # !!envmatch.end() counts from pos+i
+                    pre_space=space
+                    )
 
-                return LatexToken(tok='macro', arg=macro, pos=pos, len=i,
-                                  pre_space=space, post_space=post_space)
+            # get the following whitespace, and store it in the macro's post_space
+            post_space = ''
+            if isalphamacro:
+                # important, LaTeX does not consume space after non-alpha macros, like \&
+                while pos+i<len(s) and s[pos+i].isspace():
+                    post_space += s[pos+i]
+                    i += 1
 
-            if s[pos] == '%':
-                # latex comment
-                m = re.search(r'(\n|\r|\n\r)\s*', s[pos:])
-                mlen = None
-                if m is not None:
-                    arglen = m.start() # relative to pos already
-                    mlen = m.end() # relative to pos already
-                    mspace = m.group()
-                else:
-                    arglen = len(s)-pos# [  ==len(s[pos:])  ]
-                    mlen = arglen
-                    mspace = ''
-                return LatexToken(tok='comment', arg=s[pos+1:pos+arglen], pos=pos, len=mlen,
-                                  pre_space=space, post_space=mspace)
+            return LatexToken(tok='macro', arg=macro, pos=pos, len=i,
+                              pre_space=space, post_space=post_space)
 
-            openbracechars = '{'
-            closebracechars = '}'
-            if not brackets_are_chars:
-                openbracechars += '['
-                closebracechars += ']'
+        if s[pos] == '%':
+            # latex comment
+            m = re.search(r'(\n|\r|\n\r)\s*', s[pos:])
+            mlen = None
+            if m is not None:
+                arglen = m.start() # relative to pos already
+                mlen = m.end() # relative to pos already
+                mspace = m.group()
+            else:
+                arglen = len(s)-pos# [  ==len(s[pos:])  ]
+                mlen = arglen
+                mspace = ''
+            return LatexToken(tok='comment', arg=s[pos+1:pos+arglen], pos=pos, len=mlen,
+                              pre_space=space, post_space=mspace)
 
-            if s[pos] in openbracechars:
-                return LatexToken(tok='brace_open', arg=s[pos], pos=pos, len=1, pre_space=space)
+        openbracechars = '{'
+        closebracechars = '}'
+        if not brackets_are_chars:
+            openbracechars += '['
+            closebracechars += ']'
 
-            if s[pos] in closebracechars:
-                return LatexToken(tok='brace_close', arg=s[pos], pos=pos, len=1, pre_space=space)
+        if s[pos] in openbracechars:
+            return LatexToken(tok='brace_open', arg=s[pos], pos=pos, len=1, pre_space=space)
 
-            # check for math-mode dollar signs
-            if s[pos].startswith('$$') and self.keep_display_math:
-                return LatexToken(tok='mathmode_display', arg=s[pos], pos=pos, len=2, pre_space=space)
-            elif s[pos] == '$' and not s[pos].startswith('$$') and self.keep_inline_math:
-                return LatexToken(tok='mathmode_inline', arg=s[pos], pos=pos, len=1, pre_space=space)
-                    
-            ### TODO: here we should check for special/active/ligature-category
-            ### chars (to be implemented)
+        if s[pos] in closebracechars:
+            return LatexToken(tok='brace_close', arg=s[pos], pos=pos, len=1, pre_space=space)
 
-            # otherwise, the token is a normal 'char' type.
+        # check for math-mode dollar signs.  Using python syntax "string.startswith(pattern, pos)"
+        if s.startswith('$$', pos):
+            return LatexToken(tok='mathmode_display', arg='$$', pos=pos, len=2, pre_space=space)
+        if s.startswith('$', pos):
+            return LatexToken(tok='mathmode_inline', arg='$', pos=pos, len=1, pre_space=space)
 
-            return LatexToken(tok='char', arg=s[pos], pos=pos, len=1, pre_space=space)
+        ### TODO: here we should check for special/active/ligature-category
+        ### chars (to be implemented)
+
+        # otherwise, the token is a normal 'char' type.
+
+        return LatexToken(tok='char', arg=s[pos], pos=pos, len=1, pre_space=space)
 
 
     def get_latex_expression(self, pos, strict_braces=None):
@@ -846,7 +876,7 @@ class LatexWalker(object):
             if (tok.tok == 'brace_open'):
                 return self.get_latex_braced_group(tok.pos)
             if (tok.tok == 'brace_close'):
-                if (self.strict_braces and not self.tolerant_parsing):
+                if self.strict_braces and not self.tolerant_parsing:
                     raise LatexWalkerParseError(
                         "Expected expression, got closing brace '{}'".format(tok.arg),
                         self.s, pos
@@ -981,8 +1011,19 @@ class LatexWalker(object):
         Parses the latex content given to the constructor (and stored in `self.s`)
         into a list of nodes.
 
-        Returns a tuple `(nodelist, pos, len)` where nodelist is a list of
-        :py:class:`LatexNode`\ 's.
+        Returns a tuple `(nodelist, pos, len)` where:
+
+          - `nodelist` is a list of :py:class:`LatexNode`\ 's representing the
+            parsed LaTeX code.
+
+          - `pos` is the same as the `pos` given as argument; if there is
+            leading whitespace it is reported in `nodelist` using a
+            :py:class:`LatexCharsNode`.
+
+          - `len` is the length of the parsed expression.  If one of the
+            `stop_upon_...=` arguments are provided (cf below), then the `len`
+            includes the length of the token/expression that stopped the
+            parsing.
         
         If `stop_upon_closing_brace` is given and set to a character, then
         parsing stops once the given closing brace is encountered (but not
@@ -997,10 +1038,16 @@ class LatexWalker(object):
         in the length count but not the nodes.
 
         If `stop_upon_closing_mathmode` is specified, then the parsing stops
-        once the corresponding math mode (assumed already open) is closed.
-        Currently, only inline math modes delimited by ``$`` are supported.
-        I.e., currently, if set, only the value
-        ``stop_upon_closing_mathmode='$'`` is valid.
+        once the corresponding math mode (assumed already open) is closed.  This
+        argument may take the values `None` (no particular request to stop at
+        any math mode token), or one of ``$``, ``$$``, ``\)`` or ``\]``
+        indicating a closing math mode delimiter that we are expecting and at
+        which point parsing should stop.
+
+        If the token '$' (respectively '$$') is encountered, it is interpreted
+        as the *beginning* of a new math mode chunk *unless* the argument
+        `stop_upon_closing_mathmode=...` has been set to '$' (respectively
+        '$$').
         """
 
         nodelist = []
@@ -1060,46 +1107,70 @@ class LatexWalker(object):
 
             if tok.tok == 'brace_close':
                 # we've reached the end of the group. stop the parsing.
-                if (tok.arg != stop_upon_closing_brace):
-                    if (not self.tolerant_parsing):
-                        raise LatexWalkerParseError(
-                            s=self.s,
-                            pos=tok.pos,
-                            msg='Unexpected mismatching closing brace: `%s\'' %(tok.arg)
-                        )
-                    return False
+                if tok.arg != stop_upon_closing_brace:
+                    raise LatexWalkerParseError(
+                        s=self.s,
+                        pos=tok.pos,
+                        msg="Unexpected mismatching closing brace: '%s'"%(tok.arg)
+                    )
                 return True
 
             if tok.tok == 'end_environment':
                 # we've reached the end of an environment.
-                if (tok.arg != stop_upon_end_environment):
-                    if (not self.tolerant_parsing):
-                        raise LatexWalkerParseError(
-                            s=self.s,
-                            pos=tok.pos,
-                            msg=("Unexpected mismatching closing environment: '{}', "
-                                 "was expecting '{}'".format(tok.arg, stop_upon_end_environment))
-                        )
-                    return False
+                if tok.arg != stop_upon_end_environment:
+                    raise LatexWalkerParseError(
+                        s=self.s,
+                        pos=tok.pos,
+                        msg=("Unexpected mismatching closing environment: '{}', "
+                             "was expecting '{}'".format(tok.arg, stop_upon_end_environment))
+                    )
                 return True
 
             if tok.tok in ('mathmode_inline', 'mathmode_display'):
-                # if we care about keeping math modes verbatim, gulp all of the expression.
+                # see if we need to stop at a math mode 
                 if stop_upon_closing_mathmode is not None:
-                    if stop_upon_closing_mathmode != '$':
+                    if tok.arg == stop_upon_closing_mathmode:
+                        # all OK, found the closing mathmode.
+                        return True
+                    if tok.arg in [r'\)', r'\]']:
+                        # this is definitely a closing math-mode delimiter, so
+                        # not a new math mode block.  This is a parse error,
+                        # because we need to match the given
+                        # stop_upon_closing_mathmode mode.
                         raise LatexWalkerParseError(
                             s=self.s,
                             pos=tok.pos,
-                            msg="Unexpected mismatching closing math mode: '$'"
+                            msg="Mismatching closing math mode: '{}', expected '{}'".format(
+                                tok.arg, stop_upon_closing_mathmode,
+                            )
                         )
-                    return True
+                    # all ok, this is a new math mode opening.  Keep an assert
+                    # in case we forget to include some math-mode delimiters in
+                    # the future.
+                    assert tok.arg in ['$', '$$', r'\(', r'\[']
+                elif tok.arg in [r'\)', r'\]']:
+                    # unexpected close-math-mode delimiter, but no
+                    # stop_upon_closing_mathmode was specified. Parse error.
+                    raise LatexWalkerParseError(
+                            s=self.s,
+                            pos=tok.pos,
+                            msg="Unexpected closing math mode: '{}'".format(
+                                tok.arg,
+                            )
+                    )
 
-                # we have encountered a new math inline, so gulp all of the math expression
+                # we have encountered a new math inline, parse the math expression
+
+                corresponding_closing_mathmode = {r'\(': r'\)', r'\[': r'\]'}.get(tok.arg, tok.arg)
+                displaytype = 'inline' if tok.arg in [r'\(', '$'] else 'display'
+
                 (mathinline_nodelist, mpos, mlen) = \
-                    self.get_latex_nodes(p.pos, stop_upon_closing_mathmode='$')
+                    self.get_latex_nodes(p.pos, stop_upon_closing_mathmode=corresponding_closing_mathmode)
                 p.pos = mpos + mlen
 
-                nodelist.append(LatexMathNode(displaytype='inline', nodelist=mathinline_nodelist))
+                nodelist.append(LatexMathNode(displaytype=displaytype,
+                                              nodelist=mathinline_nodelist,
+                                              delimiters=(tok.arg, corresponding_closing_mathmode)))
                 return
 
             if (tok.tok == 'comment'):
@@ -1154,11 +1225,22 @@ class LatexWalker(object):
         while True:
             try:
                 r_endnow = do_read(nodelist, p)
+            except LatexWalkerParseError as e:
+                if self.tolerant_parsing:
+                    logger.debug("Ignoring parse error (tolerant parsing mode): %s", e)
+                    r_endnow = False
+                else:
+                    raise
             except LatexWalkerEndOfStream:
                 if stop_upon_closing_brace or stop_upon_end_environment:
                     # unexpected eof
-                    if (not self.tolerant_parsing):
-                        raise LatexWalkerError("Unexpected end of stream!")
+                    if not self.tolerant_parsing:
+                        if stop_upon_closing_brace:
+                            expecting = "'"+stop_upon_closing_brace+"'"
+                        elif stop_upon_end_environment:
+                            expecting = r"\end{"+stop_upon_end_environment+"}"
+                        raise LatexWalkerError("Unexpected end of stream, was looking for {}"
+                                               .format(expecting))
                     else:
                         r_endnow = False
                 else:

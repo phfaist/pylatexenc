@@ -1,9 +1,7 @@
-
 Simple Parser for LaTeX Code
 ----------------------------
 
 .. automodule:: pylatexenc.latexwalker
-
 
 
 The main `LatexWalker` class
@@ -21,15 +19,6 @@ Exception Classes
 .. autoclass:: pylatexenc.latexwalker.LatexWalkerParseError
 
 .. autoclass:: pylatexenc.latexwalker.LatexWalkerEndOfStream
-
-
-Macro Definitions
-~~~~~~~~~~~~~~~~~
-
-.. autodata:: pylatexenc.latexwalker.MacrosDef
-
-.. autodata:: pylatexenc.latexwalker.default_macro_dict
-   :annotation:
 
 
 Data Node Classes
@@ -60,4 +49,15 @@ Data Node Classes
 
 .. autoclass:: pylatexenc.latexwalker.LatexToken
    :members:
+
+
+
+Legacy Macro Definitions (for `pylatexenc 1.x`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autodata:: pylatexenc.latexwalker.MacrosDef
+
+.. autodata:: pylatexenc.latexwalker.default_macro_dict
+   :annotation:
+
 

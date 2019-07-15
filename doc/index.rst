@@ -35,7 +35,7 @@ And the other way around::
 
 You can also use these utilities directly in command line, e.g.::
 
-    $ echo 'À votre santé!' | python -m pylatexenc.latexencode
+    $ echo 'À votre santé!' | latexencode
     {\`A} votre sant{\'e}!
 
 
@@ -48,6 +48,7 @@ Documentation
    :caption: Contents:
 
    latexwalker
+   macrospec
    latex2text
    latexencode
 
