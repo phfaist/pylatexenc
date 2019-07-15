@@ -583,9 +583,13 @@ class LatexNodes2Text(object):
 
     Additional keyword arguments are flags which may influence the behavior:
 
-    - `keep_inline_math=True|False`: If set to `True`, then inline math is kept
-      using dollar signs, otherwise it is incorporated as normal text.  (By
-      default this is `False`)
+    - `math_mode='text'|'with-delimiters'|'verbatim'`: Specify how to treat
+      chunks of LaTeX code that correspond to math modes.  If 'text' (the
+      default), then the math mode contents is incorporated as normal text.  If
+      'with-delimiters', the content is incorporated as normal text but it is
+      still included in the original math-mode delimiters, such as '$...$'.  If
+      'verbatim', then the math mode chunk is kept verbatim, including the
+      delimiters.
 
     - `keep_comments=True|False`: If set to `True`, then LaTeX comments are kept
       (including the percent-sign); otherwise they are discarded.  (By default
@@ -629,7 +633,22 @@ class LatexNodes2Text(object):
       becomes ``{\N{LATIN SMALL LETTER E WITH ACUTE}tonnant}``.
 
     .. versionadded: 1.4
-       Added the `strict_latex_spaces` and the `keep_braced_groups` flags
+
+       Added the `strict_latex_spaces`, `keep_braced_groups`, and
+       `keep_braced_groups_minlen` flags
+
+    Additionally, the following flag is accepted for backwards compatibility:
+
+    - `keep_inline_math=True|False`: Obsolete since `pylatexenc 2`.  If set to
+         `True`, then this is the same as `math_mode='verbatim'`, and if set to
+         `False`, this is the same as `math_mode='text'`.
+
+      .. deprecated:: 2.0
+    
+         The `keep_inline_math=` option had a weird behavior, especially given
+         that a similarly named option in :py:class:`LatexWalker` had a
+         different effect.  See `Issue #14
+         <https://github.com/phfaist/pylatexenc/issues/14>`_.
     """
     def __init__(self, env_dict=None, macro_dict=None, text_replacements=None, **flags):
         super(LatexNodes2Text, self).__init__()
@@ -645,7 +664,20 @@ class LatexNodes2Text(object):
         self.tex_input_directory = None
         self.strict_input = True
 
-        self.keep_inline_math = flags.pop('keep_inline_math', False)
+        if 'keep_inline_math' in flags:
+            if 'math_mode' in flags:
+                raise TypeError("Cannot specify both math_mode= and keep_inline_math= "
+                                "for LatexNodes2Text()")
+            logger.warning("Deprecated (pylatexenc 2.0): "
+                           "The keep_inline_math=... option in LatexNodes2Text() has been superseded by "
+                           "the math_mode=... option.")
+            self.math_mode = 'verbatim'
+        else:
+            self.math_mode = flags.pop('math_mode', 'text')
+
+        if self.math_mode not in ('text', 'with-delimiters', 'verbatim'):
+            raise ValueError("math_mode= option must be one of 'text', 'with-delimiters', 'verbatim'")
+
         self.keep_comments = flags.pop('keep_comments', False)
 
         strict_latex_spaces = flags.pop('strict_latex_spaces', False)
@@ -783,14 +815,11 @@ class LatexNodes2Text(object):
 
         # now, perform suitable replacements
         for pattern, replacement in self.text_replacements:
-            if (hasattr(pattern, 'sub')):
+            if hasattr(pattern, 'sub'):
+                # pattern is a compiled regular expression already
                 s = pattern.sub(replacement, s)
             else:
                 s = s.replace(pattern, replacement)
-
-        if not self.keep_inline_math:
-            s = s.replace('$', ''); # removing math mode inline signs, just keep
-                                    # their Unicode counterparts..
 
         return s
 
@@ -806,12 +835,13 @@ class LatexNodes2Text(object):
         for node in nodelist:
             if self._is_bare_macro_node(prev_node) and node.isNodeType(latexwalker.LatexCharsNode):
                 if not self.strict_latex_spaces['between-macro-and-chars']:
-                    # after a macro with absolutely no arguments, include post_space
-                    # in output by default if there are other chars that follow.
-                    # This is for more breathing space (especially in equations(?)),
-                    # and for compatibility with earlier versions of pylatexenc (<=
-                    # 1.3).  This is NOT LaTeX' default behavior (see issue #11), so
-                    # only do this if `strict_latex_spaces=False`.
+                    # after a macro with absolutely no arguments, include
+                    # post_space in output by default if there are other chars
+                    # that follow.  This is for more breathing space (especially
+                    # in equations(?)), and for compatibility with earlier
+                    # versions of pylatexenc (<= 1.3).  This is NOT LaTeX'
+                    # default behavior (see issue #11), so only do this if the
+                    # corresponding `strict_latex_spaces=` flag is set.
                     s += prev_node.macro_post_space
             s += self.node_to_text(node)
             prev_node = node
@@ -917,13 +947,18 @@ class LatexNodes2Text(object):
             return self._nodelistcontents_to_text(node.nodelist)
 
         if node.isNodeType(latexwalker.LatexMathNode):
-            if self.keep_inline_math:
-                # we care about math modes and we should keep this verbatim
-                return latexwalker.math_node_to_latex(node)
-            else:
-                # note, this here only happens if the latexwalker had keep_inline_math=True
+            if self.math_mode == 'verbatim':
+                .........
+            elif self.math_mode == 'with-delimiters':
+                with _PushEquationContext(self):
+                    return (node.delimiters[0] + self._nodelistcontents_to_text(node.nodelist) 
+                            + node.delimiters[1])
+            elif self.math_mode == 'text':
                 with _PushEquationContext(self):
                     return self._nodelistcontents_to_text(node.nodelist)
+            else:
+                raise RuntimeError("unknown math_mode={} !".format(self.math_mode))
+                
 
         logger.warning("LatexNodes2Text.node_to_text(): Unknown node: %r", node)
 

@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import print_function # no unicode_literals, test with native strings on py2
+
 import unittest
 import sys
 import logging
@@ -429,16 +432,15 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
             lwOk.get_latex_nodes()
         except LatexWalkerParseError as e:
             # should not raise this.
-            self.fail(u"get_latex_nodes() raised LatexWalkerParseError, but it shouldn't have in "
-                      u"tolerant parsing mode!\n"+unicode(e))
+            self.fail(unicode("get_latex_nodes() raised LatexWalkerParseError, but it shouldn't have in "
+                              "tolerant parsing mode!\n")+unicode(e))
             
 
 
 # more test data
 
 def get_test_latex_data_with_possible_inconsistencies():
-    return r"""\
-\documentclass[11pt,a4paper]{article}
+    return r"""\documentclass[11pt,a4paper]{article}
 
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}

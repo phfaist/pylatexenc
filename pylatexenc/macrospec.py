@@ -546,7 +546,6 @@ class LatexContextDb(object):
     See :py:func:`get_default_latex_context_db()` for the default latex context
     with a default collection of known latex macros and environments.
 
-
     .. versionadded:: 2.0
  
        Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
@@ -589,7 +588,7 @@ class LatexContextDb(object):
 
         self.d[category] = {
             'macros': dict( (m.macroname, m) for m in macros ),
-            'environments': dict( (e.environmentname, e) for e in environments),
+            'environments': dict( (e.environmentname, e) for e in environments ),
         }
 
     def set_unknown_macro_spec(self, macrospec):

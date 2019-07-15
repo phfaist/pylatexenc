@@ -219,15 +219,11 @@ class LatexToken(object):
 
         The `arg` is the string value of the delimiter in question ('$')
 
-        ### FIXME: remove this token type? --> single token type 'mathmode'
-
       - 'mathmode_display': a delimiter which starts/ends display math, e.g.,
         ``\[``.
 
         The `arg` is the string value of the delimiter in question (e.g.,
         ``\[`` or ``$$``)
-
-        ### FIXME: remove this token type? --> single token type 'mathmode'
     """
     def __init__(self, tok, arg, pos, len, pre_space, post_space=''):
         self.tok = tok
@@ -269,6 +265,36 @@ class LatexToken(object):
 
 
 
+class ParsedContext(object):
+    r"""
+    Stores some essential information that is associated with
+    :py:class:`LatexNode`\ 's and which provides a context to better understand
+    the node structure.  For instance, we store the original parsed string, and
+    each node refers to which part of the string they represent.
+    
+    .. py:attribute:: s
+
+       The string that is parsed by the :py:class:`LatexWalker`
+
+    .. py:attribute:: latex_context
+
+       The latex context (with macros/environments specifications) that was used
+       when parsing the string `s`.
+
+    """
+
+    def __init__(self, s, latex_context):
+        self.s = s
+        self.latex_context = latex_context
+        super(ParsedContext, self).__init__()
+
+
+
+
+# ------------------------------------------------
+
+
+
 
 class LatexNode(object):
     """
@@ -276,13 +302,43 @@ class LatexNode(object):
 
     Use :py:meth:`nodeType()` to figure out what type of node this is, and
     :py:meth:`isNodeType()` to test whether it is of a given type.
+
+    All nodes have the following attributes:
+
+    .. py:attribute:: parsed_context
+
+       The context object that stores additional context information for this
+       node.
+
+    .. py:attribute:: pos
+
+       The position in the parsed string that this node represents.  The parsed
+       string can be recovered as `parsed_context.s`, see
+       :py:attr:`ParsedContext.s`.
+
+    .. py:attribute:: len
+
+       How many characters in the parsed string this node represents, starting
+       at position `pos`.  The parsed string can be recovered as
+       `parsed_context.s`, see :py:attr:`ParsedContext.s`.
+
     """
-    def __init__(self, **kwargs):
+    def __init__(self, _fields, _redundant_fields=None,
+                 parsed_context=None, pos=None, len=None, **kwargs):
         """
-        Important: subclasses must set `self._fields` to a list (or tuple or
-        iterable) of the fields stored in this object.
+        Important: subclasses must specify a list of fields they set in the
+        `_fields` argument.  They should only specify base (non-redundant)
+        fields; if they have "redundant" fields, specify the additional fields
+        in _redundant_fields=...
         """
         super(LatexNode, self).__init__(**kwargs)
+        self.parsed_context = parsed_context
+        self.pos = pos
+        self.len = len
+        self._fields = tuple(['pos', 'len'] + list(_fields))
+        self._redundant_fields = self._fields
+        if _redundant_fields is not None:
+            self._redundant_fields = tuple(list(self._fields) + list(_redundant_fields))
 
     def nodeType(self):
         """
@@ -302,9 +358,14 @@ class LatexNode(object):
         return isinstance(self, t)
 
     def __eq__(self, other):
-        return other is not None  and  self.nodeType() == other.nodeType()  and  all(
-            ( getattr(self, f) == getattr(other, f)  for f in self._fields )
-        )
+        return other is not None  and  \
+            self.nodeType() == other.nodeType()  and  \
+            other.parsed_context is self.parsed_context and \
+            other.pos == self.pos and \
+            other.len == self.len and \
+            all(
+                ( getattr(self, f) == getattr(other, f)  for f in self._fields )
+            )
 
     # see https://docs.python.org/3/library/constants.html#NotImplemented
     def __ne__(self, other): return NotImplemented
@@ -333,8 +394,10 @@ class LatexCharsNode(LatexNode):
        The string of characters represented by this node.
     """
     def __init__(self, chars, **kwargs):
-        super(LatexCharsNode, self).__init__(**kwargs)
-        self._fields = ('chars',)
+        super(LatexCharsNode, self).__init__(
+            _fields = ('chars',),
+            **kwargs
+        )
         self.chars = chars
 
     def nodeType(self):
@@ -351,8 +414,10 @@ class LatexGroupNode(LatexNode):
 
     """
     def __init__(self, nodelist, **kwargs):
-        super(LatexGroupNode, self).__init__(**kwargs)
-        self._fields = ('nodelist',)
+        super(LatexGroupNode, self).__init__(
+            _fields=('nodelist',),
+            **kwargs
+        )
         self.nodelist = nodelist
 
     def nodeType(self):
@@ -375,9 +440,11 @@ class LatexCommentNode(LatexNode):
     def __init__(self, comment, **kwargs):
         comment_post_space = kwargs.pop('comment_post_space', '')
 
-        super(LatexCommentNode, self).__init__(**kwargs)
+        super(LatexCommentNode, self).__init__(
+            _fields = ('comment', 'comment_post_space', ),
+            **kwargs
+        )
 
-        self._fields = ('comment', 'comment_post_space', )
         self.comment = comment
         self.comment_post_space = comment_post_space
 
@@ -431,10 +498,10 @@ class LatexMacroNode(LatexNode):
         nodeoptarg=kwargs.pop('nodeoptarg', None)
         nodeargs=kwargs.pop('nodeargs', [])
 
-        super(LatexMacroNode, self).__init__(**kwargs)
-
-        self._fields = ('macroname','nodeargd','macro_post_space')
-        self._redundant_fields = ('macroname','nodeargd','macro_post_space','nodeoptarg','nodeargs')
+        super(LatexMacroNode, self).__init__(
+            _fields = ('macroname','nodeargd','macro_post_space'),
+            _redundant_fields = ('nodeoptarg','nodeargs'),
+            **kwargs)
 
         self.macroname = macroname
         self.nodeargd = nodeargd
@@ -491,10 +558,11 @@ class LatexEnvironmentNode(LatexNode):
         optargs = kwargs.pop('optargs', [])
         args = kwargs.pop('args', [])
 
-        super(LatexEnvironmentNode, self).__init__(**kwargs)
+        super(LatexEnvironmentNode, self).__init__(
+            _fields = ('envname','nodelist','nodeargd',),
+            _redundant_fields = ('optargs','args',),
+            **kwargs)
 
-        self._fields = ('envname','nodelist','nodeargd',)
-        self._redundant_fields = ('envname','nodelist','nodeargd','optargs','args',)
         self.envname = envname
         self.nodelist = nodelist
         self.nodeargd = nodeargd
@@ -533,8 +601,11 @@ class LatexMathNode(LatexNode):
     def __init__(self, displaytype, nodelist=[], **kwargs):
         delimiters = kwargs.pop('delimiters', (None, None))
 
-        super(LatexMathNode, self).__init__(**kwargs)
-        self._fields = ('displaytype','nodelist','delimiters')
+        super(LatexMathNode, self).__init__(
+            _fields = ('displaytype','nodelist','delimiters'),
+            **kwargs
+        )
+
         self.displaytype = displaytype
         self.nodelist = nodelist
         self.delimiters = delimiters
@@ -624,7 +695,10 @@ class LatexWalker(object):
         this option triggered a weird behavior especially since there is a
         similarly named option in
         :py:class:`pylatexenc.latex2text.LatexNodes2Text` with a different
-        meaning.
+        meaning.  [See `Issue #14
+        <https://github.com/phfaist/pylatexenc/issues/14>`_.]  You should now
+        only use the option `math_mode=` in
+        :py:class:`pylatexenc.latex2text.LatexNodes2Text`.
 
         .. deprecated:: 2.0
 
@@ -677,13 +751,22 @@ class LatexWalker(object):
         if 'keep_inline_math' in kwargs:
             logger.warning("Deprecated (pylatexenc 2.0): "
                            "The keep_inline_math=... option in LatexWalker() has no effect "
-                           "in pylatexenc 2.  Please use instead the more versatile option "
-                           "keep_math=... in LatexNodes2Text().")
+                           "in pylatexenc 2.  Please use the more versatile option "
+                           "keep_math=... in LatexNodes2Text() instead.")
             del kwargs['keep_inline_math']
 
         if kwargs:
             # any flags left which we haven't recognized
             logger.warning("LatexWalker(): Unknown flag(s) encountered: %r", kwargs.keys())
+
+
+        #
+        # Create the parsed_context object
+        #
+        self.parsed_context = ParsedContext(
+            s=self.s,
+            latex_context=self.latex_context,
+        )
 
         super(LatexWalker, self).__init__()
 
@@ -844,6 +927,10 @@ class LatexWalker(object):
         return LatexToken(tok='char', arg=s[pos], pos=pos, len=1, pre_space=space)
 
 
+    def _mknodeposlen(self, nclass, **kwargs):
+        return ( nclass(parsed_context=self.parsed_context, **kwargs), kwargs['pos'], kwargs['len'] )
+
+
     def get_latex_expression(self, pos, strict_braces=None):
         r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
@@ -859,10 +946,10 @@ class LatexWalker(object):
 
         with _PushPropOverride(self, 'strict_braces', strict_braces):
 
-            tok = self.get_token(pos, environments=False, keep_inline_math=False)
+            tok = self.get_token(pos, environments=False)
 
-            if (tok.tok == 'macro'):
-                if (tok.arg == 'end'):
+            if tok.tok == 'macro':
+                if tok.arg == 'end':
                     if not self.tolerant_parsing:
                         # error, we were expecting a single token
                         raise LatexWalkerParseError(r"Expected expression, got \end", self.s, pos)
@@ -871,19 +958,27 @@ class LatexWalker(object):
                 return (LatexMacroNode(macroname=tok.arg, nodeoptarg=None, nodeargs=[],
                                        macro_post_space=tok.post_space),
                         tok.pos, tok.len)
-            if (tok.tok == 'comment'):
+            if tok.tok == 'comment':
                 return self.get_latex_expression(pos+tok.len)
-            if (tok.tok == 'brace_open'):
+            if tok.tok == 'brace_open':
                 return self.get_latex_braced_group(tok.pos)
-            if (tok.tok == 'brace_close'):
+            if tok.tok == 'brace_close':
                 if self.strict_braces and not self.tolerant_parsing:
                     raise LatexWalkerParseError(
                         "Expected expression, got closing brace '{}'".format(tok.arg),
                         self.s, pos
                     )
                 return (LatexCharsNode(chars=''), tok.pos, 0)
-            if (tok.tok == 'char'):
+            if tok.tok == 'char':
                 return (LatexCharsNode(chars=tok.arg), tok.pos, tok.len)
+            if tok.tok in ('mathmode_inline', 'mathmode_display'):
+                # don't report a math mode token, treat as char or macro
+                if tok.arg.startswith('\\'):
+                    return (LatexMacroNode(macroname=tok.arg, nodeoptarg=None, nodeargs=[],
+                                           macro_post_space=tok.post_space),
+                            tok.pos, tok.len)
+                else:
+                    return (LatexCharsNode(chars=tok.arg), tok.pos, tok.len)
 
             raise LatexWalkerParseError("Unknown token type: {}".format(tok.tok), self.s, pos)
 
@@ -1470,17 +1565,17 @@ def nodelist_to_latex(nodelist):
 
 
 
-def math_node_to_latex(node):
+# def math_node_to_latex(node):
 
-    if (not node.isNodeType(LatexMathNode)):
-        raise LatexWalkerError("Expected math node, got `%s'" %(node.nodeType().__name__))
+#     if (not node.isNodeType(LatexMathNode)):
+#         raise LatexWalkerError("Expected math node, got `%s'" %(node.nodeType().__name__))
 
-    if (node.displaytype == 'inline'):
-        return '$%s$' %(nodelist_to_latex(node.nodelist))
-    if (node.displaytype == 'display'):
-        return r'\[%s\]' %(nodelist_to_latex(node.nodelist))
+#     if (node.displaytype == 'inline'):
+#         return '$%s$' %(nodelist_to_latex(node.nodelist))
+#     if (node.displaytype == 'display'):
+#         return r'\[%s\]' %(nodelist_to_latex(node.nodelist))
 
-    raise LatexWalkerError("Unknown displaytype: `%s'" %(node.displaytype))
+#     raise LatexWalkerError("Unknown displaytype: `%s'" %(node.displaytype))
 
 
 
