@@ -185,10 +185,18 @@ class MacroStandardArgsParser(object):
                 .format(self.argspec)
             )
 
-    def parse_args(self, w, pos):
+    def parse_args(self, w, pos, parsing_context=None):
         r"""
-        Parse the arguments encountered at position `pos` in the LatexWalker
-        instance `w`.
+        Parse the arguments encountered at position `pos` in the
+        :py:class:`~pylatexenc.latexwalker.LatexWalker` instance `w`.  The
+        argument `parsing_context` is the current parsing context in the
+        :py:class:`~pylatexenc.latexwalker.LatexWalker` (e.g., are we currently
+        in math mode?).  See doc for
+        :py:class:`~pylatexenc.latexwalker.ParsingContext`.
+
+        You may override this function to provide custom parsing of complicated
+        macro arguments (say, ``\verb+...+``).  The method will be called by
+        keyword arguments, so the argument names should not be altered.
 
         The argument `w` is the :py:class:`pylatexenc.latexwalker.LatexWalker`
         object that is currently parsing LaTeX code.  You can call methods like
@@ -211,6 +219,9 @@ class MacroStandardArgsParser(object):
         """
 
         from . import latexwalker
+
+        if parsing_context is None:
+            parsing_context = latexwalker.ParsingContext()
 
         argnlist = []
 

@@ -644,6 +644,18 @@ class _PushPropOverride(object):
             setattr(self.obj, self.propname, self.initval)
 
 
+class ParsingContext(object):
+    def __init__(self, in_math_mode=False):
+        super(ParsingContext, self).__init__()
+        self.in_math_mode = in_math_mode
+        self._fields = ('in_math_mode', )
+
+    def sub_context(self, **kwargs):
+        p = ParsingContext(**dict([(f, getattr(self, f)) for f in self._fields]))
+        for k, v in kwargs.items():
+            setattr(p, k, v)
+        return p
+
 
 # ------------------------------------------------------------------------------
 
@@ -787,7 +799,7 @@ class LatexWalker(object):
         .. deprecated:: 2.0
 
            The 'keep_inline_math' key is always set to `None` starting in
-          `pylatexenc 2` and might be removed entirely in future versions.
+           `pylatexenc 2` and might be removed entirely in future versions.
         """
         return {
             'tolerant_parsing': self.tolerant_parsing,
@@ -797,7 +809,7 @@ class LatexWalker(object):
         }
         
     def get_token(self, pos, brackets_are_chars=True, environments=True,
-                  keep_inline_math=None):
+                  keep_inline_math=None, parsing_context=ParsingContext()):
         r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to parse a single "token", as defined by
@@ -821,6 +833,11 @@ class LatexWalker(object):
         regular 'macro' tokens (see :py:class:`LatexToken`); otherwise (the
         default) they are considered as the token types 'begin_environment' and
         'end_environment'.
+
+        The parsing of the tokens might be influcenced by the `parsing_context`
+        (a :py:class:`ParsingContext` instance).  Currently, the only influence
+        this has is that some special/ligatures are parsed differently if in
+        math mode (TODO.......).  See doc for :py:class:`ParsingContext`.
 
         .. deprecated:: 2.0
 
@@ -943,7 +960,7 @@ class LatexWalker(object):
         return ( self._mknode(nclass, **kwargs), kwargs['pos'], kwargs['len'] )
 
 
-    def get_latex_expression(self, pos, strict_braces=None):
+    def get_latex_expression(self, pos, strict_braces=None, parsing_context=ParsingContext()):
         r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to parse a single LaTeX expression.
@@ -952,13 +969,16 @@ class LatexWalker(object):
         sequence, or a expression placed in braces.  This is what TeX calls a "token" (and
         not what we call a token... anyway).
 
+        Parsing might be influenced by the `parsing_context`.  (TODO,
+        experimental.......) See doc for :py:class:`ParsingContext`.
+
         Returns a tuple `(node, pos, len)`, where `pos` is the position of the
         first char of the expression and `len` the length of the expression.
         """
 
         with _PushPropOverride(self, 'strict_braces', strict_braces):
 
-            tok = self.get_token(pos, environments=False)
+            tok = self.get_token(pos, environments=False, parsing_context=parsing_context)
 
             if tok.tok == 'macro':
                 if tok.arg == 'end':
@@ -971,9 +991,9 @@ class LatexWalker(object):
                                           macro_post_space=tok.post_space,
                                           pos=tok.pos, len=tok.len)
             if tok.tok == 'comment':
-                return self.get_latex_expression(pos+tok.len)
+                return self.get_latex_expression(pos+tok.len, parsing_context=parsing_context)
             if tok.tok == 'brace_open':
-                return self.get_latex_braced_group(tok.pos)
+                return self.get_latex_braced_group(tok.pos, parsing_context=parsing_context)
             if tok.tok == 'brace_close':
                 if self.strict_braces and not self.tolerant_parsing:
                     raise LatexWalkerParseError(
@@ -996,30 +1016,39 @@ class LatexWalker(object):
             raise LatexWalkerParseError("Unknown token type: {}".format(tok.tok), self.s, pos)
 
 
-    def get_latex_maybe_optional_arg(self, pos):
+    def get_latex_maybe_optional_arg(self, pos, parsing_context=ParsingContext()):
         r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to attempt to parse an optional argument.
+
+        Parsing might be influenced by the `parsing_context`.  (TODO,
+        experimental.......) See doc for :py:class:`ParsingContext`.
 
         Attempts to parse an optional argument. If this is successful, we return
         a tuple `(node, pos, len)` if success where `node` is a
         :py:class:`LatexGroupNode`.  Otherwise, this method returns None.
         """
 
-        tok = self.get_token(pos, brackets_are_chars=False, environments=False)
+        tok = self.get_token(pos, brackets_are_chars=False, environments=False,
+                             parsing_context=parsing_context)
         if (tok.tok == 'brace_open' and tok.arg == '['):
-            return self.get_latex_braced_group(pos, brace_type='[')
+            return self.get_latex_braced_group(pos, brace_type='[',
+                                               parsing_context=parsing_context)
 
         return None
 
 
-    def get_latex_braced_group(self, pos, brace_type='{'):
+    def get_latex_braced_group(self, pos, brace_type='{',
+                               parsing_context=ParsingContext()):
         r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to read a latex group delimited by braces.
 
         Reads a latex expression enclosed in braces ``{ ... }``. The first token of
         `s[pos:]` must be an opening brace.
+
+        Parsing might be influenced by the `parsing_context`.  (TODO,
+        experimental.......) See doc for :py:class:`ParsingContext`.
 
         Returns a tuple `(node, pos, len)`, where `node` is a
         :py:class:`LatexGroupNode` instance, `pos` is the position of the first
@@ -1037,7 +1066,8 @@ class LatexWalker(object):
             raise LatexWalkerParseError(s=self.s, pos=pos, msg="Uknown brace type: %s" %(brace_type))
         brackets_are_chars = (brace_type != '[')
 
-        firsttok = self.get_token(pos, brackets_are_chars=brackets_are_chars)
+        firsttok = self.get_token(pos, brackets_are_chars=brackets_are_chars,
+                                  parsing_context=parsing_context)
         if (firsttok.tok != 'brace_open'  or  firsttok.arg != brace_type):
             raise LatexWalkerParseError(
                 s=self.s,
@@ -1045,15 +1075,19 @@ class LatexWalker(object):
                 msg='get_latex_braced_group: not an opening brace/bracket: %s' %(self.s[pos])
             )
 
-        (nodelist, npos, nlen) = self.get_latex_nodes(firsttok.pos + firsttok.len,
-                                                      stop_upon_closing_brace=closing_brace)
+        (nodelist, npos, nlen) = self.get_latex_nodes(
+            firsttok.pos + firsttok.len,
+            stop_upon_closing_brace=closing_brace,
+            parsing_context=parsing_context
+        )
 
         return self._mknodeposlen(LatexGroupNode, nodelist=nodelist,
                                   pos = firsttok.pos,
                                   len = npos + nlen - firsttok.pos)
 
 
-    def get_latex_environment(self, pos, environmentname=None):
+    def get_latex_environment(self, pos, environmentname=None,
+                              parsing_context=ParsingContext()):
         r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to read a latex environment.
@@ -1071,13 +1105,16 @@ class LatexWalker(object):
         provided to the constructor.  The environment name is looked up as a
         "macro name" in the macro spec.
 
+        Parsing might be influenced by the `parsing_context`.  (TODO,
+        experimental.......) See doc for :py:class:`ParsingContext`.
+
         Returns a tuple (node, pos, len) where node is a
         :py:class:`LatexEnvironmentNode`.
         """
 
         startpos = pos
 
-        firsttok = self.get_token(pos)
+        firsttok = self.get_token(pos, parsing_context=parsing_context)
         if (firsttok.tok != 'begin_environment'  or
             (environmentname is not None and firsttok.arg != environmentname)):
             raise LatexWalkerParseError(s=self.s, pos=pos,
@@ -1092,11 +1129,18 @@ class LatexWalker(object):
 
         env_spec = self.latex_context.get_environment_spec(environmentname)
 
-        (argd, apos, alen) = env_spec.parse_args(self, pos) # self = latex walker instance
+        # self = latex walker instance
+        (argd, apos, alen) = env_spec.parse_args(w=self, pos=pos, parsing_context=parsing_context)
 
         pos = apos + alen
 
-        (nodelist, npos, nlen) = self.get_latex_nodes(pos, stop_upon_end_environment=environmentname)
+        parsing_context_inner = parsing_context
+        if env_spec.is_math_mode:
+            parsing_context_inner = parsing_context.sub_context(in_math_mode=True)
+
+        (nodelist, npos, nlen) = self.get_latex_nodes(pos,
+                                                      stop_upon_end_environment=environmentname,
+                                                      parsing_context=parsing_context_inner)
 
         if argd.legacy_nodeoptarg_nodeargs:
             legnodeoptarg = argd.legacy_nodeoptarg_nodeargs[0]
@@ -1118,7 +1162,7 @@ class LatexWalker(object):
     
 
     def get_latex_nodes(self, pos=0, stop_upon_closing_brace=None, stop_upon_end_environment=None,
-                        stop_upon_closing_mathmode=None):
+                        stop_upon_closing_mathmode=None, parsing_context=ParsingContext()):
         r"""
         Parses the latex content given to the constructor (and stored in `self.s`)
         into a list of nodes.
@@ -1160,6 +1204,9 @@ class LatexWalker(object):
         as the *beginning* of a new math mode chunk *unless* the argument
         `stop_upon_closing_mathmode=...` has been set to '$' (respectively
         '$$').
+        
+        Parsing might be influenced by the `parsing_context`.  (TODO,
+        experimental.......) See doc for :py:class:`ParsingContext`.
         """
 
         nodelist = []
@@ -1167,6 +1214,14 @@ class LatexWalker(object):
         brackets_are_chars = True
         if (stop_upon_closing_brace == ']'):
             brackets_are_chars = False
+
+        # consistency check
+        if stop_upon_closing_mathmode is not None and not parsing_context.in_math_mode:
+            logger.warning(("Call to LatexWalker.get_latex_nodes(stop_upon_closing_mathmode={!r}) "
+                            "but parsing context has in_math_mode={!r}").format(
+                                stop_upon_closing_mathmode,
+                                parsing_context.in_math_mode,
+                            ))
 
         origpos = pos
 
@@ -1188,7 +1243,8 @@ class LatexWalker(object):
             """
 
             try:
-                tok = self.get_token(p.pos, brackets_are_chars=brackets_are_chars)
+                tok = self.get_token(p.pos, brackets_are_chars=brackets_are_chars,
+                                     parsing_context=parsing_context)
             except LatexWalkerEndOfStream:
                 if self.tolerant_parsing:
                     return True
@@ -1282,8 +1338,13 @@ class LatexWalker(object):
                 corresponding_closing_mathmode = {r'\(': r'\)', r'\[': r'\]'}.get(tok.arg, tok.arg)
                 displaytype = 'inline' if tok.arg in [r'\(', '$'] else 'display'
 
-                (mathinline_nodelist, mpos, mlen) = \
-                    self.get_latex_nodes(p.pos, stop_upon_closing_mathmode=corresponding_closing_mathmode)
+                parsing_context_inner = parsing_context.sub_context(in_math_mode=True)
+
+                (mathinline_nodelist, mpos, mlen) = self.get_latex_nodes(
+                    p.pos,
+                    stop_upon_closing_mathmode=corresponding_closing_mathmode,
+                    parsing_context=parsing_context_inner
+                )
                 p.pos = mpos + mlen
 
                 nodelist.append(self._mknode(LatexMathNode, displaytype=displaytype,
@@ -1301,14 +1362,16 @@ class LatexWalker(object):
 
             if (tok.tok == 'brace_open'):
                 # another braced group to read.
-                (groupnode, bpos, blen) = self.get_latex_braced_group(tok.pos)
+                (groupnode, bpos, blen) = self.get_latex_braced_group(tok.pos,
+                                                                      parsing_context=parsing_context)
                 p.pos = bpos + blen
                 nodelist.append(groupnode)
                 return
 
             if (tok.tok == 'begin_environment'):
                 # an environment to read.
-                (envnode, epos, elen) = self.get_latex_environment(tok.pos, environmentname=tok.arg)
+                (envnode, epos, elen) = self.get_latex_environment(tok.pos, environmentname=tok.arg,
+                                                                   parsing_context=parsing_context)
                 p.pos = epos + elen
                 # add node and continue.
                 nodelist.append(envnode)
@@ -1320,7 +1383,7 @@ class LatexWalker(object):
                 mspec = self.latex_context.get_macro_spec(macroname)
 
                 (nodeargd, mapos, malen) = \
-                    mspec.parse_args(self, tok.pos + tok.len) # self = walker instance
+                    mspec.parse_args(w=self, pos=tok.pos + tok.len, parsing_context=parsing_context)
 
                 p.pos = mapos + malen
 
@@ -1485,7 +1548,8 @@ def get_latex_environment(s, pos, environmentname=None, **parse_flags):
        Please use :py:meth:`LatexWalker.get_latex_environment()` instead.
     """
 
-    return LatexWalker(s, **parse_flags).get_latex_environment(pos=pos, environmentname=environmentname)
+    return LatexWalker(s, **parse_flags).get_latex_environment(pos=pos,
+                                                               environmentname=environmentname)
 
 def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_environment=None,
                     stop_upon_closing_mathmode=None, **parse_flags):
@@ -1501,9 +1565,11 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
        Please use :py:meth:`LatexWalker.get_latex_nodes()` instead.
     """
 
-    return LatexWalker(s, **parse_flags).get_latex_nodes(stop_upon_closing_brace=stop_upon_closing_brace,
-                                                         stop_upon_end_environment=stop_upon_end_environment,
-                                                         stop_upon_closing_mathmode=stop_upon_closing_mathmode)
+    return LatexWalker(s, **parse_flags).get_latex_nodes(
+        stop_upon_closing_brace=stop_upon_closing_brace,
+        stop_upon_end_environment=stop_upon_end_environment,
+        stop_upon_closing_mathmode=stop_upon_closing_mathmode
+    )
 
 
 
@@ -1521,92 +1587,8 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
 #
 
 
-# def put_in_braces(brace_char, thestring):
-#     if (brace_char == '{'):
-#         return '{%s}' %(thestring)
-#     if (brace_char == '['):
-#         return '[%s]' %(thestring)
-#     if (brace_char == '('):
-#         return '(%s)' %(thestring)
-#     if (brace_char == '<'):
-#         return '<%s>' %(thestring)
-
-#     return brace_char + thestring + brace_char
-
-
 def nodelist_to_latex(nodelist):
     return "".join(n.latex_verbatim() for n in nodelist)
-
-    # latex = ''
-    # for n in nodelist:
-    #     if n is None:
-    #         continue
-
-    #     if n.isNodeType(LatexCharsNode):
-    #         latex += n.chars
-    #         continue
-
-    #     if n.isNodeType(LatexMacroNode):
-    #         latex += r'\%s%s' %(n.macroname, n.macro_post_space)
-
-    #         mac = None
-    #         if (n.macroname in default_macro_dict):
-    #             mac = default_macro_dict[n.macroname]
-            
-    #         if (n.nodeoptarg is not None):
-    #             latex += '[%s]' %(nodelist_to_latex([n.nodeoptarg]))
-
-    #         if mac is not None:
-    #             macbraces = (mac.numargs if isinstance(mac.numargs, _basestring) else '{'*mac.numargs)
-    #         else:
-    #             macbraces = '{'*len(n.nodeargs)
-                
-    #         if len(n.nodeargs) != len(macbraces):
-    #             raise LatexWalkerError("Error: number of arguments (%d) provided to macro `\\%s' does not "
-    #                                    "match its specification of `%s'"
-    #                                    %(len(n.nodeargs), n.macroname, macbraces))
-    #         for i in range(len(n.nodeargs)):
-    #             nodearg = n.nodeargs[i]
-    #             if nodearg is not None:
-    #                 latex += put_in_braces(macbraces[i], nodelist_to_latex([nodearg]))
-
-    #         continue
-        
-    #     if n.isNodeType(LatexCommentNode):
-    #         latex += '%'+n.comment+n.comment_post_space
-    #         continue
-        
-    #     if n.isNodeType(LatexGroupNode):
-    #         latex += put_in_braces('{', nodelist_to_latex(n.nodelist))
-    #         continue
-        
-    #     if n.isNodeType(LatexEnvironmentNode):
-    #         latex += r'\begin{%s}' %(n.envname)
-    #         for optarg in n.optargs:
-    #             latex += put_in_braces('[', nodelist_to_latex([optarg]))
-    #         for arg in n.args:
-    #             latex += put_in_braces('{', nodelist_to_latex([arg]))
-    #         latex += nodelist_to_latex(n.nodelist)
-    #         latex += r'\end{%s}' %(n.envname)
-    #         continue
-        
-    #     latex += '<[UNKNOWN LATEX NODE: `%s\']>' %(n.nodeType().__name__)
-
-    # return latex
-
-
-
-# def math_node_to_latex(node):
-
-#     if (not node.isNodeType(LatexMathNode)):
-#         raise LatexWalkerError("Expected math node, got `%s'" %(node.nodeType().__name__))
-
-#     if (node.displaytype == 'inline'):
-#         return '$%s$' %(nodelist_to_latex(node.nodelist))
-#     if (node.displaytype == 'display'):
-#         return r'\[%s\]' %(nodelist_to_latex(node.nodelist))
-
-#     raise LatexWalkerError("Unknown displaytype: `%s'" %(node.displaytype))
 
 
 
@@ -1622,9 +1604,9 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
         title = '\\'+n.macroname
         #comment = 'opt arg?: %d; %d args' % (n.arg.nodeoptarg is not None, len(n.arg.nodeargs))
         # FIXME: handle more general case with n.nodeargd
-        if (n.nodeoptarg):
+        if n.nodeoptarg:
             iterchildren.append(('[...]: ', [n.nodeoptarg], False))
-        if (len(n.nodeargs)):
+        if len(n.nodeargs):
             iterchildren.append(('{...}: ', n.nodeargs, False))
     elif n.isNodeType(LatexCommentNode):
         title = '%' + n.comment.strip()
