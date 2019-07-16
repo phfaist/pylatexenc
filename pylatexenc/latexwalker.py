@@ -37,10 +37,7 @@ human-readable node tree::
 
     $ echo '\textit{italic} text' | latexwalker  \ 
                                     --output-format=json --json-compact
-    [{"nodetype": "LatexMacroNode", "macroname": "textit", "nodeoptarg": null,
-    "nodeargs": [{"nodetype": "LatexGroupNode", "nodelist": [{"nodetype":
-    "LatexCharsNode", "chars": "italic"}]}], "macro_post_space": ""},
-    {"nodetype": "LatexCharsNode", "chars": " text"}]
+    {"nodelist": [{"nodetype": "LatexMacroNode", "pos": 0, "len": 15, [...]
 
     $ latexwalker --help
     [...]
@@ -748,7 +745,7 @@ class LatexWalker(object):
         else:
             # make sure the user didn't also provide a macro_dict= argument
             if 'macro_dict' in kwargs:
-                raise TypeError("Cannot specify both `latex_context` and `macro_dict` arguments")
+                raise TypeError("Cannot specify both `latex_context=` and `macro_dict=` arguments")
 
         self.latex_context = latex_context
 
@@ -1666,8 +1663,8 @@ class LatexNodesJSONEncoder(json.JSONEncoder):
             d = {
                 'nodetype': n.__class__.__name__,
             }
-            redundant_fields = getattr(n, '_redundant_fields', n._fields)
-            for fld in redundant_fields:
+            #redundant_fields = getattr(n, '_redundant_fields', n._fields)
+            for fld in n._fields:
                 d[fld] = n.__dict__[fld]
             return d
 
@@ -1727,7 +1724,6 @@ def main(argv=None):
         latex += line
     
     latexwalker = LatexWalker(latex,
-                              keep_inline_math=args.keep_inline_math,
                               tolerant_parsing=args.tolerant_parsing,
                               strict_braces=args.strict_braces)
 

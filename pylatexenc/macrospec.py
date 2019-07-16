@@ -84,6 +84,13 @@ class ParsedMacroArgs(object):
         included in `nodeoptarg` or `nodeargs` depended on how the macro
         specification was given.
 
+      - `argspec` is a string or a list that describes how each corresponding
+        argument in `argnlist` represents.  If the macro arguments are too
+        complicated to store in a list, leave this as `None`.  For standard
+        macros and parsed arguments this is a string with characters '*', '[',
+        '{' describing an optional star argument, an optional
+        square-bracket-delimited argument, and a mandatory argument.
+
       - `legacy_nodeoptarg_nodeargs` is a tuple `(nodeoptarg, nodeargs)` that
         should be exposed as properties in
         :py:class:`~pylatexenc.latexwalker.LatexMacroNode` to provide (as best
@@ -100,11 +107,12 @@ class ParsedMacroArgs(object):
  
        Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
-    def __init__(self, argnlist=[], legacy_nodeoptarg_nodeargs=None,
+    def __init__(self, argnlist=[], argspec='', legacy_nodeoptarg_nodeargs=None,
                  **kwargs):
         super(ParsedMacroArgs, self).__init__(**kwargs)
         
         self.argnlist = argnlist
+        self.argspec = argspec
         self.legacy_nodeoptarg_nodeargs = legacy_nodeoptarg_nodeargs
         
     def to_json_object(self):
@@ -117,19 +125,21 @@ class ParsedMacroArgs(object):
         Called when we export the node structure to JSON (e.g., latexwalker in
         command-line).
         """
-        legacystuff = {}
-        if self.legacy_nodeoptarg_nodeargs:
-            legacystuff['nodeoptarg'] = self.legacy_nodeoptarg_nodeargs[0]
-            legacystuff['nodeargs'] = self.legacy_nodeoptarg_nodeargs[1]
+        #legacystuff = {}
+        #if self.legacy_nodeoptarg_nodeargs:
+        #    legacystuff['nodeoptarg'] = self.legacy_nodeoptarg_nodeargs[0]
+        #    legacystuff['nodeargs'] = self.legacy_nodeoptarg_nodeargs[1]
 
         return dict(
+            argspec=self.argspec,
             argnlist=self.argnlist,
-            # stuff for compatibility with pylatexenc < 2
-            **legacystuff
+            #**legacystuff
         )
 
     def __repr__(self):
-        return "ParsedMacroArgs(argnlist={!r})".format(self.argnlist)
+        return "ParsedMacroArgs(argnlist={!r}, argspec={!r})".format(
+            self.argnlist, self.argspec
+        )
 
 
 class MacroStandardArgsParser(object):
@@ -247,7 +257,8 @@ class MacroStandardArgsParser(object):
             legacy_nodeargs = argnlist[1:]
 
         parsed = ParsedMacroArgs(
-            argnlist,
+            argspec=self.argspec,
+            argnlist=argnlist,
             legacy_nodeoptarg_nodeargs=(legacy_nodeoptarg, legacy_nodeargs),
         )
 

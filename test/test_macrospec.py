@@ -29,6 +29,8 @@ class MyAsserts(object):
                            "\n".join('    '+str(x) for x in b.argnlist),)
             raise AssertionError("ParsedMacroArgs are different, lengths differ")
 
+        self.assertEqual(a.argspec, b.argspec)
+
         for j in range(len(a.argnlist)):
             try:
                 self.assertEqual(a.argnlist[j], b.argnlist[j])
@@ -53,8 +55,9 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, 0)
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([
-                LatexGroupNode(
+            ParsedMacroArgs(
+                argspec='{',
+                argnlist=[ LatexGroupNode(
                     parsed_context=lw.parsed_context,
                     nodelist=[
                         LatexCharsNode(parsed_context=lw.parsed_context,
@@ -62,7 +65,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
                                        pos=1,len=2)
                     ],
                     pos=0,len=4)
-            ])
+                ])
         )
 
     def test_marg_1(self):
@@ -71,7 +74,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([
+            ParsedMacroArgs(argspec='{', argnlist=[
                 LatexCharsNode(parsed_context=lw.parsed_context,
                                chars='a',
                                pos=len(r'\cmd')+1,len=1)
@@ -84,7 +87,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([
+            ParsedMacroArgs(argspec='[', argnlist=[
                 LatexGroupNode(
                     parsed_context=lw.parsed_context,
                     nodelist=[
@@ -102,7 +105,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([ None ])
+            ParsedMacroArgs(argspec='[', argnlist=[ None ])
         )
 
     def test_star_0(self):
@@ -111,7 +114,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([ None ])
+            ParsedMacroArgs(argspec='*', argnlist=[ None ])
         )
 
     def test_star_1(self):
@@ -120,7 +123,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([
+            ParsedMacroArgs(argspec='*', argnlist=[
                 LatexCharsNode(parsed_context=lw.parsed_context,
                                chars='*',
                                pos=4,len=1)
@@ -133,7 +136,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([
+            ParsedMacroArgs(argspec='*', argnlist=[
                 LatexCharsNode(parsed_context=lw.parsed_context,
                                chars='*',
                                pos=5,len=1)
@@ -146,7 +149,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([
+            ParsedMacroArgs(argspec='{*[{*', argnlist=[
                 LatexGroupNode(parsed_context=lw.parsed_context,
                                nodelist=[
                                    LatexCharsNode(parsed_context=lw.parsed_context,
@@ -171,7 +174,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([
+            ParsedMacroArgs(argspec='{*[{*', argnlist=[
                 LatexCharsNode(parsed_context=lw.parsed_context,
                                chars='x',
                                pos=5,len=1),
@@ -197,92 +200,92 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
 class Test_std_macro(unittest.TestCase):
 
     def test_idiom_0(self):
-      spec = std_macro('cmd', '*[{')
-      self.assertEqual(spec.macroname, 'cmd')
-      self.assertEqual(spec.args_parser.argspec, '*[{')
+        spec = std_macro('cmd', '*[{')
+        self.assertEqual(spec.macroname, 'cmd')
+        self.assertEqual(spec.args_parser.argspec, '*[{')
 
     def test_idiom_1(self):
-      spec = std_macro('cmd', True, 3)
-      self.assertEqual(spec.macroname, 'cmd')
-      self.assertEqual(spec.args_parser.argspec, '[{{{')
+        spec = std_macro('cmd', True, 3)
+        self.assertEqual(spec.macroname, 'cmd')
+        self.assertEqual(spec.args_parser.argspec, '[{{{')
 
     def test_idiom_1b(self):
-      spec = std_macro('cmd', False, 3)
-      self.assertEqual(spec.macroname, 'cmd')
-      self.assertEqual(spec.args_parser.argspec, '{{{')
+        spec = std_macro('cmd', False, 3)
+        self.assertEqual(spec.macroname, 'cmd')
+        self.assertEqual(spec.args_parser.argspec, '{{{')
 
     def test_idiom_1c(self):
-      spec = std_macro('cmd', None, '{{{')
-      self.assertEqual(spec.macroname, 'cmd')
-      self.assertEqual(spec.args_parser.argspec, '{{{')
+        spec = std_macro('cmd', None, '{{{')
+        self.assertEqual(spec.macroname, 'cmd')
+        self.assertEqual(spec.args_parser.argspec, '{{{')
 
     def test_idiom_2(self):
-      spec = std_macro( ('cmd', '*[{['), )
-      self.assertEqual(spec.macroname, 'cmd')
-      self.assertEqual(spec.args_parser.argspec, '*[{[')
+        spec = std_macro( ('cmd', '*[{['), )
+        self.assertEqual(spec.macroname, 'cmd')
+        self.assertEqual(spec.args_parser.argspec, '*[{[')
 
     def test_idiom_2b(self):
-      spec = std_macro( ('cmd', True, 3), )
-      self.assertEqual(spec.macroname, 'cmd')
-      self.assertEqual(spec.args_parser.argspec, '[{{{')
+        spec = std_macro( ('cmd', True, 3), )
+        self.assertEqual(spec.macroname, 'cmd')
+        self.assertEqual(spec.args_parser.argspec, '[{{{')
 
     def test_idiom_3(self):
         # spec is already a `MacroSpec` -- no-op
-      spec = std_macro( std_macro('cmd', True, 3) )
-      self.assertEqual(spec.macroname, 'cmd')
-      self.assertEqual(spec.args_parser.argspec, '[{{{')
+        spec = std_macro( std_macro('cmd', True, 3) )
+        self.assertEqual(spec.macroname, 'cmd')
+        self.assertEqual(spec.args_parser.argspec, '[{{{')
 
 
 
 class Test_std_environment(unittest.TestCase):
 
     def test_idiom_0(self):
-      spec = std_environment('environ', '[*{{', is_math_mode=True)
-      self.assertEqual(spec.environmentname, 'environ')
-      self.assertEqual(spec.args_parser.argspec, '[*{{')
-      self.assertEqual(spec.is_math_mode, True)
+        spec = std_environment('environ', '[*{{', is_math_mode=True)
+        self.assertEqual(spec.environmentname, 'environ')
+        self.assertEqual(spec.args_parser.argspec, '[*{{')
+        self.assertEqual(spec.is_math_mode, True)
 
     def test_idiom_0b(self):
-      spec = std_environment('environ', None, is_math_mode=False)
-      self.assertEqual(spec.environmentname, 'environ')
-      self.assertEqual(spec.args_parser.argspec, '')
-      self.assertEqual(spec.is_math_mode, False)
+        spec = std_environment('environ', None, is_math_mode=False)
+        self.assertEqual(spec.environmentname, 'environ')
+        self.assertEqual(spec.args_parser.argspec, '')
+        self.assertEqual(spec.is_math_mode, False)
 
     def test_idiom_0c(self):
-      spec = std_environment('environ', '[{')
-      self.assertEqual(spec.environmentname, 'environ')
-      self.assertEqual(spec.args_parser.argspec, '[{')
-      self.assertEqual(spec.is_math_mode, False)
+        spec = std_environment('environ', '[{')
+        self.assertEqual(spec.environmentname, 'environ')
+        self.assertEqual(spec.args_parser.argspec, '[{')
+        self.assertEqual(spec.is_math_mode, False)
 
     def test_idiom_1(self):
-      spec = std_environment('environ', True, 3, is_math_mode=True)
-      self.assertEqual(spec.environmentname, 'environ')
-      self.assertEqual(spec.args_parser.argspec, '[{{{')
-      self.assertEqual(spec.is_math_mode, True)
+        spec = std_environment('environ', True, 3, is_math_mode=True)
+        self.assertEqual(spec.environmentname, 'environ')
+        self.assertEqual(spec.args_parser.argspec, '[{{{')
+        self.assertEqual(spec.is_math_mode, True)
 
     def test_idiom_2(self):
-      spec = std_environment( ('environ', '[*{{'), is_math_mode=True)
-      self.assertEqual(spec.environmentname, 'environ')
-      self.assertEqual(spec.args_parser.argspec, '[*{{')
-      self.assertEqual(spec.is_math_mode, True)
+        spec = std_environment( ('environ', '[*{{'), is_math_mode=True)
+        self.assertEqual(spec.environmentname, 'environ')
+        self.assertEqual(spec.args_parser.argspec, '[*{{')
+        self.assertEqual(spec.is_math_mode, True)
 
     def test_idiom_3(self):
-      spec = std_environment( ('environ', False, 4), )
-      self.assertEqual(spec.environmentname, 'environ')
-      self.assertEqual(spec.args_parser.argspec, '{{{{')
-      self.assertEqual(spec.is_math_mode, False)
+        spec = std_environment( ('environ', False, 4), )
+        self.assertEqual(spec.environmentname, 'environ')
+        self.assertEqual(spec.args_parser.argspec, '{{{{')
+        self.assertEqual(spec.is_math_mode, False)
 
     def test_idiom_3b(self):
-      spec = std_environment( ('environ', None, '{{{{'), )
-      self.assertEqual(spec.environmentname, 'environ')
-      self.assertEqual(spec.args_parser.argspec, '{{{{')
-      self.assertEqual(spec.is_math_mode, False)
+        spec = std_environment( ('environ', None, '{{{{'), )
+        self.assertEqual(spec.environmentname, 'environ')
+        self.assertEqual(spec.args_parser.argspec, '{{{{')
+        self.assertEqual(spec.is_math_mode, False)
 
     def test_idiom_4(self):
-      spec = std_environment(  std_environment('environ', '{*{{{', is_math_mode=True) )
-      self.assertEqual(spec.environmentname, 'environ')
-      self.assertEqual(spec.args_parser.argspec, '{*{{{')
-      self.assertEqual(spec.is_math_mode, True)
+        spec = std_environment(  std_environment('environ', '{*{{{', is_math_mode=True) )
+        self.assertEqual(spec.environmentname, 'environ')
+        self.assertEqual(spec.args_parser.argspec, '{*{{{')
+        self.assertEqual(spec.is_math_mode, True)
 
 
 

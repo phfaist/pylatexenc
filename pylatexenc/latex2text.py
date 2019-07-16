@@ -1044,10 +1044,11 @@ def main(argv=None):
     group = parser.add_argument_group("LatexWalker options")
 
     group.add_argument('--parser-keep-inline-math', action='store_const', const=True,
-                       dest='parser_keep_inline_math', default=True)
+                       dest='parser_keep_inline_math', default=None,
+                       help=argparse.SUPPRESS)
     group.add_argument('--no-parser-keep-inline-math', action='store_const', const=False,
                        dest='parser_keep_inline_math',
-                       help="Parse inline math between $ signs specially (default yes)")
+                       help=argparse.SUPPRESS)
 
     group.add_argument('--tolerant-parsing', action='store_const', const=True,
                        dest='tolerant_parsing', default=True)
@@ -1064,10 +1065,17 @@ def main(argv=None):
     group = parser.add_argument_group("LatexNodes2Text options")
 
     group.add_argument('--text-keep-inline-math', action='store_const', const=True,
-                       dest='text_keep_inline_math', default=False)
+                       dest='text_keep_inline_math', default=None,
+                       help=argparse.SUPPRESS)
     group.add_argument('--no-text-keep-inline-math', action='store_const', const=False,
                        dest='text_keep_inline_math',
-                       help="Keep inline math between $ signs verbatim in text output (default no)")
+                       help=argparse.SUPPRESS)
+
+    group.add_argument('--math-mode', action='store', dest='math_mode',
+                       choices=['text', 'with-delimiters', 'verbatim'], default='text',
+                       help="How to handle chunks of math mode LaTeX code. 'text' = convert "
+                       "to text like the rest; 'with-delimiters' = same as 'text' but retain "
+                       "the original math mode delimiters; 'verbatim' = keep verbatim LaTeX code")
 
     group.add_argument('--keep-comments', action='store_const', const=True,
                        dest='keep_comments', default=False)
@@ -1097,18 +1105,21 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
 
+    if args.parser_keep_inline_math is not None or args.text_keep_inline_math is not None:
+        logger.warning("Options --parser-keep-inline-math and --text-keep-inline-math are "
+                       "deprecated and no longer work.  Please use --math-mode=... instead.")
+
     latex = ''
     for line in fileinput.input(files=args.files):
         latex += line
-    
+
     lw = latexwalker.LatexWalker(latex,
-                                 keep_inline_math=args.parser_keep_inline_math,
                                  tolerant_parsing=args.tolerant_parsing,
                                  strict_braces=args.strict_braces)
 
     (nodelist, pos, len_) = lw.get_latex_nodes()
 
-    ln2t = LatexNodes2Text(keep_inline_math=args.text_keep_inline_math,
+    ln2t = LatexNodes2Text(math_mode=math_mode,
                            keep_comments=args.keep_comments,
                            strict_latex_spaces=args.strict_latex_spaces,
                            keep_braced_groups=args.keep_braced_groups,
