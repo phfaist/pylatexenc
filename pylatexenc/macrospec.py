@@ -226,7 +226,11 @@ class MacroStandardArgsParser(object):
                 tok = w.get_token(p)
                 if tok.tok == 'char' and tok.arg.lstrip().startswith('*'):
                     # has star
-                    argnlist.append(latexwalker.LatexCharsNode('*'))
+                    argnlist.append(
+                        latexwalker.LatexCharsNode(parsed_context=w.parsed_context,
+                                                   chars='*',
+                                                   pos=tok.pos, len=tok.len)
+                    )
                     p = tok.pos + 1
                 else:
                     argnlist.append(None)

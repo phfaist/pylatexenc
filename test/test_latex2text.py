@@ -127,8 +127,8 @@ where $i$ is the imaginary unit.
         def do_test(tex, uni, strict_latex_spaces=None, keep_comments=None, **kwargs):
             self.assertEqual(
                 LatexNodes2Text(strict_latex_spaces=strict_latex_spaces, keep_comments=keep_comments,
-                                keep_inline_math=False, **kwargs)
-                .latex_to_text(tex, keep_inline_math=True, **kwargs),
+                                **kwargs)
+                .latex_to_text(tex, keep_inline_math='with-delimiters', **kwargs),
                 uni
             )
 

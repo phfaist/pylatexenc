@@ -357,6 +357,14 @@ class LatexNode(object):
         """
         return isinstance(self, t)
 
+    def latex_verbatim(self):
+        r"""
+        Return the chunk of LaTeX code that this node represents.
+
+        This is a shorthand for ``node.parsed_context.s[node.pos:node.pos+node.len]``.
+        """
+        return self.parsed_context.s[self.pos : self.pos+self.len]
+
     def __eq__(self, other):
         return other is not None  and  \
             self.nodeType() == other.nodeType()  and  \
@@ -755,7 +763,7 @@ class LatexWalker(object):
             logger.warning("Deprecated (pylatexenc 2.0): "
                            "The keep_inline_math=... option in LatexWalker() has no effect "
                            "in pylatexenc 2.  Please use the more versatile option "
-                           "keep_math=... in LatexNodes2Text() instead.")
+                           "math_mode=... in LatexNodes2Text() instead.")
             del kwargs['keep_inline_math']
 
         if kwargs:
@@ -1516,76 +1524,78 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
 #
 
 
-def put_in_braces(brace_char, thestring):
-    if (brace_char == '{'):
-        return '{%s}' %(thestring)
-    if (brace_char == '['):
-        return '[%s]' %(thestring)
-    if (brace_char == '('):
-        return '(%s)' %(thestring)
-    if (brace_char == '<'):
-        return '<%s>' %(thestring)
+# def put_in_braces(brace_char, thestring):
+#     if (brace_char == '{'):
+#         return '{%s}' %(thestring)
+#     if (brace_char == '['):
+#         return '[%s]' %(thestring)
+#     if (brace_char == '('):
+#         return '(%s)' %(thestring)
+#     if (brace_char == '<'):
+#         return '<%s>' %(thestring)
 
-    return brace_char + thestring + brace_char
+#     return brace_char + thestring + brace_char
 
 
 def nodelist_to_latex(nodelist):
-    latex = ''
-    for n in nodelist:
-        if n is None:
-            continue
+    return "".join(n.latex_verbatim() for n in nodelist)
 
-        if n.isNodeType(LatexCharsNode):
-            latex += n.chars
-            continue
+    # latex = ''
+    # for n in nodelist:
+    #     if n is None:
+    #         continue
 
-        if n.isNodeType(LatexMacroNode):
-            latex += r'\%s%s' %(n.macroname, n.macro_post_space)
+    #     if n.isNodeType(LatexCharsNode):
+    #         latex += n.chars
+    #         continue
 
-            mac = None
-            if (n.macroname in default_macro_dict):
-                mac = default_macro_dict[n.macroname]
+    #     if n.isNodeType(LatexMacroNode):
+    #         latex += r'\%s%s' %(n.macroname, n.macro_post_space)
+
+    #         mac = None
+    #         if (n.macroname in default_macro_dict):
+    #             mac = default_macro_dict[n.macroname]
             
-            if (n.nodeoptarg is not None):
-                latex += '[%s]' %(nodelist_to_latex([n.nodeoptarg]))
+    #         if (n.nodeoptarg is not None):
+    #             latex += '[%s]' %(nodelist_to_latex([n.nodeoptarg]))
 
-            if mac is not None:
-                macbraces = (mac.numargs if isinstance(mac.numargs, _basestring) else '{'*mac.numargs)
-            else:
-                macbraces = '{'*len(n.nodeargs)
+    #         if mac is not None:
+    #             macbraces = (mac.numargs if isinstance(mac.numargs, _basestring) else '{'*mac.numargs)
+    #         else:
+    #             macbraces = '{'*len(n.nodeargs)
                 
-            if len(n.nodeargs) != len(macbraces):
-                raise LatexWalkerError("Error: number of arguments (%d) provided to macro `\\%s' does not "
-                                       "match its specification of `%s'"
-                                       %(len(n.nodeargs), n.macroname, macbraces))
-            for i in range(len(n.nodeargs)):
-                nodearg = n.nodeargs[i]
-                if nodearg is not None:
-                    latex += put_in_braces(macbraces[i], nodelist_to_latex([nodearg]))
+    #         if len(n.nodeargs) != len(macbraces):
+    #             raise LatexWalkerError("Error: number of arguments (%d) provided to macro `\\%s' does not "
+    #                                    "match its specification of `%s'"
+    #                                    %(len(n.nodeargs), n.macroname, macbraces))
+    #         for i in range(len(n.nodeargs)):
+    #             nodearg = n.nodeargs[i]
+    #             if nodearg is not None:
+    #                 latex += put_in_braces(macbraces[i], nodelist_to_latex([nodearg]))
 
-            continue
+    #         continue
         
-        if n.isNodeType(LatexCommentNode):
-            latex += '%'+n.comment+n.comment_post_space
-            continue
+    #     if n.isNodeType(LatexCommentNode):
+    #         latex += '%'+n.comment+n.comment_post_space
+    #         continue
         
-        if n.isNodeType(LatexGroupNode):
-            latex += put_in_braces('{', nodelist_to_latex(n.nodelist))
-            continue
+    #     if n.isNodeType(LatexGroupNode):
+    #         latex += put_in_braces('{', nodelist_to_latex(n.nodelist))
+    #         continue
         
-        if n.isNodeType(LatexEnvironmentNode):
-            latex += r'\begin{%s}' %(n.envname)
-            for optarg in n.optargs:
-                latex += put_in_braces('[', nodelist_to_latex([optarg]))
-            for arg in n.args:
-                latex += put_in_braces('{', nodelist_to_latex([arg]))
-            latex += nodelist_to_latex(n.nodelist)
-            latex += r'\end{%s}' %(n.envname)
-            continue
+    #     if n.isNodeType(LatexEnvironmentNode):
+    #         latex += r'\begin{%s}' %(n.envname)
+    #         for optarg in n.optargs:
+    #             latex += put_in_braces('[', nodelist_to_latex([optarg]))
+    #         for arg in n.args:
+    #             latex += put_in_braces('{', nodelist_to_latex([arg]))
+    #         latex += nodelist_to_latex(n.nodelist)
+    #         latex += r'\end{%s}' %(n.envname)
+    #         continue
         
-        latex += '<[UNKNOWN LATEX NODE: `%s\']>' %(n.nodeType().__name__)
+    #     latex += '<[UNKNOWN LATEX NODE: `%s\']>' %(n.nodeType().__name__)
 
-    return latex
+    # return latex
 
 
 

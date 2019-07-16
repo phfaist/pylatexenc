@@ -53,7 +53,16 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, 0)
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([ LatexGroupNode([LatexCharsNode('ab')]) ])
+            ParsedMacroArgs([
+                LatexGroupNode(
+                    parsed_context=lw.parsed_context,
+                    nodelist=[
+                        LatexCharsNode(parsed_context=lw.parsed_context,
+                                       chars='ab',
+                                       pos=1,len=2)
+                    ],
+                    pos=0,len=4)
+            ])
         )
 
     def test_marg_1(self):
@@ -62,7 +71,11 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([ LatexCharsNode('a') ])
+            ParsedMacroArgs([
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='a',
+                               pos=len(r'\cmd')+1,len=1)
+            ])
         )
 
     def test_oarg_0(self):
@@ -71,7 +84,16 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([ LatexGroupNode([LatexCharsNode('ab')]) ])
+            ParsedMacroArgs([
+                LatexGroupNode(
+                    parsed_context=lw.parsed_context,
+                    nodelist=[
+                        LatexCharsNode(parsed_context=lw.parsed_context,
+                                       chars='ab',
+                                       pos=5,len=2)
+                    ],
+                    pos=4,len=4)
+            ])
         )
 
     def test_oarg_1(self):
@@ -98,7 +120,11 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([ LatexCharsNode('*') ])
+            ParsedMacroArgs([
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='*',
+                               pos=4,len=1)
+            ])
         )
 
     def test_star_2(self):
@@ -107,7 +133,11 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([ LatexCharsNode('*') ])
+            ParsedMacroArgs([
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='*',
+                               pos=5,len=1)
+            ])
         )
 
     def test_combined_0(self):
@@ -116,8 +146,23 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([ LatexGroupNode([LatexCharsNode('ab')]), None, 
-                              None, LatexCharsNode('c'), LatexCharsNode('*') ])
+            ParsedMacroArgs([
+                LatexGroupNode(parsed_context=lw.parsed_context,
+                               nodelist=[
+                                   LatexCharsNode(parsed_context=lw.parsed_context,
+                                                  chars='ab',
+                                                  pos=5,len=2)
+                               ],
+                               pos=4,len=4),
+                None, 
+                None,
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='c',
+                               pos=8,len=1),
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='*',
+                               pos=9,len=1)
+            ])
         )
 
     def test_combined_1(self):
@@ -126,9 +171,25 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
         self.assertPMAEqual(
             argd,
-            ParsedMacroArgs([ LatexCharsNode('x'), None,
-                              LatexGroupNode([LatexCharsNode('ab')]),
-                              LatexCharsNode('c'), LatexCharsNode('*') ])
+            ParsedMacroArgs([
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='x',
+                               pos=5,len=1),
+                None,
+                LatexGroupNode(parsed_context=lw.parsed_context,
+                               nodelist=[
+                                   LatexCharsNode(parsed_context=lw.parsed_context,
+                                                  chars='ab',
+                                                  pos=7,len=2)
+                               ],
+                               pos=6,len=4),
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='c',
+                               pos=10,len=1),
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='*',
+                               pos=11,len=1)
+            ])
         )
 
 

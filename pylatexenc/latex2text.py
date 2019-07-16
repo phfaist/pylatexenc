@@ -645,10 +645,10 @@ class LatexNodes2Text(object):
 
       .. deprecated:: 2.0
     
-         The `keep_inline_math=` option had a weird behavior, especially given
-         that a similarly named option in :py:class:`LatexWalker` had a
-         different effect.  See `Issue #14
-         <https://github.com/phfaist/pylatexenc/issues/14>`_.
+         The `keep_inline_math=` option is deprecated because it had a weird
+         behavior and was poorly implemented, especially given that a similarly
+         named option in :py:class:`LatexWalker` had a different effect.  See
+         `Issue #14 <https://github.com/phfaist/pylatexenc/issues/14>`_.
     """
     def __init__(self, env_dict=None, macro_dict=None, text_replacements=None, **flags):
         super(LatexNodes2Text, self).__init__()
@@ -948,7 +948,7 @@ class LatexNodes2Text(object):
 
         if node.isNodeType(latexwalker.LatexMathNode):
             if self.math_mode == 'verbatim':
-                .........
+                return node.latex_verbatim()
             elif self.math_mode == 'with-delimiters':
                 with _PushEquationContext(self):
                     return (node.delimiters[0] + self._nodelistcontents_to_text(node.nodelist) 

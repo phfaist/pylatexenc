@@ -51,6 +51,7 @@ Documentation
    macrospec
    latex2text
    latexencode
+   changes
 
 
 Indices and tables
