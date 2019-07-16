@@ -407,11 +407,14 @@ class LatexGroupNode(LatexNode):
     r"""
     A LaTeX group delimited by braces, ``{like this}``.
 
+    Note: in the case of an optional macro or environment argument, this node is
+    also used to represents a group delimited by square braces instead of curly
+    braces.
+
     .. py:attribute:: nodelist
 
        A list of nodes describing the contents of the LaTeX braced group.  Each
        item of the list is a :py:class:`LatexNode`.
-
     """
     def __init__(self, nodelist, **kwargs):
         super(LatexGroupNode, self).__init__(
@@ -927,8 +930,12 @@ class LatexWalker(object):
         return LatexToken(tok='char', arg=s[pos], pos=pos, len=1, pre_space=space)
 
 
+    def _mknode(self, nclass, **kwargs):
+        assert 'pos' in kwargs and 'len' in kwargs
+        return nclass(parsed_context=self.parsed_context, **kwargs)
+
     def _mknodeposlen(self, nclass, **kwargs):
-        return ( nclass(parsed_context=self.parsed_context, **kwargs), kwargs['pos'], kwargs['len'] )
+        return ( self._mknode(nclass, **kwargs), kwargs['pos'], kwargs['len'] )
 
 
     def get_latex_expression(self, pos, strict_braces=None):
@@ -954,10 +961,10 @@ class LatexWalker(object):
                         # error, we were expecting a single token
                         raise LatexWalkerParseError(r"Expected expression, got \end", self.s, pos)
                     else:
-                        return (LatexCharsNode(chars=''), tok.pos, 0)
-                return (LatexMacroNode(macroname=tok.arg, nodeoptarg=None, nodeargs=[],
-                                       macro_post_space=tok.post_space),
-                        tok.pos, tok.len)
+                        return self._mknodeposlen(LatexCharsNode, chars='', pos=tok.pos, len=0)
+                return self._mknodeposlen(LatexMacroNode, macroname=tok.arg, nodeoptarg=None, nodeargs=[],
+                                          macro_post_space=tok.post_space,
+                                          pos=tok.pos, len=tok.len)
             if tok.tok == 'comment':
                 return self.get_latex_expression(pos+tok.len)
             if tok.tok == 'brace_open':
@@ -968,17 +975,18 @@ class LatexWalker(object):
                         "Expected expression, got closing brace '{}'".format(tok.arg),
                         self.s, pos
                     )
-                return (LatexCharsNode(chars=''), tok.pos, 0)
+                return self._mknodeposlen(LatexCharsNode, chars='', pos=tok.pos, len=0)
             if tok.tok == 'char':
-                return (LatexCharsNode(chars=tok.arg), tok.pos, tok.len)
+                return self._mknodeposlen(LatexCharsNode, chars=tok.arg, pos=tok.pos, len=tok.len)
             if tok.tok in ('mathmode_inline', 'mathmode_display'):
                 # don't report a math mode token, treat as char or macro
                 if tok.arg.startswith('\\'):
-                    return (LatexMacroNode(macroname=tok.arg, nodeoptarg=None, nodeargs=[],
-                                           macro_post_space=tok.post_space),
-                            tok.pos, tok.len)
+                    return self._mknodeposlen(LatexMacroNode, macroname=tok.arg,
+                                              nodeoptarg=None, nodeargs=[],
+                                              macro_post_space=tok.post_space,
+                                              pos=tok.pos, len=tok.len)
                 else:
-                    return (LatexCharsNode(chars=tok.arg), tok.pos, tok.len)
+                    return self._mknodeposlen(LatexCharsNode, chars=tok.arg, pos=tok.pos, len=tok.len)
 
             raise LatexWalkerParseError("Unknown token type: {}".format(tok.tok), self.s, pos)
 
@@ -1035,7 +1043,9 @@ class LatexWalker(object):
         (nodelist, npos, nlen) = self.get_latex_nodes(firsttok.pos + firsttok.len,
                                                       stop_upon_closing_brace=closing_brace)
 
-        return (LatexGroupNode(nodelist=nodelist), firsttok.pos, npos + nlen - firsttok.pos)
+        return self._mknodeposlen(LatexGroupNode, nodelist=nodelist,
+                                  pos = firsttok.pos,
+                                  len = npos + nlen - firsttok.pos)
 
 
     def get_latex_environment(self, pos, environmentname=None):
@@ -1089,13 +1099,15 @@ class LatexWalker(object):
         else:
             legnodeoptarg, legnodeargs = None, []
 
-        return (LatexEnvironmentNode(envname=environmentname,
-                                     nodelist=nodelist,
-                                     nodeargd=argd,
-                                     # legacy:
-                                     optargs=[legnodeoptarg],
-                                     args=legnodeargs),
-                startpos, npos+nlen-startpos)
+        return self._mknodeposlen(LatexEnvironmentNode,
+                                  envname=environmentname,
+                                  nodelist=nodelist,
+                                  nodeargd=argd,
+                                  # legacy:
+                                  optargs=[legnodeoptarg],
+                                  args=legnodeargs,
+                                  pos=startpos,
+                                  len=npos+nlen-startpos)
 
 
     
@@ -1154,11 +1166,12 @@ class LatexWalker(object):
         origpos = pos
 
         class PosPointer:
-            def __init__(self, pos=0, lastchars=''):
+            def __init__(self, pos=0, lastchars='', lastchars_pos=None):
                 self.pos = pos
                 self.lastchars = lastchars
+                self.lastchars_pos = lastchars_pos
 
-        p = PosPointer(pos)
+        p = PosPointer(pos=pos, lastchars='', lastchars_pos=None)
 
         def do_read(nodelist, p):
             r"""
@@ -1181,21 +1194,26 @@ class LatexWalker(object):
             # if it's a char, just append it to the stream of last characters.
             if tok.tok == 'char':
                 p.lastchars += tok.pre_space + tok.arg
+                if p.lastchars_pos is None:
+                    p.lastchars_pos = tok.pos - len(tok.pre_space)
                 return False
 
             # if it's not a char, push the last `p.lastchars` into the node list
             # before we do anything else
             if len(p.lastchars):
-                strnode = LatexCharsNode(chars=p.lastchars+tok.pre_space)
+                strnode = self._mknode(LatexCharsNode, chars=p.lastchars+tok.pre_space,
+                                       pos=p.lastchars_pos, len=tok.pos - p.lastchars_pos)
                 nodelist.append(strnode)
                 p.lastchars = ''
+                p.lastchars_pos = None
             elif len(tok.pre_space):
                 # If we have pre_space, add a separate chars node that contains
                 # the spaces.  We do this seperately, so that latex2text can
                 # ignore these groups by default to avoid too much space on the
                 # output.  This allows latex2text to implement the
                 # `strict_latex_spaces=True` flag correctly.
-                spacestrnode = LatexCharsNode(chars=tok.pre_space)
+                spacestrnode = self._mknode(LatexCharsNode, chars=tok.pre_space,
+                                            pos=tok.pos-len(tok.pre_space), len=len(tok.pre_space))
                 nodelist.append(spacestrnode)
 
             # and see what the token is.
@@ -1263,13 +1281,16 @@ class LatexWalker(object):
                     self.get_latex_nodes(p.pos, stop_upon_closing_mathmode=corresponding_closing_mathmode)
                 p.pos = mpos + mlen
 
-                nodelist.append(LatexMathNode(displaytype=displaytype,
-                                              nodelist=mathinline_nodelist,
-                                              delimiters=(tok.arg, corresponding_closing_mathmode)))
+                nodelist.append(self._mknode(LatexMathNode, displaytype=displaytype,
+                                             nodelist=mathinline_nodelist,
+                                             delimiters=(tok.arg, corresponding_closing_mathmode),
+                                             pos=tok.pos, len=mpos+mlen-tok.pos))
                 return
 
             if (tok.tok == 'comment'):
-                commentnode = LatexCommentNode(comment=tok.arg, comment_post_space=tok.post_space)
+                commentnode = self._mknode(LatexCommentNode, comment=tok.arg,
+                                           comment_post_space=tok.post_space,
+                                           pos=tok.pos, len=tok.len)
                 nodelist.append(commentnode)
                 return
 
@@ -1303,13 +1324,15 @@ class LatexWalker(object):
                     nodeargs = nodeargd.legacy_nodeoptarg_nodeargs[1]
                 else:
                     nodeoptarg, nodeargs = None, []
-                node = LatexMacroNode(
-                    macroname=tok.arg,
-                    nodeargd=nodeargd,
-                    macro_post_space=tok.post_space,
-                    # legacy data:
-                    nodeoptarg=nodeoptarg,
-                    nodeargs=nodeargs)
+                node = self._mknode(LatexMacroNode,
+                                    macroname=tok.arg,
+                                    nodeargd=nodeargd,
+                                    macro_post_space=tok.post_space,
+                                    # legacy data:
+                                    nodeoptarg=nodeoptarg,
+                                    nodeargs=nodeargs,
+                                    pos=tok.pos,
+                                    len=p.pos-tok.pos)
                 nodelist.append(node)
                 return None
 
@@ -1343,8 +1366,9 @@ class LatexWalker(object):
 
             if (r_endnow):
                 # add last chars
-                if (p.lastchars):
-                    strnode = LatexCharsNode(chars=p.lastchars)
+                if p.lastchars:
+                    strnode = self._mknode(LatexCharsNode, chars=p.lastchars,
+                                           pos=p.lastchars_pos, len=len(p.lastchars))
                     nodelist.append(strnode)
                 return (nodelist, origpos, p.pos - origpos)
 
@@ -1707,7 +1731,8 @@ def main(argv=None):
         return
 
     if args.output_format == 'json':
-        json.dump(nodelist, sys.stdout,
+        json.dump({ 'nodelist': nodelist, },
+                  sys.stdout,
                   cls=LatexNodesJSONEncoder,
                   indent=args.json_indent)
         sys.stdout.write("\n")
