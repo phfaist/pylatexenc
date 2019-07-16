@@ -11,13 +11,14 @@ if sys.version_info.major > 2:
 
 from pylatexenc.latexwalker import (
     LatexWalker, LatexToken, LatexCharsNode, LatexGroupNode, LatexCommentNode,
-    LatexMacroNode, LatexEnvironmentNode, LatexMathNode, LatexWalkerParseError
+    LatexMacroNode, LatexSpecialsNode, LatexEnvironmentNode, LatexMathNode,
+    LatexWalkerParseError
 )
 
 from pylatexenc import macrospec
 
 def _tmp1133(a, b):
-    return a.argnlist == b.argnlist
+    return b is not None and a.argnlist == b.argnlist
 macrospec.ParsedMacroArgs.__eq__ = _tmp1133
 
 
@@ -131,6 +132,7 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
 \item Hi there!  % here goes a comment
 \item[a] Hello!  @@@
      \end{enumerate}
+?`Some ``specials,'' too & more?
 '''
         lw = LatexWalker(latextext, tolerant_parsing=True)
 
@@ -144,7 +146,7 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
         self.assertEqual(lw.get_latex_expression(pos=p),
                          (LatexMacroNode(parsed_context=lw.parsed_context,
                                          macroname='`',
-                                         nodeargd=emptyargs, pos=p, len=2),p,2,))
+                                         nodeargd=None, pos=p, len=2),p,2,))
         p = latextext.find(r'{')
         self.assertEqual(lw.get_latex_expression(pos=p),
                          (LatexGroupNode(parsed_context=lw.parsed_context,
@@ -155,14 +157,14 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
                                          ],
                                          pos=p, len=11),
                           p,11,))
-        p = latextext.find(r'%') # check: correctly skips comments
+        p = latextext.find(r'%')-2 # check: correctly skips comments also after space
         self.assertEqual(lw.get_latex_expression(pos=p),
                          (LatexMacroNode(parsed_context=lw.parsed_context,
                                          macroname='item',
-                                         nodeargd=emptyargs,
-                                         pos=p+len('% here goes a comment\n'),
+                                         nodeargd=None,
+                                         pos=p+2+len('% here goes a comment\n'),
                                          len=5),
-                          p+len('% here goes a comment\n'),5,))
+                          p+2+len('% here goes a comment\n'),5,))
         # check correct behavior if directly on brace close
         p = latextext.find(r'}')
         self.assertEqual(lw.get_latex_expression(pos=p, strict_braces=True),
@@ -174,6 +176,14 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
                                          chars='', pos=p, len=0),p,0,))
         with self.assertRaises(LatexWalkerParseError):
             dummy = lw2.get_latex_expression(pos=p, strict_braces=True)
+        
+        p = latextext.find(r'?`')
+        self.assertEqual(lw.get_latex_expression(pos=p),
+                         (LatexSpecialsNode(parsed_context=lw.parsed_context,
+                                            specials_chars='?`',
+                                            nodeargd=None,
+                                            pos=p, len=2),
+                          p, 2))
 
 
     def test_get_latex_maybe_optional_arg(self):

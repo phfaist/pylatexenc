@@ -46,6 +46,11 @@ Data Node Classes
    :show-inheritance:
 
 
+Parsing helpers
+~~~~~~~~~~~~~~~
+
+.. autoclass:: pylatexenc.latexwalker.ParsingContext
+   :members:
 
 .. autoclass:: pylatexenc.latexwalker.LatexToken
    :members:

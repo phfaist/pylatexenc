@@ -27,7 +27,7 @@
 # Internal module. May change without notice.
 
 
-from .macrospec import std_macro, std_environment
+from .macrospec import std_macro, std_environment, SpecialsSpec
 
 specs = [
     #
@@ -169,6 +169,18 @@ specs = [
             std_environment('alignat', '{', is_math_mode=True),
             std_environment('alignat*', '{', is_math_mode=True),
             std_environment('split', None, is_math_mode=True),
+        ],
+        'specials': [
+            SpecialsSpec('&'),
+            SpecialsSpec("~"),# chars_substitution=u"\N{NO-BREAK SPACE}"),
+
+            # cf. https://tex.stackexchange.com/a/439652/32188 "fake ligatures":
+            SpecialsSpec('``'), # chars_substitution=u"\N{LEFT DOUBLE QUOTATION MARK}"),
+            SpecialsSpec("''"), # chars_substitution=u"\N{RIGHT DOUBLE QUOTATION MARK}"),
+            SpecialsSpec("--"), # chars_substitution=u"\N{EN DASH}"),
+            SpecialsSpec("---"),# chars_substitution=u"\N{EM DASH}"),
+            SpecialsSpec("!`"), # chars_substitution=u"\N{INVERTED EXCLAMATION MARK}"),
+            SpecialsSpec("?`"), # chars_substitution=u"\N{INVERTED QUESTION MARK}"),
         ]}),
 
     #
@@ -192,6 +204,8 @@ specs = [
             std_environment('conj', '['),
             std_environment('rem', '['),
             std_environment('defn', '['),
+        ],
+        'specials': [
         ]}),
 
     #
@@ -203,6 +217,8 @@ specs = [
             std_environment('enumerate', '['),
             std_environment('itemize', '['),
             std_environment('description', '['),
+        ],
+        'specials': [
         ]}),
 
 
@@ -260,7 +276,10 @@ specs = [
             std_macro('hinweis', False, 1),
             std_macro('hinweise', False, 1),
         ],
-        'environments': []
+        'environments': [
+        ],
+        'specials': [
+        ]
     }),
 ]
 

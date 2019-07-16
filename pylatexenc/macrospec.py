@@ -229,12 +229,14 @@ class MacroStandardArgsParser(object):
 
         for argt in self.argspec:
             if argt == '{':
-                (node, np, nl) = w.get_latex_expression(p, strict_braces=False)
+                (node, np, nl) = w.get_latex_expression(p, strict_braces=False,
+                                                        parsing_context=parsing_context)
                 p = np + nl
                 argnlist.append(node)
 
             elif argt == '[':
-                optarginfotuple = w.get_latex_maybe_optional_arg(p)
+                optarginfotuple = w.get_latex_maybe_optional_arg(p,
+                                                                 parsing_context=parsing_context)
                 if optarginfotuple is None:
                     argnlist.append(None)
                     continue
@@ -379,6 +381,47 @@ class EnvironmentSpec(object):
         return self.args_parser.parse_args(*args, **kwargs)
 
 
+
+class SpecialsSpec(object):
+    r"""
+    Specification of a LaTeX "special char sequence": an active char, a
+    ligature, or some other non-macro char sequence that has a special meaning.
+
+    For instance, '&', '~', and '``' are considered as "specials".
+
+    .. py:attribute:: specials_chars
+    
+       The string (one or several characters) that has a special meaning. E.g.,
+       '&', '~', '``', etc.
+
+    .. py:attribute:: args_parser
+    
+       A parser (e.g. :py:class:`MacroStandardArgsParser`) that is invoked when
+       the specials is encountered.  Can/should be set to `None` if the specials
+       should not parse any arguments (e.g. '~').
+
+    .. versionadded:: 2.0
+ 
+       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
+    """
+    def __init__(self, specials_chars,
+                 args_parser=None,
+                 **kwargs):
+        super(SpecialsSpec, self).__init__(**kwargs)
+        self.specials_chars = specials_chars
+        self.args_parser = args_parser
+
+    def parse_args(self, *args, **kwargs):
+        r"""
+        Basically a shorthand for calling the :py:attr:`args_parser`\ 's
+        `parse_args()` method.  See :py:class:`MacroStandardArgsParser`.
+        
+        If however the py:attr:`args_parser` attribute is `None`, then this
+        method returns `None`.
+        """
+        if self.args_parser is None:
+            return None
+        return self.args_parser.parse_args(*args, **kwargs)
 
 
 
@@ -564,11 +607,9 @@ class LatexContextDb(object):
     r"""
     Store a database of macro specifications (stored as :py:class:`MacroSpec`
     objects), environment specifications (stored as
-    :py:class:`EnvironmentSpec`), each organized in different categories.
+    :py:class:`EnvironmentSpec`), and specials specifications (stored as
+    :py:class:`SpecialsSpec`), each organized in different categories.
     
-    TODO: In the future, this class will also store special/active/ligature
-    chars, etc.
-
     See :py:func:`get_default_latex_context_db()` for the default latex context
     with a default collection of known latex macros and environments.
 
@@ -585,7 +626,8 @@ class LatexContextDb(object):
         self.unknown_macro_spec = MacroSpec('')
         self.unknown_environment_spec = EnvironmentSpec('')
         
-    def add_context_category(self, category, macros, environments, prepend=False):
+    def add_context_category(self, category, macros=[], environments=[], specials=[],
+                             prepend=False):
         r"""
         Register a category of macro and environment specifications in the context
         database.
@@ -595,6 +637,8 @@ class LatexContextDb(object):
         The argument `macros` is an iterable (e.g., a list) of
         :py:class:`MacroSpec` objects.  The argument `environments` is an
         iterable (e.g., a list) of :py:class:`EnvironmentSpec` objects.
+        Similarly, the `specials` argument is an iterable of
+        :py:class:`SpecialsSpec` instances.
 
         If you specify `prepend=True`, then macro and environment lookups will
         prioritize this category over other categories.  Categories are normally
@@ -615,8 +659,9 @@ class LatexContextDb(object):
         self.d[category] = {
             'macros': dict( (m.macroname, m) for m in macros ),
             'environments': dict( (e.environmentname, e) for e in environments ),
+            'specials': dict( (s.specials_chars, s) for s in specials ),
         }
-
+        
     def set_unknown_macro_spec(self, macrospec):
         r"""
         Set the macro spec (a :py:class:`MacroSpec` instance) to use when
@@ -669,6 +714,28 @@ class LatexContextDb(object):
                 return self.d[cat]['environments'][environmentname]
         return self.unknown_environment_spec
 
+    def test_for_specials(self, s, pos, parsing_context=None):
+        r"""
+        Test the given position in the string for any LaTeX specials.  The lookup
+        proceeds by searching for in all categories one by one and the first
+        match is returned, except that the longest match accross all categories
+        is returned.  For instance, a match of '``' in a later category will
+        take precedence over a match of '`' in a earlier-searched category.
+
+        Returns a :py:class:`SpecialsSpec` instance, or `None` if no specials
+        are detected.
+        """
+        best_match_len = 0
+        best_match_s = None
+        for cat in self.category_list:
+            # search categories in the given order
+            for specials_chars in self.d[cat]['specials'].keys():
+                if len(specials_chars) > best_match_len and s.startswith(specials_chars, pos):
+                    best_match_s = self.d[cat]['specials'][specials_chars]
+                    best_match_len = len(specials_chars)
+
+        return best_match_s # None if no match
+
     def iter_macro_specs(self, categories=None):
         r"""
         Yield the macro specs corresponding to all macros in the given categories.
@@ -716,6 +783,30 @@ class LatexContextDb(object):
             for spec in self.d[c]['environments'].values():
                 yield spec
 
+    def iter_specials_specs(self, categories=None):
+        r"""
+        Yield the specials specs corresponding to all environments in the given
+        categories.
+
+        If `categories` is `None`, then the known specials specs from all
+        categories are provided in one long iterable sequence.  Otherwise,
+        `categories` should be a list or iterable of category names (e.g.,
+        'latex-base') of specials specs to return.
+
+        The specials specs from the different categories specified are
+        concatenated into one long sequence which is yielded spec by spec.
+        """
+
+        if categories is None:
+            categories = self.category_list
+
+        for c in categories:
+            if c not in self.category_list:
+                raise ValueError("Invalid latex environment spec db category: {!r} (Expected one of {!r})"
+                                 .format(c, self.category_list))
+            for spec in self.d[c]['specials'].values():
+                yield spec
+
 
     def filter_context(self, keep_categories=[], exclude_categories=[],
                        keep_which=[]):
@@ -732,7 +823,8 @@ class LatexContextDb(object):
         specified categories.
 
         The argument `keep_which`, if non-empty, specifies which definitions to
-        keep.  It should be a subset of the list ['macros', 'environments'].
+        keep.  It should be a subset of the list ['macros', 'environments',
+        'specials'].
         
         The returned context will make a copy of the dictionaries that store the
         macro and environment specifications, but the specification classes (and
@@ -747,6 +839,7 @@ class LatexContextDb(object):
 
         keep_macros = not keep_which or 'macros' in keep_which
         keep_environments = not keep_which or 'environments' in keep_which
+        keep_specials = not keep_which or 'specials' in keep_which
 
         for cat in self.category_list:
             if keep_categories and cat not in keep_categories:
@@ -757,8 +850,9 @@ class LatexContextDb(object):
             # include this category
             new_context.add_context_category(
                 cat,
-                self.d[cat]['macros'].values() if keep_macros else [],
-                self.d[cat]['environments'].values() if keep_environments else [],
+                macros=self.d[cat]['macros'].values() if keep_macros else [],
+                environments=self.d[cat]['environments'].values() if keep_environments else [],
+                specials=self.d[cat]['specials'].values() if keep_specials else [],
             )
 
         return new_context
@@ -786,7 +880,10 @@ def get_default_latex_context_db():
     from ._macrospec_defaults import specs
 
     for cat, catspecs in specs:
-        db.add_context_category(cat, catspecs['macros'], catspecs['environments'])
+        db.add_context_category(cat,
+                                macros=catspecs['macros'],
+                                environments=catspecs['environments'],
+                                specials=catspecs['specials'])
     
     return db
     

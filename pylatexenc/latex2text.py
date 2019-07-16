@@ -117,6 +117,24 @@ class MacroDef:
             self.simplify_repl = simplify_repl
 
 
+class SpecialsDef:
+    """
+    An specials definition.
+
+    - `specials_chars`: the sequence of special LaTeX characters
+
+    - `simplify_repl`: the replacement text of the specials.  This is either a
+       callable or a string.  If it is a callable, it must accept a single
+       argument, the :py:class:`pylatexenc.latexwalker.LatexSpecialsNode`
+       representing the LaTeX environment.  If it is a string, it may contain
+       '%s' replacements, in which the macro arguments will be substituted.
+    """
+    def __init__(self, specials_chars, simplify_repl=None):
+        self.specials_chars = specials_chars
+        self.simplify_repl = simplify_repl
+
+
+
 def _fmt_equation(n, l2tobj):
     with _PushEquationContext(l2tobj):
 
@@ -155,6 +173,16 @@ _default_env_list = [
     EnvDef('table', discard=False),
     ]
 
+_default_specials_list = [
+    SpecialsDef('&', '   '), # ignore tabular alignments, just add a little space
+    SpecialsDef('~', u"\N{NO-BREAK SPACE}"),
+    SpecialsDef('``', u"\N{LEFT DOUBLE QUOTATION MARK}"),
+    SpecialsDef("''", u"\N{RIGHT DOUBLE QUOTATION MARK}"),
+    SpecialsDef("--", u"\N{EN DASH}"),
+    SpecialsDef("---", u"\N{EM DASH}"),
+    SpecialsDef("!`", u"\N{INVERTED EXCLAMATION MARK}"),
+    SpecialsDef("?`", u"\N{INVERTED QUESTION MARK}"),
+]
 
 # NOTE: macro will only be assigned arguments if they are explicitely defined as accepting arguments
 #       in latexwalker.py.
@@ -196,11 +224,11 @@ _default_macro_list = [
     ('j', u"\N{LATIN SMALL LETTER DOTLESS J}"),
 
     ("~", "~" ),
-    ("&", "\\&" ), # HACK, see below for text replacement of '&'
+    ("&", "&" ),
     ("$", "$" ),
     ("{", "{" ),
     ("}", "}" ),
-    ("%", lambda arg: u"%" ), # careful: % is formatting substitution symbol...
+    ("%", lambda arg: "%" ), # careful: % is formatting substitution symbol...
     ("#", "#" ),
     ("_", "_" ),
 
@@ -472,7 +500,7 @@ for u in unicode_accents_list:
 
 
 
-default_env_dict = dict([(e.envname, e) for e in _default_env_list])
+default_env_dict = dict((e.envname, e) for e in _default_env_list)
 """
 The default context dictionary of known LaTeX environment definitions and how to
 convert them to text.
@@ -480,7 +508,7 @@ convert them to text.
 This is a dictionary with keys the environment name (:py:class:`EnvDef.envname <EnvDef>`)
 and values are :py:class:`EnvDef` instances.
 """
-default_macro_dict = dict([(m.macname, m) for m in (MacroDef(m) for m in _default_macro_list)])
+default_macro_dict = dict((m.macname, m) for m in (MacroDef(m) for m in _default_macro_list))
 """
 The default context dictionary of known LaTeX macro definitions and how to convert them to text.
 
@@ -488,26 +516,28 @@ This is a dictionary with keys the macro name (:py:class:`MacroDef.macname <Macr
 and values are :py:class:`MacroDef` instances.
 """
 
+default_specials_dict = dict((s.specials_chars, s) for s in _default_specials_list)
 
-default_text_replacements = (
-    # remove indentation provided by LaTeX
-    #(re.compile(r'\n[ \t]*'), '\n'),
-    
-    ("~", " "),
-    ("``", '"'),
-    ("''", '"'),
 
-    (r'(?<!\\)&', '   '), # ignore tabular alignments, just add a little space
-    ('\\&', '&'), # but preserve the \& escapes, that we before *hackingly* kept as '\&' for this purpose ...
-
-    )
-"""
-Default text replacements (final touches) to apply to LaTeX code. (For instance,
-converting ``~`` to (space) or ``''`` to ``"``.)
-
-This is a list (or tuple) of pairs of `(regex-pattern, replacement-text)` of replacements
-to perform.
-"""
+# default_text_replacements = (
+#     # remove indentation provided by LaTeX
+#     #(re.compile(r'\n[ \t]*'), '\n'),
+#
+#     ("~", " "),
+#     ("``", '"'),
+#     ("''", '"'),
+#
+#     (r'(?<!\\)&', '   '), # ignore tabular alignments, just add a little space
+#     ('\\&', '&'), # but preserve the \& escapes, that we before *hackingly* kept as '\&' for this purpose ...
+#
+#     )
+# """
+# Default text replacements (final touches) to apply to LaTeX code. (For instance,
+# converting ``~`` to (space) or ``''`` to ``"``.)
+#
+# This is a list (or tuple) of pairs of `(regex-pattern, replacement-text)` of replacements
+# to perform.
+# """
 
 
 
@@ -578,8 +608,9 @@ class LatexNodes2Text(object):
       definitions.  They default to :py:data:`default_env_dict` and
       :py:data:`default_macro_dict`, respectively.
 
-    - `text_replacements` are string replacements to apply onto the final string, as final
-      touches.  This defaults to :py:data:`default_text_replacements`.
+      ............ TODO: mirror the latex_context_db structure (actually don't
+      reinvent the wheel, maybe use that directly with our "TextSpecs" instead
+      of the original Spec classes?) ............
 
     Additional keyword arguments are flags which may influence the behavior:
 
@@ -637,11 +668,11 @@ class LatexNodes2Text(object):
        Added the `strict_latex_spaces`, `keep_braced_groups`, and
        `keep_braced_groups_minlen` flags
 
-    Additionally, the following flag is accepted for backwards compatibility:
+    Additionally, the following arguments are accepted for backwards compatibility:
 
     - `keep_inline_math=True|False`: Obsolete since `pylatexenc 2`.  If set to
-         `True`, then this is the same as `math_mode='verbatim'`, and if set to
-         `False`, this is the same as `math_mode='text'`.
+      `True`, then this is the same as `math_mode='verbatim'`, and if set to
+      `False`, this is the same as `math_mode='text'`.
 
       .. deprecated:: 2.0
     
@@ -649,17 +680,28 @@ class LatexNodes2Text(object):
          behavior and was poorly implemented, especially given that a similarly
          named option in :py:class:`LatexWalker` had a different effect.  See
          `Issue #14 <https://github.com/phfaist/pylatexenc/issues/14>`_.
+
+    - `text_replacements` this argument is ignored starting from `pylatexenc 2`.
+
+      .. deprecated:: 2.0
+
+         Text replacements are no longer made at the end of the text conversion.
+         This feature is replaced by the concept of LaTeX specials---see, e.g.,
+         :py:class:`pylatexenc.latexwalker.LatexSpecialsNode`.
     """
-    def __init__(self, env_dict=None, macro_dict=None, text_replacements=None, **flags):
+    def __init__(self, env_dict=None, macro_dict=None, specials_dict=None, **flags):
         super(LatexNodes2Text, self).__init__()
+
+        # ......... FIXME: use a latex_context_db type object to store the
+        # env/macro/specials dicts ...........
 
         if env_dict is None:  env_dict = default_env_dict
         if macro_dict is None:  macro_dict = default_macro_dict
-        if text_replacements is None: text_replacements = default_text_replacements
+        if specials_dict is None:  specials_dict = default_specials_dict
 
         self.env_dict = dict(env_dict)
         self.macro_dict = dict(macro_dict)
-        self.text_replacements = text_replacements
+        self.specials_dict = dict(specials_dict)
 
         self.tex_input_directory = None
         self.strict_input = True
@@ -686,12 +728,19 @@ class LatexNodes2Text(object):
         self.keep_braced_groups = flags.pop('keep_braced_groups', False)
         self.keep_braced_groups_minlen = flags.pop('keep_braced_groups_minlen', 2)
 
+        if 'text_replacements' in flags:
+            logger.warning("Deprecated (pylatexenc 2.0): "
+                           "The text_replacements= argument is ignored since pylatexenc 2. "
+                           "Characters or sequences of characters with special LaTeX meaning should "
+                           "be specified as latex \"specials\", see `LatexSpecialsNode`.")
+
         if flags:
             # any flags left which we haven't recognized
             logger.warning("LatexNodes2Text(): Unknown flag(s) encountered: %r", flags.keys())
         
 
-    def set_tex_input_directory(self, tex_input_directory, latex_walker_init_args=None, strict_input=True):
+    def set_tex_input_directory(self, tex_input_directory, latex_walker_init_args=None,
+                                strict_input=True):
         """
         Set where to look for input files when encountering the ``\\input`` or
         ``\\include`` macro.
@@ -813,13 +862,13 @@ class LatexNodes2Text(object):
 
         s = self._nodelistcontents_to_text(nodelist)
 
-        # now, perform suitable replacements
-        for pattern, replacement in self.text_replacements:
-            if hasattr(pattern, 'sub'):
-                # pattern is a compiled regular expression already
-                s = pattern.sub(replacement, s)
-            else:
-                s = s.replace(pattern, replacement)
+        # # now, perform suitable replacements
+        # for pattern, replacement in self.text_replacements:
+        #     if hasattr(pattern, 'sub'):
+        #         # pattern is a compiled regular expression already
+        #         s = pattern.sub(replacement, s)
+        #     else:
+        #         s = s.replace(pattern, replacement)
 
         return s
 
@@ -929,7 +978,7 @@ class LatexNodes2Text(object):
 
             macrostr = get_macro_str_repl(node, macroname, mac)
             return macrostr
-
+        
         if node.isNodeType(latexwalker.LatexEnvironmentNode):
             # get environment behavior definition.
             envname = node.envname.rstrip('*')
@@ -945,6 +994,28 @@ class LatexNodes2Text(object):
             if envdef.discard:
                 return ""
             return self._nodelistcontents_to_text(node.nodelist)
+
+        if node.isNodeType(latexwalker.LatexSpecialsNode):
+            # get macro behavior definition.
+            specials_chars = node.specials_chars
+            if specials_chars in self.specials_dict:
+                sspec = self.specials_dict[specials_chars]
+            else:
+                # no corresponding spec, leave the special chars unchanged:
+                return specials_chars
+
+            def get_specials_str_repl(node, specials_chars, spec):
+                if spec.simplify_repl:
+                    argnlist = node.nodeargd.argnlist if node.nodeargd else []
+                    return apply_simplify_repl(node, spec.simplify_repl, argnlist,
+                                               what="specials '%s'"%(specials_chars))
+                if spec.discard:
+                    return ""
+                a = node.nodeargd.argnlist
+                return "".join([self._groupnodecontents_to_text(n) for n in a])
+
+            s = get_specials_str_repl(node, specials_chars, sspec)
+            return s
 
         if node.isNodeType(latexwalker.LatexMathNode):
             if self.math_mode == 'verbatim':
@@ -1119,7 +1190,7 @@ def main(argv=None):
 
     (nodelist, pos, len_) = lw.get_latex_nodes()
 
-    ln2t = LatexNodes2Text(math_mode=math_mode,
+    ln2t = LatexNodes2Text(math_mode=args.math_mode,
                            keep_comments=args.keep_comments,
                            strict_latex_spaces=args.strict_latex_spaces,
                            keep_braced_groups=args.keep_braced_groups,
