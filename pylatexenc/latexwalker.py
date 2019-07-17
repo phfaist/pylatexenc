@@ -107,6 +107,47 @@ class LatexWalkerEndOfStream(LatexWalkerError):
 from . import macrospec
 
 
+
+
+def get_default_latex_context_db():
+    r"""
+    Return a :py:class:`pylatexenc.macrospec.LatexContextDb` instance
+    initialized with a collection of known macros and environments.
+
+    TODO: document categories.
+
+    If you want to add your own definitions, you should use the
+    :py:meth:`pylatexenc.macrospec.LatexContextDb.add_context_category()`
+    method.  If you would like to override some definitions, use that method
+    with the argument `prepend=True`.  See docs for
+    :py:meth:`pylatexenc.macrospec.LatexContextDb.add_context_category()`.
+
+    If there are too many macro/environment definitions, or if there are some
+    irrelevant ones, you can always filter the returned database using
+    :py:meth:`pylatexenc.macrospec.LatexContextDb.filter_context()`.
+
+    .. versionadded:: 2.0
+ 
+       The :py:class:`pylatexenc.macrospec.LatexContextDb` class as well as this
+       method, were all introduced in `pylatexenc 2.0`.
+    """
+    db = macrospec.LatexContextDb()
+    
+    from ._latexwalker_defaultspecs import specs
+
+    for cat, catspecs in specs:
+        db.add_context_category(cat,
+                                macros=catspecs['macros'],
+                                environments=catspecs['environments'],
+                                specials=catspecs['specials'])
+    
+    return db
+    
+
+
+
+
+
 # provide an interface compatibile with pylatexenc < 2
 MacrosDef = macrospec.std_macro
 r"""
@@ -122,14 +163,31 @@ r"""
    earlier idiom ``MacrosDef(...)`` still works in `pylatexenc 2`.
 """
 
-
-default_macro_dict = macrospec.legacy_default_macro_dict
+default_macro_dict = macrospec._LegacyDefaultMacroLazyDict(
+    generate_dict_fn=lambda: dict([
+        (m.macroname, m)
+        for m in get_default_latex_context_db().iter_macro_specs()
+    ])
+)
 r"""
 .. deprecated:: 2.0
 
-   Use :py:func:`pylatexenc.macrospec.get_default_latex_context_db()` instead,
-   or create your own :py:class:`pylatexenc.macrospec.LatexContextDb` object.
+   Use :py:func:`get_default_latex_context_db()` instead, or create your own
+   :py:class:`pylatexenc.macrospec.LatexContextDb` object.
+
+
+Provide an access to the default macro specs for `latexwalker` in a form
+that is compatible with `pylatexenc 1.x`\ 's `default_macro_dict` module-level
+dictionary.
+
+This is implemented using a custom lazy mutable mapping, which behaves just like
+a regular dictionary but that loads the data only once the dictionary is
+accessed.  In this way the default latex specs into a python dictionary unless
+they are actually queried or modified, and thus users of `pylatexenc 2.0` that
+don't rely on the default macro/environment definitions shouldn't notice any
+decrease in performance.
 """
+
 
 
 # ------------------------------------------------
@@ -758,8 +816,8 @@ class LatexWalker(object):
         object that provides macro and environment specifications with
         instructions on how to parse arguments, etc.  If you don't specify this
         argument, or if you specify `None`, then the default database is used.
-        The default database is obtained using
-        :py:func:`pylatexenc.macrospec.get_default_latex_context_db()`.
+        The default database is obtained with
+        :py:func:`get_default_latex_context_db()`.
 
         .. versionadded:: 2.0
 
@@ -832,7 +890,7 @@ class LatexWalker(object):
 
                 macro_dict = kwargs.pop('macro_dict', None)
 
-                default_latex_context = macrospec.get_default_latex_context_db()
+                default_latex_context = get_default_latex_context_db()
 
                 latex_context = default_latex_context.filter_context(
                        keep_which=['environments']
@@ -843,7 +901,7 @@ class LatexWalker(object):
 
             else:
                 # default -- use default
-                latex_context = macrospec.get_default_latex_context_db()
+                latex_context = get_default_latex_context_db()
 
         else:
             # make sure the user didn't also provide a macro_dict= argument

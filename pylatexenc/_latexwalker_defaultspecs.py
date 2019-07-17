@@ -27,7 +27,7 @@
 # Internal module. May change without notice.
 
 
-from .macrospec import std_macro, std_environment, SpecialsSpec
+from .macrospec import std_macro, std_environment, std_specials
 
 specs = [
     #
@@ -35,6 +35,7 @@ specs = [
     #
     ('latex-base', {
         'macros': [
+
             std_macro('documentclass', True, 1),
             std_macro('usepackage', True, 1),
             std_macro('selectlanguage', True, 1),
@@ -171,16 +172,23 @@ specs = [
             std_environment('split', None, is_math_mode=True),
         ],
         'specials': [
-            SpecialsSpec('&'),
-            SpecialsSpec("~"),# chars_substitution=u"\N{NO-BREAK SPACE}"),
-
+            std_specials('&'),
+            std_specials("~"),
+            
             # cf. https://tex.stackexchange.com/a/439652/32188 "fake ligatures":
-            SpecialsSpec('``'), # chars_substitution=u"\N{LEFT DOUBLE QUOTATION MARK}"),
-            SpecialsSpec("''"), # chars_substitution=u"\N{RIGHT DOUBLE QUOTATION MARK}"),
-            SpecialsSpec("--"), # chars_substitution=u"\N{EN DASH}"),
-            SpecialsSpec("---"),# chars_substitution=u"\N{EM DASH}"),
-            SpecialsSpec("!`"), # chars_substitution=u"\N{INVERTED EXCLAMATION MARK}"),
-            SpecialsSpec("?`"), # chars_substitution=u"\N{INVERTED QUESTION MARK}"),
+            std_specials('``'),
+            std_specials("''"),
+            std_specials("--"),
+            std_specials("---"),
+            std_specials("!`"),
+            std_specials("?`"),
+
+            # TODO --- for this, we need to parse their argument but don't use
+            #          the standard args parser because we need to accept,
+            #          e.g. "x_\mathrm{initial}"
+            #std_specials('^'),
+            #std_specials('_'),
+
         ]}),
 
     #
@@ -282,7 +290,3 @@ specs = [
         ]
     }),
 ]
-
-_environment_specs = {
-}
-

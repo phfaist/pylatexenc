@@ -149,6 +149,11 @@ class MacroStandardArgsParser(object):
     This class parses a simple macro argument specification with a specified
     arrangement of optional and mandatory arguments.
 
+    This class also serves as base class for more advanced argument parsers
+    (e.g. for a ``\verb+...+`` macro argument parser).  In such cases,
+    subclasses should attempt to provide the most suitable `argspec` and
+    `argnlist` for their use, if appropriate, or set them to `None`.
+
     Arguments:
 
       - `argspec`: must be a string in which each character corresponds to an
@@ -596,6 +601,26 @@ def std_environment(envname, *args, **kwargs):
     return std_macro(envname, *args, **kwargs2)
 
 
+def std_specials(specials_chars):
+    r"""
+    Return a latex specials specification for the given character sequence.  Syntax::
+
+      spec = std_specials(specials_chars)
+
+    where `specials_chars` is the sequence of characters that has a special
+    LaTeX meaning, e.g. ``&`` or ``''``.
+
+    This helper function only allows to create specs for simple specials without
+    any argument parsing.  For more complicated specials, you can instantiate a
+    :py:class:`SpecialsSpec` directly.
+
+    .. versionadded:: 2.0
+ 
+       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
+    """
+    return SpecialsSpec(specials_chars, args_parser=None)
+
+
 
 
 # ------------------------------------------------------------------------------
@@ -621,8 +646,18 @@ class LatexContextDb(object):
     :py:class:`L2TMacroTextSpec` , :py:class:`L2TEnvironmentSpec`, and
     :py:class:`L2TSpecialsSpec` instances, respectively.
     
-    See :py:func:`get_default_latex_context_db()` for the default latex context
-    with a default collection of known latex macros and environments.
+    The objects stored in this database may be of any type, except that macro
+    specifications must have an attribute `macroname`, environment
+    specifications must have an attribute `environmentname`, and specials
+    specification must have an attribute `specials_chars`.
+
+    See :py:func:`pylatexenc.latexwalker.get_default_latex_context_db()` for the
+    default latex context for `latexwalker` with a default collection of known
+    latex macros and environments.
+
+    See :py:func:`pylatexenc.latex2text.get_default_latex_context_db()` for the
+    default latex context for `latex2text` with a set of text replacements for a
+    collection of known macros and environments.
 
     .. versionadded:: 2.0
  
@@ -824,8 +859,10 @@ class LatexContextDb(object):
 
         for c in categories:
             if c not in self.category_list:
-                raise ValueError("Invalid latex environment spec db category: {!r} (Expected one of {!r})"
-                                 .format(c, self.category_list))
+                raise ValueError(
+                    "Invalid latex environment spec db category: {!r} (Expected one of {!r})"
+                    .format(c, self.category_list)
+                )
             for spec in self.d[c]['environments'].values():
                 yield spec
 
@@ -907,51 +944,23 @@ class LatexContextDb(object):
 
 
 
-def get_default_latex_context_db():
-    r"""
-    Return a :py:class:`LatexContextDb` instance initialized with a collection
-    of known macros and environments.
-
-    TODO: document categories.
-
-    If there are too many macro/environment definitions, or if there are some
-    irrelevant ones, you can always filter the returned database using
-    :py:meth:`LatexContextDb.filter_context()`.
-
-    .. versionadded:: 2.0
- 
-       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
-    """
-    db = LatexContextDb()
-    
-    from ._macrospec_defaults import specs
-
-    for cat, catspecs in specs:
-        db.add_context_category(cat,
-                                macros=catspecs['macros'],
-                                environments=catspecs['environments'],
-                                specials=catspecs['specials'])
-    
-    return db
-    
-
-
-#
-# Use a lazy dictionary to store the default_macro_dict, so that we only access the 
-#
-
 
 class _LegacyDefaultMacroLazyDict(Mapping):
-    def __init__(self):
+    r"""
+    A lazy dictionary that loads its data when it is first queried.
+
+    This is used to store the legacy
+    :py:data:`pylatexenc.latexwalker.default_macro_dict` as well as
+    :py:data:`pylatexenc.latex2text.default_macro_dict` etc.
+    """
+    def __init__(self, generate_dict_fn):
         self._full_dict = None
+        self._generate_dict_fn = generate_dict_fn
 
     def _ensure_instance(self):
         if self._full_dict is not None:
             return
-        self._full_dict = dict([
-            (m.macroname, m)
-            for m in get_default_latex_context_db().iter_macro_specs()
-        ])
+        self._full_dict = self.generate_dict_fn()
 
     def __getitem__(self, key):
         self._ensure_instance()
@@ -973,22 +982,3 @@ class _LegacyDefaultMacroLazyDict(Mapping):
         self._ensure_instance()
         return len(self._full_dict)
 
-
-legacy_default_macro_dict = _LegacyDefaultMacroLazyDict()
-r"""
-Provide an access to the default macro dictionary in a form that is
-compatible with `pylatexenc 1.x`\ 's `default_macro_dict` module-level
-dictionary.
-
-This is implemented using a custom lazy mutable mapping, which behaves just like
-a regular dictionary but that loads the data only once the dictionary is
-accessed.  In this way the default latex specs into a python dictionary unless
-they are actually queried or modified, and thus users of `pylatexenc 2.0` that
-don't rely on the default macro/environment definitions shouldn't notice any
-decrease in performance.
-
-
-.. versionadded:: 2.0
-
-   Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
-"""
