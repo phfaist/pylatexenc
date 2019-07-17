@@ -184,8 +184,8 @@ _default_specials_list = [
     SpecialsDef("?`", u"\N{INVERTED QUESTION MARK}"),
 ]
 
-# NOTE: macro will only be assigned arguments if they are explicitely defined as accepting arguments
-#       in latexwalker.py.
+# NOTE: macro will only be assigned arguments if they are explicitly defined as
+#       accepting arguments in latexwalker.py.
 
 _default_macro_list = [
     MacroDef('', discard=True), # default for unknown macros
@@ -234,8 +234,8 @@ _default_macro_list = [
 
     ("\\", '\n'),
 
-    ("textquoteleft", "`"),
-    ("textquoteright", "'"),
+    ("textquoteleft", "\N{LEFT SINGLE QUOTATION MARK}"),
+    ("textquoteright", "\N{RIGHT SINGLE QUOTATION MARK}"),
     ("textquotedblright", u"\N{RIGHT DOUBLE QUOTATION MARK}"),
     ("textquotedblleft", u"\N{LEFT DOUBLE QUOTATION MARK}"),
     ("textendash", u"\N{EN DASH}"),
@@ -329,7 +329,6 @@ _default_macro_list = [
     ('nsupseteq', u'\N{NEITHER A SUPERSET OF NOR EQUAL TO}'),
     ('subsetneq', u'\N{SUBSET OF WITH NOT EQUAL TO}'),
     ('supsetneq', u'\N{SUPERSET OF WITH NOT EQUAL TO}'),
-
 
     ('cdot', u'\N{MIDDLE DOT}'),
     ('times', u'\N{MULTIPLICATION SIGN}'),
@@ -518,26 +517,6 @@ and values are :py:class:`MacroDef` instances.
 
 default_specials_dict = dict((s.specials_chars, s) for s in _default_specials_list)
 
-
-# default_text_replacements = (
-#     # remove indentation provided by LaTeX
-#     #(re.compile(r'\n[ \t]*'), '\n'),
-#
-#     ("~", " "),
-#     ("``", '"'),
-#     ("''", '"'),
-#
-#     (r'(?<!\\)&', '   '), # ignore tabular alignments, just add a little space
-#     ('\\&', '&'), # but preserve the \& escapes, that we before *hackingly* kept as '\&' for this purpose ...
-#
-#     )
-# """
-# Default text replacements (final touches) to apply to LaTeX code. (For instance,
-# converting ``~`` to (space) or ``''`` to ``"``.)
-#
-# This is a list (or tuple) of pairs of `(regex-pattern, replacement-text)` of replacements
-# to perform.
-# """
 
 
 

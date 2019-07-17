@@ -1247,6 +1247,8 @@ class LatexWalker(object):
         pos = firsttok.pos + firsttok.len
 
         env_spec = self.latex_context.get_environment_spec(environmentname)
+        if env_spec is None:
+            env_spec = macrospec.EnvironmentSpec('')
 
         # self = latex walker instance
         (argd, apos, alen) = env_spec.parse_args(w=self, pos=pos, parsing_context=parsing_context)
@@ -1504,6 +1506,8 @@ class LatexWalker(object):
                 # read a macro. see if it has arguments.
                 macroname = tok.arg
                 mspec = self.latex_context.get_macro_spec(macroname)
+                if mspec is None:
+                    mspec = macrospec.MacroSpec('')
 
                 (nodeargd, mapos, malen) = \
                     mspec.parse_args(w=self, pos=tok.pos + tok.len, parsing_context=parsing_context)

@@ -7,7 +7,8 @@ if sys.version_info.major > 2:
     basestring = str
 
 from pylatexenc.macrospec import (
-    ParsedMacroArgs, MacroSpec, MacroStandardArgsParser,
+    ParsedMacroArgs, MacroStandardArgsParser,
+    MacroSpec, EnvironmentSpec, SpecialsSpec,
     std_macro, std_environment, LatexContextDb
 )
 
@@ -293,6 +294,7 @@ class TestLatexContextDb(unittest.TestCase):
 
     def test_can_get_macro_spec(self):
         db = LatexContextDb()
+        db.set_unknown_macro_spec(MacroSpec('<unknown>'))
         db.add_context_category('cat1', [ std_macro('aaa', '{'), std_macro('bbb', '[{[') ], [])
         db.add_context_category('cat2', [ std_macro('aaa', '[{'), std_macro('ccc', None) ], [])
         db.add_context_category('cat3', [ std_macro('ccc', '*{'), std_macro('ddd', '{{[') ], [],
@@ -313,12 +315,13 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db.get_macro_spec('ddd').args_parser.argspec, '{{[')
 
         # default for unknown
-        self.assertEqual(db.get_macro_spec('nonexistent').macroname, '')
+        self.assertEqual(db.get_macro_spec('nonexistent').macroname, '<unknown>')
         self.assertEqual(db.get_macro_spec('nonexistent').args_parser.argspec, '')
         
     def test_can_get_environment_spec(self):
 
         db = LatexContextDb()
+        db.set_unknown_environment_spec(EnvironmentSpec('<unknown>'))
         db.add_context_category('cat1', [],
                                 [ std_environment('eaaa', '{'), std_environment('ebbb', '[{[') ])
         db.add_context_category('cat2', [],
@@ -342,13 +345,15 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db.get_environment_spec('eddd').args_parser.argspec, '{{[')
 
         # default for unknown
-        self.assertEqual(db.get_environment_spec('nonexistent').environmentname, '')
+        self.assertEqual(db.get_environment_spec('nonexistent').environmentname, '<unknown>')
         self.assertEqual(db.get_environment_spec('nonexistent').args_parser.argspec, '')
 
 
     def test_filter_context_0(self):
         
         db = LatexContextDb()
+        db.set_unknown_macro_spec(MacroSpec('<macro unknown>'))
+        db.set_unknown_environment_spec(EnvironmentSpec('<env unknown>'))
         db.add_context_category('cat1',
                                 [ std_macro('aaa', '{'), std_macro('bbb', '[{[') ],
                                 [ std_environment('eaaa', '{'), std_environment('ebbb', '[{[') ])
@@ -365,19 +370,26 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db2.get_macro_spec('ccc').macroname, 'ccc')
         self.assertEqual(db2.get_macro_spec('ccc').args_parser.argspec, '')
         # this should no longer exist
-        self.assertEqual(db2.get_macro_spec('ddd').macroname, '')
+        self.assertEqual(db2.get_macro_spec('ddd').macroname, '<macro unknown>')
         self.assertEqual(db2.get_macro_spec('ddd').args_parser.argspec, '')
 
         # this should give 'eccc' from cat2, not cat3
         self.assertEqual(db2.get_environment_spec('eccc').environmentname, 'eccc')
         self.assertEqual(db2.get_environment_spec('eccc').args_parser.argspec, '')
         # this should no longer exist
-        self.assertEqual(db2.get_environment_spec('eddd').environmentname, '')
+        self.assertEqual(db2.get_environment_spec('eddd').environmentname, '<env unknown>')
         self.assertEqual(db2.get_environment_spec('eddd').args_parser.argspec, '')
+
+        # "unknowns" should be preserved
+        self.assertEqual(db2.unknown_macro_spec, db.unknown_macro_spec)
+        self.assertEqual(db2.unknown_environment_spec, db.unknown_environment_spec)
+        self.assertEqual(db2.unknown_specials_spec, db.unknown_specials_spec)
 
     def test_filter_context_1(self):
         
         db = LatexContextDb()
+        db.set_unknown_macro_spec(MacroSpec('<macro unknown>'))
+        db.set_unknown_environment_spec(EnvironmentSpec('<env unknown>'))
         db.add_context_category('cat1',
                                 [ std_macro('aaa', '{'), std_macro('bbb', '[{[') ],
                                 [ std_environment('eaaa', '{'), std_environment('ebbb', '[{[') ])
@@ -394,19 +406,21 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db2.get_macro_spec('ccc').macroname, 'ccc')
         self.assertEqual(db2.get_macro_spec('ccc').args_parser.argspec, '')
         # this should no longer exist
-        self.assertEqual(db2.get_macro_spec('ddd').macroname, '')
+        self.assertEqual(db2.get_macro_spec('ddd').macroname, '<macro unknown>')
         self.assertEqual(db2.get_macro_spec('ddd').args_parser.argspec, '')
 
         # this should give 'eccc' from cat2, not cat3
         self.assertEqual(db2.get_environment_spec('eccc').environmentname, 'eccc')
         self.assertEqual(db2.get_environment_spec('eccc').args_parser.argspec, '')
         # this should no longer exist
-        self.assertEqual(db2.get_environment_spec('eddd').environmentname, '')
+        self.assertEqual(db2.get_environment_spec('eddd').environmentname, '<env unknown>')
         self.assertEqual(db2.get_environment_spec('eddd').args_parser.argspec, '')
 
     def test_filter_context_2(self):
         
         db = LatexContextDb()
+        db.set_unknown_macro_spec(MacroSpec('<macro unknown>'))
+        db.set_unknown_environment_spec(EnvironmentSpec('<env unknown>'))
         db.add_context_category('cat1',
                                 [ std_macro('aaa', '{'), std_macro('bbb', '[{[') ],
                                 [ std_environment('eaaa', '{'), std_environment('ebbb', '[{[') ])
@@ -423,19 +437,21 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db2.get_macro_spec('aaa').macroname, 'aaa')
         self.assertEqual(db2.get_macro_spec('aaa').args_parser.argspec, '{')
         # this should no longer exist
-        self.assertEqual(db2.get_macro_spec('ddd').macroname, '')
+        self.assertEqual(db2.get_macro_spec('ddd').macroname, '<macro unknown>')
         self.assertEqual(db2.get_macro_spec('ddd').args_parser.argspec, '')
 
         # this should give 'eaaa' from cat1
         self.assertEqual(db2.get_environment_spec('eaaa').environmentname, 'eaaa')
         self.assertEqual(db2.get_environment_spec('eaaa').args_parser.argspec, '{')
         # this should no longer exist
-        self.assertEqual(db2.get_environment_spec('eddd').environmentname, '')
+        self.assertEqual(db2.get_environment_spec('eddd').environmentname, '<env unknown>')
         self.assertEqual(db2.get_environment_spec('eddd').args_parser.argspec, '')
 
     def test_filter_context_3(self):
         
         db = LatexContextDb()
+        db.set_unknown_macro_spec(MacroSpec('<macro unknown>'))
+        db.set_unknown_environment_spec(EnvironmentSpec('<env unknown>'))
         db.add_context_category('cat1',
                                 [ std_macro('aaa', '{'), std_macro('bbb', '[{[') ],
                                 [ std_environment('eaaa', '{'), std_environment('ebbb', '[{[') ])
@@ -453,19 +469,21 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db2.get_macro_spec('aaa').macroname, 'aaa')
         self.assertEqual(db2.get_macro_spec('aaa').args_parser.argspec, '{')
         # this should no longer exist
-        self.assertEqual(db2.get_macro_spec('ddd').macroname, '')
+        self.assertEqual(db2.get_macro_spec('ddd').macroname, '<macro unknown>')
         self.assertEqual(db2.get_macro_spec('ddd').args_parser.argspec, '')
 
         # no environments should exist any longer
-        self.assertEqual(db2.get_environment_spec('eaaa').environmentname, '')
+        self.assertEqual(db2.get_environment_spec('eaaa').environmentname, '<env unknown>')
         self.assertEqual(db2.get_environment_spec('eaaa').args_parser.argspec, '')
-        self.assertEqual(db2.get_environment_spec('eddd').environmentname, '')
+        self.assertEqual(db2.get_environment_spec('eddd').environmentname, '<env unknown>')
         self.assertEqual(db2.get_environment_spec('eddd').args_parser.argspec, '')
 
 
     def test_filter_context_2(self):
         
         db = LatexContextDb()
+        db.set_unknown_macro_spec(MacroSpec('<macro unknown>'))
+        db.set_unknown_environment_spec(EnvironmentSpec('<env unknown>'))
         db.add_context_category('cat1',
                                 [ std_macro('aaa', '{'), std_macro('bbb', '[{[') ],
                                 [ std_environment('eaaa', '{'), std_environment('ebbb', '[{[') ])
@@ -480,16 +498,16 @@ class TestLatexContextDb(unittest.TestCase):
         db2 = db.filter_context(keep_categories=['cat1', 'cat3'], exclude_categories=['cat3'],
                                 keep_which=['environments'])
         # no macros should exist any longer
-        self.assertEqual(db2.get_macro_spec('aaa').macroname, '')
+        self.assertEqual(db2.get_macro_spec('aaa').macroname, '<macro unknown>')
         self.assertEqual(db2.get_macro_spec('aaa').args_parser.argspec, '')
-        self.assertEqual(db2.get_macro_spec('ddd').macroname, '')
+        self.assertEqual(db2.get_macro_spec('ddd').macroname, '<macro unknown>')
         self.assertEqual(db2.get_macro_spec('ddd').args_parser.argspec, '')
 
         # this should give 'eaaa' from cat1
         self.assertEqual(db2.get_environment_spec('eaaa').environmentname, 'eaaa')
         self.assertEqual(db2.get_environment_spec('eaaa').args_parser.argspec, '{')
         # this should no longer exist
-        self.assertEqual(db2.get_environment_spec('eddd').environmentname, '')
+        self.assertEqual(db2.get_environment_spec('eddd').environmentname, '<env unknown>')
         self.assertEqual(db2.get_environment_spec('eddd').args_parser.argspec, '')
 
 

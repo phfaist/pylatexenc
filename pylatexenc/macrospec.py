@@ -605,10 +605,21 @@ def std_environment(envname, *args, **kwargs):
 
 class LatexContextDb(object):
     r"""
-    Store a database of macro specifications (stored as :py:class:`MacroSpec`
-    objects), environment specifications (stored as
-    :py:class:`EnvironmentSpec`), and specials specifications (stored as
-    :py:class:`SpecialsSpec`), each organized in different categories.
+    Store a database of specifications of known macros, environments, and other
+    latex specials.  This might be, e.g., how many arguments a macro accepts, or
+    how to determine the text representation of a macro or environment.
+
+    When used with :py:class:`pylatexenc.latexwalker.LatexWalker`, the
+    specifications describe mostly rules for parsing arguments of macros and
+    environments, and which sequences of characters to consider as "latex
+    specials".  Specifications for macros, environments, and other specials are
+    stored as :py:class:`MacroSpec`, :py:class:`EnvironmentSpec`, and
+    :py:class:`SpecialsSpec` instances, respectively.
+
+    When used with :py:class:`pylatexenc.latex2text.LatexNodes2Text`, the
+    specifications for macros, environments, and other specials are stored as
+    :py:class:`L2TMacroTextSpec` , :py:class:`L2TEnvironmentSpec`, and
+    :py:class:`L2TSpecialsSpec` instances, respectively.
     
     See :py:func:`get_default_latex_context_db()` for the default latex context
     with a default collection of known latex macros and environments.
@@ -623,8 +634,10 @@ class LatexContextDb(object):
         self.category_list = []
         self.d = {}
 
-        self.unknown_macro_spec = MacroSpec('')
-        self.unknown_environment_spec = EnvironmentSpec('')
+        self.unknown_macro_spec = None
+        self.unknown_environment_spec = None
+        self.unknown_specials_spec = None
+
         
     def add_context_category(self, category, macros=[], environments=[], specials=[],
                              prepend=False):
@@ -664,17 +677,24 @@ class LatexContextDb(object):
         
     def set_unknown_macro_spec(self, macrospec):
         r"""
-        Set the macro spec (a :py:class:`MacroSpec` instance) to use when
-        encountering a macro that is not in the database.
+        Set the macro spec to use when encountering a macro that is not in the
+        database.
         """
         self.unknown_macro_spec = macrospec
 
     def set_unknown_environment_spec(self, environmentspec):
         r"""
-        Set the environment spec (a :py:class:`EnvironmentSpec` instance) to use
-        when encountering a LaTeX environment that is not in the database.
+        Set the environment spec to use when encountering a LaTeX environment that
+        is not in the database.
         """
         self.unknown_environment_spec = environmentspec
+
+    def set_unknown_specials_spec(self, specialsspec):
+        r"""
+        Set the latex specials spec to use when encountering a LaTeX environment
+        that is not in the database.
+        """
+        self.unknown_specials_spec = specialsspec
 
     def categories(self):
         r"""
@@ -690,7 +710,7 @@ class LatexContextDb(object):
 
         Returns a :py:class:`MacroSpec` instance.  If the macro name was not
         found, we return the default macro specification set by
-        :py:meth:`set_unknown_macro_spec()`.
+        :py:meth:`set_unknown_macro_spec()` or `None` if no such spec was set.
         """
         for cat in self.category_list:
             # search categories in the given order
@@ -704,15 +724,41 @@ class LatexContextDb(object):
         name is searched for in all categories one by one and the first match is
         returned.
 
-        Returns a :py:class:`EnvironmentSpec` instance.  If the environment name
-        was not found, we return the default environment specification set by
-        :py:meth:`set_unknown_environment_spec()`.
+        Returns the environment spec.  If the environment name was not found, we
+        return the default environment specification set by
+        :py:meth:`set_unknown_environment_spec()` or `None` if no such spec was
+        set.
         """
         for cat in self.category_list:
             # search categories in the given order
             if environmentname in self.d[cat]['environments']:
                 return self.d[cat]['environments'][environmentname]
         return self.unknown_environment_spec
+
+    def get_specials_spec(self, specials_chars):
+        r"""
+        Look up a "latex specials" specification by character sequence.  The
+        sequence name is searched for in all categories one by one and the first
+        match is returned.
+
+        If you are parsing a chunk of LaTeX code, you should use
+        :py:meth:`test_for_specials()` instead.  Unlike
+        :py:meth:`test_for_specials()`, :py:meth:`get_specials_spec()` returns
+        the first match regardless of matched length.  [Rationale: we only need
+        to worry about matching the longest specials sequence when parsing LaTeX
+        code.  Calling `get_specials_spec()` means one has already parsed the
+        sequence and one is looking up additional specs on it.]
+
+        Returns the specials spec.  If the latex specials was not found, we
+        return the default latex specials specification set by
+        :py:meth:`set_unknown_specials_spec()` or `None` if no such spec was
+        set.
+        """
+        for cat in self.category_list:
+            # search categories in the given order
+            if specials_chars in self.d[cat]['specials']:
+                return self.d[cat]['specials'][specials_chars]
+        return self.unknown_specials_spec
 
     def test_for_specials(self, s, pos, parsing_context=None):
         r"""
@@ -836,6 +882,7 @@ class LatexContextDb(object):
 
         new_context.unknown_macro_spec = self.unknown_macro_spec
         new_context.unknown_environment_spec = self.unknown_environment_spec
+        new_context.unknown_specials_spec = self.unknown_specials_spec
 
         keep_macros = not keep_which or 'macros' in keep_which
         keep_environments = not keep_which or 'environments' in keep_which
