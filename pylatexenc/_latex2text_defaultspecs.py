@@ -84,13 +84,6 @@ latex_base_specs = {
     ],
     'specials': [
         SpecialsTextSpec('&', '   '), # ignore tabular alignments, just add a little space
-        SpecialsTextSpec('~', u"\N{NO-BREAK SPACE}"),
-        SpecialsTextSpec('``', u"\N{LEFT DOUBLE QUOTATION MARK}"),
-        SpecialsTextSpec("''", u"\N{RIGHT DOUBLE QUOTATION MARK}"),
-        SpecialsTextSpec("--", u"\N{EN DASH}"),
-        SpecialsTextSpec("---", u"\N{EM DASH}"),
-        SpecialsTextSpec("!`", u"\N{INVERTED EXCLAMATION MARK}"),
-        SpecialsTextSpec("?`", u"\N{INVERTED QUESTION MARK}"),
     ],
 
     'macros': [
@@ -114,8 +107,11 @@ latex_base_specs = {
         ('ref', '<ref>'),
         ('eqref', '(<ref>)'),
         ('url', '<%s>'),
-        ('item', lambda r: '\n  '+(latexnodes2text([r.nodeoptarg]) if r.nodeoptarg else '*')),
+        ('item', lambda r, l2tobj: '\n  '+(l2tobj.nodelist_to_text([r.nodeoptarg]) if r.nodeoptarg else '*')),
         ('footnote', '[%s]'),
+        ('href', lambda n, l2tobj:  \
+         '{} <{}>'.format(l2tobj.nodelist_to_text([n.nodeargd.argnlist[1]]), 
+                          l2tobj.nodelist_to_text([n.nodeargd.argnlist[0]]))),
 
         # use second argument:
         ('texorpdfstring', lambda node, l2t: l2t.nodelist_to_text(node.nodeargs[1:2])),
@@ -156,6 +152,9 @@ latex_base_specs = {
         ('textmp', u"\N{MINUS-OR-PLUS SIGN}"),
 
         ("texteuro", u"\N{EURO SIGN}"),
+
+        ("backslash", "\\"),
+        ("textbackslash", "\\"),
 
         # math stuff
 
@@ -308,6 +307,23 @@ specs = [
     ('latex-base', latex_base_specs),
 
     #
+    # CATEGORY: nonascii-specials
+    #
+    ('nonascii-specials', {
+        'macros': [],
+        'environments': [],
+        'specials': [
+            SpecialsTextSpec('~', u"\N{NO-BREAK SPACE}"),
+            SpecialsTextSpec('``', u"\N{LEFT DOUBLE QUOTATION MARK}"),
+            SpecialsTextSpec("''", u"\N{RIGHT DOUBLE QUOTATION MARK}"),
+            SpecialsTextSpec("--", u"\N{EN DASH}"),
+            SpecialsTextSpec("---", u"\N{EM DASH}"),
+            SpecialsTextSpec("!`", u"\N{INVERTED EXCLAMATION MARK}"),
+            SpecialsTextSpec("?`", u"\N{INVERTED QUESTION MARK}"),
+        ]
+    }),
+
+    #
     # CATEGORY: latex-ethuebung
     #
     ('latex-ethuebung', {
@@ -322,7 +338,6 @@ specs = [
         'environments': [],
         'specials': []
     }),
-
 
 ]
 

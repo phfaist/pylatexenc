@@ -621,6 +621,71 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
                           pos=p, len=latextext.rfind(r'\)') + 2 - p)
         )
 
+
+    def test_get_latex_nodes_read_max_nodes(self):
+
+        latextext = r'''Text and \`accent and \textbf{bold text} and $\vec b$ more stuff for Fran\c cois
+\begin{enumerate}[(i)]
+\item Hi there!  % here goes a comment
+\item[a] Hello!  @@@
+     \end{enumerate}
+Indeed thanks to \cite[Lemma 3]{Author}, we know that...
+Also: {\itshape some italic text}.
+'''
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+
+        p = 0
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p, read_max_nodes=1),
+            ([
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='Text and ',
+                               pos=p, len=33-24),
+            ], p, 33-24))
+
+        p = latextext.find(r'ent and ') + 4 # points on second "and" on first line
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p, read_max_nodes=5),
+            ([
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='and ',
+                               pos=p, len=4),
+                LatexMacroNode(parsed_context=lw.parsed_context,
+                               macroname='textbf',
+                               nodeargd=macrospec.ParsedMacroArgs(argspec='{', argnlist=[
+                                   LatexGroupNode(parsed_context=lw.parsed_context,
+                                                  nodelist=[
+                                                      LatexCharsNode(parsed_context=lw.parsed_context,
+                                                                     chars='bold text',
+                                                                     pos=p+54-42, len=9)
+                                                  ],
+                                                  pos=p+53-42, len=11)
+                               ]),
+                               pos=p+46-42, len=64-46),
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars=' and ',
+                               pos=p+64-42, len=69-64),
+                LatexMathNode(parsed_context=lw.parsed_context,
+                              displaytype='inline',
+                              delimiters=('$', '$'),
+                              nodelist=[
+                                  LatexMacroNode(parsed_context=lw.parsed_context,
+                                                 macroname='vec',
+                                                 macro_post_space=' ',
+                                                 nodeargd=macrospec.ParsedMacroArgs(argspec='{', argnlist=[
+                                                     LatexCharsNode(parsed_context=lw.parsed_context,
+                                                                    chars='b',
+                                                                    pos=p+75-42, len=1)
+                                                 ]),
+                                                 pos=p+70-42, len=76-70),
+                              ],
+                              pos=p+69-42, len=77-69),
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars=' more stuff for Fran',
+                               pos=p+77-42, len=97-77),
+            ], p, 97-42))
+
+
         
     def test_errors(self):
         latextext = get_test_latex_data_with_possible_inconsistencies()

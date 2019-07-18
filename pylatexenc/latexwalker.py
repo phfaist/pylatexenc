@@ -163,7 +163,7 @@ r"""
    earlier idiom ``MacrosDef(...)`` still works in `pylatexenc 2`.
 """
 
-default_macro_dict = macrospec._LegacyDefaultMacroLazyDict(
+default_macro_dict = macrospec.LazyDict(
     generate_dict_fn=lambda: dict([
         (m.macroname, m)
         for m in get_default_latex_context_db().iter_macro_specs()
@@ -1341,7 +1341,8 @@ class LatexWalker(object):
     
 
     def get_latex_nodes(self, pos=0, stop_upon_closing_brace=None, stop_upon_end_environment=None,
-                        stop_upon_closing_mathmode=None, parsing_context=ParsingContext()):
+                        stop_upon_closing_mathmode=None, read_max_nodes=None,
+                        parsing_context=ParsingContext()):
         r"""
         Parses the latex content given to the constructor (and stored in `self.s`)
         into a list of nodes.
@@ -1383,7 +1384,34 @@ class LatexWalker(object):
         as the *beginning* of a new math mode chunk *unless* the argument
         `stop_upon_closing_mathmode=...` has been set to '$' (respectively
         '$$').
-        
+
+        If `read_max_nodes` is non-`None`, then it should be set to an integer
+        specifying the maximum number of top-level nodes to read before
+        returning.  (Top-level nodes means that macro arguments, environment or
+        group contents, etc., do not count towards `read_max_nodes`.)  If
+        `None`, the entire input string will be parsed.
+
+        .. note::
+
+           There are a few important differences between
+           ``get_latex_nodes(read_max_nodes=1)`` and ``get_latex_expression()``:
+           The former reads a logical node of the LaTeX document, which can be a
+           sequence of characters, a macro invokation with arguments, or an
+           entire environment, but the latter reads a single LaTeX "token" in
+           the same way as LaTeX parses macro arguments.
+
+           For instance, if a macro is encountered, then
+           ``get_latex_nodes(read_max_nodes=1)`` will read and parse its
+           arguments, and include it in the corresponding
+           :py:class:`LatexMacroNode`, whereas ``get_latex_expression()`` will
+           return a minimal :py:class:`LatexMacroNode` with no arguments
+           regardless of the macro's argument specification.  The same holds for
+           latex specials.  For environments,
+           ``get_latex_nodes(read_max_nodes=1)`` will return the entire parsed
+           environment into a :py:class:`LatexEnvironmentNode`, whereas
+           ``get_latex_expression()`` will return a :py:class:`LatexMacroNode`
+           named 'begin' with no arguments.
+
         Parsing might be influenced by the `parsing_context`.  See doc for
         :py:class:`ParsingContext`.
 
@@ -1447,9 +1475,13 @@ class LatexWalker(object):
             if len(p.lastchars):
                 strnode = self._mknode(LatexCharsNode, chars=p.lastchars+tok.pre_space,
                                        pos=p.lastchars_pos, len=tok.pos - p.lastchars_pos)
-                nodelist.append(strnode)
                 p.lastchars = ''
                 p.lastchars_pos = None
+                nodelist.append(strnode)
+                if read_max_nodes and len(nodelist) >= read_max_nodes:
+                    # adjust p.pos for return value of get_latex_nodes()
+                    p.pos = tok.pos
+                    return True
             elif len(tok.pre_space):
                 # If we have pre_space, add a separate chars node that contains
                 # the spaces.  We do this seperately, so that latex2text can
@@ -1459,6 +1491,8 @@ class LatexWalker(object):
                 spacestrnode = self._mknode(LatexCharsNode, chars=tok.pre_space,
                                             pos=tok.pos-len(tok.pre_space), len=len(tok.pre_space))
                 nodelist.append(spacestrnode)
+                if read_max_nodes and len(nodelist) >= read_max_nodes:
+                    return True
 
             # and see what the token is.
 
@@ -1534,6 +1568,8 @@ class LatexWalker(object):
                                              nodelist=mathinline_nodelist,
                                              delimiters=(tok.arg, corresponding_closing_mathmode),
                                              pos=tok.pos, len=mpos+mlen-tok.pos))
+                if read_max_nodes and len(nodelist) >= read_max_nodes:
+                    return True
                 return
 
             if tok.tok == 'comment':
@@ -1541,6 +1577,8 @@ class LatexWalker(object):
                                            comment_post_space=tok.post_space,
                                            pos=tok.pos, len=tok.len)
                 nodelist.append(commentnode)
+                if read_max_nodes and len(nodelist) >= read_max_nodes:
+                    return True
                 return
 
             if tok.tok == 'brace_open':
@@ -1549,6 +1587,8 @@ class LatexWalker(object):
                                                                       parsing_context=parsing_context)
                 p.pos = bpos + blen
                 nodelist.append(groupnode)
+                if read_max_nodes and len(nodelist) >= read_max_nodes:
+                    return True
                 return
 
             if tok.tok == 'begin_environment':
@@ -1558,6 +1598,8 @@ class LatexWalker(object):
                 p.pos = epos + elen
                 # add node and continue.
                 nodelist.append(envnode)
+                if read_max_nodes and len(nodelist) >= read_max_nodes:
+                    return True
                 return
 
             if tok.tok == 'macro':
@@ -1587,6 +1629,8 @@ class LatexWalker(object):
                                     pos=tok.pos,
                                     len=p.pos-tok.pos)
                 nodelist.append(node)
+                if read_max_nodes and len(nodelist) >= read_max_nodes:
+                    return True
                 return None
 
             if tok.tok == 'specials':
@@ -1609,6 +1653,8 @@ class LatexWalker(object):
                                     pos=tok.pos,
                                     len=p.pos-tok.pos)
                 nodelist.append(node)
+                if read_max_nodes and len(nodelist) >= read_max_nodes:
+                    return True
                 return None
 
 

@@ -38,9 +38,9 @@ import sys
 
 try:
     # Python >= 3.3
-    from collections.abc import Mapping
+    from collections.abc import MutableMapping
 except ImportError:
-    from collections import Mapping
+    from collections import MutableMapping
 
 
 if sys.version_info.major > 2:
@@ -943,42 +943,4 @@ class LatexContextDb(object):
 
 
 
-
-
-class _LegacyDefaultMacroLazyDict(Mapping):
-    r"""
-    A lazy dictionary that loads its data when it is first queried.
-
-    This is used to store the legacy
-    :py:data:`pylatexenc.latexwalker.default_macro_dict` as well as
-    :py:data:`pylatexenc.latex2text.default_macro_dict` etc.
-    """
-    def __init__(self, generate_dict_fn):
-        self._full_dict = None
-        self._generate_dict_fn = generate_dict_fn
-
-    def _ensure_instance(self):
-        if self._full_dict is not None:
-            return
-        self._full_dict = self.generate_dict_fn()
-
-    def __getitem__(self, key):
-        self._ensure_instance()
-        return self._full_dict.__getitem__(key)
-
-    def __setitem__(self, key, val):
-        self._ensure_instance()
-        return self._full_dict.__setitem__(key, val)
-
-    def __delitem__(self, key):
-        self._ensure_instance()
-        return self._full_dict.__delitem__(key)
-
-    def __iter__(self):
-        self._ensure_instance()
-        return iter(self._full_dict)
-
-    def __len__(self):
-        self._ensure_instance()
-        return len(self._full_dict)
 

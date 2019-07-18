@@ -60,6 +60,7 @@ else:
 
 from . import latexwalker
 from . import macrospec
+from . import _util
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +240,7 @@ def get_default_latex_context_db():
 
 
 
-default_macro_dict = macrospec._LegacyDefaultMacroLazyDict(
+default_macro_dict = _util.LazyDict(
     generate_dict_fn=lambda: dict([
         (m.macroname, m)
         for m in get_default_latex_context_db().iter_macro_specs()
@@ -264,7 +265,7 @@ don't rely on the default macro/environment definitions shouldn't notice any
 decrease in performance.
 """
 
-default_env_dict = macrospec._LegacyDefaultMacroLazyDict(
+default_env_dict = _util.LazyDict(
     generate_dict_fn=lambda: dict([
         (m.environmentname, m)
         for m in get_default_latex_context_db().iter_environment_specs()
@@ -488,7 +489,7 @@ class LatexNodes2Text(object):
             logger.warning("Deprecated (pylatexenc 2.0): "
                            "The keep_inline_math=... option in LatexNodes2Text() has been superseded by "
                            "the math_mode=... option.")
-            self.math_mode = 'verbatim'
+            self.math_mode = 'verbatim' if flags.pop('keep_inline_math') else 'text'
         else:
             self.math_mode = flags.pop('math_mode', 'text')
 
@@ -511,7 +512,7 @@ class LatexNodes2Text(object):
 
         if flags:
             # any flags left which we haven't recognized
-            logger.warning("LatexNodes2Text(): Unknown flag(s) encountered: %r", flags.keys())
+            logger.warning("LatexNodes2Text(): Unknown flag(s) encountered: %r", list(flags.keys()))
         
 
     def set_tex_input_directory(self, tex_input_directory, latex_walker_init_args=None,

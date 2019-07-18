@@ -4,7 +4,9 @@ Change Log
 New in pylatexenc 2.0
 ~~~~~~~~~~~~~~~~~~~~~
 
-Changes that are not immediately source compatible:
+Changes that are not directly source compatible:
+
+- objects that specify macros and environments (`MacrosDef` / `MacroDef`), etc.
 
 - `keep_inline_math=` option was removed in `latexwalker` and replaced in
   `latex2text` (see `Issue #14
