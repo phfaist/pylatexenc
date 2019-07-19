@@ -24,8 +24,9 @@
 #
 
 """
-The `latexencode` module provides a single function, :py:func:`utf8tolatex()` which
-allows you to convert a unicode string to LaTeX escape sequences.
+The `latexencode` module provides a set of routines that allows you to
+convert a unicode string to LaTeX escape sequences.  See
+:py:class:`UnicodeToLatexEncoder`.
 """
 
 from __future__ import print_function, absolute_import, unicode_literals
@@ -209,13 +210,22 @@ class UnicodeToLatexEncoder(object):
 
        Possible protection schemes are:
 
-         - `braces` (the default).  Any suspicious replacement text (that
+         - 'braces' (the default).  Any suspicious replacement text (that
            might look fragile) is placed in curly braces ``{...}``.
 
-         - `space-after-macro`.  If the situation described above (where the
+         - 'braces-all'.  All replacement latex escapes are surrounded in
+           protective curly braces ``{...}``.
+
+         - 'braces-almost-all'.  Almost all replacement latex escapes are
+           surrounded in protective curly braces ``{...}``.  (Specifically, all
+           those replacement strings that start with a backslash.)  [I'm not
+           sure this is useful, but it provides a way to reproduce the previous
+           behavior of `utf8tolatex()`.]
+
+         - 'braces-after-macro'.  If the situation described above (where the
            replacement text ends with a string-named macro) is encountered, then
-           a space is added at the end of the replacement text to protect the
-           macro
+           a pair of empty braces is added at the end of the replacement text to
+           protect the macro.
 
          - `none`.  No protection is applied.  This is not recommended.
 
@@ -236,7 +246,8 @@ class UnicodeToLatexEncoder(object):
          - a Python callable --- will be called with argument the character that
            could not be encoded.  (If the callable accepts a second argument
            called 'u2lobj', then the `UnicodeToLatexEncoder` instance is
-           provided to that argument.)
+           provided to that argument.)  The return value of the callable is used
+           as LaTeX replacement code.
 
     .. py:attribute:: bad_char_warning
 
@@ -256,6 +267,9 @@ class UnicodeToLatexEncoder(object):
         self.replacement_latex_protection = kwargs.pop('replacement_latex_protection', 'braces')
         self.bad_char_policy = kwargs.pop('bad_char_policy', 'keep')
         self.bad_char_warning = kwargs.pop('bad_char_warning', True)
+
+        if kwargs:
+            logger.warning("Ignoring unknown keyword arguments: %s", ",".join(kwargs.keys())) 
 
         super(UnicodeToLatexEncoder, self).__init__(**kwargs)
 
@@ -343,7 +357,10 @@ class UnicodeToLatexEncoder(object):
                 # #break-and-continue-statements-and-else-clauses-on-loops
                 ch = s[p.pos]
                 o = ord(ch)
-                if (o < 32 or o > 127) and (ch not in "\n\r\t"):
+                if (o >= 32 and o <= 127) or (ch in "\n\r\t"):
+                    p.latex += ch
+                    p.pos += 1
+                else:
                     self._do_warn_bad_char(ch)
                     p.latex += self._do_bad_char(ch)
                     p.pos += 1
@@ -373,7 +390,7 @@ class UnicodeToLatexEncoder(object):
                 # is there a better way than to re-match with sub() and still
                 # accept the wide range of possibilities for repl incl, \1, \2,
                 # etc.?
-                self._apply_replacement(p, regex.sub(m.group(), repl), m.end() - m.start())
+                self._apply_replacement(p, regex.sub(repl, m.group()), m.end() - m.start())
                 return True
         return None
     def _apply_rule_callable(self, rulecallable, s, p):
@@ -392,15 +409,21 @@ class UnicodeToLatexEncoder(object):
 
     def _apply_protection_braces(self, repl):
         k = repl.rfind('\\')
-        if k > 0 and repl[k+1:].isalpha():
+        if k >= 0 and repl[k+1:].isalpha():
             # has dangling named macro, apply protection.
             return '{' + repl + '}'
         return repl
-    def _apply_protection_space_after_macro(self, repl):
+    def _apply_protection_braces_almost_all(self, repl):
+        if repl[0:1] == '\\':
+            return '{' + repl + '}'
+        return repl
+    def _apply_protection_braces_all(self, repl):
+        return '{' + repl + '}'
+    def _apply_protection_braces_after_macro(self, repl):
         k = repl.rfind('\\')
         if k > 0 and repl[k+1:].isalpha():
             # has dangling named macro, apply protection.
-            return repl + ' '
+            return repl + '{}'
         return repl
 
     # policies for "bad chars":

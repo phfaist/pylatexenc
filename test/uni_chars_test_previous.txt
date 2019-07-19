@@ -812,8 +812,8 @@
 0x25E6 [WHITE BULLET]                                        |{\textopenbullet}|
 0x25EF [LARGE CIRCLE]                                        |{\textbigcircle}|
 0x266A [EIGHTH NOTE]                                         |{\textmusicalnote}|
-0x27E8 [MATHEMATICAL LEFT ANGLE BRACKET]                     |{\ensureamth{\langle}}|
-0x27E9 [MATHEMATICAL RIGHT ANGLE BRACKET]                    |{\ensureamth{\rangle}}|
+0x27E8 [MATHEMATICAL LEFT ANGLE BRACKET]                     |{\ensuremath{\langle}}|
+0x27E9 [MATHEMATICAL RIGHT ANGLE BRACKET]                    |{\ensuremath{\rangle}}|
 0x2A7D [LESS-THAN OR SLANTED EQUAL TO]                       |{\ensuremath{\leqslant}}|
 0x2A7E [GREATER-THAN OR SLANTED EQUAL TO]                    |{\ensuremath{\geqslant}}|
 0x3008 [LEFT ANGLE BRACKET]                                  |{\ensuremath{\langle}}|

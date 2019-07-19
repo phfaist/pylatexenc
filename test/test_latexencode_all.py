@@ -23,7 +23,7 @@ else:
     range = xrange
 
 
-from pylatexenc.latexencode import utf8tolatex
+from pylatexenc.latexencode import UnicodeToLatexEncoder
 
 
 
@@ -43,6 +43,8 @@ class TestLatexEncode(unittest.TestCase):
         loglevel = logging.getLogger().level
         logging.getLogger().setLevel(logging.CRITICAL)
 
+        u = UnicodeToLatexEncoder(bad_char_policy='fail', replacement_latex_protection='braces-almost-all')
+
         def fn(x, bdir=os.path.realpath(os.path.abspath(os.path.dirname(__file__)))):
             return os.path.join(bdir, x)
 
@@ -57,9 +59,9 @@ class TestLatexEncode(unittest.TestCase):
 
                 line = "0x%04X %-50s    |%s|\n"%(i, '['+chrname+']', unichr(i))
 
-                # try to encode it using utf8tolatex
+                # try to encode it using our unicode_to_latex routines
                 try:
-                    enc = utf8tolatex(line, fail_bad_chars=True)
+                    enc = u.unicode_to_latex(line)
                 except ValueError:
                     continue
                 testf.write(enc)

@@ -58,6 +58,9 @@ import sys
 import logging
 import json
 
+from . import macrospec
+from . import _util
+
 if sys.version_info.major > 2:
     # Py3
     def unicode(string): return string
@@ -69,7 +72,6 @@ else:
     _basestring = basestring
     _str_from_unicode = lambda x: unicode(x).encode('utf-8')
     _unicode_from_str = lambda x: x.decode('utf-8')
-
 
 logger = logging.getLogger(__name__)
 
@@ -103,8 +105,6 @@ class LatexWalkerEndOfStream(LatexWalkerError):
     pass
 
 
-
-from . import macrospec
 
 
 
@@ -163,7 +163,7 @@ r"""
    earlier idiom ``MacrosDef(...)`` still works in `pylatexenc 2`.
 """
 
-default_macro_dict = macrospec.LazyDict(
+default_macro_dict = _util.LazyDict(
     generate_dict_fn=lambda: dict([
         (m.macroname, m)
         for m in get_default_latex_context_db().iter_macro_specs()

@@ -71,7 +71,7 @@ uni2latex = {
 0x007B: r'\{',                                   # character {
 0x007D: r'\}',                                   # character }
 0x007E: r'\textasciitilde',                      # character ~
-0x00A0: r'~',                                    # character
+0x00A0: r'~',                                    # character NO-BREAK SPACE
 0x00A1: r'\textexclamdown',                      # character ¡
 0x00A2: r'\textcent',                            # character ¢
 0x00A3: r'\textsterling',                        # character £
@@ -844,8 +844,8 @@ uni2latex = {
 0x266A: r'\textmusicalnote',                     # 0x266A
 
 
-0x27E8: r'\ensureamth{\langle}',                 # MATHEMATICAL LEFT ANGLE BRACKET
-0x27E9: r'\ensureamth{\rangle}',                 # MATHEMATICAL RIGHT ANGLE BRACKET
+0x27E8: r'\ensuremath{\langle}',                 # MATHEMATICAL LEFT ANGLE BRACKET
+0x27E9: r'\ensuremath{\rangle}',                 # MATHEMATICAL RIGHT ANGLE BRACKET
 
 # Supplemental Mathematical Operators U+2AXX
 0x2A7D: r'\ensuremath{\leqslant}',
