@@ -35,12 +35,9 @@ Define replacement texts
 Obsolete members
 ~~~~~~~~~~~~~~~~
 
-.. autoclass:: pylatexenc.latex2text.EnvDef
-   :members:
+.. autofunction:: pylatexenc.latex2text.EnvDef
 
-
-.. autoclass:: pylatexenc.latex2text.MacroDef
-   :members:
+.. autofunction:: pylatexenc.latex2text.MacroDef
 
 
 .. autodata:: pylatexenc.latex2text.default_env_dict

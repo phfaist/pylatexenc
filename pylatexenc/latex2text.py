@@ -150,14 +150,6 @@ class SpecialsTextSpec(object):
 
 
 
-EnvDef = EnvironmentTextSpec
-"""
-.. deprecated:: 2.0
-
-   This class was renamed to :py:class:`EnvironmentTextSpec` in `pylatexenc
-   2.0`.
-"""
-
 def EnvDef(envname, simplify_repl=None, discard=False):
     r"""
     .. deprecated:: 2.0

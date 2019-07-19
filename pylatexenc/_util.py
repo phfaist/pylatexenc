@@ -83,5 +83,3 @@ class LazyDict(MutableMapping):
     def clear(self):
         self._ensure_instance()
         return self._full_dict.clear()
-
-
