@@ -13,8 +13,27 @@ Latex to Text Converter Class
 
 
 
-Known Macros and Environments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: pylatexenc.latex2text.get_default_latex_context_db
+
+
+
+
+Define replacement texts
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: pylatexenc.latex2text.MacroTextSpec
+   :members:
+
+.. autoclass:: pylatexenc.latex2text.EnvironmentTextSpec
+   :members:
+
+.. autoclass:: pylatexenc.latex2text.SpecialsTextSpec
+   :members:
+
+
+
+Obsolete members
+~~~~~~~~~~~~~~~~
 
 .. autoclass:: pylatexenc.latex2text.EnvDef
    :members:

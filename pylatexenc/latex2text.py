@@ -70,17 +70,23 @@ class MacroTextSpec(object):
     """
     A specification of how to obtain a textual representation of a macro.
 
-    - `macroname`: the name of the macro (no backslash)
+    .. py:attribute:: macroname
 
-    - `simplify_repl`: either a string or a callable. The string may contain
-      '%s' replacements, in which the macro arguments will be substituted. The
-      callable should accept the corresponding
-      :py:class:`pylatexenc.latexwalker.LatexMacroNode` as an argument.  If the
-      callable expects a second argument named `l2tobj`, then the
-      `LatexNodes2Text` object is provided to that argument.
+       The name of the macro (no backslash)
 
-    - `discard`: if set to `True`, then the macro call is discarded, i.e., it is
-       converted to an empty string.
+    .. py:attribute:: simplify_repl
+
+       This is Either a string or a callable. The string may contain '%s'
+       replacements, in which the macro arguments will be substituted. The
+       callable should accept the corresponding
+       :py:class:`pylatexenc.latexwalker.LatexMacroNode` as an argument.  If the
+       callable expects a second argument named `l2tobj`, then the
+       `LatexNodes2Text` object is provided to that argument.
+
+    .. py:attribute:: discard
+    
+       If set to `True`, then the macro call is discarded, i.e., it is converted
+       to an empty string.
     """
     def __init__(self, macroname, simplify_repl=None, discard=None):
         super(MacroTextSpec, self).__init__()
@@ -93,18 +99,24 @@ class EnvironmentTextSpec(object):
     """
     A specification of how to obtain a textual representation of an environment.
 
-    - `environmentname`: the name of the environment
+    .. py:attribute:: environmentname
 
-    - `simplify_repl`: the replacement text of the environment.  This is either
-       a callable or a string.  If it is a callable, it must accept a single
-       argument, the :py:class:`pylatexenc.latexwalker.LatexEnvironmentNode`
-       representing the LaTeX environment.  If the callable expects a second
-       argument named `l2tobj`, then the `LatexNodes2Text` object is provided to
-       that argument.  If it is a string, it may contain '%s' which will be
-       replaced by the environment contents converted to text.
+       The name of the environment
 
-    - `discard`: if set to `True`, then the full environment is discarded, i.e.,
-       it is converted to an empty string.
+    .. py:attribute:: simplify_repl
+
+       The replacement text of the environment.  This is either a callable or a
+       string.  If it is a callable, it must accept a single argument, the
+       :py:class:`pylatexenc.latexwalker.LatexEnvironmentNode` representing the
+       LaTeX environment.  If the callable expects a second argument named
+       `l2tobj`, then the `LatexNodes2Text` object is provided to that argument.
+       If it is a string, it may contain '%s' which will be replaced by the
+       environment contents converted to text.
+
+    .. py:attribute:: discard
+    
+       If set to `True`, then the full environment is discarded, i.e., it is
+       converted to an empty string.
     """
     def __init__(self, environmentname, simplify_repl=None, discard=False):
         super(EnvironmentTextSpec, self).__init__()
@@ -117,15 +129,19 @@ class SpecialsTextSpec(object):
     """
     A specification of how to obtain a textual representation of latex specials.
 
-    - `specials_chars`: the sequence of special LaTeX characters
+    .. py:attribute:: specials_chars
+    
+       The sequence of special LaTeX characters
 
-    - `simplify_repl`: the replacement text of the specials.  This is either a
-       callable or a string.  If it is a callable, it must accept a single
-       argument, the :py:class:`pylatexenc.latexwalker.LatexSpecialsNode`
-       representing the LaTeX environment.  If the callable expects a second
-       argument named `l2tobj`, then the `LatexNodes2Text` object is provided to
-       that argument.  If it is a string, it may contain '%s' replacements, in
-       which the macro arguments will be substituted.
+    .. py:attribute:: simplify_repl
+
+       The replacement text of the specials.  This is either a callable or a
+       string.  If it is a callable, it must accept a single argument, the
+       :py:class:`pylatexenc.latexwalker.LatexSpecialsNode` representing the
+       LaTeX environment.  If the callable expects a second argument named
+       `l2tobj`, then the `LatexNodes2Text` object is provided to that argument.
+       If it is a string, it may contain '%s' replacements, in which the macro
+       arguments will be substituted.
     """
     def __init__(self, specials_chars, simplify_repl=None):
         super(SpecialsTextSpec, self).__init__()
@@ -291,7 +307,13 @@ decrease in performance.
 """
 
 
+default_text_replacements = ( )
+r"""
+.. deprecated:: 2.0
 
+   Text replacements are deprecated since `pylatexenc 2.0` with the advent of
+   "latex specials" that are properly parsed.
+"""
 
 
 # ------------------------------------------------------------------------------

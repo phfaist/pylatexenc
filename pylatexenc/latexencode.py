@@ -57,6 +57,17 @@ from . import _util
 
 
 def get_builtin_uni2latex_dict():
+    r"""
+    Return a dictionary that contains the default collection of known LaTeX
+    escape sequences for unicode characters.
+
+    The keys of the dictionary are integers that correspond to unicode code
+    points (i.e., `ord(char)`).  The values are the corresponding LaTeX
+    replacement strings.
+
+    The returned dictionary may not be modified.  To alter the default behavior,
+    you should specify custom rules to :py:class:`UnicodeToLatexEncoder`.
+    """
     return _MappingProxyType(_uni2latex)
 
 
@@ -66,6 +77,10 @@ RULE_DICT = 0
 r"""
 Indicates a rule type that is a dictionary of unicode point values to
 replacement strings. See :py:class:`UnicodeToLatexConversionRule`.
+
+.. versionadded:: 2.0
+
+   This member was introduced in pylatexenc version 2.0.
 """
 
 RULE_REGEX = 1
@@ -73,12 +88,20 @@ r"""
 Indicates a rule type that is a list (or iterable) of pairs
 `(compiled_regular_expression, replacement_string)`.  See
 :py:class:`UnicodeToLatexConversionRule`.
+
+.. versionadded:: 2.0
+
+   This member was introduced in pylatexenc version 2.0.
 """
 
 RULE_CALLABLE = 2
 r"""
 Indicates a rule type that is a custom callable.  See
 :py:class:`UnicodeToLatexConversionRule`.
+
+.. versionadded:: 2.0
+
+   This member was introduced in pylatexenc version 2.0.
 """
 
 
@@ -157,6 +180,11 @@ class UnicodeToLatexConversionRule:
               if s.startswith('...', pos): # or  s[pos:pos+3] == '...'
                   return (3, r'\ldots')
               return None
+
+
+    .. versionadded:: 2.0
+
+       This class was introduced in `pylatexenc 2.0`.
     """
     def __init__(self, rule_type, rule=None):
         if rule_type == 'builtins':
@@ -258,6 +286,10 @@ class UnicodeToLatexEncoder(object):
     The database of rules specifying how to convert unicode characters into
     LaTeX are organized into categories, and can be specified with the
     `add_conversion_rule()`.
+
+    .. versionadded:: 2.0
+
+       This class was introduced in `pylatexenc 2.0`.
     """
     def __init__(self, **kwargs):
         self.non_ascii_only = kwargs.pop('non_ascii_only', False)

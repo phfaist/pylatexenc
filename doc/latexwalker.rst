@@ -11,6 +11,10 @@ The main `LatexWalker` class
    :members:
 
 
+
+.. autofunction:: pylatexenc.latexwalker.get_default_latex_context_db
+
+
 Exception Classes
 ~~~~~~~~~~~~~~~~~
 
