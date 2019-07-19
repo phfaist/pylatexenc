@@ -123,12 +123,12 @@ class UnicodeToLatexConversionRule:
     
         UnicodeToLatexConversionRule(RULE_XXX, <...>)
         UnicodeToLatexConversionRule(rule_type=RULE_XXX, rule=<...>)
-        # special syntax that loads built-in definitions:
-        UnicodeToLatexConversionRule('builtins')
 
-    The special call ``UnicodeToLatexConversionRule('builtins')`` is a shorthand
-    for a `RULE_DICT` rule with the dictionary obtained via
-    :py:func:`get_builtin_uni2latex_dict()`.
+    Note that you can get some built-in rules via the
+    :py:func:`get_bulitin_conversion_rule()` function::
+
+        conversion_rules = get_builtin_conversion_rules('defaults') # all defaults
+
 
     Rules types:
     
@@ -187,13 +187,31 @@ class UnicodeToLatexConversionRule:
        This class was introduced in `pylatexenc 2.0`.
     """
     def __init__(self, rule_type, rule=None):
-        if rule_type == 'builtins':
-            # special UnicodeToLatexConversionRule('builtins') syntax
-            self.rule_type = RULE_DICT
-            self.rule = get_builtin_uni2latex_dict()
-        else:
-            self.rule_type = rule_type
-            self.rule = rule
+        self.rule_type = rule_type
+        self.rule = rule
+
+
+
+def get_builtin_conversion_rules(which):
+    r"""
+    Return a built-in set of conversion rules specified by name `which`.
+
+    Currently, only the name `which='defaults'` is accepted.
+
+    The return value is a list of :py:class:`UnicodeToLatexConversionRule`
+    objects that can be either directly specified to the `conversion_rules=`
+    argument of :py:class:`UnicodeToLatexEncoder`, or included in a larger list
+    that can be provided to that argument.
+    
+    .. versionadded:: 2.0
+
+       This function was introduced in `pylatexenc 2.0`.
+    """
+    if which == 'defaults':
+        return [ UnicodeToLatexConversionRule(rule_type=RULE_DICT,
+                                              rule=get_builtin_uni2latex_dict()) ]
+    raise ValueError("Unknown builtin rule set: {}".format(which))
+
 
 
 class UnicodeToLatexEncoder(object):
@@ -201,7 +219,10 @@ class UnicodeToLatexEncoder(object):
     Encode a string with unicode characters into a LaTeX snippet.
 
     The following general attributes can be specified as keyword arguments to
-    the constructor:
+    the constructor.  Note: These attributes must be specified to the
+    constructor and may NOT be subsequently modified.  This is because in the
+    constructor we pre-compile some rules and flags to optimize calls to
+    :py:text:`unicode_to_text()`.
 
     .. py:attribute:: non_ascii_only
 
@@ -217,9 +238,9 @@ class UnicodeToLatexEncoder(object):
 
        The conversion rules, specified as a list of
        :py:class:`UnicodeToLatexConversionRule` objects.  If you specify your
-       own list of rules using this argument, you will probably want to include
-       presumably at the end of your list the object
-       ``UnicodeToLatexConversionRule('builtins')`` to include all built-in
+       own list of rules using this argument, you will probably want to add
+       presumably at the end of your list the list of rules obtained by
+       ``get_builtin_conversion_rules('defaults')`` to include all built-in
        default conversion rules.  To override built-in rules, simply add your
        custom rules earlier in the list.
 
@@ -287,15 +308,21 @@ class UnicodeToLatexEncoder(object):
     LaTeX are organized into categories, and can be specified with the
     `add_conversion_rule()`.
 
+    .. warning::
+      
+       None of the above attributes should be modified after constructing the
+       object.  Their final value must be specified to the class constructor.
+       [Indeed, the class constructor "compiles" these attribute values into a
+       data structure that makes :py:meth:`unicode_to_text()` more efficient.]
+
     .. versionadded:: 2.0
 
        This class was introduced in `pylatexenc 2.0`.
     """
     def __init__(self, **kwargs):
         self.non_ascii_only = kwargs.pop('non_ascii_only', False)
-        self.conversion_rules = kwargs.pop('conversion_rules', [
-            UnicodeToLatexConversionRule('builtins')
-        ])
+        self.conversion_rules = kwargs.pop('conversion_rules', 
+                                           get_builtin_conversion_rules('defaults'))
         self.replacement_latex_protection = kwargs.pop('replacement_latex_protection', 'braces')
         self.bad_char_policy = kwargs.pop('bad_char_policy', 'keep')
         self.bad_char_warning = kwargs.pop('bad_char_warning', True)
@@ -340,6 +367,7 @@ class UnicodeToLatexEncoder(object):
                 self._do_bad_char = self.bad_char_policy
         else:
             raise TypeError("Invalid argument for bad_char_policy: {!r}".format(self.bad_char_policy))
+
         # bad char warning:
         if not self.bad_char_warning:
             self._do_warn_bad_char = lambda ch: None # replace method by no-op
@@ -480,10 +508,41 @@ class UnicodeToLatexEncoder(object):
 
 
 
-# def unicode_to_latex(s, **kwargs):
-#     ...........
-#     cache pre-compiled UnicodeToLatexEncoder s.........
+_u2l_obj_cache = {}
 
+
+def unicode_to_latex(s, non_ascii_only=False, replacement_latex_protection='braces',
+                     bad_char_policy='keep', bad_char_warning=True):
+    r"""
+    Shorthand for constructing a :py:class:`UnicodeToLatexEncoder` instance and
+    calling its :py:meth:`~UnicodeToLatexEncoder.unicode_to_latex()` method.
+
+    The :py:class:`UnicodeToLatexEncoder` instances for given values of the
+    options are cached.
+
+    The parameters `non_ascii_only`, `replacement_latex_protection`,
+    `bad_char_policy`, and `bad_char_warning` are directly passed on to the
+    :py:class:`UnicodeToLatexEncoder` constructor.  See the class doc for
+    :py:class:`UnicodeToLatexEncoder` for more information about their effect.
+
+    It is not possible to specify custom conversion rules with this helper
+    function.  If you need custom conversion rules, simply create a
+    :py:class:`UnicodeToLatexEncoder` instance directly.
+    """
+
+    key = (non_ascii_only, replacement_latex_protection, bad_char_policy, bad_char_warning)
+
+    if key in _u2l_obj_cache:
+        u = _u2l_obj_cache[key]
+    else:
+        u = UnicodeToLatexEncoder(non_ascii_only=non_ascii_only,
+                                  replacement_latex_protection=replacement_latex_protection,
+                                  bad_char_policy=bad_char_policy,
+                                  bad_char_warning=bad_char_warning)
+        _u2l_obj_cache[key] = u
+
+    return u.unicode_to_latex(s)
+    
 
 
 

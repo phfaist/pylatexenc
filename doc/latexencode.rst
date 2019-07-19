@@ -5,11 +5,13 @@ Encode Unicode to LaTeX
 .. automodule:: pylatexenc.latexencode
 
 
-The main `UnicodeToLatexEncoder` class
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Unicode to Latex Conversion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: pylatexenc.latexencode.UnicodeToLatexEncoder
    :members:
+
+.. autofunction:: pylatexenc.latexencode.unicode_to_latex
 
 
 Specifying conversion rules
@@ -27,7 +29,15 @@ Specifying conversion rules
    :members:
 
 
+
+.. autofunction:: pylatexenc.latexencode.get_builtin_conversion_rules
+
 .. autofunction:: pylatexenc.latexencode.get_builtin_uni2latex_dict
 
 
+Compatibility with Pylatexenc 1.x
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. autofunction:: pylatexenc.latexencode.utf8tolatex
+
+.. autodata:: pylatexenc.latexencode.utf82latex

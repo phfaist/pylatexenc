@@ -96,12 +96,12 @@ class TestLatexEncode(unittest.TestCase):
                 (re.compile("s'exclama", flags=re.I), r"s'exprima"),
                 (re.compile('\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}'), r"{\^i}"),
             ]),
-            latexencode.UnicodeToLatexConversionRule('builtins'),
+        ] + latexencode.get_builtin_conversion_rules('defaults') + [
             latexencode.UnicodeToLatexConversionRule(latexencode.RULE_CALLABLE, acallable),
         ])
         input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison ... \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
         self.assertEqual(u.unicode_to_latex(input),
-                         "''{{\\`{A}}} notre sant\\'e!'' s'exprima le ma{\\^i}tre de maison {\ldots} \`a 100{\\textpercent}.")
+                         "''{{\\`{A}}} notre sant\\'e!'' s'exprima le ma{\\^i}tre de maison {\\ldots} \\`a 100{\\textpercent}.")
 
         
 
