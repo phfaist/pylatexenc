@@ -68,6 +68,16 @@ Example using custom conversion rules::
   Cheers {\textrightarrow} \`A votre sant\'e
 
 See :py:class:`UnicodeToLatexEncoder`.
+
+.. versionadded:: 2.0
+
+   The class :py:class:`UnicodeToLatexEncoder` along with its helper functions
+   and classes were introduced in `pylatexenc 2.0`.
+
+   The earlier function :py:func:`utf8tolatex()` that was available in
+   `pylatexenc 1.x` is still provided unchanged, so code written for `pylatexenc
+   1.x` should work without changes.  New code is however strongly encouraged to
+   employ the new API.
 """
 
 from __future__ import print_function, absolute_import, unicode_literals
@@ -170,7 +180,7 @@ class UnicodeToLatexConversionRule:
         UnicodeToLatexConversionRule(rule_type=RULE_XXX, rule=<...>)
 
     Note that you can get some built-in rules via the
-    :py:func:`get_bulitin_conversion_rule()` function::
+    :py:func:`get_builtin_conversion_rules()` function::
 
         conversion_rules = get_builtin_conversion_rules('defaults') # all defaults
 
@@ -635,8 +645,9 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
     """
     .. note::
 
-       Since `pylatexenc 2.0`, it is recommended to use the
-       :py:class:`TextLatexEncoder()` function instead.
+       Since `pylatexenc 2.0`, it is recommended to use the the
+       :py:func:`unicode_to_latex()` function or the
+       :py:class:`UnicodeToLatexEncoder` class instead.
 
        The new routines provide much more flexibility and versatility.  For
        instance, you can specify custom escape sequences for certain characters.
@@ -736,13 +747,38 @@ def main(argv=None):
     parser.add_argument('files', metavar="FILE", nargs='*',
                         help='Input files (if none specified, read from stdandard input)')
 
+    parser.add_argument('--non-ascii-only', action='store_const', const=True,
+                        dest='non_ascii_only', default=False)
+    parser.add_argument('--no-non-ascii-only', action='store_const', const=False,
+                        dest='non_ascii_only',
+                        help="If set, only non-ascii characters are encoded into LaTeX sequences, "
+                        "and not characters like '$' that might have a special LaTeX meaning.")
+
+    parser.add_argument('--replacement-latex-protection',
+                        choices=('braces', 'braces-all', 'braces-almost-all', 'braces-after-macro',
+                                 'none'),
+                        dest='replacement_latex_protection', default='braces',
+                        help=r"How to protect replacement latex code from producing invalid latex code "
+                        r"when concatenated in a longer string.  One of 'braces', 'braces-all', "
+                        r"'braces-almost-all', 'braces-after-macro', 'none'.  Example: using "
+                        r"choice 'braces' we avoid the invalid replacement 'a→b' -> 'a\tob' "
+                        r"with instead 'a{\to}b'.")
+
+    parser.add_argument('--unknown-char-policy',
+                        choices=('keep', 'replace', 'ignore', 'fail'),
+                        dest='unknown_char_policy', default='keep',
+                        help="How to deal with nonascii characters with no known latex code equivalent.")
+
     args = parser.parse_args(argv)
 
     latex = ''
     for line in fileinput.input(files=args.files):
         latex += line
 
-    print(utf8tolatex(latex))
+    print(unicode_to_latex(latex,
+                           non_ascii_only=args.non_ascii_only,
+                           replacement_latex_protection=args.replacement_latex_protection,
+                           unknown_char_policy=args.unknown_char_policy))
 
 
 def run_main():
@@ -763,4 +799,5 @@ def run_main():
 
 if __name__ == '__main__':
 
-    run_main()
+    # run_main()  ## DEBUG
+    main()

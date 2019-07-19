@@ -94,6 +94,7 @@ import sys
 import logging
 import json
 
+import pylatexenc
 from . import macrospec
 from . import _util
 
@@ -185,19 +186,20 @@ def get_default_latex_context_db():
 
 
 # provide an interface compatibile with pylatexenc 1.x
-MacrosDef = macrospec.std_macro
-r"""
-.. deprecated:: 2.0
+def MacrosDef(macname, optarg, numargs):
+    r"""
+    .. deprecated:: 2.0
 
-   Use :py:func:`pylatexenc.macrospec.std_macro` instead which does the same
-   thing, or invoke the :py:class:`~pylatexenc.macrospec.MacroSpec` class
-   directly (or a subclass).
+       Use :py:func:`pylatexenc.macrospec.std_macro` instead which does the same
+       thing, or invoke the :py:class:`~pylatexenc.macrospec.MacroSpec` class
+       directly (or a subclass).
 
-   Since `pylatexenc 2.0`, `MacrosDef` is an alias to the function
-   :py:func:`pylatexenc.macrospec.std_macro` which returns a
-   :py:class:`~pylatexenc.macrospec.MacroSpec` instance.  In this way the
-   earlier idiom ``MacrosDef(...)`` still works in `pylatexenc 2`.
-"""
+       Since `pylatexenc 2.0`, `MacrosDef` is a function which returns a
+       :py:class:`~pylatexenc.macrospec.MacroSpec` instance.  In this way the
+       earlier idiom ``MacrosDef(...)`` still works in `pylatexenc 2`.
+    """
+    return macrospec.std_macro(macname, optarg, numargs)
+
 
 default_macro_dict = _util.LazyDict(
     generate_dict_fn=lambda: dict([
@@ -920,10 +922,11 @@ class LatexWalker(object):
         if latex_context is None:
             if 'macro_dict' in kwargs:
                 # LEGACY -- build a latex context using the given macro_dict
-                logger.warning("Deprecated (pylatexenc 2.0): "
-                               "The `macro_dict=...` option in LatexWalker() is obsolete since "
-                               "pylatexenc 2.  It'll still work, but please consider using instead "
-                               "the more versatile option `latex_context=...`.")
+                if pylatexenc._settings['deprecation_warnings']:
+                    logger.warning("Deprecated (pylatexenc 2.0): "
+                                   "The `macro_dict=...` option in LatexWalker() is obsolete since "
+                                   "pylatexenc 2.  It'll still work, but please consider using instead "
+                                   "the more versatile option `latex_context=...`.")
 
                 macro_dict = kwargs.pop('macro_dict', None)
 
@@ -955,10 +958,11 @@ class LatexWalker(object):
         self.strict_braces = kwargs.pop('strict_braces', False)
 
         if 'keep_inline_math' in kwargs:
-            logger.warning("Deprecated (pylatexenc 2.0): "
-                           "The keep_inline_math=... option in LatexWalker() has no effect "
-                           "in pylatexenc 2.  Please use the more versatile option "
-                           "math_mode=... in LatexNodes2Text() instead.")
+            if pylatexenc._settings['deprecation_warnings']:
+                logger.warning("Deprecated (pylatexenc 2.0): "
+                               "The keep_inline_math=... option in LatexWalker() has no effect "
+                               "in pylatexenc 2.  Please consider using the more versatile option "
+                               "math_mode=... in LatexNodes2Text() instead.")
             del kwargs['keep_inline_math']
 
         if kwargs:

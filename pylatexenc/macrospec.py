@@ -30,7 +30,8 @@ macros and environments, specifying how they should be parsed by
 
 .. versionadded:: 2.0
 
-   Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
+   The entire module :py:mod:`pylatexenc.macrospec` was introduced in
+   `pylatexenc 2.0`.
 """
 
 
@@ -101,11 +102,6 @@ class ParsedMacroArgs(object):
         possible first optional value, or `None` and the second item `nodeargs`
         is a list of nodes that represents subsequent arguments (optional or
         mandatory).
-
-
-    .. versionadded:: 2.0
- 
-       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     def __init__(self, argnlist=[], argspec='', legacy_nodeoptarg_nodeargs=None,
                  **kwargs):
@@ -173,11 +169,6 @@ class MacroStandardArgsParser(object):
 
       - additional unrecognized keyword arguments are passed on to superclasses
         in case of multiple inheritance
-
-
-    .. versionadded:: 2.0
- 
-       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     def __init__(self, argspec=None, **kwargs):
         super(MacroStandardArgsParser, self).__init__(**kwargs)
@@ -306,11 +297,6 @@ class MacroSpec(object):
        If you specify a string, then for convenience this is interpreted as an
        argspec argument for :py:class:`MacroStandardArgsParser` and such an
        instance is automatically created.
-
-
-    .. versionadded:: 2.0
- 
-       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     def __init__(self, macroname, args_parser=MacroStandardArgsParser(), **kwargs):
         super(MacroSpec, self).__init__(**kwargs)
@@ -365,11 +351,6 @@ class EnvironmentSpec(object):
        happened to use ``EnvironmentSpec('equation', '*')``, then the parser
        would recognize the expression ``\begin{equation}*`` but not
        ``\begin{equation*}``.
-
-
-    .. versionadded:: 2.0
- 
-       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     def __init__(self, environmentname, args_parser=MacroStandardArgsParser(),
                  is_math_mode=False, **kwargs):
@@ -404,10 +385,6 @@ class SpecialsSpec(object):
        A parser (e.g. :py:class:`MacroStandardArgsParser`) that is invoked when
        the specials is encountered.  Can/should be set to `None` if the specials
        should not parse any arguments (e.g. '~').
-
-    .. versionadded:: 2.0
- 
-       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     def __init__(self, specials_chars,
                  args_parser=None,
@@ -486,11 +463,6 @@ def std_macro(macname, *args, **kwargs):
     specified to return an `EnvironmentSpec` instead of a `MacroSpec`.  In this
     case, you can further specify the `environment_is_math_mode=True|False` to
     specify whether of not the environment represents a math mode.
-
-
-    .. versionadded:: 2.0
- 
-       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
 
     if isinstance(macname, tuple):
@@ -588,11 +560,6 @@ def std_environment(envname, *args, **kwargs):
       contents should be parsed in an appropriate math mode.  Note that
       `is_math_mode` *must* be given as a keyword argument, in contrast to all
       other arguments which must be positional (non-keyword) arguments.
-
-
-    .. versionadded:: 2.0
- 
-       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     is_math_mode = kwargs.pop('is_math_mode', False)
     kwargs2 = dict(kwargs)
@@ -613,10 +580,6 @@ def std_specials(specials_chars):
     This helper function only allows to create specs for simple specials without
     any argument parsing.  For more complicated specials, you can instantiate a
     :py:class:`SpecialsSpec` directly.
-
-    .. versionadded:: 2.0
- 
-       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     return SpecialsSpec(specials_chars, args_parser=None)
 
@@ -658,10 +621,6 @@ class LatexContextDb(object):
     See :py:func:`pylatexenc.latex2text.get_default_latex_context_db()` for the
     default latex context for `latex2text` with a set of text replacements for a
     collection of known macros and environments.
-
-    .. versionadded:: 2.0
- 
-       Module :py:mod:`pylatexenc.macrospec` was introduced in version 2.0.
     """
     def __init__(self, **kwargs):
         super(LatexContextDb, self).__init__(**kwargs)

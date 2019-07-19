@@ -57,7 +57,7 @@ if sys.version_info.major >= 3:
 else:
     getfullargspec = inspect.getargspec
 
-
+import pylatexenc
 from . import latexwalker
 from . import macrospec
 from . import _util
@@ -157,12 +157,32 @@ EnvDef = EnvironmentTextSpec
    This class was renamed to :py:class:`EnvironmentTextSpec` in `pylatexenc
    2.0`.
 """
-MacroDef = MacroTextSpec
-"""
-.. deprecated:: 2.0
 
-   This class was renamed to :py:class:`MacroTextSpec` in `pylatexenc 2.0`.
-"""
+def EnvDef(envname, simplify_repl=None, discard=False):
+    r"""
+    .. deprecated:: 2.0
+
+       Instantiate a :py:class:`EnvironmentTextSpec` instead.
+
+       Since `pylatexenc 2.0`, `EnvDef` is a function which returns a
+       :py:class:`~pylatexenc.macrospec.EnvironmentTextSpec` instance.  In this
+       way the earlier idiom ``EnvDef(...)`` still works in `pylatexenc 2`.
+    """
+    return EnvironmentTextSpec(environmentname=envname, simplify_repl=simplify_repl,
+                               discard=discard)
+
+def MacroDef(macname, simplify_repl=None, discard=None):
+    r"""
+    .. deprecated:: 2.0
+
+       Instantiate a :py:class:`MacroTextSpec` instead.
+
+       Since `pylatexenc 2.0`, `MacroDef` is a function which returns a
+       :py:class:`~pylatexenc.macrospec.MacroTextSpec` instance.  In this way
+       the earlier idiom ``MacroDef(...)`` still works in `pylatexenc 2`.
+    """
+    return MacroTextSpec(macroname=macname, simplify_repl=simplify_repl, discard=discard)
+
 
 
 
@@ -312,7 +332,7 @@ r"""
 .. deprecated:: 2.0
 
    Text replacements are deprecated since `pylatexenc 2.0` with the advent of
-   "latex specials" that are properly parsed.
+   "latex specials".
 """
 
 
@@ -384,6 +404,9 @@ class LatexNodes2Text(object):
       and other latex specials to text.  The `LatexContextDb` should contain
       specifications via :py:class:`MacroTextSpec`,
       :py:class:`EnvironmentTextSpec`, and :py:class:`SpecialsTextSpec` objects.
+
+      The default latex context database can be obtained using
+      :py:func:`get_default_latex_context_db()`.
 
     Additional keyword arguments are flags which may influence the behavior:
 
@@ -462,6 +485,11 @@ class LatexNodes2Text(object):
          This feature is replaced by the concept of LaTeX specials---see, e.g.,
          :py:class:`pylatexenc.latexwalker.LatexSpecialsNode`.
 
+         To keep existing code working, add a call to
+         :py:meth:`apply_text_replacements()` immediately after
+         :py:meth:`nodelist_to_text()` to achieve the same effect as in
+         `pylatexenc 1.x`.  See :py:meth:`apply_text_replacements()`.
+
     - `env_dict`, `macro_dict`: Obsolete since `pylatexenc 2`.  If set, they are
       dictionaries of known environment and macro definitions.  They default to
       :py:data:`default_env_dict` and :py:data:`default_macro_dict`,
@@ -479,12 +507,13 @@ class LatexNodes2Text(object):
         if latex_context is None:
             if 'macro_dict' in flags or 'env_dict' in flags:
                 # LEGACY -- build a latex context using the given macro_dict
-                logger.warning(
-                    "Deprecated (pylatexenc 2.0): "
-                    "The `macro_dict=...` and `env_dict=...` options in LatexNodes2Text() are "
-                    "obsolete since pylatexenc 2.  It'll still work, but please consider "
-                    "using instead the more versatile option `latex_context=...`."
-                )
+                if pylatexenc._settings['deprecation_warnings']:
+                    logger.warning(
+                        "Deprecated (pylatexenc 2.0): "
+                        "The `macro_dict=...` and `env_dict=...` options in LatexNodes2Text() are "
+                        "obsolete since pylatexenc 2.  It'll still work, but please consider "
+                        "using instead the more versatile option `latex_context=...`."
+                    )
                 
                 macro_dict = flags.pop('macro_dict', [])
                 env_dict = flags.pop('env_dict', [])
@@ -508,9 +537,10 @@ class LatexNodes2Text(object):
             if 'math_mode' in flags:
                 raise TypeError("Cannot specify both math_mode= and keep_inline_math= "
                                 "for LatexNodes2Text()")
-            logger.warning("Deprecated (pylatexenc 2.0): "
-                           "The keep_inline_math=... option in LatexNodes2Text() has been superseded by "
-                           "the math_mode=... option.")
+            if pylatexenc._settings['deprecation_warnings']:
+                logger.warning("Deprecated (pylatexenc 2.0): "
+                               "The keep_inline_math=... option in LatexNodes2Text() has been superseded by "
+                               "the math_mode=... option.")
             self.math_mode = 'verbatim' if flags.pop('keep_inline_math') else 'text'
         else:
             self.math_mode = flags.pop('math_mode', 'text')
@@ -527,10 +557,12 @@ class LatexNodes2Text(object):
         self.keep_braced_groups_minlen = flags.pop('keep_braced_groups_minlen', 2)
 
         if 'text_replacements' in flags:
-            logger.warning("Deprecated (pylatexenc 2.0): "
-                           "The text_replacements= argument is ignored since pylatexenc 2. "
-                           "Characters or sequences of characters with special LaTeX meaning should "
-                           "be specified as latex \"specials\", see `LatexSpecialsNode`.")
+            del flags['text_replacements']
+            if pylatexenc._settings['deprecation_warnings']:
+                logger.warning("Deprecated (pylatexenc 2.0): "
+                               "The text_replacements= argument is ignored since pylatexenc 2. "
+                               "To keep existing code working, add a call to `apply_text_replacements()`. "
+                               "New code should use instead \"latex specials\".")
 
         if flags:
             # any flags left which we haven't recognized
@@ -815,6 +847,42 @@ class LatexNodes2Text(object):
         return self.nodelist_to_text(groupnode.nodelist)
 
 
+    def apply_text_replacements(self, s, text_replacements):
+        r"""
+        Convenience function for code that used `text_replacements=` in `pylatexenc
+        1.x`.
+
+        If you used custom `text_replacements=` in `pylatexenc 1.x` then you
+        will have to change::
+  
+          # pylatexenc 1.x with text_replacements
+          text_replacements = ...
+          l2t = LatexNodes2Text(..., text_replacements=text_replacements)
+          text = l2t.nodelist_to_text(...)
+  
+        to::
+  
+          # pylatexenc 2 text_replacements compatibility
+          text_replacements = ...
+          l2t = LatexNodes2Text(...)
+          temp = l2t.nodelist_to_text(...)
+          text = l2t.apply_text_replacements(temp, text_replacements)
+  
+        as a quick fix.  It is recommended however to treat text replacements
+        instead as "latex specials".  (Otherwise the brutal text replacements
+        might act on text generated from macros and environments and give
+        unwanted results.)  See :py:class:`pylatexenc.macrospec.SpecialsSpec`
+        and :py:class:`SpecialsTextSpec`.
+        """
+        
+        # perform suitable replacements
+        for pattern, replacement in text_replacements:
+            if hasattr(pattern, 'sub'):
+                s = pattern.sub(replacement, s)
+            else:
+                s = s.replace(pattern, replacement)
+
+        return s
 
 
 class _PushEquationContext(latexwalker._PushPropOverride):
@@ -842,8 +910,7 @@ class _PushEquationContext(latexwalker._PushPropOverride):
 
 def latex2text(content, tolerant_parsing=False, keep_inline_math=False, keep_comments=False):
     """
-    Extracts text from `content` meant for database indexing. `content` is
-    some LaTeX code.
+    Heuristic conversion of LaTeX content `content` to unicode text.
 
     .. deprecated:: 1.0
        Please use :py:class:`LatexNodes2Text` instead.
@@ -947,7 +1014,8 @@ def main(argv=None):
 
     if args.parser_keep_inline_math is not None or args.text_keep_inline_math is not None:
         logger.warning("Options --parser-keep-inline-math and --text-keep-inline-math are "
-                       "deprecated and no longer work.  Please use --math-mode=... instead.")
+                       "deprecated and no longer work.  Please consider using "
+                       "--math-mode=... instead.")
 
     latex = ''
     for line in fileinput.input(files=args.files):

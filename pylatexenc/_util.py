@@ -76,3 +76,12 @@ class LazyDict(MutableMapping):
         self._ensure_instance()
         return len(self._full_dict)
 
+    def copy(self):
+        self._ensure_instance()
+        return self._full_dict.copy()
+
+    def clear(self):
+        self._ensure_instance()
+        return self._full_dict.clear()
+
+

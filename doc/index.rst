@@ -27,16 +27,16 @@ Quick example::
 
 And the other way around::
 
-    >>> from pylatexenc.latexencode import utf8tolatex
+    >>> from pylatexenc.latexencode import unicode_to_latex
     >>> text = "À votre santé!"
-    >>> print(utf8tolatex(text))
-    {\`A} votre sant{\'e}!
+    >>> print(unicode_to_latex(text))
+    \`A votre sant\'e!
 
 
 You can also use these utilities directly in command line, e.g.::
 
     $ echo 'À votre santé!' | latexencode
-    {\`A} votre sant{\'e}!
+    \`A votre sant\'e!
 
 
 Documentation
