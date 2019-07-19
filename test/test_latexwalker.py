@@ -285,7 +285,7 @@ Also: {\itshape some italic text}.
         good_parsed_structure = \
             (LatexEnvironmentNode(
                 parsed_context=lw.parsed_context,
-                envname='enumerate',
+                environmentname='enumerate',
                 nodelist=[
                     LatexCharsNode(parsed_context=lw.parsed_context,
                                    chars='\n',

@@ -43,7 +43,8 @@ class TestLatexEncode(unittest.TestCase):
         loglevel = logging.getLogger().level
         logging.getLogger().setLevel(logging.CRITICAL)
 
-        u = UnicodeToLatexEncoder(bad_char_policy='fail', replacement_latex_protection='braces-almost-all')
+        u = UnicodeToLatexEncoder(unknown_char_policy='fail',
+                                  replacement_latex_protection='braces-almost-all')
 
         def fn(x, bdir=os.path.realpath(os.path.abspath(os.path.dirname(__file__)))):
             return os.path.join(bdir, x)

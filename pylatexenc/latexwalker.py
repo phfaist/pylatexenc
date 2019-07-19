@@ -23,32 +23,68 @@
 # THE SOFTWARE.
 #
 
-r"""
+r'''
 The ``latexwalker`` module provides a simple API for parsing LaTeX snippets,
 and representing the contents using a data structure based on node classes.
 
 LatexWalker will understand the syntax of most common macros.  However,
 ``latexwalker`` is NOT a replacement for a full LaTeX engine.  (Originally,
-``latexwalker`` was desigend to extract useful text for indexing for text
+``latexwalker`` was designed to extract useful text for indexing for text
 database searches of LaTeX content.)
+
+Simple example usage::
+
+    >>> from pylatexenc.latexwalker import LatexWalker, LatexEnvironmentNode
+    >>> w = LatexWalker(r"""
+    ... \textbf{Hi there!} Here is \emph{a list}:
+    ... \begin{enumerate}[label=(i)]
+    ... \item One
+    ... \item Two
+    ... \end{enumerate}
+    ... and $x$ is a variable.
+    ... """)
+    >>> (nodelist, pos, len_) = w.get_latex_nodes(pos=0)
+    >>> nodelist[0]
+    LatexCharsNode(pos=0, len=1, chars='\n')
+    >>> nodelist[1]
+    LatexMacroNode(pos=1, len=18, macroname='textbf',
+    nodeargd=ParsedMacroArgs(argnlist=[LatexGroupNode(pos=8, len=11,
+    nodelist=[LatexCharsNode(pos=9, len=9, chars='Hi there!')])], argspec='{'),
+    macro_post_space='')
+    >>> nodelist[5].isNodeType(LatexEnvironmentNode)
+    True
+    >>> nodelist[5].environmentname
+    'enumerate'
+    >>> nodelist[5].nodeargd.argspec
+    '['
+    >>> nodelist[5].nodeargd.argnlist
+    [LatexGroupNode(pos=60, len=11, nodelist=[LatexCharsNode(pos=61, len=9, chars='label=(i)')])]
+    >>> nodelist[7].latex_verbatim()
+    '$x$'
 
 You can also use `latexwalker` directly in command-line, producing JSON or a
 human-readable node tree::
 
-    $ echo '\textit{italic} text' | latexwalker  \ 
-                                    --output-format=json --json-compact
-    {"nodelist": [{"nodetype": "LatexMacroNode", "pos": 0, "len": 15, [...]
+    $ echo '\textit{italic} text' | latexwalker --output-format=json --json-compact
+    {
+      "nodelist": [
+        {
+          "nodetype": "LatexMacroNode",
+          "pos": 0,
+          "len": 15,
+          "macroname": "textit",
+    [...]
 
     $ latexwalker --help
     [...]
 
-This module provides the main machinery to parse a chunk of LaTeX code.  The
-parser can be influenced by specifying a collection of known macros and
+The parser can be influenced by specifying a collection of known macros and
 environments (the "latex context") that are specified using
-:py:class:`macrospec.MacroSpec` and :py:class:`macrospec.EnvironmentSpec`
-objects in a :py:class:`macrospec.LatexContextDb` object.  See the doc of the
-module :py:mod:`macrospec` for more information.
-"""
+:py:class:`pylatexenc.macrospec.MacroSpec` and
+:py:class:`pylatexenc.macrospec.EnvironmentSpec` objects in a
+:py:class:`pylatexenc.macrospec.LatexContextDb` object.  See the doc of the
+module :py:mod:`pylatexenc.macrospec` for more information.
+'''
 
 from __future__ import print_function
 
@@ -148,7 +184,7 @@ def get_default_latex_context_db():
 
 
 
-# provide an interface compatibile with pylatexenc < 2
+# provide an interface compatibile with pylatexenc 1.x
 MacrosDef = macrospec.std_macro
 r"""
 .. deprecated:: 2.0
@@ -602,7 +638,7 @@ class LatexEnvironmentNode(LatexNode):
     r"""
     A LaTeX Environment Node, i.e. ``\begin{something} ... \end{something}``.
 
-    .. py:attribute:: envname
+    .. py:attribute:: environmentname
 
        The name of the environment ('itemize', 'equation', ...)
 
@@ -635,18 +671,19 @@ class LatexEnvironmentNode(LatexNode):
           arguments for standard latex macros, for backwards compatibility.
     """
     
-    def __init__(self, envname, nodelist, **kwargs):
+    def __init__(self, environmentname, nodelist, **kwargs):
         nodeargd = kwargs.pop('nodeargd', macrospec.ParsedMacroArgs())
         # legacy:
         optargs = kwargs.pop('optargs', [])
         args = kwargs.pop('args', [])
 
         super(LatexEnvironmentNode, self).__init__(
-            _fields = ('envname','nodelist','nodeargd',),
-            _redundant_fields = ('optargs','args',),
+            _fields = ('environmentname','nodelist','nodeargd',),
+            _redundant_fields = ('envname', 'optargs','args',),
             **kwargs)
 
-        self.envname = envname
+        self.envname = environmentname
+        self.environmentname = environmentname
         self.nodelist = nodelist
         self.nodeargd = nodeargd
         # legacy:
@@ -846,7 +883,7 @@ class LatexWalker(object):
     node is `pos+len`.
 
     The following obsolete flag is accepted by the constructor for backwards
-    compatibility with `pylatexenc < 2`:
+    compatibility with `pylatexenc 1.x`:
 
       - `macro_dict`: a dictionary of known LaTeX macro specifications.  If
         specified, this should be a dictionary where the keys are macro names
@@ -860,7 +897,7 @@ class LatexWalker(object):
            `latex_context` argument which allows you to further provide
            environment specifications, etc.
 
-      - `keep_inline_math=True|False`: Obsolete option.  In `pylatexenc < 2`,
+      - `keep_inline_math=True|False`: Obsolete option.  In `pylatexenc 1.x`,
         this option triggered a weird behavior especially since there is a
         similarly named option in
         :py:class:`pylatexenc.latex2text.LatexNodes2Text` with a different
@@ -953,7 +990,7 @@ class LatexWalker(object):
         return {
             'tolerant_parsing': self.tolerant_parsing,
             'strict_braces': self.strict_braces,
-            # compatibility with pylatexenc < 2
+            # compatibility with pylatexenc 1.x
             'keep_inline_math': None,
         }
         
@@ -1328,7 +1365,7 @@ class LatexWalker(object):
             legnodeoptarg, legnodeargs = None, []
 
         return self._mknodeposlen(LatexEnvironmentNode,
-                                  envname=environmentname,
+                                  environmentname=environmentname,
                                   nodelist=nodelist,
                                   nodeargd=argd,
                                   # legacy:
@@ -1872,7 +1909,7 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
         title = 'Group: '
         iterchildren.append(('* ', n.nodelist, False))
     elif n.isNodeType(LatexEnvironmentNode):
-        title = '\\begin{%s}' %(n.envname)
+        title = '\\begin{%s}' %(n.environmentname)
         iterchildren.append(('* ', n.nodelist, False))
     elif n.isNodeType(LatexMathNode):
         title = '$inline math$'

@@ -577,9 +577,9 @@ class LatexNodes2Text(object):
         paths and resolving all symlinks).
 
         You may override this method to obtain the input data in however way you
-        see fit.  (In that case, a call to `set_tex_input_directory()` may not
-        be needed as that function simply sets properties which are used by the
-        default implementation of `read_input_file()`.)
+        see fit.  In that case, a call to `set_tex_input_directory()` may not be
+        needed as that function simply sets properties which are used by the
+        default implementation of `read_input_file()`.
 
         This function accepts the referred filename as argument (the argument to
         the ``\\input`` macro), and should return a string with the file
@@ -615,12 +615,7 @@ class LatexNodes2Text(object):
             return ''
 
 
-    def _input_node_simplify_repl(self, macronode):
-        if self.tex_input_directory:
-            return self._callback_input(macronode)
-        return ''
-
-    def _callback_input(self, n):
+    def _input_node_simplify_repl(self, n):
         #
         # recurse into files upon '\input{}'
         #
@@ -757,15 +752,15 @@ class LatexNodes2Text(object):
         
         if node.isNodeType(latexwalker.LatexEnvironmentNode):
             # get environment behavior definition.
-            envname = node.envname
-            envdef = self.latex_context.get_environment_spec(envname)
+            environmentname = node.environmentname
+            envdef = self.latex_context.get_environment_spec(environmentname)
             if envdef is None:
                 # default for unknown environments
                 envdef = EnvironmentTextSpec('', discard=False)
 
             if envdef.simplify_repl:
                 return apply_simplify_repl(node, envdef.simplify_repl, node.nodelist,
-                                           what="environment '%s'"%(envname))
+                                           what="environment '%s'"%(environmentname))
             if envdef.discard:
                 return ""
             return self.nodelist_to_text(node.nodelist)

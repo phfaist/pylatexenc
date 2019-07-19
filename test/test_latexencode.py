@@ -62,17 +62,17 @@ class TestLatexEncode(unittest.TestCase):
     def test_basic_3(self):
 
         # generates warnings -- that's good
-        test_bad_chars = "A unicode character: \N{THAI CHARACTER THO THONG}"
-        u = UnicodeToLatexEncoder(bad_char_policy='keep')
-        self.assertEqual(u.unicode_to_latex(test_bad_chars), test_bad_chars) # unchanged
+        test_unknown_chars = "A unicode character: \N{THAI CHARACTER THO THONG}"
+        u = UnicodeToLatexEncoder(unknown_char_policy='keep')
+        self.assertEqual(u.unicode_to_latex(test_unknown_chars), test_unknown_chars) # unchanged
 
     def test_basic_3b(self):
 
         # generates warnings -- that's good
-        test_bad_chars = "A unicode character: \N{THAI CHARACTER THO THONG}"
-        u = UnicodeToLatexEncoder(bad_char_policy='replace')
+        test_unknown_chars = "A unicode character: \N{THAI CHARACTER THO THONG}"
+        u = UnicodeToLatexEncoder(unknown_char_policy='replace')
 
-        self.assertEqual(u.unicode_to_latex(test_bad_chars),
+        self.assertEqual(u.unicode_to_latex(test_unknown_chars),
                          "A unicode character: {\\bfseries ?}")
 
 

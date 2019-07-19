@@ -5,8 +5,8 @@ Encode Unicode to LaTeX
 .. automodule:: pylatexenc.latexencode
 
 
-Unicode to Latex Conversion
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Unicode to Latex Conversion Class and Helper Function
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: pylatexenc.latexencode.UnicodeToLatexEncoder
    :members:

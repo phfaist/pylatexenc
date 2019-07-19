@@ -23,10 +23,51 @@
 # THE SOFTWARE.
 #
 
-"""
+r"""
 The `latexencode` module provides a set of routines that allows you to
-convert a unicode string to LaTeX escape sequences.  See
-:py:class:`UnicodeToLatexEncoder`.
+convert a unicode string to LaTeX escape sequences.
+
+For basic usage you can use the :py:func:`unicode_to_latex()` function
+directly::
+
+  >>> from pylatexenc.latexencode import unicode_to_latex
+  >>> print(unicode_to_latex('À votre santé'))
+  \`A votre sant\'e
+  >>> print(unicode_to_latex('The length of samples #3 & #4 is 3μm'))
+  The length of samples \#3 \& \#4 is 3\ensuremath{\mu}m
+
+The conversion is handled by the class :py:class:`UnicodeToLatexEncoder`.  If
+you are converting multiple strings, you may create an instance with the flags
+you like and invoke its method
+:py:meth:`~UnicodeToLatexEncoder.unicode_to_latex()` as many times as necessary::
+
+  >>> from pylatexenc.latexencode import UnicodeToLatexEncoder
+  >>> u = UnicodeToLatexEncoder(unknown_char_policy='replace')
+  >>> print(u.unicode_to_latex('À votre santé'))
+  \`A votre sant\'e
+  >>> print(u.unicode_to_latex('The length of samples #3 & #4 is 3μm'))
+  The length of samples \#3 \& \#4 is 3\ensuremath{\mu}m
+  >>> print(u.unicode_to_latex('À votre santé: 乾杯'))
+  No known latex representation for character: U+4E7E - ‘乾’
+  No known latex representation for character: U+676F - ‘杯’
+  \`A votre sant\'e: {\bfseries ?}{\bfseries ?}
+
+Example using custom conversion rules::
+
+  >>> from pylatexenc.latexencode import UnicodeToLatexEncoder, \
+  ...     UnicodeToLatexConversionRule, RULE_REGEX, get_builtin_conversion_rules
+  >>> u = UnicodeToLatexEncoder(
+  ...     conversion_rules=[
+  ...         UnicodeToLatexConversionRule(rule_type=RULE_REGEX, rule=[
+  ...             (re.compile(r'-->'), r'\\textrightarrow'),
+  ...             (re.compile(r'<--'), r'\\textleftarrow'),
+  ...         ])
+  ...     ] + get_builtin_conversion_rules('defaults')
+  ... )
+  >>> print(u.unicode_to_latex("Cheers --> À votre santé"))
+  Cheers {\textrightarrow} \`A votre sant\'e
+
+See :py:class:`UnicodeToLatexEncoder`.
 """
 
 from __future__ import print_function, absolute_import, unicode_literals
@@ -67,6 +108,10 @@ def get_builtin_uni2latex_dict():
 
     The returned dictionary may not be modified.  To alter the default behavior,
     you should specify custom rules to :py:class:`UnicodeToLatexEncoder`.
+
+    .. versionadded:: 2.0
+
+       This function was introduced in `pylatexenc 2.0`.
     """
     return _MappingProxyType(_uni2latex)
 
@@ -153,9 +198,16 @@ class UnicodeToLatexConversionRule:
                   # protect acronyms of capital letters with braces ABC -> {ABC}
                   (re.compile(r'[A-Z]{2,}'), r'{\1}'),
                   # can specify several rules. For instance, convert ... -> \ldots
-                  (re.compile(r'...'), r'\ldots'),
+                  (re.compile(r'...'), r'\\ldots'),
               ]
           )
+
+        .. note::
+    
+           The replacement string is parsed with `re.sub()` and backslashes have
+           a special meaning because they can refer to captured expressions.
+           For a literal backslash, use two backslashes in raw strings, four
+           backslashes in normal strings.
 
       - `RULE_CALLABLE`: If `rule_type` is `RULE_CALLABLE`, then `rule` should
         be a callable that accepts two arguments, the unicode string and the
@@ -222,7 +274,7 @@ class UnicodeToLatexEncoder(object):
     the constructor.  Note: These attributes must be specified to the
     constructor and may NOT be subsequently modified.  This is because in the
     constructor we pre-compile some rules and flags to optimize calls to
-    :py:text:`unicode_to_text()`.
+    :py:meth:`unicode_to_text()`.
 
     .. py:attribute:: non_ascii_only
 
@@ -251,11 +303,11 @@ class UnicodeToLatexEncoder(object):
        after.
 
        Currently only one situation is recognized: if the replacement string
-       ends with a latex macro invokation with a non-symbol macro name,
+       ends with a latex macro invocation with a non-symbol macro name,
        e.g. ``\textemdash`` or ``\^\i``.  Indeed, if we naively replace these
-       texts in an arbitrary string (like ``ma\N{LATIN SMALL LETTER I WITH
-       CIRCUMFLEX}tre``), we might get an invalid macro invokation (like
-       ``ma\^\itre`` which causes un known macro name ``\itre``).
+       texts in an arbitrary string (like ``maître``), we might get an invalid
+       macro invocation (like ``ma\^\itre`` which causes un known macro name
+       ``\itre``).
 
        Possible protection schemes are:
 
@@ -263,25 +315,27 @@ class UnicodeToLatexEncoder(object):
            might look fragile) is placed in curly braces ``{...}``.
 
          - 'braces-all'.  All replacement latex escapes are surrounded in
-           protective curly braces ``{...}``.
+           protective curly braces ``{...}``, regardless of whether or not they
+           might be deemed "fragile" or "unsafe".
 
          - 'braces-almost-all'.  Almost all replacement latex escapes are
-           surrounded in protective curly braces ``{...}``.  (Specifically, all
-           those replacement strings that start with a backslash.)  [I'm not
-           sure this is useful, but it provides a way to reproduce the previous
-           behavior of `utf8tolatex()`.]
+           surrounded in protective curly braces ``{...}``.  This option
+           emulates closely the behavior of `brackets=True` of the function
+           `utf8tolatex()` in `pylatexenc 1.x`, though I'm not sure it is really
+           useful.  [Specifically, all those replacement strings that start with
+           a backslash are protected in curly braces].
 
-         - 'braces-after-macro'.  If the situation described above (where the
-           replacement text ends with a string-named macro) is encountered, then
-           a pair of empty braces is added at the end of the replacement text to
-           protect the macro.
+         - 'braces-after-macro'.  In the situation where the replacement latex
+           code ends with a string-named macro, then a pair of empty braces is
+           added at the end of the replacement text to protect the macro.
 
-         - `none`.  No protection is applied.  This is not recommended.
+         - `none`.  No protection is applied, even in "unsafe" cases.  This is
+           not recommended, you will likely get invalid LaTeX code.
 
-    .. py:attribute:: bad_char_policy
+    .. py:attribute:: unknown_char_policy
 
        What to do when a non-ascii character is encountered without any known
-       substitution macro.  The attribute `bad_char_policy` can be set to one of:
+       substitution macro.  The attribute `unknown_char_policy` can be set to one of:
 
          - 'keep' (keep the character as is)
 
@@ -298,22 +352,21 @@ class UnicodeToLatexEncoder(object):
            provided to that argument.)  The return value of the callable is used
            as LaTeX replacement code.
 
-    .. py:attribute:: bad_char_warning
+    .. py:attribute:: unknown_char_warning
 
-       In addition to the `bad_char_policy`, this attribute indicates whether or
-       not (`True` or `False`) one should generate a warning when a "bad char"
-       is encountered. (Default: True)
+       In addition to the `unknown_char_policy`, this attribute indicates
+       whether or not (`True` or `False`) one should generate a warning when a
+       nonascii character without any known latex representation is
+       encountered. (Default: True)
 
-    The database of rules specifying how to convert unicode characters into
-    LaTeX are organized into categories, and can be specified with the
-    `add_conversion_rule()`.
 
     .. warning::
       
        None of the above attributes should be modified after constructing the
-       object.  Their final value must be specified to the class constructor.
-       [Indeed, the class constructor "compiles" these attribute values into a
-       data structure that makes :py:meth:`unicode_to_text()` more efficient.]
+       object.  The value specified to the class constructor is final and cannot
+       be changed.  [Indeed, the class constructor "compiles" these attribute
+       values into a data structure that makes :py:meth:`unicode_to_text()` more
+       efficient.]
 
     .. versionadded:: 2.0
 
@@ -324,8 +377,8 @@ class UnicodeToLatexEncoder(object):
         self.conversion_rules = kwargs.pop('conversion_rules', 
                                            get_builtin_conversion_rules('defaults'))
         self.replacement_latex_protection = kwargs.pop('replacement_latex_protection', 'braces')
-        self.bad_char_policy = kwargs.pop('bad_char_policy', 'keep')
-        self.bad_char_warning = kwargs.pop('bad_char_warning', True)
+        self.unknown_char_policy = kwargs.pop('unknown_char_policy', 'keep')
+        self.unknown_char_warning = kwargs.pop('unknown_char_warning', True)
 
         if kwargs:
             logger.warning("Ignoring unknown keyword arguments: %s", ",".join(kwargs.keys())) 
@@ -353,24 +406,24 @@ class UnicodeToLatexEncoder(object):
                 raise TypeError("Invalid rule type: {}".format(rule.rule_type))
         
         # bad char policy:
-        if isinstance(self.bad_char_policy, basestring):
-            selfmethname = '_do_bad_char_'+self.bad_char_policy
+        if isinstance(self.unknown_char_policy, basestring):
+            selfmethname = '_do_unknown_char_'+self.unknown_char_policy
             if not hasattr(self, selfmethname):
-                raise ValueError("Invalid bad-char policy: {}".format(self.bad_char_policy))
-            self._do_bad_char = getattr(self, selfmethname)
-        elif callable(self.bad_char_policy):
+                raise ValueError("Invalid bad-char policy: {}".format(self.unknown_char_policy))
+            self._do_unknown_char = getattr(self, selfmethname)
+        elif callable(self.unknown_char_policy):
             import inspect
-            fn = self.bad_char_policy
+            fn = self.unknown_char_policy
             if 'u2lobj' in getfullargspec(fn)[0]:
-                self._do_bad_char = functools.partial(self.bad_char_policy, u2lobj=self)
+                self._do_unknown_char = functools.partial(self.unknown_char_policy, u2lobj=self)
             else:
-                self._do_bad_char = self.bad_char_policy
+                self._do_unknown_char = self.unknown_char_policy
         else:
-            raise TypeError("Invalid argument for bad_char_policy: {!r}".format(self.bad_char_policy))
+            raise TypeError("Invalid argument for unknown_char_policy: {!r}".format(self.unknown_char_policy))
 
         # bad char warning:
-        if not self.bad_char_warning:
-            self._do_warn_bad_char = lambda ch: None # replace method by no-op
+        if not self.unknown_char_warning:
+            self._do_warn_unknown_char = lambda ch: None # replace method by no-op
 
         # set a method that will skip ascii characters if required:
         if self.non_ascii_only:
@@ -392,7 +445,8 @@ class UnicodeToLatexEncoder(object):
 
     def unicode_to_latex(self, s):
         """
-        Convert unicode characters in the string `s` into latex escape sequences.
+        Convert unicode characters in the string `s` into latex escape sequences,
+        according to the rules and options given to the constructor.
         """
 
         s = unicode(s) # make sure s is unicode
@@ -421,8 +475,8 @@ class UnicodeToLatexEncoder(object):
                     p.latex += ch
                     p.pos += 1
                 else:
-                    self._do_warn_bad_char(ch)
-                    p.latex += self._do_bad_char(ch)
+                    self._do_warn_unknown_char(ch)
+                    p.latex += self._do_unknown_char(ch)
                     p.pos += 1
                 
         return p.latex
@@ -487,20 +541,20 @@ class UnicodeToLatexEncoder(object):
         return repl
 
     # policies for "bad chars":
-    def _do_bad_char_keep(self, ch):
+    def _do_unknown_char_keep(self, ch):
         return ch
 
-    def _do_bad_char_replace(self, ch):
+    def _do_unknown_char_replace(self, ch):
         return r'{\bfseries ?}'
 
-    def _do_bad_char_ignore(self, ch):
+    def _do_unknown_char_ignore(self, ch):
         return ''
 
-    def _do_bad_char_fail(self, ch):
-        raise ValueError("Character cannot be encoded into LaTeX: U+%04X - ‘%s’"%(ord(ch), ch))
+    def _do_unknown_char_fail(self, ch):
+        raise ValueError("No known latex representation for character: U+%04X - ‘%s’"%(ord(ch), ch))
 
-    def _do_warn_bad_char(self, ch):
-        logger.warning("Character cannot be encoded into LaTeX: U+%04X - ‘%s’", ord(ch), ch)
+    def _do_warn_unknown_char(self, ch):
+        logger.warning("No known latex representation for character: U+%04X - ‘%s’", ord(ch), ch)
 
 
 
@@ -512,16 +566,17 @@ _u2l_obj_cache = {}
 
 
 def unicode_to_latex(s, non_ascii_only=False, replacement_latex_protection='braces',
-                     bad_char_policy='keep', bad_char_warning=True):
+                     unknown_char_policy='keep', unknown_char_warning=True):
     r"""
     Shorthand for constructing a :py:class:`UnicodeToLatexEncoder` instance and
     calling its :py:meth:`~UnicodeToLatexEncoder.unicode_to_latex()` method.
 
-    The :py:class:`UnicodeToLatexEncoder` instances for given values of the
-    options are cached.
+    The :py:class:`UnicodeToLatexEncoder` instances for given option settings
+    are cached, making repeated calls to :py:func:`unicode_to_latex()` possible
+    without creating a new instance upon each call.
 
     The parameters `non_ascii_only`, `replacement_latex_protection`,
-    `bad_char_policy`, and `bad_char_warning` are directly passed on to the
+    `unknown_char_policy`, and `unknown_char_warning` are directly passed on to the
     :py:class:`UnicodeToLatexEncoder` constructor.  See the class doc for
     :py:class:`UnicodeToLatexEncoder` for more information about their effect.
 
@@ -530,15 +585,15 @@ def unicode_to_latex(s, non_ascii_only=False, replacement_latex_protection='brac
     :py:class:`UnicodeToLatexEncoder` instance directly.
     """
 
-    key = (non_ascii_only, replacement_latex_protection, bad_char_policy, bad_char_warning)
+    key = (non_ascii_only, replacement_latex_protection, unknown_char_policy, unknown_char_warning)
 
     if key in _u2l_obj_cache:
         u = _u2l_obj_cache[key]
     else:
         u = UnicodeToLatexEncoder(non_ascii_only=non_ascii_only,
                                   replacement_latex_protection=replacement_latex_protection,
-                                  bad_char_policy=bad_char_policy,
-                                  bad_char_warning=bad_char_warning)
+                                  unknown_char_policy=unknown_char_policy,
+                                  unknown_char_warning=unknown_char_warning)
         _u2l_obj_cache[key] = u
 
     return u.unicode_to_latex(s)
@@ -566,7 +621,7 @@ utf82latex = _util.LazyDict(generate_dict_fn=lambda: _uni2latex)
    specifying rules how to convert chars to LaTeX escapes.
 
    For backwards compatibility, you can still modify the module-level dictionary
-   `utf82latex` (but don't assign a new object to it) and this will directly
+   `utf82latex` (but you can't assign a new object to it) and this will directly
    modify the global built-in dictionary of known latex escapes.  This is not
    recommended however, and the `utf82latex` module-level dictionary might be
    removed in the future.
@@ -581,15 +636,21 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
     .. note::
 
        Since `pylatexenc 2.0`, it is recommended to use the
-       :py:class:`TextLatexEncoder()` function instead, which provides more
-       flexibility and versatility.  (For instance, it allows you to specify
-       custom escape sequences for certain characters.)
+       :py:class:`TextLatexEncoder()` function instead.
 
-       The function `utf8tolatex()` is provided unchanged from `pylatexenc 1.x`.
-       We have no plans to remove this function in the near future so it is not
-       (yet) considered as deprecated and we will continue to provide it in near
-       future versions of `pylatexenc`.  Bug reports and improvements will
-       however be directed to :py:func:`TextLatexEncoder()`.
+       The new routines provide much more flexibility and versatility.  For
+       instance, you can specify custom escape sequences for certain characters.
+       Some cheap benchmarks seem to indicate that the new routines are not
+       significantly slower than the `utf8tolatex()` function.  Also, the new
+       names (`unicode_to_text`, etc.) removes the inconsistency of the poorly
+       chosen function name `utf8tolatex()` (since the argument is in fact not
+       'utf-8'-encoded but rather a Python unicode string object).
+
+       The function `utf8tolatex()` is still provided unchanged from `pylatexenc
+       1.x`.  We do not plan to remove this function in the near future so it is
+       not (yet) considered as deprecated and we will continue to provide it in
+       near future versions of `pylatexenc`.  Bug reports, improvements, and new
+       features will however be directed to :py:func:`UnicodeToLatexEncoder()`.
 
     Encode a UTF-8 string to a LaTeX snippet.
 
