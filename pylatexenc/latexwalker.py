@@ -722,6 +722,10 @@ class LatexSpecialsNode(LatexNode):
        The `nodeargd` attribute can also be `None` even if the specials expects
        arguments, in the special situation where
        :py:meth:`LatexWalker.get_latex_expression()` encounters this specials.
+
+    .. versionadded:: 2.0
+
+       Latex specials were introduced in `pylatexenc 2.0`.
     """
     def __init__(self, specials_chars, **kwargs):
         nodeargd=kwargs.pop('nodeargd', None)

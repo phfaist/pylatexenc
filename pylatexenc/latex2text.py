@@ -87,6 +87,12 @@ class MacroTextSpec(object):
     
        If set to `True`, then the macro call is discarded, i.e., it is converted
        to an empty string.
+
+
+    .. versionadded:: 2.0
+
+       The class :py:class:`MacroTextSpec` was introduced in `pylatexenc
+       2.0` to succeed to the previously named `MacroDef` class.
     """
     def __init__(self, macroname, simplify_repl=None, discard=None):
         super(MacroTextSpec, self).__init__()
@@ -117,6 +123,12 @@ class EnvironmentTextSpec(object):
     
        If set to `True`, then the full environment is discarded, i.e., it is
        converted to an empty string.
+
+
+    .. versionadded:: 2.0
+
+       The class :py:class:`EnvironmentTextSpec` was introduced in `pylatexenc
+       2.0` to succeed to the previously named `EnvDef` class.
     """
     def __init__(self, environmentname, simplify_repl=None, discard=False):
         super(EnvironmentTextSpec, self).__init__()
@@ -142,6 +154,11 @@ class SpecialsTextSpec(object):
        `l2tobj`, then the `LatexNodes2Text` object is provided to that argument.
        If it is a string, it may contain '%s' replacements, in which the macro
        arguments will be substituted.
+
+
+    .. versionadded:: 2.0
+
+       Latex specials were introduced in `pylatexenc 2.0`.
     """
     def __init__(self, specials_chars, simplify_repl=None):
         super(SpecialsTextSpec, self).__init__()
@@ -181,6 +198,10 @@ def MacroDef(macname, simplify_repl=None, discard=None):
 def fmt_equation_environment(envnode, l2tobj):
     r"""
     Can be used as callback for display equation environments.
+
+    .. versionadded:: 2.0
+
+       This function was introduced in `pylatexenc 2.0`.
     """
 
     with _PushEquationContext(l2tobj):
@@ -199,6 +220,10 @@ def fmt_input_macro(macronode, l2tobj):
     with a nonempty input directory in the :py:class:`LatexNodes2Text` object,
     then this method reads the contents of the file name in the macro argument
     according to the provided settings.  Otherwise, returns an empty string.
+
+    .. versionadded:: 2.0
+
+       This function was introduced in `pylatexenc 2.0`.
     """
     return l2tobj._input_node_simplify_repl(macronode)
 
@@ -210,6 +235,10 @@ def placeholder_node_formatter(placeholdertext):
     :py:class:`SpecialsTextSpec` for latex nodes that do not have a good textual
     representation, providing as text replacement the simple placeholder text
     ``'< P L A C E H O L D E R   T E X T >'``.
+
+    .. versionadded:: 2.0
+
+       This function was introduced in `pylatexenc 2.0`.
     """
     return lambda pht=placeholdertext: '< ' + " ".join(pht) + ' >'
     
@@ -220,6 +249,10 @@ def fmt_placeholder_node(node):
     nodes that do not have a good textual representation.  The text replacement
     is the placeholder text
     ``'< N A M E   O F   T H E   M A C R O   O R   E N V I R O N M E N T >'``.
+
+    .. versionadded:: 2.0
+
+       This function was introduced in `pylatexenc 2.0`.
     """
     # spaces added so that database indexing doesn't index the word "array" or
     # "pmatrix"
