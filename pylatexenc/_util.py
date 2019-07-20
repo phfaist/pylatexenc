@@ -27,8 +27,6 @@
 # internal module. API may change at any time without notice.
 
 
-import sys
-
 try:
     # Python >= 3.3
     from collections.abc import MutableMapping

@@ -8,14 +8,14 @@ if sys.version_info.major > 2:
 
 from pylatexenc.macrospec import (
     ParsedMacroArgs, MacroStandardArgsParser,
-    MacroSpec, EnvironmentSpec, SpecialsSpec,
+    MacroSpec, EnvironmentSpec, #SpecialsSpec,
     std_macro, std_environment, LatexContextDb
 )
 
 from pylatexenc import latexwalker
 from pylatexenc.latexwalker import (
-    LatexCharsNode, LatexGroupNode, LatexCommentNode, LatexMacroNode,
-    LatexEnvironmentNode, LatexMathNode
+    LatexCharsNode, LatexGroupNode,
+    #LatexCommentNode, LatexMacroNode, LatexEnvironmentNode, LatexMathNode
 )
 
 
@@ -60,6 +60,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
                 argspec='{',
                 argnlist=[ LatexGroupNode(
                     parsed_context=lw.parsed_context,
+                    delimiters=('{','}'),
                     nodelist=[
                         LatexCharsNode(parsed_context=lw.parsed_context,
                                        chars='ab',
@@ -91,6 +92,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
             ParsedMacroArgs(argspec='[', argnlist=[
                 LatexGroupNode(
                     parsed_context=lw.parsed_context,
+                    delimiters=('[', ']'),
                     nodelist=[
                         LatexCharsNode(parsed_context=lw.parsed_context,
                                        chars='ab',
@@ -152,6 +154,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
             argd,
             ParsedMacroArgs(argspec='{*[{*', argnlist=[
                 LatexGroupNode(parsed_context=lw.parsed_context,
+                               delimiters=('{', '}'),
                                nodelist=[
                                    LatexCharsNode(parsed_context=lw.parsed_context,
                                                   chars='ab',
@@ -181,6 +184,7 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
                                pos=5,len=1),
                 None,
                 LatexGroupNode(parsed_context=lw.parsed_context,
+                               delimiters=('[', ']'),
                                nodelist=[
                                    LatexCharsNode(parsed_context=lw.parsed_context,
                                                   chars='ab',

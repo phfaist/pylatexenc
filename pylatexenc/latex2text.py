@@ -45,7 +45,6 @@ You may also use the command-line version of `latex2text`::
 from __future__ import print_function #, absolute_import
 
 import os
-import unicodedata
 import logging
 import sys
 import inspect
@@ -764,7 +763,7 @@ class LatexNodes2Text(object):
         if node.isNodeType(latexwalker.LatexGroupNode):
             contents = self._groupnodecontents_to_text(node)
             if self.keep_braced_groups and len(contents) >= self.keep_braced_groups_minlen:
-                return "{" + contents + "}"
+                return node.delimiters[0] + contents + node.delimiters[1]
             return contents
 
         def apply_simplify_repl(node, simplify_repl, nodelistargs, what):
@@ -869,6 +868,8 @@ class LatexNodes2Text(object):
                 len(node.nodeargs) == 0)
 
     def _groupnodecontents_to_text(self, groupnode):
+        if not groupnode.isNodeType(latexwalker.LatexGroupNode):
+            return self.node_to_text(groupnode)
         return self.nodelist_to_text(groupnode.nodelist)
 
 

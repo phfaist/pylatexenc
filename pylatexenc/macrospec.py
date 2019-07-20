@@ -37,12 +37,6 @@ macros and environments, specifying how they should be parsed by
 
 import sys
 
-try:
-    # Python >= 3.3
-    from collections.abc import MutableMapping
-except ImportError:
-    from collections import MutableMapping
-
 
 if sys.version_info.major > 2:
     # Py3

@@ -49,8 +49,8 @@ Simple example usage::
     >>> nodelist[1]
     LatexMacroNode(pos=1, len=18, macroname='textbf',
     nodeargd=ParsedMacroArgs(argnlist=[LatexGroupNode(pos=8, len=11,
-    nodelist=[LatexCharsNode(pos=9, len=9, chars='Hi there!')])], argspec='{'),
-    macro_post_space='')
+    nodelist=[LatexCharsNode(pos=9, len=9, chars='Hi there!')], delimiters=('{', '}'))],
+    argspec='{'), macro_post_space='')
     >>> nodelist[5].isNodeType(LatexEnvironmentNode)
     True
     >>> nodelist[5].environmentname
@@ -58,7 +58,8 @@ Simple example usage::
     >>> nodelist[5].nodeargd.argspec
     '['
     >>> nodelist[5].nodeargd.argnlist
-    [LatexGroupNode(pos=60, len=11, nodelist=[LatexCharsNode(pos=61, len=9, chars='label=(i)')])]
+    [LatexGroupNode(pos=60, len=11, nodelist=[LatexCharsNode(pos=61, len=9,
+    chars='label=(i)')], delimiters=('[', ']'))]
     >>> nodelist[7].latex_verbatim()
     '$x$'
 
@@ -527,13 +528,25 @@ class LatexGroupNode(LatexNode):
 
        A list of nodes describing the contents of the LaTeX braced group.  Each
        item of the list is a :py:class:`LatexNode`.
+
+    .. py:attribute:: delimiters
+
+       A 2-item tuple that stores the delimiters for this group node.  Usually
+       this is `('{', '}')`, except for optional macro arguments where this
+       might be for instance `('[', ']')`.
+
+       .. versionadded:: 2.0
+
+          The `delimiters` field was added in `pylatexenc 2.0`.
     """
     def __init__(self, nodelist, **kwargs):
+        delimiters = kwargs.pop('delimiters', ('{', '}'))
         super(LatexGroupNode, self).__init__(
-            _fields=('nodelist',),
+            _fields=('nodelist','delimiters',),
             **kwargs
         )
         self.nodelist = nodelist
+        self.delimiters = delimiters
 
     def nodeType(self):
         return LatexGroupNode
@@ -1308,6 +1321,7 @@ class LatexWalker(object):
         )
 
         return self._mknodeposlen(LatexGroupNode, nodelist=nodelist,
+                                  delimiters=(brace_type, closing_brace),
                                   pos = firsttok.pos,
                                   len = npos + nlen - firsttok.pos)
 

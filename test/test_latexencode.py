@@ -47,13 +47,13 @@ class TestLatexEncode(unittest.TestCase):
         self.assertEqual(u.unicode_to_latex(input),
                          "''\\`A votre sant\\'e!'' s'exclama le ma\\^\\itre de maison \\`a 100\\%.")
 
-    def test_basic_2b(self):
+    def test_basic_2c(self):
 
         u = UnicodeToLatexEncoder(non_ascii_only=True)
         ascii_chars_convert = " \" # $ % & \\ _ { } ~ "
         self.assertEqual(u.unicode_to_latex(ascii_chars_convert), ascii_chars_convert)
 
-    def test_basic_2c(self):
+    def test_basic_2d(self):
 
         u = UnicodeToLatexEncoder(non_ascii_only=False)
         ascii_chars_convert = " \" # $ % & \\ _ { } ~ "

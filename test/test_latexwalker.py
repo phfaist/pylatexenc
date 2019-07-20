@@ -136,8 +136,6 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
 '''
         lw = LatexWalker(latextext, tolerant_parsing=True)
 
-        emptyargs = macrospec.ParsedMacroArgs()
-
         self.assertEqual(lw.get_latex_expression(pos=0),
                          (LatexCharsNode(parsed_context=lw.parsed_context,
                                          chars='T',
@@ -203,6 +201,7 @@ Indeed thanks to \cite[Lemma 3]{Author}, we know that...
         self.assertEqual(lw.get_latex_maybe_optional_arg(pos=p),
                          (LatexGroupNode(
                              parsed_context=lw.parsed_context,
+                             delimiters=('[', ']'),
                              nodelist=[
                                  LatexCharsNode(
                                      parsed_context=lw.parsed_context,
@@ -232,6 +231,7 @@ Also: {\itshape some italic text}.
         good_parsed_structure = \
             ( LatexGroupNode(
                 parsed_context=lw.parsed_context,
+                delimiters=('{','}'),
                 nodelist=[
                     LatexMacroNode(parsed_context=lw.parsed_context,
                                    macroname='itshape',
@@ -260,6 +260,7 @@ Also: {\itshape some italic text}.
         self.assertEqual(
             lw.get_latex_braced_group(pos=p, brace_type='['),
             (LatexGroupNode(parsed_context=lw.parsed_context,
+                            delimiters=('[', ']'),
                             nodelist=[
                                 LatexCharsNode(parsed_context=lw.parsed_context,
                                                chars='(i)',
@@ -308,6 +309,7 @@ Also: {\itshape some italic text}.
                         nodeargd=macrospec.ParsedMacroArgs([
                             LatexGroupNode(
                                 parsed_context=lw.parsed_context,
+                                delimiters=('[', ']'),
                                 nodelist=[
                                     LatexCharsNode(parsed_context=lw.parsed_context,
                                                    chars='a',
@@ -326,6 +328,7 @@ Also: {\itshape some italic text}.
                 nodeargd=macrospec.ParsedMacroArgs([
                     LatexGroupNode(
                         parsed_context=lw.parsed_context,
+                        delimiters=('[', ']'),
                         nodelist=[
                             LatexCharsNode(parsed_context=lw.parsed_context,
                                            chars='(i)',
@@ -371,6 +374,7 @@ Also: {\itshape some italic text}.
                                chars='Also: ',
                                pos=p, len=6),
                 LatexGroupNode(parsed_context=lw.parsed_context,
+                               delimiters=('{', '}'),
                                nodelist=[
                                    LatexMacroNode(parsed_context=lw.parsed_context,
                                                   macroname='itshape',
@@ -431,6 +435,7 @@ Also: {\itshape some italic text}.
                            chars='ma 3]',
                            pos=26,len=31-26),
             LatexGroupNode(parsed_context=lw2.parsed_context,
+                           delimiters=('{', '}'),
                            nodelist=[
                                LatexCharsNode(parsed_context=lw2.parsed_context,
                                               chars='Author',
@@ -461,6 +466,7 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
                            macroname=r'vec',
                            nodeargd=macrospec.ParsedMacroArgs([
                                LatexGroupNode(parsed_context=lw.parsed_context,
+                                              delimiters=('{', '}'),
                                               nodelist=[
                                                   LatexCharsNode(parsed_context=lw.parsed_context,
                                                                  chars='x',
@@ -530,6 +536,7 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
                            nodeargd=macrospec.ParsedMacroArgs([
                                LatexGroupNode(
                                    parsed_context=lw.parsed_context,
+                                   delimiters=('{', '}'),
                                    nodelist=[
                                        LatexCharsNode(parsed_context=lw.parsed_context,
                                                       chars='if ',
@@ -571,6 +578,7 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
                 macroname='mbox',
                 nodeargd=macrospec.ParsedMacroArgs([
                     LatexGroupNode(parsed_context=lw.parsed_context,
+                                   delimiters=('{', '}'),
                                    nodelist=[
                                        LatexCharsNode(parsed_context=lw.parsed_context,
                                                       chars='Prob',
@@ -588,6 +596,7 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
                 nodeargd=macrospec.ParsedMacroArgs([
                     LatexGroupNode(
                         parsed_context=lw.parsed_context,
+                        delimiters=('{', '}'),
                         nodelist=[
                             LatexCharsNode(parsed_context=lw.parsed_context,
                                            chars='some event if ',
@@ -654,6 +663,7 @@ Also: {\itshape some italic text}.
                                macroname='textbf',
                                nodeargd=macrospec.ParsedMacroArgs(argspec='{', argnlist=[
                                    LatexGroupNode(parsed_context=lw.parsed_context,
+                                                  delimiters=('{', '}'),
                                                   nodelist=[
                                                       LatexCharsNode(parsed_context=lw.parsed_context,
                                                                      chars='bold text',
