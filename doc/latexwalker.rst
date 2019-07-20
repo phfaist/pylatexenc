@@ -46,6 +46,9 @@ Data Node Classes
 .. autoclass:: pylatexenc.latexwalker.LatexEnvironmentNode
    :show-inheritance:
 
+.. autoclass:: pylatexenc.latexwalker.LatexSpecialsNode
+   :show-inheritance:
+
 .. autoclass:: pylatexenc.latexwalker.LatexMathNode
    :show-inheritance:
 

@@ -1072,7 +1072,7 @@ class LatexWalker(object):
             space += s[pos]
             pos += 1
             if space.endswith('\n\n'):  # two \n's indicate new paragraph.
-                return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space=space)
+                return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space=space[:-2])
 
         if pos >= len(s):
             raise LatexWalkerEndOfStream()

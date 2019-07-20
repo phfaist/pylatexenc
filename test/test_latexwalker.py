@@ -713,6 +713,52 @@ Also: {\itshape some italic text}.
             self.fail(unicode("get_latex_nodes() raised LatexWalkerParseError, but it shouldn't have in "
                               "tolerant parsing mode!\n")+unicode(e))
             
+    
+    def test_bug_000(self):
+        latextext = r'''
+\documentclass[stuff]{docclass}
+
+\begin{document}
+% empty document
+\end{document}
+'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+
+        p = 0
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p, read_max_nodes=3),
+            ([
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='\n',
+                               pos=0, len=1),
+                LatexMacroNode(parsed_context=lw.parsed_context,
+                               macroname='documentclass',
+                               nodeargd=macrospec.ParsedMacroArgs(argspec='[{', argnlist=[
+                                   LatexGroupNode(parsed_context=lw.parsed_context,
+                                                  delimiters=('[', ']'),
+                                                  nodelist=[
+                                                      LatexCharsNode(parsed_context=lw.parsed_context,
+                                                                     chars='stuff',
+                                                                     pos=1+15,len=20-15),
+                                                  ],
+                                                  pos=1+14,len=21-14),
+                                   LatexGroupNode(parsed_context=lw.parsed_context,
+                                                  delimiters=('{', '}'),
+                                                  nodelist=[
+                                                      LatexCharsNode(parsed_context=lw.parsed_context,
+                                                                     chars='docclass',
+                                                                     pos=1+22,len=30-22),
+                                                  ],
+                                                  pos=1+21,len=31-21)
+                               ]),
+                               pos=1+0,len=31),
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='\n\n',
+                               pos=1+31, len=2),
+            ], p, 34))
+
+
 
 
 # more test data
