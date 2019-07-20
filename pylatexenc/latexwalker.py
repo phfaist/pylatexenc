@@ -654,7 +654,15 @@ class LatexEnvironmentNode(LatexNode):
        The :py:class:`pylatexenc.macrospec.ParsedMacroArgs` object that
        represents the macro arguments.
 
-    The following attributes are obsolete since `pylatexenc 2.0`.
+    The following attributes are available, but they are obsolete since
+    `pylatexenc 2.0`.
+
+    .. py:attribute:: envname
+
+       .. deprecated:: 2.0
+
+          This attribute was renamed `environmentname` for consistency with the
+          rest of the package.
 
     .. py:attribute:: optargs
 
@@ -684,11 +692,11 @@ class LatexEnvironmentNode(LatexNode):
             _redundant_fields = ('envname', 'optargs','args',),
             **kwargs)
 
-        self.envname = environmentname
         self.environmentname = environmentname
         self.nodelist = nodelist
         self.nodeargd = nodeargd
         # legacy:
+        self.envname = environmentname
         self.optargs = optargs
         self.args = args
 
