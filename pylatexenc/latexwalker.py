@@ -1891,18 +1891,35 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
     title = ''
     comment = ''
     iterchildren = []
+
+    def add_args():
+        if n.nodeargd is None:
+            #iterchildren.append(('<no args>', '', None))
+            return
+        elif n.nodeargd.argspec is None or n.nodeargd.argnlist is None:
+            iterchildren.append(('<args> ', '<cannot be displayed>', None))
+            return
+        for argt, argn in zip(n.nodeargd.argspec, n.nodeargd.argnlist):
+            if argt == '[':
+                t = '[.]: '
+            elif argt == '{':
+                t = '{.}: '
+            elif argt == '*':
+                t = '<*>:   '
+            else:
+                t = '<unknown>: '
+            iterchildren.append((t, [argn], False))
+
     if n is None:
         title = '<None>'
     elif n.isNodeType(LatexCharsNode):
-        title = "'%s'" %(n.chars) #.strip())
+        title = repr(n.chars) #.strip())
     elif n.isNodeType(LatexMacroNode):
         title = '\\'+n.macroname
-        #comment = 'opt arg?: %d; %d args' % (n.arg.nodeoptarg is not None, len(n.arg.nodeargs))
-        # FIXME: handle more general case with n.nodeargd
-        if n.nodeoptarg:
-            iterchildren.append(('[...]: ', [n.nodeoptarg], False))
-        if len(n.nodeargs):
-            iterchildren.append(('{...}: ', n.nodeargs, False))
+        add_args()
+    elif n.isNodeType(LatexSpecialsNode):
+        title = n.specials_chars
+        add_args()
     elif n.isNodeType(LatexCommentNode):
         title = '%' + n.comment.strip()
     elif n.isNodeType(LatexGroupNode):
@@ -1914,9 +1931,10 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
         iterchildren.append(('* ', n.nodelist, False))
     elif n.isNodeType(LatexEnvironmentNode):
         title = '\\begin{%s}' %(n.environmentname)
+        add_args()
         iterchildren.append(('* ', n.nodelist, False))
     elif n.isNodeType(LatexMathNode):
-        title = '$inline math$'
+        title = n.delimiters[0]+n.displaytype+' math'+n.delimiters[1]
         iterchildren.append(('* ', n.nodelist, False))
     else:
         print("UNKNOWN NODE TYPE: %s"%(n.nodeType().__name__))
@@ -1924,6 +1942,9 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
     print(' '*indent + context + title + '  '+comment)
 
     for context, nodelist, skip in iterchildren:
+        if isinstance(nodelist, _basestring):
+            print(' '*(indent+4) + context + nodelist)
+            continue
         for nn in nodelist:
             disp_node(nn, indent=indent+4, context=context, skip_group=skip)
 

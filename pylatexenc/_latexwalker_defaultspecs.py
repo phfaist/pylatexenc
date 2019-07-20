@@ -43,12 +43,12 @@ specs = [
             std_macro('addlength', True, 2),
             std_macro('setcounter', True, 2),
             std_macro('addcounter', True, 2),
-            std_macro('newcommand', "*{[{"),
-            std_macro('renewcommand', "*{[{"),
-            std_macro('providecommand', "*{[{"),
-            std_macro('newenvironment', "*{[{{"),
-            std_macro('renewenvironment', "*{[{{"),
-            std_macro('provideenvironment', "*{[{{"),
+            std_macro('newcommand', "*{[[{"),
+            std_macro('renewcommand', "*{[[{"),
+            std_macro('providecommand', "*{[[{"),
+            std_macro('newenvironment', "*{[[{{"),
+            std_macro('renewenvironment', "*{[[{{"),
+            std_macro('provideenvironment', "*{[[{{"),
 
             std_macro('DeclareMathOperator', '*{{'),
 

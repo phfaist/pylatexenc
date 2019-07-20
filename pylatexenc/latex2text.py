@@ -754,7 +754,6 @@ class LatexNodes2Text(object):
         
         if node.isNodeType(latexwalker.LatexMacroNode):
             # get macro behavior definition.
-            macroname = node.macroname.rstrip('*')
             mac = self.latex_context.get_macro_spec(macroname)
             if mac is None:
                 # default for unknown macros
