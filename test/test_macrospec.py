@@ -483,7 +483,7 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db2.get_environment_spec('eddd').args_parser.argspec, '')
 
 
-    def test_filter_context_2(self):
+    def test_filter_context_4(self):
         
         db = LatexContextDb()
         db.set_unknown_macro_spec(MacroSpec('<macro unknown>'))
