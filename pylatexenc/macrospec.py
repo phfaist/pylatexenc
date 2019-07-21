@@ -86,24 +86,38 @@ class ParsedMacroArgs(object):
         '{' describing an optional star argument, an optional
         square-bracket-delimited argument, and a mandatory argument.
 
-      - `legacy_nodeoptarg_nodeargs` is a tuple `(nodeoptarg, nodeargs)` that
-        should be exposed as properties in
-        :py:class:`~pylatexenc.latexwalker.LatexMacroNode` to provide (as best
-        as possible) compatibility with pylatexenc < 2.
+    Attributes:
 
-        This is to be used in cases where the macro arguments structure is
-        relatively standard.  The first tuple item `nodeoptarg` should be a
-        possible first optional value, or `None` and the second item `nodeargs`
-        is a list of nodes that represents subsequent arguments (optional or
-        mandatory).
+    .. py:attribute:: argnlist
+
+       The list of latexwalker nodes that was provided to the constructor
+
+    .. py:attribute:: argspec
+
+       Argument type specification provided to the constructor
+
+    .. py:attribute:: legacy_nodeoptarg_nodeargs
+
+       A tuple `(nodeoptarg, nodeargs)` that should be exposed as properties in
+       :py:class:`~pylatexenc.latexwalker.LatexMacroNode` to provide (as best as
+       possible) compatibility with pylatexenc < 2.
+
+       This is either `(<1st optional arg node>, <list of remaining args>)` if
+       the first argument is optional and all remaining args are mandatory; or
+       it is `(None, <list of args>)` for any other argument structure.
     """
-    def __init__(self, argnlist=[], argspec='', legacy_nodeoptarg_nodeargs=None,
-                 **kwargs):
+    def __init__(self, argnlist=[], argspec='', **kwargs):
         super(ParsedMacroArgs, self).__init__(**kwargs)
         
         self.argnlist = argnlist
         self.argspec = argspec
-        self.legacy_nodeoptarg_nodeargs = legacy_nodeoptarg_nodeargs
+
+        # for LatexMacroNode to provide some kind of compatibility with pylatexenc < 2
+        if self.argspec[0:1] == '[' and all(x == '{' for x in self.argspec[1:]):
+            self.legacy_nodeoptarg_nodeargs = ( argnlist[0], argnlist[1:] )
+        else:
+            self.legacy_nodeoptarg_nodeargs = (None, self.argnlist)
+
         
     def to_json_object(self):
         r"""
@@ -115,19 +129,14 @@ class ParsedMacroArgs(object):
         Called when we export the node structure to JSON (e.g., latexwalker in
         command-line).
         """
-        #legacystuff = {}
-        #if self.legacy_nodeoptarg_nodeargs:
-        #    legacystuff['nodeoptarg'] = self.legacy_nodeoptarg_nodeargs[0]
-        #    legacystuff['nodeargs'] = self.legacy_nodeoptarg_nodeargs[1]
 
         return dict(
             argspec=self.argspec,
             argnlist=self.argnlist,
-            #**legacystuff
         )
 
     def __repr__(self):
-        return "ParsedMacroArgs(argnlist={!r}, argspec={!r})".format(
+        return "ParsedMacroArgs(argspec={!r},argnlist={!r})".format(
             self.argnlist, self.argspec
         )
 
@@ -141,8 +150,9 @@ class MacroStandardArgsParser(object):
 
     This class also serves as base class for more advanced argument parsers
     (e.g. for a ``\verb+...+`` macro argument parser).  In such cases,
-    subclasses should attempt to provide the most suitable `argspec` and
-    `argnlist` for their use, if appropriate, or set them to `None`.
+    subclasses should attempt to provide the most suitable `argspec` (and
+    `argnlist` for the corresponding :py:class:`ParsedMacroArgs`) for their use,
+    if appropriate, or set them to `None`.
 
     Arguments:
 
@@ -163,6 +173,12 @@ class MacroStandardArgsParser(object):
 
       - additional unrecognized keyword arguments are passed on to superclasses
         in case of multiple inheritance
+
+    Attributes:
+
+    .. py:attribute:: argspec
+
+       Argument type specification provided to the constructor.
     """
     def __init__(self, argspec=None, **kwargs):
         super(MacroStandardArgsParser, self).__init__(**kwargs)
@@ -178,11 +194,7 @@ class MacroStandardArgsParser(object):
     def parse_args(self, w, pos, parsing_context=None):
         r"""
         Parse the arguments encountered at position `pos` in the
-        :py:class:`~pylatexenc.latexwalker.LatexWalker` instance `w`.  The
-        argument `parsing_context` is the current parsing context in the
-        :py:class:`~pylatexenc.latexwalker.LatexWalker` (e.g., are we currently
-        in math mode?).  See doc for
-        :py:class:`~pylatexenc.latexwalker.ParsingContext`.
+        :py:class:`~pylatexenc.latexwalker.LatexWalker` instance `w`.
 
         You may override this function to provide custom parsing of complicated
         macro arguments (say, ``\verb+...+``).  The method will be called by
@@ -192,6 +204,11 @@ class MacroStandardArgsParser(object):
         object that is currently parsing LaTeX code.  You can call methods like
         `w.get_goken()`, `w.get_latex_expression()` etc., to parse and read
         arguments.
+
+        The argument `parsing_context` is the current parsing context in the
+        :py:class:`~pylatexenc.latexwalker.LatexWalker` (e.g., are we currently
+        in math mode?).  See doc for
+        :py:class:`~pylatexenc.latexwalker.ParsingContext`.
 
         This function should return a tuple `(argd, pos, len)` where:
 
@@ -253,20 +270,146 @@ class MacroStandardArgsParser(object):
                     "Unknown macro argument kind for macro: {!r}".format(argt)
                 )
 
-        # for LatexMacroNode to provide some kind of compatibility with pylatexenc < 2
-        (legacy_nodeoptarg, legacy_nodeargs) = (None, argnlist)
-        if self.argspec[0:1] == '[' and all(x == '{' for x in self.argspec[1:]):
-            legacy_nodeoptarg = argnlist[0]
-            legacy_nodeargs = argnlist[1:]
-
         parsed = ParsedMacroArgs(
             argspec=self.argspec,
             argnlist=argnlist,
-            legacy_nodeoptarg_nodeargs=(legacy_nodeoptarg, legacy_nodeargs),
         )
 
         return (parsed, pos, p-pos)
 
+
+
+
+class ParsedVerbatimArgs(ParsedMacroArgs):
+    r"""
+    Parsed representation of arguments to LaTeX verbatim constructs, such as
+    ``\begin{verbatim}...\end{verbatim}`` or ``\verb|...|``.
+
+    Instances of `ParsedVerbatimArgs` are returned by the args parser
+    :py:class:`VerbatimArgsParser`.
+
+    Arguments:
+
+      - `verbatim_chars_node` --- a properly initialized
+        :py:class:`pylatexenc.latexwalker.LatexCharsNode` that stores the
+        verbatim text provided.  It is used to initialize the base class
+        :py:class:`ParsedMacroArgs` to expose a single mandatory argument with
+        the given verbatim text.  The `verbatim_text` attribute is initialized
+        from this node, too.
+
+      - `verbatim_delimiters` --- a 2-item tuple of characters used to delimit
+        the verbatim arguemnt (in case of a ``\verb+...+`` macro) or `None`.
+
+    Attributes:
+
+    .. py:attribute:: verbatim_text
+
+       The verbatim text that was provided
+
+    .. py:attribute:: verbatim_delimiters
+
+       If the verbatim text was specified as an argument to ``\verb$...$``, then
+       this is set to a 2-item tuple that specifies the begin and end
+       delimiters.  Otherwise, the attribute is `None`.
+    """
+    def __init__(self, verbatim_chars_node, verbatim_delimiters=None,
+                 **kwargs):
+
+        # provide argspec/argnlist to the parent class so that any code that is
+        # not "verbatim environment-aware" sees this simply as the argument to
+        # an empty verbatim environment
+        super(ParsedVerbatimArgs, self).__init__(
+            argspec='{',
+            argnlist=[verbatim_chars_node],
+            **kwargs
+        )
+        
+        self.verbatim_text = verbatim_chars_node.chars
+        self.verbatim_delimiters = verbatim_delimiters
+
+    def __repr__(self):
+        return "ParsedVerbatimArgs(verbatim_text={}, verbatim_delimiters={})".format(
+            self.verbatim_text, self.verbatim_delimiters
+        )
+
+
+
+class VerbatimArgsParser(MacroStandardArgsParser):
+    r"""
+    Parses the arguments to various LaTeX "verbatim" constructs such as
+    ``\begin{verbatim}...\end{verbatim}`` environment or ``\verb+...+``.
+
+    This class also serves to illustrate how to write custom parsers for
+    complicated macro arguments.  See also :py:class:`MacroStandardArgsParser`.
+
+    Arguments:
+
+    .. py:attribute:: verbatim_arg_type
+
+      One of 'verbatim-environment' or 'verb-macro'.
+    """
+    def __init__(self, verbatim_arg_type, **kwargs):
+        super(VerbatimArgsParser, self).__init__(argspec='{', **kwargs)
+        self.verbatim_arg_type = verbatim_arg_type
+
+    def parse_args(self, w, pos, parsing_context=None):
+
+        from . import latexwalker
+
+        if self.verbatim_arg_type == 'verbatim-environment':
+            # simply scan the string until we find '\end{verbatim}'.  That's
+            # exactly how LaTeX processes it.
+            endverbpos = w.s.find(r'\end{verbatim}', pos)
+            if endverbpos == -1:
+                raise latexwalker.LatexWalkerParseError(
+                    s=w.s,
+                    pos=pos,
+                    msg=r"Cannot find matching \end{verbatim}"
+                )
+            # do NOT include the "\end{verbatim}", latexwalker will expect to
+            # see it:
+            len_ = endverbpos-pos
+
+            argd = ParsedVerbatimArgs(
+                verbatim_chars_node=latexwalker.LatexCharsNode(parsed_context=w.parsed_context,
+                                                               chars=w.s[pos:pos+len_],
+                                                               pos=pos,
+                                                               len=len_)
+            )
+            return (argd, pos, len_)
+
+        if self.verbatim_arg_type == 'verb-macro':
+            # read the next nonwhitespace char. This is the delimiter of the
+            # argument
+            while w.s[pos].isspace():
+                pos += 1
+                if pos >= len(w.s):
+                    raise latexwalker.LatexWalkerParseError(
+                        s=w.s,
+                        pos=pos,
+                        msg=r"Missing argument to \verb command"
+                    )
+            verbdelimchar = w.s[pos]
+            beginpos = pos+1
+            endpos = w.s.find(verbdelimchar, beginpos)
+            if endpos == -1:
+                raise latexwalker.LatexWalkerParseError(
+                    s=w.s,
+                    pos=pos,
+                    msg=r"End of stream reached while reading argument to \verb command"
+                )
+            
+            verbarg = w.s[beginpos:endpos]
+
+            argd = ParsedVerbatimArgs(
+                verbatim_chars_node=latexwalker.LatexCharsNode(parsed_context=w.parsed_context,
+                                                               chars=verbarg,
+                                                               pos=beginpos,
+                                                               len=endpos-beginpos),
+                verbatim_delimiters=(verbdelimchar, verbdelimchar),
+            )
+
+            return (argd, pos, endpos+1-pos) # include delimiters in pos/len
 
 
 # ------------------------------------------------------------------------------

@@ -27,7 +27,8 @@
 # Internal module. May change without notice.
 
 
-from .macrospec import std_macro, std_environment, std_specials
+from .macrospec import std_macro, std_environment, std_specials, \
+    MacroSpec, EnvironmentSpec, VerbatimArgsParser
 
 specs = [
     #
@@ -189,6 +190,23 @@ specs = [
             #std_specials('^'),
             #std_specials('_'),
 
+        ]}),
+
+    #
+    # CATEGORY: verbatim
+    #
+    ('verbatim', {
+        'macros': [
+            MacroSpec('verb',
+                      args_parser=VerbatimArgsParser(verbatim_arg_type='verb-macro')),
+            ],
+        'environments': [
+            EnvironmentSpec('verbatim',
+                            args_parser=VerbatimArgsParser(verbatim_arg_type='verbatim-environment')),
+        ],
+        'specials': [
+            # optionally users could include the specials "|" like in latex-doc
+            # for verbatim |\like \this|...
         ]}),
 
     #

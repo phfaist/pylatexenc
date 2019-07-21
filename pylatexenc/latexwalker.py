@@ -1022,8 +1022,8 @@ class LatexWalker(object):
             'keep_inline_math': None,
         }
         
-    def get_token(self, pos, brackets_are_chars=True, environments=True,
-                  keep_inline_math=None, parsing_context=ParsingContext()):
+    def get_token(self, pos, include_brace_chars=None, environments=True,
+                  keep_inline_math=None, parsing_context=ParsingContext(), **kwargs):
         r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to parse a single "token", as defined by
@@ -1038,10 +1038,12 @@ class LatexWalker(object):
         Returns a :py:class:`LatexToken`. Raises
         :py:exc:`LatexWalkerEndOfStream` if end of stream reached.
 
-        If `brackets_are_chars=False`, then square bracket characters count as
-        'brace_open' and 'brace_close' token types (see :py:class:`LatexToken`);
-        otherwise (the default) they are considered just like other normal
-        characters.
+        The argument `include_brace_chars=` allows to specify additional pairs
+        of single characters which should be considered as braces (i.e., of
+        'brace_open' and 'brace_close' token types).  It should be a list of
+        2-item tuples, for instance ``[('[', ']'), ('<', '>')]``.  The pair
+        `('{', '}')` is always considered as braces.  The delimiters may not
+        have more than one character each.
 
         If `environments=False`, then ``\begin`` and ``\end`` tokens count as
         regular 'macro' tokens (see :py:class:`LatexToken`); otherwise (the
@@ -1059,10 +1061,27 @@ class LatexWalker(object):
            earlier versions of `pylatexenc`, but it has no effect starting in
            `pylatexenc 2`.  See the :py:class:`LatexWalker` class doc.
 
+        .. deprecated:: 2.0
+
+           If `brackets_are_chars=False`, then square bracket characters count
+           as 'brace_open' and 'brace_close' token types (see
+           :py:class:`LatexToken`); otherwise (the default) they are considered
+           just like other normal characters.
+
         .. versionadded:: 2.0
 
            The `parsing_context` argument was introduced in version 2.0.
         """
+
+        brace_chars = [('{', '}')]
+
+        if include_brace_chars:
+            brace_chars += include_brace_chars
+
+        if 'brackets_are_chars' in kwargs:
+            if not kwargs.pop('brackets_are_chars'):
+                brace_chars += [('[', ']')]
+
 
         s = self.s # shorthand
 
@@ -1144,11 +1163,8 @@ class LatexWalker(object):
             return LatexToken(tok='comment', arg=s[pos+1:pos+arglen], pos=pos, len=mlen,
                               pre_space=space, post_space=mspace)
 
-        openbracechars = '{'
-        closebracechars = '}'
-        if not brackets_are_chars:
-            openbracechars += '['
-            closebracechars += ']'
+        # see https://stackoverflow.com/a/19343/1694896
+        openbracechars, closebracechars = zip(*brace_chars)
 
         if s[pos] in openbracechars:
             return LatexToken(tok='brace_open', arg=s[pos], pos=pos, len=1, pre_space=space)
@@ -1180,7 +1196,8 @@ class LatexWalker(object):
         return ( self._mknode(nclass, **kwargs), kwargs['pos'], kwargs['len'] )
 
 
-    def get_latex_expression(self, pos, strict_braces=None, parsing_context=ParsingContext()):
+    def get_latex_expression(self, pos, strict_braces=None,
+                             parsing_context=ParsingContext()):
         r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to parse a single LaTeX expression.
@@ -1263,9 +1280,9 @@ class LatexWalker(object):
            The `parsing_context` argument was introduced in version 2.0.
         """
 
-        tok = self.get_token(pos, brackets_are_chars=False, environments=False,
+        tok = self.get_token(pos, include_brace_chars=[('[', ']')], environments=False,
                              parsing_context=parsing_context)
-        if (tok.tok == 'brace_open' and tok.arg == '['):
+        if tok.tok == 'brace_open' and tok.arg == '[':
             return self.get_latex_braced_group(pos, brace_type='[',
                                                parsing_context=parsing_context)
 
@@ -1290,21 +1307,35 @@ class LatexWalker(object):
         the length of the group, including the closing brace (relative to the
         starting position).
 
+        The group must be delimited by the given `brace_type`.  `brace_type` may
+        be one of ``{``, ``[``, ``(`` or ``<``, or a 2-item tuple of two
+        distinct single characters providing the opening and closing brace
+        chars (e.g., ``("<", ">")``).
+
         .. versionadded:: 2.0
 
            The `parsing_context` argument was introduced in version 2.0.
         """
 
         closing_brace = None
-        if (brace_type == '{'):
+        if brace_type == '{':
             closing_brace = '}'
-        elif (brace_type == '['):
+        elif brace_type == '[':
             closing_brace = ']'
+        elif brace_type == '(':
+            closing_brace = ')'
+        elif brace_type == '<':
+            closing_brace = '>'
+        elif len(brace_type) == 2:
+            brace_type, closing_brace = brace_type
         else:
             raise LatexWalkerParseError(s=self.s, pos=pos, msg="Uknown brace type: %s" %(brace_type))
-        brackets_are_chars = (brace_type != '[')
 
-        firsttok = self.get_token(pos, brackets_are_chars=brackets_are_chars,
+        include_brace_chars = None
+        if brace_type and brace_type != '{':
+            include_brace_chars = [(brace_type, closing_brace)]
+
+        firsttok = self.get_token(pos, include_brace_chars=include_brace_chars,
                                   parsing_context=parsing_context)
         if firsttok.tok != 'brace_open'  or  firsttok.arg != brace_type:
             raise LatexWalkerParseError(
@@ -1315,7 +1346,7 @@ class LatexWalker(object):
 
         (nodelist, npos, nlen) = self.get_latex_nodes(
             firsttok.pos + firsttok.len,
-            stop_upon_closing_brace=closing_brace,
+            stop_upon_closing_brace=(brace_type, closing_brace),
             parsing_context=parsing_context
         )
 
@@ -1429,9 +1460,11 @@ class LatexWalker(object):
         
         If `stop_upon_closing_brace` is given and set to a character, then
         parsing stops once the given closing brace is encountered (but not
-        inside a subgroup).  The brace is given as a character, ']' or '}'.  The
-        returned `len` includes the closing brace, but the closing brace is not
-        included in any of the nodes in the `nodelist`.
+        inside a subgroup).  The brace is given as a character, ']', '}', ')',
+        or '>'.  Alternatively you may specify a 2-item tuple of two single
+        distinct characters representing the opening and closing brace chars.
+        The returned `len` includes the closing brace, but the closing brace is
+        not included in any of the nodes in the `nodelist`.
 
         If `stop_upon_end_environment` is provided, then parsing stops once the
         given environment was closed.  If there is an environment mismatch, then
@@ -1488,9 +1521,24 @@ class LatexWalker(object):
 
         nodelist = []
     
-        brackets_are_chars = True
-        if (stop_upon_closing_brace == ']'):
-            brackets_are_chars = False
+        include_brace_chars = None
+        if stop_upon_closing_brace:
+            if stop_upon_closing_brace == '}':
+                opening_brace_for_stop_upon_closing_brace = '{'
+            elif stop_upon_closing_brace == ']':
+                opening_brace_for_stop_upon_closing_brace = '['
+            elif stop_upon_closing_brace == ')':
+                opening_brace_for_stop_upon_closing_brace = '('
+            elif stop_upon_closing_brace == '>':
+                opening_brace_for_stop_upon_closing_brace = '<'
+            elif len(stop_upon_closing_brace) == 2:
+                opening_brace_for_stop_upon_closing_brace, stop_upon_closing_brace = \
+                    stop_upon_closing_brace
+
+            if stop_upon_closing_brace != '}':
+                include_brace_chars = [
+                    (opening_brace_for_stop_upon_closing_brace, stop_upon_closing_brace)
+                ]
 
         # consistency check
         if stop_upon_closing_mathmode is not None and not parsing_context.in_math_mode:
@@ -1520,7 +1568,7 @@ class LatexWalker(object):
             """
 
             try:
-                tok = self.get_token(p.pos, brackets_are_chars=brackets_are_chars,
+                tok = self.get_token(p.pos, include_brace_chars=include_brace_chars,
                                      parsing_context=parsing_context)
             except LatexWalkerEndOfStream:
                 if self.tolerant_parsing:
@@ -1738,13 +1786,15 @@ class LatexWalker(object):
                 else:
                     raise
             except LatexWalkerEndOfStream:
-                if stop_upon_closing_brace or stop_upon_end_environment:
+                if stop_upon_closing_brace or stop_upon_end_environment or stop_upon_closing_mathmode:
                     # unexpected eof
                     if not self.tolerant_parsing:
                         if stop_upon_closing_brace:
                             expecting = "'"+stop_upon_closing_brace+"'"
                         elif stop_upon_end_environment:
                             expecting = r"\end{"+stop_upon_end_environment+"}"
+                        elif stop_upon_closing_mathmode:
+                            expecting = "'"+stop_upon_closing_mathmode+"'"
                         raise LatexWalkerError("Unexpected end of stream, was looking for {}"
                                                .format(expecting))
                     else:

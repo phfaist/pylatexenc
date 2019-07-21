@@ -714,6 +714,53 @@ Also: {\itshape some italic text}.
                               "tolerant parsing mode!\n")+unicode(e))
             
     
+
+    def test_verbatim(self):
+
+        latextext = r"""Use the environment \verb+\begin{verbatim}...\end{verbatim}+ to
+\begin{verbatim}
+typeset \verbatim text with \LaTeX $ escapes \(like this\).
+\end{verbatim}
+This is it."""
+
+        lw = LatexWalker(latextext)
+
+        p=0
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p),
+            ([
+                LatexCharsNode(parsed_context=lw.parsed_context, pos=0, len=20,
+                               chars='Use the environment '),
+                LatexMacroNode(parsed_context=lw.parsed_context, pos=20, len=40,
+                               macroname='verb',
+                               macro_post_space='',
+                               nodeargd=macrospec.ParsedVerbatimArgs(
+                                   verbatim_chars_node=
+                                   LatexCharsNode(parsed_context=lw.parsed_context, pos=26, len=33,
+                                                  chars='\\begin{verbatim}...\\end{verbatim}'),
+                                   verbatim_delimiters=('+', '+'),
+                               )),
+                LatexCharsNode(parsed_context=lw.parsed_context, pos=60, len=4, chars=' to\n'),
+                LatexEnvironmentNode(
+                    parsed_context=lw.parsed_context, pos=64, len=91,
+                    environmentname='verbatim', nodelist=[],
+                    nodeargd=macrospec.ParsedVerbatimArgs(
+                        verbatim_chars_node=
+                        LatexCharsNode(
+                            parsed_context=lw.parsed_context, pos=80, len=61,
+                            chars='\ntypeset \\verbatim text with \\LaTeX $ escapes \\(like this\\).\n'
+                        ),
+                        verbatim_delimiters=None,
+                    )
+                ),
+                LatexCharsNode(parsed_context=lw.parsed_context, pos=155, len=12,
+                               chars='\nThis is it.')
+            ],
+            0,
+            167)
+        )
+
+
     def test_bug_000(self):
         latextext = r'''
 \documentclass[stuff]{docclass}

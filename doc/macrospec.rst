@@ -34,6 +34,16 @@ Macro arguments parser
    :members:
 
 
+Argument parser for verbatim LaTeX constructs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: pylatexenc.macrospec.VerbatimArgsParser
+   :members:
+
+.. autoclass:: pylatexenc.macrospec.ParsedVerbatimArgs
+   :members:
+
+
 Latex Context "Database"
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
