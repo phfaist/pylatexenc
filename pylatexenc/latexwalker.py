@@ -90,7 +90,6 @@ module :py:mod:`pylatexenc.macrospec` for more information.
 from __future__ import print_function
 
 import re
-from collections import namedtuple
 import sys
 import logging
 import json

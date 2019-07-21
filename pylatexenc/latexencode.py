@@ -422,7 +422,6 @@ class UnicodeToLatexEncoder(object):
                 raise ValueError("Invalid bad-char policy: {}".format(self.unknown_char_policy))
             self._do_unknown_char = getattr(self, selfmethname)
         elif callable(self.unknown_char_policy):
-            import inspect
             fn = self.unknown_char_policy
             if 'u2lobj' in getfullargspec(fn)[0]:
                 self._do_unknown_char = functools.partial(self.unknown_char_policy, u2lobj=self)
