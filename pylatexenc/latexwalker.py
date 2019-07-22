@@ -419,6 +419,10 @@ class LatexNode(object):
     Use :py:meth:`nodeType()` to figure out what type of node this is, and
     :py:meth:`isNodeType()` to test whether it is of a given type.
 
+    To create a node, you should use preferrably
+    :py:meth:`LatexWalker.make_node()` to ensure that fields like
+    `parsed_context` are set appropriately.
+
     All nodes have the following attributes:
 
     .. py:attribute:: parsed_context
@@ -438,23 +442,29 @@ class LatexNode(object):
        at position `pos`.  The parsed string can be recovered as
        `parsed_context.s`, see :py:attr:`ParsedContext.s`.
 
+    .. versionadded:: 2.0
+       
+       The attributes `parsed_context`, `pos` and `len` were added in
+       `pylatexenc 2.0`.
     """
     def __init__(self, _fields, _redundant_fields=None,
                  parsed_context=None, pos=None, len=None, **kwargs):
-        """
-        Important: subclasses must specify a list of fields they set in the
-        `_fields` argument.  They should only specify base (non-redundant)
-        fields; if they have "redundant" fields, specify the additional fields
-        in _redundant_fields=...
-        """
+
+        # Important: subclasses must specify a list of fields they set in the
+        # `_fields` argument.  They should only specify base (non-redundant)
+        # fields; if they have "redundant" fields, specify the additional fields
+        # in _redundant_fields=...
         super(LatexNode, self).__init__(**kwargs)
+
         self.parsed_context = parsed_context
         self.pos = pos
         self.len = len
+
         self._fields = tuple(['pos', 'len'] + list(_fields))
-        self._redundant_fields = self._fields
         if _redundant_fields is not None:
             self._redundant_fields = tuple(list(self._fields) + list(_redundant_fields))
+        else:
+            self._redundant_fields = self._fields
 
     def nodeType(self):
         """
@@ -479,6 +489,9 @@ class LatexNode(object):
 
         This is a shorthand for ``node.parsed_context.s[node.pos:node.pos+node.len]``.
         """
+        if self.parsed_context is None:
+            raise TypeError("Can't use latex_verbatim() on node because we don't "
+                            "have any parsed_context set")
         return self.parsed_context.s[self.pos : self.pos+self.len]
 
     def __eq__(self, other):
@@ -1212,6 +1225,12 @@ class LatexWalker(object):
 
         Keyword arguments are supplied directly to the constructor of the node
         class.
+
+        .. versionadded:: 2.0
+        
+           This method was introduced in `pylatexenc 2.0` to make it easier to
+           ensure that additional fields like `parsed_context` are set correctly
+           on the node object.
         """
         node = node_class(parsed_context=self.parsed_context, pos=pos, len=len, **kwargs)
         if self.debug_nodes:
@@ -2017,11 +2036,89 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
 
 
 def nodelist_to_latex(nodelist):
-    return "".join(n.latex_verbatim() for n in nodelist)
+
+    # It's NOT recommended to use this function.  You should use
+    # node.latex_verbatim() instead.
+
+    # Here, we don't use latex_verbatim() and continue to provide (an updated
+    # version of) the old code, because we want to be compatible with code that
+    # used this function without necessarily setting parsed_context on nodes.
+
+    #return "".join(n.latex_verbatim() for n in nodelist)
+
+    def add_args(nodeargd):
+        if nodeargd is None or nodeargd.argspec is None or nodeargd.argnlist is None:
+            return ''
+        argslatex = ''
+        for argt, argn in zip(nodeargd.argspec, nodeargd.argnlist):
+            if argt == '*':
+                if argn is not None:
+                    argslatex += nodelist_to_latex([argn])
+            elif argt == '[':
+                if argn is not None:
+                    # the node is a group node with '[' delimiter char anyway
+                    argslatex += nodelist_to_latex([argn])
+            elif argt == '{':
+                # either a group node with '{' delimiter char, or single node argument
+                argslatex += nodelist_to_latex([argn])
+            else:
+                raise ValueError("Unknown argument type: {!r}".format(argt))
+        return argslatex
+
+    latex = ''
+    for n in nodelist:
+        if n is None:
+            continue
+        if n.isNodeType(LatexCharsNode):
+            latex += n.chars
+            continue
+
+        if n.isNodeType(LatexMacroNode):
+            latex += r'\%s%s%s' %(n.macroname, n.macro_post_space, add_args(n.nodeargd))
+            continue
+
+        if n.isNodeType(LatexSpecialsNode):
+            latex += r'%s%s' %(n.specials_chars, add_args(n.nodeargd))
+            continue
+        
+        if n.isNodeType(LatexCommentNode):
+            latex += '%'+n.comment+n.comment_post_space
+            continue
+        
+        if n.isNodeType(LatexGroupNode):
+            latex += n.delimiters[0] + nodelist_to_latex(n.nodelist) + n.delimiters[1]
+            continue
+        
+        if n.isNodeType(LatexEnvironmentNode):
+            latex += r'\begin{%s}%s' %(n.envname, add_args(n.nodeargd))
+            latex += nodelist_to_latex(n.nodelist)
+            latex += r'\end{%s}' %(n.envname)
+            continue
+        
+        latex += "<[UNKNOWN LATEX NODE: \'%s\']>"%(n.nodeType().__name__)
+
+    return latex
+    
+
+
+
+def put_in_braces(brace_char, thestring):
+    # DON'T USE. WILL BE REMOVED IN FUTURE VERSION.
+    if (brace_char == '{'):
+        return '{%s}' %(thestring)
+    if (brace_char == '['):
+        return '[%s]' %(thestring)
+    if (brace_char == '('):
+        return '(%s)' %(thestring)
+    if (brace_char == '<'):
+        return '<%s>' %(thestring)
+
+    return brace_char + thestring + brace_char
 
 
 
 def disp_node(n, indent=0, context='* ', skip_group=False):
+    # Don't rely upon this function.
     title = ''
     comment = ''
     iterchildren = []

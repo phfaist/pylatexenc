@@ -848,7 +848,7 @@ class LatexContextDb(object):
         Return a list of valid category names that are registered in the current
         database context.
         """
-        return self.category_list
+        return list(self.category_list)
 
     def get_macro_spec(self, macroname):
         r"""
@@ -1016,6 +1016,10 @@ class LatexContextDb(object):
         If `exclude_categories` is set to a nonempty list, then the returned
         context will not contain any definitions that correspond to the
         specified categories.
+
+        It is explicitly fine to have category names in `keep_categories` and
+        `exclude_categories` that don't exist in the present object
+        (cf. :py:meth:`categories()`).
 
         The argument `keep_which`, if non-empty, specifies which definitions to
         keep.  It should be a subset of the list ['macros', 'environments',

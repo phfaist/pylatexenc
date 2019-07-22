@@ -44,6 +44,21 @@ pylatexenc 2.0
   `utf-8`-encoded string.  The old function is still provided as is to keep code
   that was designed for `pylatexenc 1.x` working.
 
+- Improvements to the parser may mean that the results might differ slightly
+  from earlier versions.
+
+  For instance, `latexwalker` now recognizes ``--`` and ``---`` as "latex
+  specials", and by default `latex2text` substitutes the corresponding unicode
+  characters for en-dash and em-dash, respecitively.  You can disable this
+  behavior by filtering out the 'nonascii-specials' category from the default
+  latex context database in `latex2text`::
+
+    latex_context = latex2text.get_default_latex_context_db().filter_context(
+        exclude_categories=['nonascii-specials']
+    )
+    l2t = latex2text.LatexNodes2Text(latex_context=latex_context, ...)
+    ...
+
 - The three main modules can now be used in command-line: `latex2text`,
   `latexencode` and `latexwalker`.  Run with ``--help`` for information about
   usage and options.
@@ -90,6 +105,20 @@ the new API.
     LatexGroupNode(pos=18, len=5, nodelist=[LatexCharsNode(pos=19, len=3, chars='yes')])
 
   The same holds for `latex2text`.
+
+  The `pylatexenc.latexwalker.MacrosDef` class in `pylatexenc 1.x` was rewritten
+  and renamed :py:class:`pylatexenc.macrospec.MacroSpec`, and corresponding
+  classes :py:class:`pylatexenc.macrospec.EnvironmentSpec` and
+  :py:class:`pylatexenc.macrospec.SpecialsSpec` were introduced.
+  [:py:func:`pylatexenc.latexwalker.MacrosDef` is now a function that returns a
+  :py:class:`~pylatexenc.macrospec.MacroSpec`; but the field names of the
+  constructed class might have changed.]  The `pylatexenc.latex2text.MacroDef`
+  and `pylatexenc.latex2text.EnvDef` were rewritten and renamed
+  :py:class:`pylatexenc.latex2text.MacroTextSpec` and
+  :py:class:`pylatexenc.latex2text.EnvironmentTextSpec`, and the class
+  :py:class:`pylatexenc.latex2text.SpecialsTextSpec` was introduced.  [The
+  earlier classes are now functions that return instances of the new classes;
+  but the field names of the constructed class might have changed.]
 
   For :py:class:`~pylatexenc.latexwalker.LatexWalker`, macro, environment, and
   latex specials syntax specifications are provided as
