@@ -5,3 +5,4 @@ dist
 build
 doc/_build
 .cache
+.DS_Store

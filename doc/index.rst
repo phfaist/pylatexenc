@@ -1,12 +1,13 @@
 .. pylatexenc documentation master file, created by
    sphinx-quickstart on Mon Apr 24 16:32:21 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+   You can adapt this file completely to your liking,
+   but it should at least contain the root `toctree` directive.
 
 Welcome to pylatexenc's documentation!
 ======================================
 
-This package provides simple and heuristic conversion of LaTeX to unicode and vice versa.
+This package provides simple and heuristic conversion of LaTeX to unicode and
+vice versa.
 
 Quick example::
 
@@ -26,16 +27,16 @@ Quick example::
 
 And the other way around::
 
-    >>> from pylatexenc.latexencode import utf8tolatex
+    >>> from pylatexenc.latexencode import unicode_to_latex
     >>> text = "À votre santé!"
-    >>> print(utf8tolatex(text))
-    {\`A} votre sant{\'e}!
+    >>> print(unicode_to_latex(text))
+    \`A votre sant\'e!
 
 
 You can also use these utilities directly in command line, e.g.::
 
-    $ echo 'À votre santé!' | python -m pylatexenc.latexencode
-    {\`A} votre sant{\'e}!
+    $ echo 'À votre santé!' | latexencode
+    \`A votre sant\'e!
 
 
 Documentation
@@ -47,8 +48,10 @@ Documentation
    :caption: Contents:
 
    latexwalker
+   macrospec
    latex2text
    latexencode
+   changes
 
 
 Indices and tables

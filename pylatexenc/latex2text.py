@@ -23,7 +23,7 @@
 # THE SOFTWARE.
 #
 
-"""
+r"""
 A simplistic, heuristic LaTeX code parser allowing to returns a text-only
 approximation.  Suitable, e.g. for indexing tex code in a database for full text
 searching.
@@ -35,12 +35,16 @@ The main class is :py:class:`LatexNodes2Text`.  For a quick start, try::
     latex = "... LaTeX code ..."
     text = LatexNodes2Text(strict_latex_spaces='macros').latex_to_text(latex)
 
+You may also use the command-line version of `latex2text`::
+
+    $ echo '\textit{italic} \`acc\^ented text' | latex2text
+    italic àccênted text
+
 """
 
 from __future__ import print_function #, absolute_import
 
 import os
-import unicodedata
 import logging
 import sys
 import inspect
@@ -52,458 +56,308 @@ if sys.version_info.major >= 3:
 else:
     getfullargspec = inspect.getargspec
 
-
+import pylatexenc
 from . import latexwalker
+from . import macrospec
+from . import _util
 
 logger = logging.getLogger(__name__)
 
 
 
-class EnvDef:
+class MacroTextSpec(object):
     """
-    An environment definition.
+    A specification of how to obtain a textual representation of a macro.
 
-    - `envname`: the name of the environment
+    .. py:attribute:: macroname
 
-    - `simplify_repl`: the replacement text of the environment.  This is either
-       a callable or a string.  If it is a callable, it must accept a single
-       argument, the :py:class:`pylatexenc.latexwalker.LatexEnvironmentNode`
-       representing the LaTeX environment.  If it is a string, it may contain
-       '%s' which will be replaced by the environment contents converted to
-       text.
+       The name of the macro (no backslash)
 
-    - `discard`: if set to `True`, then the full environment is discarded, i.e.,
-       it is converted to an empty string.
+    .. py:attribute:: simplify_repl
+
+       This is Either a string or a callable. The string may contain '%s'
+       replacements, in which the macro arguments will be substituted. The
+       callable should accept the corresponding
+       :py:class:`pylatexenc.latexwalker.LatexMacroNode` as an argument.  If the
+       callable expects a second argument named `l2tobj`, then the
+       `LatexNodes2Text` object is provided to that argument.
+
+    .. py:attribute:: discard
+    
+       If set to `True`, then the macro call is discarded, i.e., it is converted
+       to an empty string.
+
+
+    .. versionadded:: 2.0
+
+       The class :py:class:`MacroTextSpec` was introduced in `pylatexenc
+       2.0` to succeed to the previously named `MacroDef` class.
     """
-    def __init__(self, envname, simplify_repl=None, discard=False):
-        self.envname = envname
+    def __init__(self, macroname, simplify_repl=None, discard=None):
+        super(MacroTextSpec, self).__init__()
+        self.macroname = macroname
+        self.discard = True if (discard is None) else discard
+        self.simplify_repl = simplify_repl
+
+
+class EnvironmentTextSpec(object):
+    """
+    A specification of how to obtain a textual representation of an environment.
+
+    .. py:attribute:: environmentname
+
+       The name of the environment
+
+    .. py:attribute:: simplify_repl
+
+       The replacement text of the environment.  This is either a callable or a
+       string.  If it is a callable, it must accept a single argument, the
+       :py:class:`pylatexenc.latexwalker.LatexEnvironmentNode` representing the
+       LaTeX environment.  If the callable expects a second argument named
+       `l2tobj`, then the `LatexNodes2Text` object is provided to that argument.
+       If it is a string, it may contain '%s' which will be replaced by the
+       environment contents converted to text.
+
+    .. py:attribute:: discard
+    
+       If set to `True`, then the full environment is discarded, i.e., it is
+       converted to an empty string.
+
+
+    .. versionadded:: 2.0
+
+       The class :py:class:`EnvironmentTextSpec` was introduced in `pylatexenc
+       2.0` to succeed to the previously named `EnvDef` class.
+    """
+    def __init__(self, environmentname, simplify_repl=None, discard=False):
+        super(EnvironmentTextSpec, self).__init__()
+        self.environmentname = environmentname
         self.simplify_repl = simplify_repl
         self.discard = discard
 
 
-class MacroDef:
+class SpecialsTextSpec(object):
     """
-    A macro definition.
+    A specification of how to obtain a textual representation of latex specials.
 
-    - `macname`: the name of the macro (no backslash)
+    .. py:attribute:: specials_chars
+    
+       The sequence of special LaTeX characters
 
-    - `simplify_repl`: either a string or a callable. The string may contain '%s'
-      replacements, in which the macro arguments will be substituted. The callable should
-      accept the corresponding :py:class:`pylatexenc.latexwalker.LatexMacroNode` as an
-      argument.
+    .. py:attribute:: simplify_repl
 
-    - `discard`: if set to `True`, then the macro call is discarded, i.e., it is
-       converted to an empty string.
+       The replacement text of the specials.  This is either a callable or a
+       string.  If it is a callable, it must accept a single argument, the
+       :py:class:`pylatexenc.latexwalker.LatexSpecialsNode` representing the
+       LaTeX environment.  If the callable expects a second argument named
+       `l2tobj`, then the `LatexNodes2Text` object is provided to that argument.
+       If it is a string, it may contain '%s' replacements, in which the macro
+       arguments will be substituted.
+
+
+    .. versionadded:: 2.0
+
+       Latex specials were introduced in `pylatexenc 2.0`.
     """
-    def __init__(self, macname, simplify_repl=None, discard=None):
-        if (isinstance(macname, MacroDef)):
-            o = macname
-            self.macname = o.macname
-            self.discard = o.discard
-            self.simplify_repl = o.simplify_repl
-        elif (isinstance(macname, tuple)):
-            (self.macname, self.simplify_repl) = macname
-            self.discard = True if (discard is None) else discard
-            if (simplify_repl is not None or discard is not None):
-                raise ValueError("macname=%r is tuple but other parameters specified" %(macname,))
-        else:
-            self.macname = macname
-            self.discard = True if (discard is None) else discard
-            self.simplify_repl = simplify_repl
+    def __init__(self, specials_chars, simplify_repl=None):
+        super(SpecialsTextSpec, self).__init__()
+        self.specials_chars = specials_chars
+        self.simplify_repl = simplify_repl
 
 
-def _fmt_equation(n, l2tobj):
+
+def EnvDef(envname, simplify_repl=None, discard=False):
+    r"""
+    .. deprecated:: 2.0
+
+       Instantiate a :py:class:`EnvironmentTextSpec` instead.
+
+       Since `pylatexenc 2.0`, `EnvDef` is a function which returns a
+       :py:class:`~pylatexenc.macrospec.EnvironmentTextSpec` instance.  In this
+       way the earlier idiom ``EnvDef(...)`` still works in `pylatexenc 2`.
+    """
+    return EnvironmentTextSpec(environmentname=envname, simplify_repl=simplify_repl,
+                               discard=discard)
+
+def MacroDef(macname, simplify_repl=None, discard=None):
+    r"""
+    .. deprecated:: 2.0
+
+       Instantiate a :py:class:`MacroTextSpec` instead.
+
+       Since `pylatexenc 2.0`, `MacroDef` is a function which returns a
+       :py:class:`~pylatexenc.macrospec.MacroTextSpec` instance.  In this way
+       the earlier idiom ``MacroDef(...)`` still works in `pylatexenc 2`.
+    """
+    return MacroTextSpec(macroname=macname, simplify_repl=simplify_repl, discard=discard)
+
+
+
+
+def fmt_equation_environment(envnode, l2tobj):
+    r"""
+    Can be used as callback for display equation environments.
+
+    .. versionadded:: 2.0
+
+       This function was introduced in `pylatexenc 2.0`.
+    """
+
     with _PushEquationContext(l2tobj):
 
-        contents = l2tobj._nodelistcontents_to_text(n.nodelist).strip()
+        contents = l2tobj.nodelist_to_text(envnode.nodelist).strip()
         # indent equation, separate by newlines
         indent = ' '*4
         return ("\n"+indent + contents.replace("\n", "\n"+indent) + "\n")
 
 
-_default_env_list = [
-    EnvDef('', discard=False), # default for unknown environments
+def fmt_input_macro(macronode, l2tobj):
+    r"""
+    This function can be used as callback in :py:class:`MacroTextSpec` for
+    ``\input`` or ``\include`` macros.  The `macronode` must be a macro node
+    with a single argument.  If :py:meth:`set_tex_input_directory()` was called
+    with a nonempty input directory in the :py:class:`LatexNodes2Text` object,
+    then this method reads the contents of the file name in the macro argument
+    according to the provided settings.  Otherwise, returns an empty string.
 
-    EnvDef('equation', simplify_repl=_fmt_equation),
-    EnvDef('eqnarray', simplify_repl=_fmt_equation),
-    EnvDef('align', simplify_repl=_fmt_equation),
-    EnvDef('multline', simplify_repl=_fmt_equation),
-    EnvDef('gather', simplify_repl=_fmt_equation),
-    EnvDef('dmath', simplify_repl=_fmt_equation),
+    .. versionadded:: 2.0
 
-    # spaces added so that database indexing doesn't index the word "array" or "pmatrix"
-    EnvDef('array', simplify_repl='< a r r a y >'),
-    EnvDef('pmatrix', simplify_repl='< p m a t r i x >'),
-    EnvDef('bmatrix', simplify_repl='< b m a t r i x >'),
-    EnvDef('smallmatrix', simplify_repl='< s m a l l m a t r i x >'),
+       This function was introduced in `pylatexenc 2.0`.
+    """
+    return l2tobj._input_node_simplify_repl(macronode)
 
-    EnvDef('center', simplify_repl='\n%s\n'),
-    EnvDef('flushleft', simplify_repl='\n%s\n'),
-    EnvDef('flushright', simplify_repl='\n%s\n'),
+
+def placeholder_node_formatter(placeholdertext):
+    r"""
+    This function returns a callable that can be used in
+    :py:class:`MacroTextSpec`, :py:class:`EnvironmentTextSpec`, or
+    :py:class:`SpecialsTextSpec` for latex nodes that do not have a good textual
+    representation, providing as text replacement the simple placeholder text
+    ``'< P L A C E H O L D E R   T E X T >'``.
+
+    .. versionadded:: 2.0
+
+       This function was introduced in `pylatexenc 2.0`.
+    """
+    return lambda pht=placeholdertext: '< ' + " ".join(pht) + ' >'
     
-    EnvDef('exenumerate', discard=False),
-    EnvDef('enumerate', discard=False),
-    EnvDef('list', discard=False),
-    EnvDef('itemize', discard=False),
-    EnvDef('subequations', discard=False),
-    EnvDef('figure', discard=False),
-    EnvDef('table', discard=False),
-    ]
+def fmt_placeholder_node(node):
+    r"""
+    This function can be used as callable in :py:class:`MacroTextSpec`,
+    :py:class:`EnvironmentTextSpec`, or :py:class:`SpecialsTextSpec` for latex
+    nodes that do not have a good textual representation.  The text replacement
+    is the placeholder text
+    ``'< N A M E   O F   T H E   M A C R O   O R   E N V I R O N M E N T >'``.
+
+    .. versionadded:: 2.0
+
+       This function was introduced in `pylatexenc 2.0`.
+    """
+    # spaces added so that database indexing doesn't index the word "array" or
+    # "pmatrix"
+    name = getattr(node, 'macroname',
+                   getattr(node, 'environmentname'),
+                   getattr(node, 'specials_chars', '<unknown>'))
+    return placeholder_node_formatter(name)
 
 
-# NOTE: macro will only be assigned arguments if they are explicitely defined as accepting arguments
-#       in latexwalker.py.
 
-_default_macro_list = [
-    MacroDef('', discard=True), # default for unknown macros
+def get_default_latex_context_db():
+    r"""
+    Return a :py:class:`pylatexenc.macrospec.LatexContextDb` instance
+    initialized with a collection of text replacements for known macros and
+    environments.
 
-    MacroDef('emph', discard=False),
-    MacroDef('textbf', discard=False),
-    MacroDef('textit', discard=False),
-    MacroDef('textsl', discard=False),
-    MacroDef('textsc', discard=False),
-    MacroDef('text', discard=False),
-    MacroDef('mathrm', discard=False),
+    TODO: document categories.
 
-    # spaces added so that database indexing doesn't index the word "graphics"
-    ('includegraphics', '< g r a p h i c s >'),
+    If you want to add your own definitions, you should use the
+    :py:meth:`pylatexenc.macrospec.LatexContextDb.add_context_category()`
+    method.  If you would like to override some definitions, use that method
+    with the argument `prepend=True`.  See docs for
+    :py:meth:`pylatexenc.macrospec.LatexContextDb.add_context_category()`.
 
-    ('ref', '<ref>'),
-    ('eqref', '(<ref>)'),
-    ('url', '<%s>'),
-    ('item', lambda r: '\n  '+(latexnodes2text([r.nodeoptarg]) if r.nodeoptarg else '*')),
-    ('footnote', '[%s]'),
+    If there are too many macro/environment definitions, or if there are some
+    irrelevant ones, you can always filter the returned database using
+    :py:meth:`pylatexenc.macrospec.LatexContextDb.filter_context()`.
 
-    ('texorpdfstring', lambda node: latexnodes2text(node.nodeargs[1:2])), # use second argument
-
-    ('oe', u'\u0153'),
-    ('OE', u'\u0152'),
-    ('ae', u'\u00e6'),
-    ('AE', u'\u00c6'),
-    ('aa', u'\u00e5'), # a norvegien/nordique
-    ('AA', u'\u00c5'), # A norvegien/nordique
-    ('o', u'\u00f8'), # o norvegien/nordique
-    ('O', u'\u00d8'), # O norvegien/nordique
-    ('ss', u'\u00df'), # s-z allemand
-    ('L', u"\N{LATIN CAPITAL LETTER L WITH STROKE}"),
-    ('l', u"\N{LATIN SMALL LETTER L WITH STROKE}"),
-    ('i', u"\N{LATIN SMALL LETTER DOTLESS I}"),
-    ('j', u"\N{LATIN SMALL LETTER DOTLESS J}"),
-
-    ("~", "~" ),
-    ("&", "\\&" ), # HACK, see below for text replacement of '&'
-    ("$", "$" ),
-    ("{", "{" ),
-    ("}", "}" ),
-    ("%", lambda arg: u"%" ), # careful: % is formatting substitution symbol...
-    ("#", "#" ),
-    ("_", "_" ),
-
-    ("\\", '\n'),
-
-    ("textquoteleft", "`"),
-    ("textquoteright", "'"),
-    ("textquotedblright", u"\N{RIGHT DOUBLE QUOTATION MARK}"),
-    ("textquotedblleft", u"\N{LEFT DOUBLE QUOTATION MARK}"),
-    ("textendash", u"\N{EN DASH}"),
-    ("textemdash", u"\N{EM DASH}"),
-
-    ('textpm', u"\N{PLUS-MINUS SIGN}"),
-    ('textmp', u"\N{MINUS-OR-PLUS SIGN}"),
-
-    ("texteuro", u"\N{EURO SIGN}"),
-
-    # math stuff
-
-    ("hbar", u"\N{LATIN SMALL LETTER H WITH STROKE}"),
-    ("ell", u"\N{SCRIPT SMALL L}"),
-
-    ('forall', u"\N{FOR ALL}"),
-    ('complement', u"\N{COMPLEMENT}"),
-    ('partial', u"\N{PARTIAL DIFFERENTIAL}"),
-    ('exists', u"\N{THERE EXISTS}"),
-    ('nexists', u"\N{THERE DOES NOT EXIST}"),
-    ('varnothing', u"\N{EMPTY SET}"),
-    ('emptyset', u"\N{EMPTY SET}"),
-    ('aleph', u"\N{ALEF SYMBOL}"),
-    # increment?
-    ('nabla', u"\N{NABLA}"),
-    #
-    ('in', u"\N{ELEMENT OF}"),
-    ('notin', u"\N{NOT AN ELEMENT OF}"),
-    ('ni', u"\N{CONTAINS AS MEMBER}"),
-    ('prod', u'\N{N-ARY PRODUCT}'),
-    ('coprod', u'\N{N-ARY COPRODUCT}'),
-    ('sum', u'\N{N-ARY SUMMATION}'),
-    ('setminus', u'\N{SET MINUS}'),
-    ('smallsetminus', u'\N{SET MINUS}'),
-    ('ast', u'\N{ASTERISK OPERATOR}'),
-    ('circ', u'\N{RING OPERATOR}'),
-    ('bullet', u'\N{BULLET OPERATOR}'),
-    ('sqrt', u'\N{SQUARE ROOT}(%s)'),
-    ('propto', u'\N{PROPORTIONAL TO}'),
-    ('infty', u'\N{INFINITY}'),
-    ('parallel', u'\N{PARALLEL TO}'),
-    ('nparallel', u'\N{NOT PARALLEL TO}'),
-    ('wedge', u"\N{LOGICAL AND}"),
-    ('vee', u"\N{LOGICAL OR}"),
-    ('cap', u'\N{INTERSECTION}'),
-    ('cup', u'\N{UNION}'),
-    ('int', u'\N{INTEGRAL}'),
-    ('iint', u'\N{DOUBLE INTEGRAL}'),
-    ('iiint', u'\N{TRIPLE INTEGRAL}'),
-    ('oint', u'\N{CONTOUR INTEGRAL}'),
-
-    ('sim', u'\N{TILDE OPERATOR}'),
-    ('backsim', u'\N{REVERSED TILDE}'),
-    ('simeq', u'\N{ASYMPTOTICALLY EQUAL TO}'),
-    ('approx', u'\N{ALMOST EQUAL TO}'),
-    ('neq', u'\N{NOT EQUAL TO}'),
-    ('equiv', u'\N{IDENTICAL TO}'),
-    ('ge', u'>'),#
-    ('le', u'<'),#
-    ('leq', u'\N{LESS-THAN OR EQUAL TO}'),
-    ('geq', u'\N{GREATER-THAN OR EQUAL TO}'),
-    ('leqslant', u'\N{LESS-THAN OR EQUAL TO}'),
-    ('geqslant', u'\N{GREATER-THAN OR EQUAL TO}'),
-    ('leqq', u'\N{LESS-THAN OVER EQUAL TO}'),
-    ('geqq', u'\N{GREATER-THAN OVER EQUAL TO}'),
-    ('lneqq', u'\N{LESS-THAN BUT NOT EQUAL TO}'),
-    ('gneqq', u'\N{GREATER-THAN BUT NOT EQUAL TO}'),
-    ('ll', u'\N{MUCH LESS-THAN}'),
-    ('gg', u'\N{MUCH GREATER-THAN}'),
-    ('nless', u'\N{NOT LESS-THAN}'),
-    ('ngtr', u'\N{NOT GREATER-THAN}'),
-    ('nleq', u'\N{NEITHER LESS-THAN NOR EQUAL TO}'),
-    ('ngeq', u'\N{NEITHER GREATER-THAN NOR EQUAL TO}'),
-    ('lesssim', u'\N{LESS-THAN OR EQUIVALENT TO}'),
-    ('gtrsim', u'\N{GREATER-THAN OR EQUIVALENT TO}'),
-    ('lessgtr', u'\N{LESS-THAN OR GREATER-THAN}'),
-    ('gtrless', u'\N{GREATER-THAN OR LESS-THAN}'),
-    ('prec', u'\N{PRECEDES}'),
-    ('succ', u'\N{SUCCEEDS}'),
-    ('preceq', u'\N{PRECEDES OR EQUAL TO}'),
-    ('succeq', u'\N{SUCCEEDS OR EQUAL TO}'),
-    ('precsim', u'\N{PRECEDES OR EQUIVALENT TO}'),
-    ('succsim', u'\N{SUCCEEDS OR EQUIVALENT TO}'),
-    ('nprec', u'\N{DOES NOT PRECEDE}'),
-    ('nsucc', u'\N{DOES NOT SUCCEED}'),
-    ('subset', u'\N{SUBSET OF}'),
-    ('supset', u'\N{SUPERSET OF}'),
-    ('subseteq', u'\N{SUBSET OF OR EQUAL TO}'),
-    ('supseteq', u'\N{SUPERSET OF OR EQUAL TO}'),
-    ('nsubseteq', u'\N{NEITHER A SUBSET OF NOR EQUAL TO}'),
-    ('nsupseteq', u'\N{NEITHER A SUPERSET OF NOR EQUAL TO}'),
-    ('subsetneq', u'\N{SUBSET OF WITH NOT EQUAL TO}'),
-    ('supsetneq', u'\N{SUPERSET OF WITH NOT EQUAL TO}'),
-
-
-    ('cdot', u'\N{MIDDLE DOT}'),
-    ('times', u'\N{MULTIPLICATION SIGN}'),
-    ('otimes', u'\N{CIRCLED TIMES}'),
-    ('oplus', u'\N{CIRCLED PLUS}'),
-    ('bigotimes', u'\N{CIRCLED TIMES}'),
-    ('bigoplus', u'\N{CIRCLED PLUS}'),
-
-    ('frac', '%s/%s'),
-    ('nicefrac', '%s/%s'),
-
-    ('cos', 'cos'),
-    ('sin', 'sin'),
-    ('tan', 'tan'),
-    ('arccos', 'arccos'),
-    ('arcsin', 'arcsin'),
-    ('arctan', 'arctan'),
-
-    ('prime', "'"),
-    ('dag', u"\N{DAGGER}"),
-    ('dagger', u"\N{DAGGER}"),
-    ('pm', u"\N{PLUS-MINUS SIGN}"),
-    ('mp', u"\N{MINUS-OR-PLUS SIGN}"),
-
-    (',', u" "),
-    (';', u" "),
-    (':', u" "),
-    (' ', u" "),
-    ('!', u""), # sorry, no negative space in ascii
-    ('quad', u"  "),
-    ('qquad', u"    "),
-
-    ('ldots', u"..."),
-    ('cdots', u"..."),
-    ('ddots', u"..."),
-    ('dots', u"..."),
+    .. versionadded:: 2.0
+ 
+       The :py:class:`pylatexenc.macrospec.LatexContextDb` class as well as this
+       method, were all introduced in `pylatexenc 2.0`.
+    """
+    db = macrospec.LatexContextDb()
     
-    ('langle', u'\N{LEFT ANGLE BRACKET}'),
-    ('rangle', u'\N{RIGHT ANGLE BRACKET}'),
-    ('mid', u'|'),
-    ('nmid', u'\N{DOES NOT DIVIDE}'),
+    from ._latex2text_defaultspecs import specs
+
+    for cat, catspecs in specs:
+        db.add_context_category(cat,
+                                macros=catspecs['macros'],
+                                environments=catspecs['environments'],
+                                specials=catspecs['specials'])
     
-    ('ket', u'|%s\N{RIGHT ANGLE BRACKET}'),
-    ('bra', u'\N{LEFT ANGLE BRACKET}%s|'),
-    ('braket', u'\N{LEFT ANGLE BRACKET}%s|%s\N{RIGHT ANGLE BRACKET}'),
-    ('ketbra', u'|%s\N{RIGHT ANGLE BRACKET}\N{LEFT ANGLE BRACKET}%s|'),
-    ('uparrow', u'\N{UPWARDS ARROW}'),
-    ('downarrow', u'\N{DOWNWARDS ARROW}'),
-    ('rightarrow', u'\N{RIGHTWARDS ARROW}'),
-    ('to', u'\N{RIGHTWARDS ARROW}'),
-    ('leftarrow', u'\N{LEFTWARDS ARROW}'),
-    ('longrightarrow', u'\N{LONG RIGHTWARDS ARROW}'),
-    ('longleftarrow', u'\N{LONG LEFTWARDS ARROW}'),
-
-    # we use these conventions as Identity operator (\mathbbm{1})
-    ('id', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
-    ('Ident', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
-    ]
-
-
-
-def _format_uebung(n):
-    s = '\n%s\n' %(latexnodes2text([n.nodeargs[0]]))
-    optarg = n.nodeargs[1]
-    if (optarg is not None):
-        s += '[%s]\n' %(latexnodes2text([optarg]))
-    return s
-
-
-_default_macro_list += [
-    # some ethuebung.sty macros
-    ('exercise', _format_uebung),
-    ('uebung', _format_uebung),
-    ('hint', 'Hint: %s'),
-    ('hints', 'Hints: %s'),
-    ('hinweis', 'Hinweis: %s'),
-    ('hinweise', 'Hinweise: %s'),
-    ]
-
-
-
-
-
-def _greekletters(letterlist):
-    for l in letterlist:
-        ucharname = l.upper()
-        if (ucharname == 'LAMBDA'):
-            ucharname = 'LAMDA'
-        smallname = "GREEK SMALL LETTER "+ucharname
-        if (ucharname == 'EPSILON'):
-            smallname = "GREEK LUNATE EPSILON SYMBOL"
-        if (ucharname == 'PHI'):
-            smallname = "GREEK PHI SYMBOL"
-        _default_macro_list.append(
-            (l, unicodedata.lookup(smallname))
-            )
-        _default_macro_list.append(
-            (l[0].upper()+l[1:], unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
-            )
-_greekletters( ('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota', 'kappa',
-                'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma', 'tau', 'upsilon', 'phi',
-                'chi', 'psi', 'omega') )
-_default_macro_list += [
-    ('varepsilon', u'\N{GREEK SMALL LETTER EPSILON}'),
-    ('vartheta', u'\N{GREEK THETA SYMBOL}'),
-    ('varpi', u'\N{GREEK PI SYMBOL}'),
-    ('varrho', u'\N{GREEK RHO SYMBOL}'),
-    ('varsigma', u'\N{GREEK SMALL LETTER FINAL SIGMA}'),
-    ('varphi', u'\N{GREEK SMALL LETTER PHI}'),
-    ]
-
-unicode_accents_list = (
-    # see http://en.wikibooks.org/wiki/LaTeX/Special_Characters for a list
-    ("'", u"\N{COMBINING ACUTE ACCENT}"),
-    ("`", u"\N{COMBINING GRAVE ACCENT}"),
-    ('"', u"\N{COMBINING DIAERESIS}"),
-    ("c", u"\N{COMBINING CEDILLA}"),
-    ("^", u"\N{COMBINING CIRCUMFLEX ACCENT}"),
-    ("~", u"\N{COMBINING TILDE}"),
-    ("H", u"\N{COMBINING DOUBLE ACUTE ACCENT}"),
-    ("k", u"\N{COMBINING OGONEK}"),
-    ("=", u"\N{COMBINING MACRON}"),
-    ("b", u"\N{COMBINING MACRON BELOW}"),
-    (".", u"\N{COMBINING DOT ABOVE}"),
-    ("d", u"\N{COMBINING DOT BELOW}"),
-    ("r", u"\N{COMBINING RING ABOVE}"),
-    ("u", u"\N{COMBINING BREVE}"),
-    ("v", u"\N{COMBINING CARON}"),
-
-    ("vec", u"\N{COMBINING RIGHT ARROW ABOVE}"),
-    ("dot", u"\N{COMBINING DOT ABOVE}"),
-    ("hat", u"\N{COMBINING CIRCUMFLEX ACCENT}"),
-    ("check", u"\N{COMBINING CARON}"),
-    ("breve", u"\N{COMBINING BREVE}"),
-    ("acute", u"\N{COMBINING ACUTE ACCENT}"),
-    ("grave", u"\N{COMBINING GRAVE ACCENT}"),
-    ("tilde", u"\N{COMBINING TILDE}"),
-    ("bar", u"\N{COMBINING OVERLINE}"),
-    ("ddot", u"\N{COMBINING DIAERESIS}"),
-
-    ("not", u"\N{COMBINING LONG SOLIDUS OVERLAY}"),
-
-    )
-
-def make_accented_char(node, combining):
-    nodearg = node.nodeargs[0] if len(node.nodeargs) else latexwalker.LatexCharsNode(chars=' ')
-
-    c = latexnodes2text([nodearg]).strip()
-
-    def getaccented(ch, combining):
-        ch = unicode(ch)
-        combining = unicode(combining)
-        if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
-            ch = u"i"
-        if (ch == u"\N{LATIN SMALL LETTER DOTLESS J}"):
-            ch = u"j"
-        #print u"Accenting %s with %s"%(ch, combining) # this causes UnicdeDecodeError!!!
-        return unicodedata.normalize('NFC', unicode(ch)+combining)
-
-    return u"".join([getaccented(ch, combining) for ch in c])
-
-
-for u in unicode_accents_list:
-    (mname, mcombining) = u
-    _default_macro_list.append(
-        (mname, lambda x, c=mcombining: make_accented_char(x, c))
-        )
-
-
-
-default_env_dict = dict([(e.envname, e) for e in _default_env_list])
-"""
-The default context dictionary of known LaTeX environment definitions and how to
-convert them to text.
-
-This is a dictionary with keys the environment name (:py:class:`EnvDef.envname <EnvDef>`)
-and values are :py:class:`EnvDef` instances.
-"""
-default_macro_dict = dict([(m.macname, m) for m in (MacroDef(m) for m in _default_macro_list)])
-"""
-The default context dictionary of known LaTeX macro definitions and how to convert them to text.
-
-This is a dictionary with keys the macro name (:py:class:`MacroDef.macname <MacroDef>`)
-and values are :py:class:`MacroDef` instances.
-"""
-
-
-default_text_replacements = (
-    # remove indentation provided by LaTeX
-    #(re.compile(r'\n[ \t]*'), '\n'),
+    return db
     
-    ("~", " "),
-    ("``", '"'),
-    ("''", '"'),
 
-    (r'(?<!\\)&', '   '), # ignore tabular alignments, just add a little space
-    ('\\&', '&'), # but preserve the \& escapes, that we before *hackingly* kept as '\&' for this purpose ...
 
-    )
+
+default_macro_dict = _util.LazyDict(
+    generate_dict_fn=lambda: dict([
+        (m.macroname, m)
+        for m in get_default_latex_context_db().iter_macro_specs()
+    ])
+)
+r"""
+.. deprecated:: 2.0
+
+   Use :py:func:`get_default_latex_context_db()` instead, or create your own
+   :py:class:`pylatexenc.macrospec.LatexContextDb` object.
+
+
+Provide an access to the default macro text replacement specs for `latex2text`
+in a form that is compatible with `pylatexenc 1.x`\ 's `default_macro_dict`
+module-level dictionary.
+
+This is implemented using a custom lazy mutable mapping, which behaves just like
+a regular dictionary but that loads the data only once the dictionary is
+accessed.  In this way the default latex specs into a python dictionary unless
+they are actually queried or modified, and thus users of `pylatexenc 2.0` that
+don't rely on the default macro/environment definitions shouldn't notice any
+decrease in performance.
 """
-Default text replacements (final touches) to apply to LaTeX code. (For instance,
-converting ``~`` to (space) or ``''`` to ``"``.)
 
-This is a list (or tuple) of pairs of `(regex-pattern, replacement-text)` of replacements
-to perform.
+default_env_dict = _util.LazyDict(
+    generate_dict_fn=lambda: dict([
+        (m.environmentname, m)
+        for m in get_default_latex_context_db().iter_environment_specs()
+    ])
+)
+r"""
+.. deprecated:: 2.0
+
+   Use :py:func:`get_default_latex_context_db()` instead, or create your own
+   :py:class:`pylatexenc.macrospec.LatexContextDb` object.
+
+
+Provide an access to the default environment text replacement specs for
+`latex2text` in a form that is compatible with `pylatexenc 1.x`\ 's
+`default_macro_dict` module-level dictionary.
+
+This is implemented using a custom lazy mutable mapping, which behaves just like
+a regular dictionary but that loads the data only once the dictionary is
+accessed.  In this way the default latex specs into a python dictionary unless
+they are actually queried or modified, and thus users of `pylatexenc 2.0` that
+don't rely on the default macro/environment definitions shouldn't notice any
+decrease in performance.
 """
 
+
+default_text_replacements = ( )
+r"""
+.. deprecated:: 2.0
+
+   Text replacements are deprecated since `pylatexenc 2.0` with the advent of
+   "latex specials".
+"""
 
 
 # ------------------------------------------------------------------------------
@@ -569,18 +423,24 @@ class LatexNodes2Text(object):
 
     Arguments to the constructor:
 
-    - `env_dict`, `macro_dict` are dictionaries of known environment and macro
-      definitions.  They default to :py:data:`default_env_dict` and
-      :py:data:`default_macro_dict`, respectively.
+    - `latex_context_db` is a :py:class:`pylatexenc.macrospec.LatexContextDb`
+      class storing a collection of rules for converting macros, environments,
+      and other latex specials to text.  The `LatexContextDb` should contain
+      specifications via :py:class:`MacroTextSpec`,
+      :py:class:`EnvironmentTextSpec`, and :py:class:`SpecialsTextSpec` objects.
 
-    - `text_replacements` are string replacements to apply onto the final string, as final
-      touches.  This defaults to :py:data:`default_text_replacements`.
+      The default latex context database can be obtained using
+      :py:func:`get_default_latex_context_db()`.
 
     Additional keyword arguments are flags which may influence the behavior:
 
-    - `keep_inline_math=True|False`: If set to `True`, then inline math is kept
-      using dollar signs, otherwise it is incorporated as normal text.  (By
-      default this is `False`)
+    - `math_mode='text'|'with-delimiters'|'verbatim'`: Specify how to treat
+      chunks of LaTeX code that correspond to math modes.  If 'text' (the
+      default), then the math mode contents is incorporated as normal text.  If
+      'with-delimiters', the content is incorporated as normal text but it is
+      still included in the original math-mode delimiters, such as '$...$'.  If
+      'verbatim', then the math mode chunk is kept verbatim, including the
+      delimiters.
 
     - `keep_comments=True|False`: If set to `True`, then LaTeX comments are kept
       (including the percent-sign); otherwise they are discarded.  (By default
@@ -624,23 +484,94 @@ class LatexNodes2Text(object):
       becomes ``{\N{LATIN SMALL LETTER E WITH ACUTE}tonnant}``.
 
     .. versionadded: 1.4
-       Added the `strict_latex_spaces` and the `keep_braced_groups` flags
+
+       Added the `strict_latex_spaces`, `keep_braced_groups`, and
+       `keep_braced_groups_minlen` flags
+
+    Additionally, the following arguments are accepted for backwards compatibility:
+
+    - `keep_inline_math=True|False`: Obsolete since `pylatexenc 2`.  If set to
+      `True`, then this is the same as `math_mode='verbatim'`, and if set to
+      `False`, this is the same as `math_mode='text'`.
+
+      .. deprecated:: 2.0
+    
+         The `keep_inline_math=` option is deprecated because it had a weird
+         behavior and was poorly implemented, especially given that a similarly
+         named option in :py:class:`LatexWalker` had a different effect.  See
+         `Issue #14 <https://github.com/phfaist/pylatexenc/issues/14>`_.
+
+    - `text_replacements` this argument is ignored starting from `pylatexenc 2`.
+
+      .. deprecated:: 2.0
+
+         Text replacements are no longer made at the end of the text conversion.
+         This feature is replaced by the concept of LaTeX specials---see, e.g.,
+         :py:class:`pylatexenc.latexwalker.LatexSpecialsNode`.
+
+         To keep existing code working, add a call to
+         :py:meth:`apply_text_replacements()` immediately after
+         :py:meth:`nodelist_to_text()` to achieve the same effect as in
+         `pylatexenc 1.x`.  See :py:meth:`apply_text_replacements()`.
+
+    - `env_dict`, `macro_dict`: Obsolete since `pylatexenc 2`.  If set, they are
+      dictionaries of known environment and macro definitions.  They default to
+      :py:data:`default_env_dict` and :py:data:`default_macro_dict`,
+      respectively.
+
+      .. deprecated:: 2.0
+
+         You should now use the more powerful option `latex_context_db=`.  You
+         cannot specify both `macro_list` (or `env_list`) and
+         `latex_context_db`.
     """
-    def __init__(self, env_dict=None, macro_dict=None, text_replacements=None, **flags):
+    def __init__(self, latex_context=None, **flags):
         super(LatexNodes2Text, self).__init__()
 
-        if env_dict is None:  env_dict = default_env_dict
-        if macro_dict is None:  macro_dict = default_macro_dict
-        if text_replacements is None: text_replacements = default_text_replacements
+        if latex_context is None:
+            if 'macro_dict' in flags or 'env_dict' in flags:
+                # LEGACY -- build a latex context using the given macro_dict
+                if pylatexenc._settings['deprecation_warnings']:
+                    logger.warning(
+                        "Deprecated (pylatexenc 2.0): "
+                        "The `macro_dict=...` and `env_dict=...` options in LatexNodes2Text() are "
+                        "obsolete since pylatexenc 2.  It'll still work, but please consider "
+                        "using instead the more versatile option `latex_context=...`."
+                    )
+                
+                macro_dict = flags.pop('macro_dict', [])
+                env_dict = flags.pop('env_dict', [])
 
-        self.env_dict = dict(env_dict)
-        self.macro_dict = dict(macro_dict)
-        self.text_replacements = text_replacements
+                latex_context = macrospec.LatexContextDb()
+                latex_context.add_context_category('custom',
+                                                   macros=macro_dict.values(),
+                                                   environments=env_dict.values(),
+                                                   specials=[])
+
+            else:
+                # default -- use default
+                latex_context = get_default_latex_context_db()
+
+        self.latex_context = latex_context
 
         self.tex_input_directory = None
         self.strict_input = True
 
-        self.keep_inline_math = flags.pop('keep_inline_math', False)
+        if 'keep_inline_math' in flags:
+            if 'math_mode' in flags:
+                raise TypeError("Cannot specify both math_mode= and keep_inline_math= "
+                                "for LatexNodes2Text()")
+            if pylatexenc._settings['deprecation_warnings']:
+                logger.warning("Deprecated (pylatexenc 2.0): "
+                               "The keep_inline_math=... option in LatexNodes2Text() has been superseded by "
+                               "the math_mode=... option.")
+            self.math_mode = 'verbatim' if flags.pop('keep_inline_math') else 'text'
+        else:
+            self.math_mode = flags.pop('math_mode', 'text')
+
+        if self.math_mode not in ('text', 'with-delimiters', 'verbatim'):
+            raise ValueError("math_mode= option must be one of 'text', 'with-delimiters', 'verbatim'")
+
         self.keep_comments = flags.pop('keep_comments', False)
 
         strict_latex_spaces = flags.pop('strict_latex_spaces', False)
@@ -649,12 +580,21 @@ class LatexNodes2Text(object):
         self.keep_braced_groups = flags.pop('keep_braced_groups', False)
         self.keep_braced_groups_minlen = flags.pop('keep_braced_groups_minlen', 2)
 
+        if 'text_replacements' in flags:
+            del flags['text_replacements']
+            if pylatexenc._settings['deprecation_warnings']:
+                logger.warning("Deprecated (pylatexenc 2.0): "
+                               "The text_replacements= argument is ignored since pylatexenc 2. "
+                               "To keep existing code working, add a call to `apply_text_replacements()`. "
+                               "New code should use instead \"latex specials\".")
+
         if flags:
             # any flags left which we haven't recognized
-            logger.warning("LatexNodes2Text(): Unknown flag(s) encountered: %r", flags.keys())
+            logger.warning("LatexNodes2Text(): Unknown flag(s) encountered: %r", list(flags.keys()))
         
 
-    def set_tex_input_directory(self, tex_input_directory, latex_walker_init_args=None, strict_input=True):
+    def set_tex_input_directory(self, tex_input_directory, latex_walker_init_args=None,
+                                strict_input=True):
         """
         Set where to look for input files when encountering the ``\\input`` or
         ``\\include`` macro.
@@ -678,13 +618,7 @@ class LatexNodes2Text(object):
         self.tex_input_directory = tex_input_directory
         self.latex_walker_init_args = latex_walker_init_args if latex_walker_init_args else {}
         self.strict_input = strict_input
-        
-        if tex_input_directory:
-            self.macro_dict['input'] = MacroDef('input', lambda n: self._callback_input(n))
-            self.macro_dict['include'] = MacroDef('include', lambda n: self._callback_input(n))
-        else:
-            self.macro_dict['input'] = MacroDef('input', discard=True)
-            self.macro_dict['include'] = MacroDef('include', discard=True)
+
 
 
     def read_input_file(self, fn):
@@ -699,9 +633,9 @@ class LatexNodes2Text(object):
         paths and resolving all symlinks).
 
         You may override this method to obtain the input data in however way you
-        see fit.  (In that case, a call to `set_tex_input_directory()` may not
-        be needed as that function simply sets properties which are used by the
-        default implementation of `read_input_file()`.)
+        see fit.  In that case, a call to `set_tex_input_directory()` may not be
+        needed as that function simply sets properties which are used by the
+        default implementation of `read_input_file()`.
 
         This function accepts the referred filename as argument (the argument to
         the ``\\input`` macro), and should return a string with the file
@@ -737,7 +671,7 @@ class LatexNodes2Text(object):
             return ''
 
 
-    def _callback_input(self, n):
+    def _input_node_simplify_repl(self, n):
         #
         # recurse into files upon '\input{}'
         #
@@ -747,7 +681,7 @@ class LatexNodes2Text(object):
 
         inputtex = self.read_input_file(self.nodelist_to_text([n.nodeargs[0]]).strip())
 
-        return self._nodelistcontents_to_text(
+        return self.nodelist_to_text(
             latexwalker.LatexWalker(inputtex, **self.latex_walker_init_args)
             .get_latex_nodes()[0]
         )
@@ -768,44 +702,23 @@ class LatexNodes2Text(object):
         Extracts text from a node list. `nodelist` is a list of nodes as returned by
         :py:meth:`pylatexenc.latexwalker.LatexWalker.get_latex_nodes()`.
 
-        In addition to converting each node in the list to text using
-        `node_to_text()`, we apply some global replacements and fine-tuning to
-        the resulting text to account for `text_replacements` (e.g., to fix
-        quotes, tab alignment ``&`` chars, etc.)
-        """
-
-        s = self._nodelistcontents_to_text(nodelist)
-
-        # now, perform suitable replacements
-        for pattern, replacement in self.text_replacements:
-            if (hasattr(pattern, 'sub')):
-                s = pattern.sub(replacement, s)
-            else:
-                s = s.replace(pattern, replacement)
-
-        if not self.keep_inline_math:
-            s = s.replace('$', ''); # removing math mode inline signs, just keep their Unicode counterparts..
-
-        return s
-
-
-    def _nodelistcontents_to_text(self, nodelist):
-        """
         Turn the node list to text representations of each node.  Basically apply
         `node_to_text()` to each node.  (But not quite actually, since we take
         some care as to where we add whitespace.)
         """
+
         s = ''
         prev_node = None
         for node in nodelist:
             if self._is_bare_macro_node(prev_node) and node.isNodeType(latexwalker.LatexCharsNode):
                 if not self.strict_latex_spaces['between-macro-and-chars']:
-                    # after a macro with absolutely no arguments, include post_space
-                    # in output by default if there are other chars that follow.
-                    # This is for more breathing space (especially in equations(?)),
-                    # and for compatibility with earlier versions of pylatexenc (<=
-                    # 1.3).  This is NOT LaTeX' default behavior (see issue #11), so
-                    # only do this if `strict_latex_spaces=False`.
+                    # after a macro with absolutely no arguments, include
+                    # post_space in output by default if there are other chars
+                    # that follow.  This is for more breathing space (especially
+                    # in equations(?)), and for compatibility with earlier
+                    # versions of pylatexenc (<= 1.3).  This is NOT LaTeX'
+                    # default behavior (see issue #11), so only do this if the
+                    # corresponding `strict_latex_spaces=` flag is set.
                     s += prev_node.macro_post_space
             s += self.node_to_text(node)
             prev_node = node
@@ -850,7 +763,7 @@ class LatexNodes2Text(object):
         if node.isNodeType(latexwalker.LatexGroupNode):
             contents = self._groupnodecontents_to_text(node)
             if self.keep_braced_groups and len(contents) >= self.keep_braced_groups_minlen:
-                return "{" + contents + "}"
+                return node.delimiters[0] + contents + node.delimiters[1]
             return contents
 
         def apply_simplify_repl(node, simplify_repl, nodelistargs, what):
@@ -873,12 +786,11 @@ class LatexNodes2Text(object):
         
         if node.isNodeType(latexwalker.LatexMacroNode):
             # get macro behavior definition.
-            macroname = node.macroname.rstrip('*')
-            if macroname in self.macro_dict:
-                mac = self.macro_dict[macroname]
-            else:
-                # no predefined behavior, use default:
-                mac = self.macro_dict['']
+            macroname = node.macroname
+            mac = self.latex_context.get_macro_spec(macroname)
+            if mac is None:
+                # default for unknown macros
+                mac = MacroTextSpec('', discard=True)
 
             def get_macro_str_repl(node, macroname, mac):
                 if mac.simplify_repl:
@@ -893,31 +805,56 @@ class LatexNodes2Text(object):
 
             macrostr = get_macro_str_repl(node, macroname, mac)
             return macrostr
-
+        
         if node.isNodeType(latexwalker.LatexEnvironmentNode):
             # get environment behavior definition.
-            envname = node.envname.rstrip('*')
-            if (envname in self.env_dict):
-                envdef = self.env_dict[envname]
-            else:
-                # no predefined behavior, use default:
-                envdef = self.env_dict['']
+            environmentname = node.environmentname
+            envdef = self.latex_context.get_environment_spec(environmentname)
+            if envdef is None:
+                # default for unknown environments
+                envdef = EnvironmentTextSpec('', discard=False)
 
             if envdef.simplify_repl:
                 return apply_simplify_repl(node, envdef.simplify_repl, node.nodelist,
-                                           what="environment '%s'"%(envname))
+                                           what="environment '%s'"%(environmentname))
             if envdef.discard:
                 return ""
-            return self._nodelistcontents_to_text(node.nodelist)
+            return self.nodelist_to_text(node.nodelist)
+
+        if node.isNodeType(latexwalker.LatexSpecialsNode):
+            # get macro behavior definition.
+            specials_chars = node.specials_chars
+            sspec = self.latex_context.get_specials_spec(specials_chars)
+            if sspec is None:
+                # no corresponding spec, leave the special chars unchanged:
+                return specials_chars
+
+            def get_specials_str_repl(node, specials_chars, spec):
+                if spec.simplify_repl:
+                    argnlist = node.nodeargd.argnlist if node.nodeargd else []
+                    return apply_simplify_repl(node, spec.simplify_repl, argnlist,
+                                               what="specials '%s'"%(specials_chars))
+                if spec.discard:
+                    return ""
+                a = node.nodeargd.argnlist
+                return "".join([self._groupnodecontents_to_text(n) for n in a])
+
+            s = get_specials_str_repl(node, specials_chars, sspec)
+            return s
 
         if node.isNodeType(latexwalker.LatexMathNode):
-            if self.keep_inline_math:
-                # we care about math modes and we should keep this verbatim
-                return latexwalker.math_node_to_latex(node)
-            else:
-                # note, this here only happens if the latexwalker had keep_inline_math=True
+            if self.math_mode == 'verbatim':
+                return node.latex_verbatim()
+            elif self.math_mode == 'with-delimiters':
                 with _PushEquationContext(self):
-                    return self._nodelistcontents_to_text(node.nodelist)
+                    return (node.delimiters[0] + self.nodelist_to_text(node.nodelist) 
+                            + node.delimiters[1])
+            elif self.math_mode == 'text':
+                with _PushEquationContext(self):
+                    return self.nodelist_to_text(node.nodelist)
+            else:
+                raise RuntimeError("unknown math_mode={} !".format(self.math_mode))
+                
 
         logger.warning("LatexNodes2Text.node_to_text(): Unknown node: %r", node)
 
@@ -931,9 +868,47 @@ class LatexNodes2Text(object):
                 len(node.nodeargs) == 0)
 
     def _groupnodecontents_to_text(self, groupnode):
-        return self._nodelistcontents_to_text(groupnode.nodelist)
+        if not groupnode.isNodeType(latexwalker.LatexGroupNode):
+            return self.node_to_text(groupnode)
+        return self.nodelist_to_text(groupnode.nodelist)
 
 
+    def apply_text_replacements(self, s, text_replacements):
+        r"""
+        Convenience function for code that used `text_replacements=` in `pylatexenc
+        1.x`.
+
+        If you used custom `text_replacements=` in `pylatexenc 1.x` then you
+        will have to change::
+  
+          # pylatexenc 1.x with text_replacements
+          text_replacements = ...
+          l2t = LatexNodes2Text(..., text_replacements=text_replacements)
+          text = l2t.nodelist_to_text(...)
+  
+        to::
+  
+          # pylatexenc 2 text_replacements compatibility
+          text_replacements = ...
+          l2t = LatexNodes2Text(...)
+          temp = l2t.nodelist_to_text(...)
+          text = l2t.apply_text_replacements(temp, text_replacements)
+  
+        as a quick fix.  It is recommended however to treat text replacements
+        instead as "latex specials".  (Otherwise the brutal text replacements
+        might act on text generated from macros and environments and give
+        unwanted results.)  See :py:class:`pylatexenc.macrospec.SpecialsSpec`
+        and :py:class:`SpecialsTextSpec`.
+        """
+        
+        # perform suitable replacements
+        for pattern, replacement in text_replacements:
+            if hasattr(pattern, 'sub'):
+                s = pattern.sub(replacement, s)
+            else:
+                s = s.replace(pattern, replacement)
+
+        return s
 
 
 class _PushEquationContext(latexwalker._PushPropOverride):
@@ -961,8 +936,7 @@ class _PushEquationContext(latexwalker._PushPropOverride):
 
 def latex2text(content, tolerant_parsing=False, keep_inline_math=False, keep_comments=False):
     """
-    Extracts text from `content` meant for database indexing. `content` is
-    some LaTeX code.
+    Heuristic conversion of LaTeX content `content` to unicode text.
 
     .. deprecated:: 1.0
        Please use :py:class:`LatexNodes2Text` instead.
@@ -991,19 +965,23 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
 
 
 
-def main(argv):
+def main(argv=None):
     import fileinput
     import argparse
+
+    if argv is None:
+        argv = sys.argv[1:]
 
     parser = argparse.ArgumentParser()
 
     group = parser.add_argument_group("LatexWalker options")
 
     group.add_argument('--parser-keep-inline-math', action='store_const', const=True,
-                       dest='parser_keep_inline_math', default=True)
+                       dest='parser_keep_inline_math', default=None,
+                       help=argparse.SUPPRESS)
     group.add_argument('--no-parser-keep-inline-math', action='store_const', const=False,
                        dest='parser_keep_inline_math',
-                       help="Parse inline math between $ signs specially (default yes)")
+                       help=argparse.SUPPRESS)
 
     group.add_argument('--tolerant-parsing', action='store_const', const=True,
                        dest='tolerant_parsing', default=True)
@@ -1020,10 +998,17 @@ def main(argv):
     group = parser.add_argument_group("LatexNodes2Text options")
 
     group.add_argument('--text-keep-inline-math', action='store_const', const=True,
-                       dest='text_keep_inline_math', default=False)
+                       dest='text_keep_inline_math', default=None,
+                       help=argparse.SUPPRESS)
     group.add_argument('--no-text-keep-inline-math', action='store_const', const=False,
                        dest='text_keep_inline_math',
-                       help="Keep inline math between $ signs verbatim in text output (default no)")
+                       help=argparse.SUPPRESS)
+
+    group.add_argument('--math-mode', action='store', dest='math_mode',
+                       choices=['text', 'with-delimiters', 'verbatim'], default='text',
+                       help="How to handle chunks of math mode LaTeX code. 'text' = convert "
+                       "to text like the rest; 'with-delimiters' = same as 'text' but retain "
+                       "the original math mode delimiters; 'verbatim' = keep verbatim LaTeX code")
 
     group.add_argument('--keep-comments', action='store_const', const=True,
                        dest='keep_comments', default=False)
@@ -1053,18 +1038,22 @@ def main(argv):
 
     args = parser.parse_args(argv)
 
+    if args.parser_keep_inline_math is not None or args.text_keep_inline_math is not None:
+        logger.warning("Options --parser-keep-inline-math and --text-keep-inline-math are "
+                       "deprecated and no longer work.  Please consider using "
+                       "--math-mode=... instead.")
+
     latex = ''
     for line in fileinput.input(files=args.files):
         latex += line
-    
+
     lw = latexwalker.LatexWalker(latex,
-                                 keep_inline_math=args.parser_keep_inline_math,
                                  tolerant_parsing=args.tolerant_parsing,
                                  strict_braces=args.strict_braces)
 
     (nodelist, pos, len_) = lw.get_latex_nodes()
 
-    ln2t = LatexNodes2Text(keep_inline_math=args.text_keep_inline_math,
+    ln2t = LatexNodes2Text(math_mode=args.math_mode,
                            keep_comments=args.keep_comments,
                            strict_latex_spaces=args.strict_latex_spaces,
                            keep_braced_groups=args.keep_braced_groups,
@@ -1074,11 +1063,11 @@ def main(argv):
 
 
 
-if __name__ == '__main__':
+def run_main():
 
     try:
 
-        main(sys.argv[1:])
+        main()
 
     except SystemExit:
         raise
@@ -1089,3 +1078,8 @@ if __name__ == '__main__':
         pdb.post_mortem()
 
 
+
+
+if __name__ == '__main__':
+
+    run_main()

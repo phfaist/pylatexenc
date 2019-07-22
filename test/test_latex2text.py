@@ -32,24 +32,24 @@ class TestLatexNodes2Text(unittest.TestCase):
     x + y i = 0
 \end{equation}
 
-where $i$ is the imaginary unit.
+where $i$ is the ``imaginary unit.''
 '''
         self.assertEqualUpToWhitespace(
             LatexNodes2Text().nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
-            r'''hi there! This is an equation:
+            u'''hi there! This is an equation:
 
     x + y i = 0
 
-where i is the imaginary unit.
+where i is the “imaginary unit.”
 '''
         )
         self.assertEqualUpToWhitespace(
-            LatexNodes2Text(keep_inline_math=True).nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
-            r'''hi there! This is an equation:
+            LatexNodes2Text(math_mode='with-delimiters').nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
+            u'''hi there! This is an equation:
 
     x + y i = 0
 
-where $i$ is the imaginary unit.
+where $i$ is the “imaginary unit.”
 '''
         )
 
@@ -127,8 +127,8 @@ where $i$ is the imaginary unit.
         def do_test(tex, uni, strict_latex_spaces=None, keep_comments=None, **kwargs):
             self.assertEqual(
                 LatexNodes2Text(strict_latex_spaces=strict_latex_spaces, keep_comments=keep_comments,
-                                keep_inline_math=False, **kwargs)
-                .latex_to_text(tex, keep_inline_math=True, **kwargs),
+                                **kwargs)
+                .latex_to_text(tex, keep_inline_math='with-delimiters', **kwargs),
                 uni
             )
 
