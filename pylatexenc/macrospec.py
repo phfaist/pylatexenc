@@ -136,8 +136,8 @@ class ParsedMacroArgs(object):
         )
 
     def __repr__(self):
-        return "ParsedMacroArgs(argspec={!r},argnlist={!r})".format(
-            self.argnlist, self.argspec
+        return "{}(argspec={!r},argnlist={!r})".format(
+            self.__class__.__name__, self.argnlist, self.argspec
         )
 
 
@@ -171,6 +171,13 @@ class MacroStandardArgsParser(object):
         The `argspec` may also be `None`, which is the same as specifying an
         empty string.
 
+      - `optional_arg_no_space`: If set to `True`, then an optional argument
+        cannot have any whitespace between the preceeding tokens and the '['
+        character.  Set this to `True` in cases such as for ``\\`` in AMS-math
+        environments, where AMS apparently introduced a patch to prevent a
+        bracket on a new line after ``\\`` from being interpreted as the
+        optional argument to ``\\``.
+    
       - additional unrecognized keyword arguments are passed on to superclasses
         in case of multiple inheritance
 
@@ -179,10 +186,15 @@ class MacroStandardArgsParser(object):
     .. py:attribute:: argspec
 
        Argument type specification provided to the constructor.
+
+    .. py:attribute:: optional_arg_no_space
+
+       See corresponding constructor argument.
     """
-    def __init__(self, argspec=None, **kwargs):
+    def __init__(self, argspec=None, optional_arg_no_space=False, **kwargs):
         super(MacroStandardArgsParser, self).__init__(**kwargs)
         self.argspec = argspec if argspec else ''
+        self.optional_arg_no_space = optional_arg_no_space
         # catch bugs, make sure that argspec is a string with only accepted chars
         if not isinstance(self.argspec, _basestring) or \
            not all(x in '*[{' for x in self.argspec):
@@ -242,6 +254,12 @@ class MacroStandardArgsParser(object):
                 argnlist.append(node)
 
             elif argt == '[':
+
+                if self.optional_arg_no_space and w.s[p].isspace():
+                    # don't try to read optional arg, we don't allow space
+                    argnlist.append(None)
+                    continue
+
                 optarginfotuple = w.get_latex_maybe_optional_arg(p,
                                                                  parsing_context=parsing_context)
                 if optarginfotuple is None:
@@ -257,9 +275,7 @@ class MacroStandardArgsParser(object):
                 if tok.tok == 'char' and tok.arg.lstrip().startswith('*'):
                     # has star
                     argnlist.append(
-                        latexwalker.LatexCharsNode(parsed_context=w.parsed_context,
-                                                   chars='*',
-                                                   pos=tok.pos, len=tok.len)
+                        w.make_node(latexwalker.LatexCharsNode, chars='*', pos=tok.pos, len=tok.len)
                     )
                     p = tok.pos + 1
                 else:
@@ -371,10 +387,10 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             len_ = endverbpos-pos
 
             argd = ParsedVerbatimArgs(
-                verbatim_chars_node=latexwalker.LatexCharsNode(parsed_context=w.parsed_context,
-                                                               chars=w.s[pos:pos+len_],
-                                                               pos=pos,
-                                                               len=len_)
+                verbatim_chars_node=w.make_node(latexwalker.LatexCharsNode, 
+                                                chars=w.s[pos:pos+len_],
+                                                pos=pos,
+                                                len=len_)
             )
             return (argd, pos, len_)
 
@@ -402,10 +418,10 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             verbarg = w.s[beginpos:endpos]
 
             argd = ParsedVerbatimArgs(
-                verbatim_chars_node=latexwalker.LatexCharsNode(parsed_context=w.parsed_context,
-                                                               chars=verbarg,
-                                                               pos=beginpos,
-                                                               len=endpos-beginpos),
+                verbatim_chars_node=w.make_node(latexwalker.LatexCharsNode,
+                                                chars=verbarg,
+                                                pos=beginpos,
+                                                len=endpos-beginpos),
                 verbatim_delimiters=(verbdelimchar, verbdelimchar),
             )
 

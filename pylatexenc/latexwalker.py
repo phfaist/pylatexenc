@@ -66,7 +66,7 @@ Simple example usage::
 You can also use `latexwalker` directly in command-line, producing JSON or a
 human-readable node tree::
 
-    $ echo '\textit{italic} text' | latexwalker --output-format=json --json-compact
+    $ echo '\textit{italic} text' | latexwalker --output-format=json
     {
       "nodelist": [
         {
@@ -122,18 +122,30 @@ class LatexWalkerError(Exception):
 
 class LatexWalkerParseError(LatexWalkerError):
     """
-    Parse error.  The following attributes are available: `msg` (the error message), `s`
-    (the parsed string), `pos` (the position of the error in the string, 0-based index).
+    Parse error.  The following attributes are available: `msg` (the error
+    message), `s` (the parsed string), `pos` (the position of the error in the
+    string, 0-based index).
     """
     def __init__(self, msg, s=None, pos=None):
         self.msg = msg
         self.s = s
         self.pos = pos
-        disp = '...'+s[max(pos-25,0):pos]
-        disp = '\n%s\n'%(disp)  +  (' '*len(disp)) + s[pos:pos+25]+'...'
-        super(LatexWalkerParseError, self).__init__(
-            msg + ( " @ %d:\n%s" %(pos, disp) )
-        )
+        self.open_contexts = []
+        super(LatexWalkerParseError, self).__init__(self._dispstr())
+
+    def _dispstr(self):
+        disp = '...'+self.s[max(self.pos-25,0):self.pos]
+        disp = '\n%s\n'%(disp)  +  (' '*len(disp)) + self.s[self.pos:self.pos+25]+'...'
+        disp = self.msg + ( " @ %d:\n%s" %(self.pos, disp) )
+        if self.open_contexts:
+            disp += '\nOpen LaTeX blocks:\n'
+            for context in self.open_contexts:
+                disp += ' '*8 + '* ' + context + '\n'
+        return disp
+
+    def __str__(self):
+        return self._dispstr()
+
 
 class LatexWalkerEndOfStream(LatexWalkerError):
     """
@@ -943,6 +955,8 @@ class LatexWalker(object):
 
         self.s = s
 
+        self.debug_nodes = False
+
         if latex_context is None:
             if 'macro_dict' in kwargs:
                 # LEGACY -- build a latex context using the given macro_dict
@@ -1188,12 +1202,24 @@ class LatexWalker(object):
         return LatexToken(tok='char', arg=s[pos], pos=pos, len=1, pre_space=space)
 
 
-    def _mknode(self, nclass, **kwargs):
-        assert 'pos' in kwargs and 'len' in kwargs
-        return nclass(parsed_context=self.parsed_context, **kwargs)
+    def make_node(self, node_class, pos, len, **kwargs):
+        r"""
+        Create and return a node of type `node_class` which holds a representation
+        of the latex code at position `pos` and of length `len` in the parsed
+        string.
+
+        The node class should be a :py:class:`LatexNode` subclass.
+
+        Keyword arguments are supplied directly to the constructor of the node
+        class.
+        """
+        node = node_class(parsed_context=self.parsed_context, pos=pos, len=len, **kwargs)
+        if self.debug_nodes:
+            logger.debug("New node: %r", node)
+        return node
 
     def _mknodeposlen(self, nclass, **kwargs):
-        return ( self._mknode(nclass, **kwargs), kwargs['pos'], kwargs['len'] )
+        return ( self.make_node(nclass, **kwargs), kwargs['pos'], kwargs['len'] )
 
 
     def get_latex_expression(self, pos, strict_braces=None,
@@ -1522,6 +1548,7 @@ class LatexWalker(object):
         nodelist = []
     
         include_brace_chars = None
+        opening_brace_for_stop_upon_closing_brace = None
         if stop_upon_closing_brace:
             if stop_upon_closing_brace == '}':
                 opening_brace_for_stop_upon_closing_brace = '{'
@@ -1587,8 +1614,8 @@ class LatexWalker(object):
             # if it's not a char, push the last `p.lastchars` into the node list
             # before we do anything else
             if len(p.lastchars):
-                strnode = self._mknode(LatexCharsNode, chars=p.lastchars+tok.pre_space,
-                                       pos=p.lastchars_pos, len=tok.pos - p.lastchars_pos)
+                strnode = self.make_node(LatexCharsNode, chars=p.lastchars+tok.pre_space,
+                                         pos=p.lastchars_pos, len=tok.pos - p.lastchars_pos)
                 p.lastchars = ''
                 p.lastchars_pos = None
                 nodelist.append(strnode)
@@ -1602,8 +1629,8 @@ class LatexWalker(object):
                 # ignore these groups by default to avoid too much space on the
                 # output.  This allows latex2text to implement the
                 # `strict_latex_spaces=True` flag correctly.
-                spacestrnode = self._mknode(LatexCharsNode, chars=tok.pre_space,
-                                            pos=tok.pos-len(tok.pre_space), len=len(tok.pre_space))
+                spacestrnode = self.make_node(LatexCharsNode, chars=tok.pre_space,
+                                              pos=tok.pos-len(tok.pre_space), len=len(tok.pre_space))
                 nodelist.append(spacestrnode)
                 if read_max_nodes and len(nodelist) >= read_max_nodes:
                     return True
@@ -1622,7 +1649,13 @@ class LatexWalker(object):
 
             if tok.tok == 'end_environment':
                 # we've reached the end of an environment.
-                if tok.arg != stop_upon_end_environment:
+                if not stop_upon_end_environment:
+                    raise LatexWalkerParseError(
+                        s=self.s,
+                        pos=tok.pos,
+                        msg=("Unexpected closing environment: '{}', ".format(tok.arg))
+                    )
+                elif tok.arg != stop_upon_end_environment:
                     raise LatexWalkerParseError(
                         s=self.s,
                         pos=tok.pos,
@@ -1671,25 +1704,29 @@ class LatexWalker(object):
 
                 parsing_context_inner = parsing_context.sub_context(in_math_mode=True)
 
-                (mathinline_nodelist, mpos, mlen) = self.get_latex_nodes(
-                    p.pos,
-                    stop_upon_closing_mathmode=corresponding_closing_mathmode,
-                    parsing_context=parsing_context_inner
-                )
+                try:
+                    (mathinline_nodelist, mpos, mlen) = self.get_latex_nodes(
+                        p.pos,
+                        stop_upon_closing_mathmode=corresponding_closing_mathmode,
+                        parsing_context=parsing_context_inner
+                    )
+                except LatexWalkerParseError as e:
+                    e.open_contexts.append('math mode "{}" @{}'.format(tok.arg, tok.pos))
+                    raise
                 p.pos = mpos + mlen
 
-                nodelist.append(self._mknode(LatexMathNode, displaytype=displaytype,
-                                             nodelist=mathinline_nodelist,
-                                             delimiters=(tok.arg, corresponding_closing_mathmode),
-                                             pos=tok.pos, len=mpos+mlen-tok.pos))
+                nodelist.append(self.make_node(LatexMathNode, displaytype=displaytype,
+                                               nodelist=mathinline_nodelist,
+                                               delimiters=(tok.arg, corresponding_closing_mathmode),
+                                               pos=tok.pos, len=mpos+mlen-tok.pos))
                 if read_max_nodes and len(nodelist) >= read_max_nodes:
                     return True
                 return
 
             if tok.tok == 'comment':
-                commentnode = self._mknode(LatexCommentNode, comment=tok.arg,
-                                           comment_post_space=tok.post_space,
-                                           pos=tok.pos, len=tok.len)
+                commentnode = self.make_node(LatexCommentNode, comment=tok.arg,
+                                             comment_post_space=tok.post_space,
+                                             pos=tok.pos, len=tok.len)
                 nodelist.append(commentnode)
                 if read_max_nodes and len(nodelist) >= read_max_nodes:
                     return True
@@ -1697,8 +1734,16 @@ class LatexWalker(object):
 
             if tok.tok == 'brace_open':
                 # another braced group to read.
-                (groupnode, bpos, blen) = self.get_latex_braced_group(tok.pos,
-                                                                      parsing_context=parsing_context)
+                try:
+                    (groupnode, bpos, blen) = self.get_latex_braced_group(
+                        tok.pos,
+                        brace_type=tok.arg,
+                        parsing_context=parsing_context
+                    )
+                except LatexWalkerParseError as e:
+                    e.open_contexts.append('open brace @{}'.format(tok.pos))
+                    raise
+
                 p.pos = bpos + blen
                 nodelist.append(groupnode)
                 if read_max_nodes and len(nodelist) >= read_max_nodes:
@@ -1707,8 +1752,12 @@ class LatexWalker(object):
 
             if tok.tok == 'begin_environment':
                 # an environment to read.
-                (envnode, epos, elen) = self.get_latex_environment(tok.pos, environmentname=tok.arg,
-                                                                   parsing_context=parsing_context)
+                try:
+                    (envnode, epos, elen) = self.get_latex_environment(tok.pos, environmentname=tok.arg,
+                                                                       parsing_context=parsing_context)
+                except LatexWalkerParseError as e:
+                    e.open_contexts.append('begin environment "{}" @{}'.format(tok.arg, tok.pos))
+                    raise
                 p.pos = epos + elen
                 # add node and continue.
                 nodelist.append(envnode)
@@ -1723,8 +1772,12 @@ class LatexWalker(object):
                 if mspec is None:
                     mspec = macrospec.MacroSpec('')
 
-                (nodeargd, mapos, malen) = \
-                    mspec.parse_args(w=self, pos=tok.pos + tok.len, parsing_context=parsing_context)
+                try:
+                    (nodeargd, mapos, malen) = \
+                        mspec.parse_args(w=self, pos=tok.pos + tok.len, parsing_context=parsing_context)
+                except LatexWalkerParseError as e:
+                    e.open_contexts.append('arguments of macro "{}" @{}'.format(macroname, tok.pos))
+                    raise
 
                 p.pos = mapos + malen
 
@@ -1733,15 +1786,15 @@ class LatexWalker(object):
                     nodeargs = nodeargd.legacy_nodeoptarg_nodeargs[1]
                 else:
                     nodeoptarg, nodeargs = None, []
-                node = self._mknode(LatexMacroNode,
-                                    macroname=tok.arg,
-                                    nodeargd=nodeargd,
-                                    macro_post_space=tok.post_space,
-                                    # legacy data:
-                                    nodeoptarg=nodeoptarg,
-                                    nodeargs=nodeargs,
-                                    pos=tok.pos,
-                                    len=p.pos-tok.pos)
+                node = self.make_node(LatexMacroNode,
+                                      macroname=tok.arg,
+                                      nodeargd=nodeargd,
+                                      macro_post_space=tok.post_space,
+                                      # legacy data:
+                                      nodeoptarg=nodeoptarg,
+                                      nodeargs=nodeargs,
+                                      pos=tok.pos,
+                                      len=p.pos-tok.pos)
                 nodelist.append(node)
                 if read_max_nodes and len(nodelist) >= read_max_nodes:
                     return True
@@ -1754,18 +1807,24 @@ class LatexWalker(object):
                 p.pos = tok.pos + tok.len
                 nodeargd = None
 
-                res = sspec.parse_args(w=self, pos=p.pos, parsing_context=parsing_context)
+                try:
+                    res = sspec.parse_args(w=self, pos=p.pos, parsing_context=parsing_context)
+                except LatexWalkerParseError as e:
+                    e.open_contexts.append('arguments of specials "{}" @{}'.format(sspec.specials_chars,
+                                                                                   tok.pos))
+                    raise
+
                 if res is not None:
                     # specials expects arguments, read them
                     (nodeargd, mapos, malen) = res
 
                     p.pos = mapos + malen
 
-                node = self._mknode(LatexSpecialsNode,
-                                    specials_chars=sspec.specials_chars,
-                                    nodeargd=nodeargd,
-                                    pos=tok.pos,
-                                    len=p.pos-tok.pos)
+                node = self.make_node(LatexSpecialsNode,
+                                      specials_chars=sspec.specials_chars,
+                                      nodeargd=nodeargd,
+                                      pos=tok.pos,
+                                      len=p.pos-tok.pos)
                 nodelist.append(node)
                 if read_max_nodes and len(nodelist) >= read_max_nodes:
                     return True
@@ -1805,8 +1864,8 @@ class LatexWalker(object):
             if (r_endnow):
                 # add last chars
                 if p.lastchars:
-                    strnode = self._mknode(LatexCharsNode, chars=p.lastchars,
-                                           pos=p.lastchars_pos, len=len(p.lastchars))
+                    strnode = self.make_node(LatexCharsNode, chars=p.lastchars,
+                                             pos=p.lastchars_pos, len=len(p.lastchars))
                     nodelist.append(strnode)
                 return (nodelist, origpos, p.pos - origpos)
 

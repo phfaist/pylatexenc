@@ -28,7 +28,7 @@
 
 
 from .macrospec import std_macro, std_environment, std_specials, \
-    MacroSpec, EnvironmentSpec, VerbatimArgsParser
+    MacroSpec, EnvironmentSpec, MacroStandardArgsParser, VerbatimArgsParser
 
 specs = [
     #
@@ -60,7 +60,11 @@ specs = [
 
             # (Note: single backslash) end of line with optional no-break ('*') and
             # additional vertical spacing, e.g. \\*[2mm]
-            std_macro('\\', '*['),
+            #
+            # Special for this command: don't allow an optional spacing argument
+            # to be on a new line.  This emulates the behavior in AMS
+            # environments.
+            MacroSpec('\\', args_parser=MacroStandardArgsParser('*[', optional_arg_no_space=True)),
 
             std_macro('item', True, 0),
 
