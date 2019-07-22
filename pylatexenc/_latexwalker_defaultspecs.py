@@ -178,6 +178,16 @@ specs = [
         ],
         'specials': [
             std_specials('&'),
+        ]}),
+
+
+    #
+    # CATEGORY: nonascii-specials
+    #
+    ('nonascii-specials', {
+        'macros': [],
+        'environments': [],
+        'specials': [
             std_specials("~"),
             
             # cf. https://tex.stackexchange.com/a/439652/32188 "fake ligatures":
@@ -193,8 +203,8 @@ specs = [
             #          e.g. "x_\mathrm{initial}"
             #std_specials('^'),
             #std_specials('_'),
-
         ]}),
+
 
     #
     # CATEGORY: verbatim

@@ -936,18 +936,22 @@ class LatexWalker(object):
     The following obsolete flag is accepted by the constructor for backwards
     compatibility with `pylatexenc 1.x`:
 
-      - `macro_dict`: a dictionary of known LaTeX macro specifications.  If
+      - `macro_dict`: This argument is kept for compatibility with `pylatexenc
+        1.x`.  This is a dictionary of known LaTeX macro specifications.  If
         specified, this should be a dictionary where the keys are macro names
-        and values are :py:class:`pylatexenc.macrospec.MacroSpec` instances.  If
-        you specify this argument, you cannot provide a custom `latex_context`.
-        This argument is superseded by the `latex_context` argument.
+        and values are :py:class:`pylatexenc.macrospec.MacroSpec` instances, as
+        returned for instance by the `pylatexenc 1.x`-emulating function
+        :py:func:`MacrosDef`.  If you specify this argument, you cannot provide
+        a custom `latex_context`.  This argument is superseded by the
+        `latex_context` argument.  Furthermore, if you specify this argument, no
+        specials are parsed so that the behavior closer to `pylatexenc 1.x`.
 
         .. deprecated:: 2.0
     
            The `macro_dict` argument has been replaced by the much more powerful
            `latex_context` argument which allows you to further provide
            environment specifications, etc.
-
+    
       - `keep_inline_math=True|False`: Obsolete option.  In `pylatexenc 1.x`,
         this option triggered a weird behavior especially since there is a
         similarly named option in
@@ -984,7 +988,7 @@ class LatexWalker(object):
                 default_latex_context = get_default_latex_context_db()
 
                 latex_context = default_latex_context.filter_context(
-                       keep_which=['environments']
+                    keep_which=['environments'], # no specials
                 )
                 latex_context.add_context_category('custom',
                                                    macro_dict.values(),
