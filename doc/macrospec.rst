@@ -38,9 +38,11 @@ Argument parser for verbatim LaTeX constructs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: pylatexenc.macrospec.VerbatimArgsParser
+   :show-inheritance:
    :members:
 
 .. autoclass:: pylatexenc.macrospec.ParsedVerbatimArgs
+   :show-inheritance:
    :members:
 
 

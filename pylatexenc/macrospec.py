@@ -759,11 +759,12 @@ class LatexContextDb(object):
 
     When used with :py:class:`pylatexenc.latex2text.LatexNodes2Text`, the
     specifications for macros, environments, and other specials are stored as
-    :py:class:`L2TMacroTextSpec` , :py:class:`L2TEnvironmentSpec`, and
-    :py:class:`L2TSpecialsSpec` instances, respectively.
-    
-    The objects stored in this database may be of any type, except that macro
-    specifications must have an attribute `macroname`, environment
+    :py:class:`pylatexenc.latex2text.MacroTextSpec` ,
+    :py:class:`pylatexenc.latex2text.EnvironmentTextSpec`, and
+    :py:class:`pylatexenc.latex2text.SpecialsTextSpec` instances, respectively.
+
+    In fact, the objects stored in this database may be of any type, except that
+    macro specifications must have an attribute `macroname`, environment
     specifications must have an attribute `environmentname`, and specials
     specification must have an attribute `specials_chars`.
 
@@ -794,11 +795,10 @@ class LatexContextDb(object):
 
         The category name `category` must not already exist in the database.
 
-        The argument `macros` is an iterable (e.g., a list) of
-        :py:class:`MacroSpec` objects.  The argument `environments` is an
-        iterable (e.g., a list) of :py:class:`EnvironmentSpec` objects.
-        Similarly, the `specials` argument is an iterable of
-        :py:class:`SpecialsSpec` instances.
+        The argument `macros` is an iterable (e.g., a list) of macro
+        specification objects.  The argument `environments` is an iterable
+        (e.g., a list) of environment spec objects.  Similarly, the `specials`
+        argument is an iterable of latex specials spec instances.
 
         If you specify `prepend=True`, then macro and environment lookups will
         prioritize this category over other categories.  Categories are normally
@@ -855,9 +855,10 @@ class LatexContextDb(object):
         Look up a macro specification by macro name.  The macro name is searched for
         in all categories one by one and the first match is returned.
 
-        Returns a :py:class:`MacroSpec` instance.  If the macro name was not
-        found, we return the default macro specification set by
-        :py:meth:`set_unknown_macro_spec()` or `None` if no such spec was set.
+        Returns a macro spec instance that matches the given `macroname`.  If
+        the macro name was not found, we return the default macro specification
+        set by :py:meth:`set_unknown_macro_spec()` or `None` if no such spec was
+        set.
         """
         for cat in self.category_list:
             # search categories in the given order
@@ -915,8 +916,8 @@ class LatexContextDb(object):
         is returned.  For instance, a match of '``' in a later category will
         take precedence over a match of '`' in a earlier-searched category.
 
-        Returns a :py:class:`SpecialsSpec` instance, or `None` if no specials
-        are detected.
+        Returns a specials spec instance, or `None` if no specials are detected
+        at the position `pos`.
         """
         best_match_len = 0
         best_match_s = None
@@ -927,7 +928,7 @@ class LatexContextDb(object):
                     best_match_s = self.d[cat]['specials'][specials_chars]
                     best_match_len = len(specials_chars)
 
-        return best_match_s # None if no match
+        return best_match_s # this is None if no match
 
     def iter_macro_specs(self, categories=None):
         r"""
