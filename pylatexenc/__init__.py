@@ -36,16 +36,3 @@ from .version import version_str as _version_str
 
 __version__ = _version_str
 
-
-
-_settings = {
-    'deprecation_warnings': True
-}
-
-
-def silence_deprecation_warnings(on):
-    """
-    If you don't want to update your code, and if the deprecation warnings bug
-    you too much, call this with argument `True`.
-    """
-    _settings['deprecation_warnings'] = not on

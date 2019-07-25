@@ -48,6 +48,7 @@ import os
 import logging
 import sys
 import inspect
+import warnings
 
 if sys.version_info.major >= 3:
     def unicode(string): return string
@@ -531,13 +532,13 @@ class LatexNodes2Text(object):
         if latex_context is None:
             if 'macro_dict' in flags or 'env_dict' in flags:
                 # LEGACY -- build a latex context using the given macro_dict
-                if pylatexenc._settings['deprecation_warnings']:
-                    logger.warning(
-                        "Deprecated (pylatexenc 2.0): "
-                        "The `macro_dict=...` and `env_dict=...` options in LatexNodes2Text() are "
-                        "obsolete since pylatexenc 2.  It'll still work, but please consider "
-                        "using instead the more versatile option `latex_context=...`."
-                    )
+                warnings.warn(
+                    "Deprecated (pylatexenc 2.0): "
+                    "The `macro_dict=...` and `env_dict=...` options in LatexNodes2Text() are "
+                    "obsolete since pylatexenc 2.  They will still work, but please consider "
+                    "using instead the more versatile option `latex_context=...`.",
+                    DeprecationWarning
+                )
                 
                 macro_dict = flags.pop('macro_dict', [])
                 env_dict = flags.pop('env_dict', [])
@@ -561,10 +562,10 @@ class LatexNodes2Text(object):
             if 'math_mode' in flags:
                 raise TypeError("Cannot specify both math_mode= and keep_inline_math= "
                                 "for LatexNodes2Text()")
-            if pylatexenc._settings['deprecation_warnings']:
-                logger.warning("Deprecated (pylatexenc 2.0): "
-                               "The keep_inline_math=... option in LatexNodes2Text() has been superseded by "
-                               "the math_mode=... option.")
+            warnings.warn("Deprecated (pylatexenc 2.0): "
+                          "The keep_inline_math=... option in LatexNodes2Text() has been superseded by "
+                          "the math_mode=... option.",
+                          DeprecationWarning)
             self.math_mode = 'verbatim' if flags.pop('keep_inline_math') else 'text'
         else:
             self.math_mode = flags.pop('math_mode', 'text')
@@ -582,11 +583,12 @@ class LatexNodes2Text(object):
 
         if 'text_replacements' in flags:
             del flags['text_replacements']
-            if pylatexenc._settings['deprecation_warnings']:
-                logger.warning("Deprecated (pylatexenc 2.0): "
-                               "The text_replacements= argument is ignored since pylatexenc 2. "
-                               "To keep existing code working, add a call to `apply_text_replacements()`. "
-                               "New code should use instead \"latex specials\".")
+            warnings.warn("Deprecated (pylatexenc 2.0): "
+                          "The text_replacements= argument is ignored since pylatexenc 2. "
+                          "To keep existing code working, add a call to "
+                          "`LatexNodes2Text.apply_text_replacements()`. "
+                          "New code should use instead \"latex specials\"; see doc for more info.",
+                          DeprecationWarning)
 
         if flags:
             # any flags left which we haven't recognized
@@ -1040,7 +1042,7 @@ def main(argv=None):
 
     if args.parser_keep_inline_math is not None or args.text_keep_inline_math is not None:
         logger.warning("Options --parser-keep-inline-math and --text-keep-inline-math are "
-                       "deprecated and no longer work.  Please consider using "
+                       "deprecated and no longer have any effect.  Please use "
                        "--math-mode=... instead.")
 
     latex = ''

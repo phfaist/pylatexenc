@@ -137,7 +137,7 @@ class ParsedMacroArgs(object):
 
     def __repr__(self):
         return "{}(argspec={!r},argnlist={!r})".format(
-            self.__class__.__name__, self.argnlist, self.argspec
+            self.__class__.__name__, self.argspec, self.argnlist
         )
 
 
@@ -294,6 +294,11 @@ class MacroStandardArgsParser(object):
         return (parsed, pos, p-pos)
 
 
+    def __repr__(self):
+        return self.__class__.__name__ + '(argspec=%r, optional_arg_no_space=%r)'%(
+            self.argspec, self.optional_arg_no_space
+        )
+    
 
 
 class ParsedVerbatimArgs(ParsedMacroArgs):
@@ -428,6 +433,10 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             return (argd, pos, endpos+1-pos) # include delimiters in pos/len
 
 
+    def __repr__(self):
+        return self.__class__.__name__ + '(verbatim_arg_type=%r)'%( self.verbatim_arg_type )
+
+
 # ------------------------------------------------------------------------------
 
 class MacroSpec(object):
@@ -466,6 +475,8 @@ class MacroSpec(object):
         """
         return self.args_parser.parse_args(*args, **kwargs)
 
+    def __repr__(self):
+        return 'MacroSpec(macroname=%r, args_parser=%r)'%(self.macroname, self.args_parser)
 
 
 
@@ -519,6 +530,11 @@ class EnvironmentSpec(object):
         """
         return self.args_parser.parse_args(*args, **kwargs)
 
+    def __repr__(self):
+        return 'EnvironmentSpec(environmentname=%r, args_parser=%r, is_math_mode=%r)'%(
+            self.environmentname, self.args_parser, self.is_math_mode
+        )
+
 
 
 class SpecialsSpec(object):
@@ -558,6 +574,10 @@ class SpecialsSpec(object):
             return None
         return self.args_parser.parse_args(*args, **kwargs)
 
+    def __repr__(self):
+        return 'SpecialsSpec(specials_chars=%r, args_parser=%r)'%(
+            self.specials_chars, self.args_parser
+        )
 
 
 # ------------------------------------------------------------------------------
@@ -788,7 +808,7 @@ class LatexContextDb(object):
 
         
     def add_context_category(self, category, macros=[], environments=[], specials=[],
-                             prepend=False):
+                             prepend=False, insert_before=None, insert_after=None):
         r"""
         Register a category of macro and environment specifications in the context
         database.
@@ -805,14 +825,42 @@ class LatexContextDb(object):
         searched for in the order they are registered to the database; if you
         specify `prepend=True`, then the new category is prepended to the
         existing list so that it is searched first.
+
+        If `insert_before` is not `None`, then it must be a string; the
+        definitions are inserted in the category list immediately before the
+        given category name, or at the beginning of the list if the given
+        category doesn't exist.  If `insert_after` is not `None`, then it must
+        be a string; the definitions are inserted in the category list
+        immediately after the given category name, or at the end of the list if
+        the given category doesn't exist.
+
+        You may only specify one of `prepend=True`, `insert_before='...'` or
+        `insert_after='...'`.
         """
         
         if category in self.category_list:
             raise ValueError("Category {} is already registered in the context database"
                              .format(category))
 
+        # ensure only one of these options is set
+        if len([ x for x in (prepend, insert_before, insert_after) if x ]) > 1:
+            raise TypeError("add_context_category(): You may only specify one of "
+                            "prepend=True, insert_before=... or insert_after=...")
+
         if prepend:
             self.category_list.insert(0, category)
+        elif insert_before:
+            if insert_before in self.category_list:
+                i = self.category_list.index(insert_before)
+            else:
+                i = 0
+            self.category_list.insert(i, category)
+        elif insert_after:
+            if insert_after in self.category_list:
+                i = self.category_list.index(insert_after) + 1 # insert after found category
+            else:
+                i = len(self.category_list)
+            self.category_list.insert(i, category)
         else:
             self.category_list.append(category)
 

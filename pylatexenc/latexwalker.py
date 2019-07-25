@@ -93,6 +93,7 @@ import re
 import sys
 import logging
 import json
+import warnings
 
 import pylatexenc
 from . import macrospec
@@ -977,11 +978,11 @@ class LatexWalker(object):
         if latex_context is None:
             if 'macro_dict' in kwargs:
                 # LEGACY -- build a latex context using the given macro_dict
-                if pylatexenc._settings['deprecation_warnings']:
-                    logger.warning("Deprecated (pylatexenc 2.0): "
-                                   "The `macro_dict=...` option in LatexWalker() is obsolete since "
-                                   "pylatexenc 2.  It'll still work, but please consider using instead "
-                                   "the more versatile option `latex_context=...`.")
+                warnings.warn("Deprecated (pylatexenc 2.0): "
+                              "The `macro_dict=...` option in LatexWalker() is obsolete since "
+                              "pylatexenc 2.  It'll still work, but please consider using instead "
+                              "the more versatile option `latex_context=...`.",
+                              DeprecationWarning)
 
                 macro_dict = kwargs.pop('macro_dict', None)
 
@@ -1013,11 +1014,11 @@ class LatexWalker(object):
         self.strict_braces = kwargs.pop('strict_braces', False)
 
         if 'keep_inline_math' in kwargs:
-            if pylatexenc._settings['deprecation_warnings']:
-                logger.warning("Deprecated (pylatexenc 2.0): "
-                               "The keep_inline_math=... option in LatexWalker() has no effect "
-                               "in pylatexenc 2.  Please consider using the more versatile option "
-                               "math_mode=... in LatexNodes2Text() instead.")
+            warnings.warn("Deprecated (pylatexenc 2.0): "
+                          "The keep_inline_math=... option in LatexWalker() has no effect "
+                          "in pylatexenc 2.  Please consider using the more versatile option "
+                          "math_mode=... in LatexNodes2Text() instead.",
+                          DeprecationWarning)
             del kwargs['keep_inline_math']
 
         if kwargs:

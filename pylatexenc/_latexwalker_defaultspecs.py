@@ -81,6 +81,8 @@ specs = [
             std_macro('pagagraph', '*[{'),
             std_macro('subparagraph', '*[{'),
 
+            std_macro('bibliography', '{'),
+
 
             std_macro('emph', False, 1),
             std_macro('textit', False, 1),
@@ -161,9 +163,12 @@ specs = [
 
             std_environment('array', '[{'),
 
-            # AMS environments
             std_environment('equation', None, is_math_mode=True),
             std_environment('equation*', None, is_math_mode=True),
+            std_environment('eqnarray', None, is_math_mode=True),
+            std_environment('eqnarray*', None, is_math_mode=True),
+        
+            # AMS environments
             std_environment('align', None, is_math_mode=True),
             std_environment('align*', None, is_math_mode=True),
             std_environment('gather', None, is_math_mode=True),
@@ -178,6 +183,13 @@ specs = [
         ],
         'specials': [
             std_specials('&'),
+
+            # TODO --- for this, we need to parse their argument but don't use
+            #          the standard args parser because we need to be able to
+            #          accept arguments like "x_\mathrm{initial}"
+            #
+            #std_specials('^'),
+            #std_specials('_'),
         ]}),
 
 
@@ -197,12 +209,6 @@ specs = [
             std_specials("---"),
             std_specials("!`"),
             std_specials("?`"),
-
-            # TODO --- for this, we need to parse their argument but don't use
-            #          the standard args parser because we need to accept,
-            #          e.g. "x_\mathrm{initial}"
-            #std_specials('^'),
-            #std_specials('_'),
         ]}),
 
 
@@ -236,6 +242,8 @@ specs = [
             std_environment('definition', '['),
             std_environment('conjecture', '['),
             std_environment('remark', '['),
+            #
+            std_environment('proof', '['),
             # short names
             std_environment('thm', '['),
             std_environment('prop', '['),
@@ -257,6 +265,38 @@ specs = [
             std_environment('enumerate', '['),
             std_environment('itemize', '['),
             std_environment('description', '['),
+        ],
+        'specials': [
+        ]}),
+
+    #
+    # CATEGORY: natbib
+    #
+    ('natbib', {
+        'macros': [
+            std_macro('cite', '*[[{'),
+            std_macro('citet', '*[[{'),
+            std_macro('citep', '*[[{'),
+            std_macro('citealt', '*[[{'),
+            std_macro('citealp', '*[[{'),
+            std_macro('citeauthor', '*[[{'),
+            std_macro('citefullauthor', '[[{'),
+            std_macro('citeyear', '[[{'),
+            std_macro('citeyearpar', '[[{'),
+            std_macro('Citet', '*[[{'),
+            std_macro('Citep', '*[[{'),
+            std_macro('Citealt', '*[[{'),
+            std_macro('Citealp', '*[[{'),
+            std_macro('Citeauthor', '*[[{'),
+
+            std_macro('citetext', '{'),
+            std_macro('citenum', '{'),
+
+            std_macro('defcitealias', '{{'),
+            std_macro('citetalias', '[[{'),
+            std_macro('citepalias', '[[{'),
+        ],
+        'environments': [
         ],
         'specials': [
         ]}),
