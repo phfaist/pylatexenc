@@ -23,4 +23,4 @@
 #
 
 
-version_str = "2.0a0"
+version_str = "2.0b0"
