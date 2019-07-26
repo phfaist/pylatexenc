@@ -35,8 +35,8 @@ Specifying conversion rules
 .. autofunction:: pylatexenc.latexencode.get_builtin_uni2latex_dict
 
 
-Compatibility with Pylatexenc 1.x
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Compatibility with `pylatexenc 1.x`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: pylatexenc.latexencode.utf8tolatex
 
