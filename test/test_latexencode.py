@@ -103,6 +103,28 @@ class TestLatexEncode(unittest.TestCase):
         self.assertEqual(u.unicode_to_latex(input),
                          "''{{\\`{A}}} notre sant\\'e!'' s'exprima le ma{\\^i}tre de maison {\\ldots} \\`a 100{\\textpercent}.")
 
+    def test_issue_no21(self):
+        # test for https://github.com/phfaist/pylatexenc/issues/21
+        
+        def capitalize_acronyms(s, pos):
+            if s[pos] in ('{', '}'):
+                # preserve existing braces
+                return (1, s[pos])
+            m = re.compile(r'\b[A-Z]{2,}\w*\b').match(s, pos)
+            if m is None:
+                return None
+            return (m.end()-m.start(), "{" + m.group() + "}")
+
+        u = UnicodeToLatexEncoder(
+            conversion_rules=[
+                latexencode.UnicodeToLatexConversionRule(latexencode.RULE_CALLABLE, capitalize_acronyms),
+            ] + latexencode.get_builtin_conversion_rules('defaults')
+        )
+        input = "Title with {Some} ABC acronyms LIKe this."
+        self.assertEqual(
+            u.unicode_to_latex(input),
+            "Title with {Some} {ABC} acronyms {LIKe} this."
+        )
         
 
 
