@@ -125,7 +125,22 @@ class TestLatexEncode(unittest.TestCase):
             u.unicode_to_latex(input),
             "Title with {Some} {ABC} acronyms {LIKe} this."
         )
-        
+
+        u = UnicodeToLatexEncoder(
+            conversion_rules=[
+                latexencode.UnicodeToLatexConversionRule(
+                    latexencode.RULE_REGEX,
+                    [ (re.compile(r'([{}])'), r'\1'), # keep existing braces
+                      (re.compile(r'\b([A-Z]{2,}\w*)\b'), r'{\1}'), ]
+                ),
+            ] + latexencode.get_builtin_conversion_rules('defaults')
+        )
+        input = "Title with {Some} ABC acronyms LIKe this."
+        self.assertEqual(
+            u.unicode_to_latex(input),
+            "Title with {Some} {ABC} acronyms {LIKe} this."
+        )
+
 
 
 

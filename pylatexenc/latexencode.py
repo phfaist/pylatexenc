@@ -214,9 +214,10 @@ class UnicodeToLatexConversionRule:
 
         .. note::
     
-           The replacement string is parsed with `re.sub()` and backslashes have
-           a special meaning because they can refer to captured expressions.
-           For a literal backslash, use two backslashes in raw strings, four
+           The replacement string is parsed with `re.MatchObject.expand()` (like
+           the second argument to `re.sub()`) and backslashes have a special
+           meaning because they can refer to captured expressions.  For a
+           literal backslash, use two backslashes in raw strings, four
            backslashes in normal strings.
 
       - `RULE_CALLABLE`: If `rule_type` is `RULE_CALLABLE`, then `rule` should
@@ -513,7 +514,11 @@ class UnicodeToLatexEncoder(object):
                 # is there a better way than to re-match with sub() and still
                 # accept the wide range of possibilities for repl incl, \1, \2,
                 # etc.?
-                self._apply_replacement(p, regex.sub(repl, m.group()), m.end() - m.start())
+                if callable(repl):
+                    replstr = repl(m)
+                else:
+                    replstr = m.expand(repl)
+                self._apply_replacement(p, replstr, m.end() - m.start())
                 return True
         return None
     def _apply_rule_callable(self, rulecallable, s, p):
