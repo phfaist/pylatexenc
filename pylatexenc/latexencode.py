@@ -736,9 +736,9 @@ utf82latex = _util.LazyDict(generate_dict_fn=_get_deprecated_utf82latex)
 
    .. warning::
 
-      Modifying the `utf82latex` module-level dictionary will alter the behavior
-      of the `utf8tolatex()` function also for other independent modules that
-      use pylatexenc too!  This is not recommended.
+      Modifying the `utf82latex` module-level dictionary is not recommended.
+      Doing so will alter the behavior of the `utf8tolatex()` function also for
+      other independent modules that also use `pylatexenc`!
 """
 
 
