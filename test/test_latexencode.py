@@ -14,7 +14,20 @@ from pylatexenc.latexencode import UnicodeToLatexEncoder, utf8tolatex
 from pylatexenc import latexencode 
 
 
-class TestLatexEncode(unittest.TestCase):
+class _DummyContextMgr(object):
+    def __enter__(self, *args, **kwargs):
+        pass
+    def __exit__(self, *args, **kwargs):
+        pass
+
+class ProvideAssertCmds(object):
+    def assertLogs(self, *args, **kwargs):
+        logging.getLogger(__name__).warning(
+            "Can't check if logger generates correct warnings, skipping this check.")
+        return _DummyContextMgr()
+
+
+class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
 
     def __init__(self, *args, **kwargs):
         super(TestLatexEncode, self).__init__(*args, **kwargs)
@@ -55,18 +68,26 @@ class TestLatexEncode(unittest.TestCase):
                          " '' \\# \\$ \\% \\& {\\textbackslash} \\_ \\{ \\} {\\textasciitilde} ")
 
     def test_basic_3(self):
-        # generates warnings -- that's good
         test_unknown_chars = "A unicode character: \N{THAI CHARACTER THO THONG}"
-        u = UnicodeToLatexEncoder(unknown_char_policy='keep')
-        self.assertEqual(u.unicode_to_latex(test_unknown_chars), test_unknown_chars) # unchanged
+        # generates warnings -- that's good
+        with self.assertLogs(logger='pylatexenc.latexencode', level='WARNING') as cm:
+            u = UnicodeToLatexEncoder(unknown_char_policy='keep')
+            self.assertEqual(u.unicode_to_latex(test_unknown_chars), test_unknown_chars) # unchanged
 
     def test_basic_3b(self):
-        # generates warnings -- that's good
         test_unknown_chars = "A unicode character: \N{THAI CHARACTER THO THONG}"
-        u = UnicodeToLatexEncoder(unknown_char_policy='replace')
+        # generates warnings -- that's good
+        with self.assertLogs(logger='pylatexenc.latexencode', level='WARNING') as cm:
+            u = UnicodeToLatexEncoder(unknown_char_policy='replace')
+            self.assertEqual(u.unicode_to_latex(test_unknown_chars),
+                             "A unicode character: {\\bfseries ?}")
+
+    def test_basic_3c(self):
+        test_unknown_chars = "A unicode character: \N{THAI CHARACTER THO THONG}"
+        u = UnicodeToLatexEncoder(unknown_char_policy='unihex', unknown_char_warning=False)
 
         self.assertEqual(u.unicode_to_latex(test_unknown_chars),
-                         "A unicode character: {\\bfseries ?}")
+                         "A unicode character: \\ensuremath{\\langle}\\texttt{U+0E18}\\ensuremath{\\rangle}")
 
 
 
@@ -178,7 +199,7 @@ class TestLatexEncode(unittest.TestCase):
 
 
 
-class TestUtf8tolatex(unittest.TestCase):
+class TestUtf8tolatex(unittest.TestCase, ProvideAssertCmds):
 
     def __init__(self, *args, **kwargs):
         super(TestUtf8tolatex, self).__init__(*args, **kwargs)
@@ -204,12 +225,14 @@ class TestUtf8tolatex(unittest.TestCase):
                          " '' {\\#} {\\$} {\\%} {\\&} {\\textbackslash} {\\_} {\\{} {\\}} {\\textasciitilde} ")
         
 
-        # generates warnings -- that's good
         test_bad_chars = "A unicode character: \N{THAI CHARACTER THO THONG}"
-        self.assertEqual(utf8tolatex(test_bad_chars, substitute_bad_chars=False),
-                         test_bad_chars) # unchanged
-        self.assertEqual(utf8tolatex(test_bad_chars, substitute_bad_chars=True),
-                         "A unicode character: {\\bfseries ?}")
+        # generates warnings -- that's good
+        with self.assertLogs(logger='pylatexenc.latexencode', level='WARNING') as cm:
+            self.assertEqual(utf8tolatex(test_bad_chars, substitute_bad_chars=False),
+                             test_bad_chars) # unchanged
+        with self.assertLogs(logger='pylatexenc.latexencode', level='WARNING') as cm:
+            self.assertEqual(utf8tolatex(test_bad_chars, substitute_bad_chars=True),
+                             "A unicode character: {\\bfseries ?}")
 
 
 if __name__ == '__main__':

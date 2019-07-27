@@ -68,7 +68,10 @@ Example using custom conversion rules::
   >>> print(u.unicode_to_latex("Cheers --> À votre santé"))
   Cheers {\textrightarrow} \`A votre sant\'e
 
-See :py:class:`UnicodeToLatexEncoder`.
+See :py:class:`UnicodeToLatexEncoder` and
+:py:class:`UnicodeToLatexConversionRule`.  Note for regex rules, the replacement
+text is expanded like the second argument of `re.sub()` and backslashes need to
+be escaped even inside raw strings.
 
 .. versionadded:: 2.0
 
@@ -88,6 +91,7 @@ import logging
 import sys
 import functools
 import itertools
+import warnings
 
 if sys.version_info.major > 2:
     def unicode(string): return string
@@ -118,8 +122,9 @@ def get_builtin_uni2latex_dict():
     points (i.e., `ord(char)`).  The values are the corresponding LaTeX
     replacement strings.
 
-    The returned dictionary may not be modified.  To alter the default behavior,
-    you should specify custom rules to :py:class:`UnicodeToLatexEncoder`.
+    The returned dictionary may not be modified.  To alter the behavior of
+    :py:func:`unicode_to_latex()`, you should specify custom rules to a new
+    instance of :py:class:`UnicodeToLatexEncoder`.
 
     .. versionadded:: 2.0
 
@@ -199,8 +204,16 @@ class UnicodeToLatexConversionRule:
         replacement_string)` where `compiled_regular_expression` was obtained
         with `re.compile(...)` and `replacement_string` is anything that can be
         specified as the second (`repl`) argument of `re.sub(...)`.  This can be
-        a replacement string that includes escapes for captured sub-expressions
-        or a callable that takes a match object as argument.
+        a replacement string that includes escapes (like ``\1, \2, \g<name>``)
+        for captured sub-expressions or a callable that takes a match object as
+        argument.
+
+        .. note::
+    
+           The replacement string is parsed like the second argument to
+           `re.sub()` and backslashes have a special meaning because they can
+           refer to captured sub-expressions.  For a literal backslash, use two
+           backslashes in raw strings, four backslashes in normal strings.
 
         Example::
 
@@ -214,26 +227,20 @@ class UnicodeToLatexConversionRule:
               ]
           )
 
-        .. note::
-    
-           The replacement string is parsed with `re.MatchObject.expand()` (like
-           the second argument to `re.sub()`) and backslashes have a special
-           meaning because they can refer to captured expressions.  For a
-           literal backslash, use two backslashes in raw strings, four
-           backslashes in normal strings.
-
       - `RULE_CALLABLE`: If `rule_type` is `RULE_CALLABLE`, then `rule` should
         be a callable that accepts two arguments, the unicode string and the
-        position in the string (an integer), and a possible additional argument
-        called `u2lobj`.  The callable will be called with the original unicode
-        string as argument and the position of the character that needs to be
-        encoded.  If this rule can encode the given character at the given
-        position, it should return a tuple `(consumed_length,
-        replacement_string)` where `consumed_length` is the number of characters
-        in the unicode string that `replacement_string` represents.  If the
-        character(s) at the given position can't be encoded by this rule, the
-        callable should return `None` to indicate that further rules should be
-        attempted.
+        position in the string (an integer).  The callable will be called with
+        the original unicode string as argument and the position of the
+        character that needs to be encoded.  If this rule can encode the given
+        character at the given position, it should return a tuple
+        `(consumed_length, replacement_string)` where `consumed_length` is the
+        number of characters in the unicode string that `replacement_string`
+        represents.  If the character(s) at the given position can't be encoded
+        by this rule, the callable should return `None` to indicate that further
+        rules should be attempted.
+
+        If the callable accepts an additional argument called `u2lobj`, then the
+        :py:class:`UnicodeToLatexEncoder` instance is provided to that argument.
 
         For example, the following callable should achieve the same effect as
         the previous example with regexes::
@@ -255,20 +262,25 @@ class UnicodeToLatexConversionRule:
         self.rule_type = rule_type
         self.rule = rule
 
+    def __repr__(self):
+        return "{}(rule_type={!r}, rule=<{}>)".format(
+            self.__class__.__name__, self.rule_type, type(self.rule).__name__
+        )
 
 
-def get_builtin_conversion_rules(which):
+def get_builtin_conversion_rules(builtin_name):
     r"""
-    Return a built-in set of conversion rules specified by name `which`.
+    Return a built-in set of conversion rules specified by a given name
+    `builtin_name`.
 
-    There are two builtin conversion rules:
+    There are two builtin conversion rules, with the following names:
 
-      - `which='defaults'` the default conversion rules, a custom-curated list
-        of unicode chars to LaTeX escapes.
+      - `'defaults'`: the default conversion rules, a custom-curated list of
+        unicode chars to LaTeX escapes.
 
-      - `which='unicode-xml'` the conversion rules derived from the
-        `unicode.xml` file maintained at
-        https://www.w3.org/TR/xml-entity-names/#source by David Carlisle.
+      - `'unicode-xml'`: the conversion rules derived from the `unicode.xml` file
+        maintained at https://www.w3.org/TR/xml-entity-names/#source by David
+        Carlisle.
 
     The return value is a list of :py:class:`UnicodeToLatexConversionRule`
     objects that can be either directly specified to the `conversion_rules=`
@@ -279,14 +291,14 @@ def get_builtin_conversion_rules(which):
 
        This function was introduced in `pylatexenc 2.0`.
     """
-    if which == 'defaults':
+    if builtin_name == 'defaults':
         return [ UnicodeToLatexConversionRule(rule_type=RULE_DICT,
                                               rule=get_builtin_uni2latex_dict()) ]
-    if which == 'unicode-xml':
+    if builtin_name == 'unicode-xml':
         from . import _uni2latexmap_xml
         return [ UnicodeToLatexConversionRule(rule_type=RULE_DICT,
                                               rule=_uni2latexmap_xml.uni2latex) ]
-    raise ValueError("Unknown builtin rule set: {}".format(which))
+    raise ValueError("Unknown builtin rule set: {}".format(builtin_name))
 
 
 
@@ -392,14 +404,17 @@ class UnicodeToLatexEncoder(object):
        What to do when a non-ascii character is encountered without any known
        substitution macro.  The attribute `unknown_char_policy` can be set to one of:
 
-         - 'keep' (keep the character as is)
+         - 'keep': keep the character as is;
 
-         - 'replace' (replace the character by a boldface question mark)
+         - 'replace': replace the character by a boldface question mark;
 
-         - 'ignore' (ignore the character from the input entirely and don't
-           output anything for it)
+         - 'ignore': ignore the character from the input entirely and don't
+           output anything for it;
 
-         - 'fail' (raise a `ValueError` exception)
+         - 'fail': raise a `ValueError` exception;
+
+         - 'unihex': output the unicode hexadecimal code (U+XXXX) of the
+           character in typewriter font;
 
          - a Python callable --- will be called with argument the character that
            could not be encoded.  (If the callable accepts a second argument
@@ -418,10 +433,10 @@ class UnicodeToLatexEncoder(object):
     .. warning::
       
        None of the above attributes should be modified after constructing the
-       object.  The value specified to the class constructor is final and cannot
-       be changed.  [Indeed, the class constructor "compiles" these attribute
-       values into a data structure that makes :py:meth:`unicode_to_text()` more
-       efficient.]
+       object.  The values specified to the class constructor are final and
+       cannot be changed.  [Indeed, the class constructor "compiles" these
+       attribute values into a data structure that makes
+       :py:meth:`unicode_to_text()` slightly more efficient.]
 
     .. versionadded:: 2.0
 
@@ -624,6 +639,9 @@ class UnicodeToLatexEncoder(object):
     def _do_unknown_char_fail(self, ch):
         raise ValueError("No known latex representation for character: U+%04X - ‘%s’"%(ord(ch), ch))
 
+    def _do_unknown_char_unihex(self, ch):
+        return r'\ensuremath{\langle}\texttt{U+%04X}\ensuremath{\rangle}'%(ord(ch))
+
     def _do_warn_unknown_char(self, ch):
         logger.warning("No known latex representation for character: U+%04X - ‘%s’", ord(ch), ch)
 
@@ -677,8 +695,27 @@ def unicode_to_latex(s, non_ascii_only=False, replacement_latex_protection='brac
 # Don't change pylatexenc 1.x function:
 
 
+def _get_deprecated_utf82latex():
+    #
+    # Don't issue a deprecation warning, because utf8tolatex() uses the
+    # `utf82latex` dict even if it isn't modified by the user.
+    #
+    # warnings.warn("Deprecated (pylatexenc 2.0): "
+    #               "The module-level dictionary `pylatexenc.latexencode.utf82latex` is deprecated "
+    #               "and might be removed in a future version of `pylatexenc` (see docs).",
+    #               DeprecationWarning)
 
-utf82latex = _util.LazyDict(generate_dict_fn=lambda: _uni2latex)
+    # return a copy of the dict so that the user can modify the module-level
+    # `utf82latex` dict without influencing the behavior of the new
+    # `unicode_to_latex()` routines. (E.g., if two python modules use
+    # pylatexenc.latexencode, we don't want one python module's use of
+    # `utf2tolatex()` to influence the behavior of another module's use of
+    # `unicode_to_latex()`.  If both modules use `utf8tolatex()`, we can't avoid
+    # this influence.)
+    return _uni2latex.copy()
+
+
+utf82latex = _util.LazyDict(generate_dict_fn=_get_deprecated_utf82latex)
 """
 .. deprecated:: 2.0
 
@@ -687,7 +724,7 @@ utf82latex = _util.LazyDict(generate_dict_fn=lambda: _uni2latex)
 
    If you would like to obtain a copy of the built-in unicode to text
    dictionary, see :py:func:`get_builtin_uni2latex_dict()`.  If you would like
-   to alter the behavior of :py:func:`utf82latex()`, you should use
+   to alter the behavior of :py:func:`utf8tolatex()`, you should use
    :py:class:`UnicodeToLatexEncoder` which provides a rich interface for
    specifying rules how to convert chars to LaTeX escapes.
 
@@ -696,6 +733,12 @@ utf82latex = _util.LazyDict(generate_dict_fn=lambda: _uni2latex)
    modify the global built-in dictionary of known latex escapes.  This is not
    recommended however, and the `utf82latex` module-level dictionary might be
    removed in the future.
+
+   .. warning::
+
+      Modifying the `utf82latex` module-level dictionary will alter the behavior
+      of the `utf8tolatex()` function also for other independent modules that
+      use pylatexenc too!  This is not recommended.
 """
 
 
@@ -708,15 +751,15 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
 
        Since `pylatexenc 2.0`, it is recommended to use the the
        :py:func:`unicode_to_latex()` function or the
-       :py:class:`UnicodeToLatexEncoder` class instead.
+       :py:class:`UnicodeToLatexEncoder` class instead of the earlier function
+       `utf8tolatex()`.
 
        The new routines provide much more flexibility and versatility.  For
        instance, you can specify custom escape sequences for certain characters.
        Some cheap benchmarks seem to indicate that the new routines are not
-       significantly slower than the `utf8tolatex()` function.  Also, the new
-       names (`unicode_to_text`, etc.) removes the inconsistency of the poorly
-       chosen function name `utf8tolatex()` (since the argument is in fact not
-       'utf-8'-encoded but rather a Python unicode string object).
+       significantly slower than the `utf8tolatex()` function.  Also, the name
+       `utf8tolatex()` was poorly chosen, since the argument is in fact not
+       'utf-8'-encoded but rather a Python unicode string object.
 
        The function `utf8tolatex()` is still provided unchanged from `pylatexenc
        1.x`.  We do not plan to remove this function in the near future so it is
@@ -763,6 +806,8 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
         if (non_ascii_only and ord(ch) < 127):
             result += ch
         else:
+            # use the `utf82latex` dict -- not `_uni2latex` which should NOT be
+            # modified externally even for backwards-compatible code
             lch = utf82latex.get(ord(ch), None)
             if (lch is not None):
                 # add brackets if needed, i.e. if we have a substituting macro.
