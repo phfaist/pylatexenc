@@ -136,7 +136,7 @@ class ParsedMacroArgs(object):
         )
 
     def __repr__(self):
-        return "{}(argspec={!r},argnlist={!r})".format(
+        return "{}(argspec={!r}, argnlist={!r})".format(
             self.__class__.__name__, self.argspec, self.argnlist
         )
 
@@ -295,8 +295,8 @@ class MacroStandardArgsParser(object):
 
 
     def __repr__(self):
-        return self.__class__.__name__ + '(argspec=%r, optional_arg_no_space=%r)'%(
-            self.argspec, self.optional_arg_no_space
+        return '{}(argspec={!r}, optional_arg_no_space={!r})'.format(
+            self.__class__.__name__, self.argspec, self.optional_arg_no_space
         )
     
 
@@ -349,8 +349,8 @@ class ParsedVerbatimArgs(ParsedMacroArgs):
         self.verbatim_delimiters = verbatim_delimiters
 
     def __repr__(self):
-        return "ParsedVerbatimArgs(verbatim_text={}, verbatim_delimiters={})".format(
-            self.verbatim_text, self.verbatim_delimiters
+        return "{}(verbatim_text={!r}, verbatim_delimiters={!r})".format(
+            self.__class__.__name__, self.verbatim_text, self.verbatim_delimiters
         )
 
 
@@ -434,7 +434,9 @@ class VerbatimArgsParser(MacroStandardArgsParser):
 
 
     def __repr__(self):
-        return self.__class__.__name__ + '(verbatim_arg_type=%r)'%( self.verbatim_arg_type )
+        return '{}(verbatim_arg_type={!r})'.format(
+            self.__class__.__name__, self.verbatim_arg_type
+        )
 
 
 # ------------------------------------------------------------------------------

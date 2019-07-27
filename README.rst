@@ -49,3 +49,13 @@ Documentation
 -------------
 
 Full documentation is available at https://pylatexenc.readthedocs.io/ .
+
+
+License
+-------
+
+See LICENSE.txt (MIT License).
+
+NOTE: See copyright notice and license information for file ``unicode.xml`` in
+``unicode.xml.LICENSE`` (obtained at
+https://www.w3.org/TR/xml-entity-names/#source).
