@@ -91,7 +91,7 @@ import logging
 import sys
 import functools
 import itertools
-import warnings
+#import warnings
 
 if sys.version_info.major > 2:
     def unicode(string): return string
