@@ -795,9 +795,9 @@ class LatexMathNode(LatexNode):
 
        Either 'inline' or 'display', to indicate an inline math block or a
        display math block. (Note that math environments such as
-       `\begin{equation}...\end{equation}`, are reported as
+       ``\begin{equation}...\end{equation}``, are reported as
        :py:class:`LatexEnvironmentNode`'s, and not as
-       :py:class:`LatexMathNode`'s.
+       :py:class:`LatexMathNode`'s.)
 
     .. py:attribute:: delimiters
 
@@ -853,9 +853,11 @@ class ParsingContext(object):
     we are currently in a math mode block.
 
     One of the ideas of `pylatexenc` is to make the parsing of LaTeX code mostly
-    context-independent mark-up parsing.  However a minimal context might come
-    in handy sometimes.  Perhaps some macros or specials should behave
-    differently in math mode than in text mode.
+    context-independent mark-up parsing (in contrast to a full TeX engine, whose
+    state constantly changes and whose parsing behavior is altered dynamically
+    while parsing).  However a minimal context might come in handy sometimes.
+    Perhaps some macros or specials should behave differently in math mode than
+    in text mode.
 
     Currently, we only track whether or not we are in math mode.  There are no
     concrete plans to include much more context information in the future.

@@ -195,6 +195,10 @@ def MacroDef(macname, simplify_repl=None, discard=None):
 
 
 
+def _fmt_indented_block(contents, indent=' '*4):
+    return ("\n"+indent + contents.replace("\n", "\n"+indent) + "\n")
+    
+
 def fmt_equation_environment(envnode, l2tobj):
     r"""
     Can be used as callback for display equation environments.
@@ -208,8 +212,7 @@ def fmt_equation_environment(envnode, l2tobj):
 
         contents = l2tobj.nodelist_to_text(envnode.nodelist).strip()
         # indent equation, separate by newlines
-        indent = ' '*4
-        return ("\n"+indent + contents.replace("\n", "\n"+indent) + "\n")
+        return _fmt_indented_block(contents)
 
 
 def fmt_input_macro(macronode, l2tobj):
@@ -854,14 +857,25 @@ class LatexNodes2Text(object):
 
         if node.isNodeType(latexwalker.LatexMathNode):
             if self.math_mode == 'verbatim':
-                return node.latex_verbatim()
+                if node.displaytype == 'display':
+                    return _fmt_indented_block(node.latex_verbatim(), indent='')
+                else:
+                    return node.latex_verbatim()
             elif self.math_mode == 'with-delimiters':
                 with _PushEquationContext(self):
-                    return (node.delimiters[0] + self.nodelist_to_text(node.nodelist) 
-                            + node.delimiters[1])
+                    content = self.nodelist_to_text(node.nodelist)
+                if node.displaytype == 'display':
+                    return node.delimiters[0] + _fmt_indented_block(content, indent='') \
+                        + node.delimiters[1]
+                else:
+                    return node.delimiters[0] + content+ node.delimiters[1]
             elif self.math_mode == 'text':
                 with _PushEquationContext(self):
-                    return self.nodelist_to_text(node.nodelist)
+                    content = self.nodelist_to_text(node.nodelist)
+                if node.displaytype == 'display':
+                    return _fmt_indented_block(content)
+                else:
+                    return content
             else:
                 raise RuntimeError("unknown math_mode={} !".format(self.math_mode))
                 

@@ -91,9 +91,12 @@ where $i$ is the “imaginary unit.”
 
     def test_spaces_strictlatex(self):
 
-        def do_test(tex, uni, **kwargs):
+        def do_test(tex, uni, math_mode=None):
+            kwargs = {}
+            if math_mode is not None:
+                kwargs['math_mode'] = math_mode
             self.assertEqual(
-                LatexNodes2Text(strict_latex_spaces=True, **kwargs).latex_to_text(tex, **kwargs),
+                LatexNodes2Text(strict_latex_spaces=True, **kwargs).latex_to_text(tex),
                 uni,
                 msg="For TeX=r'{}'".format(tex)
             )
@@ -117,9 +120,10 @@ where $i$ is the “imaginary unit.”
 
         # from https://github.com/phfaist/pylatexenc/issues/15
 
-        do_test(r'$\alpha$ $\beta$ $\gamma$', r'$\alpha$ $\beta$ $\gamma$', keep_inline_math=True)
-        do_test(r'$\gamma$ detector', r'$\gamma$ detector', keep_inline_math=True)
-        do_test(r'$\gamma$ $\gamma$ coincidence', r'$\gamma$ $\gamma$ coincidence', keep_inline_math=True)
+        do_test(r'$\alpha$ $\beta$ $\gamma$', r'$\alpha$ $\beta$ $\gamma$', math_mode='verbatim')
+        do_test(r'$\gamma$ detector', r'$\gamma$ detector', math_mode='verbatim')
+        do_test(r'$\gamma$ $\gamma$ coincidence', r'$\gamma$ $\gamma$ coincidence',
+                math_mode='verbatim')
 
 
     def test_spaces_strictlatex_options(self):
@@ -128,7 +132,7 @@ where $i$ is the “imaginary unit.”
             self.assertEqual(
                 LatexNodes2Text(strict_latex_spaces=strict_latex_spaces, keep_comments=keep_comments,
                                 **kwargs)
-                .latex_to_text(tex, keep_inline_math='with-delimiters', **kwargs),
+                .latex_to_text(tex, **kwargs),
                 uni
             )
 
@@ -346,6 +350,74 @@ MORENKFDNSN'''
             l2t.nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
             correct_text_unsafe
         )
+
+
+    def test_mathmodes_00(self):
+        latex = r"""
+If $\alpha=1$ and \(\beta=2\), then
+\[
+  \beta=2\alpha\ ,
+\]
+or, equivalently,
+$$ \alpha = \frac1{\beta}\ .$$
+"""
+        correct_text = r"""
+If α=1 and β=2, then
+
+    β=2α ,
+
+or, equivalently,
+
+    α = 1/β .
+
+"""
+        l2t = LatexNodes2Text(math_mode='text')
+        self.assertEqualUpToWhitespace(
+            l2t.latex_to_text(latex),
+            correct_text
+        )
+
+    def test_mathmodes_01(self):
+        latex = r"""
+If $\alpha=1$ and \(\beta=2\), then
+\[
+  \beta=2\alpha\ ,
+\]
+or, equivalently,
+$$ \alpha = \frac1{\beta}\ .$$
+"""
+        correct_text = r"""
+If $α=1$ and \(β=2\), then
+\[
+    β=2α ,
+\]
+or, equivalently,
+$$
+    α = 1/β .
+$$
+"""
+        l2t = LatexNodes2Text(math_mode='with-delimiters')
+        self.assertEqualUpToWhitespace(
+            l2t.latex_to_text(latex),
+            correct_text
+        )
+
+    def test_mathmodes_02(self):
+        latex = r"""
+If $\alpha=1$ and \(\beta=2\), then
+\[
+  \beta=2\alpha\ ,
+\]
+or, equivalently,
+$$ \alpha = \frac1{\beta}\ .$$
+"""
+        
+        l2t = LatexNodes2Text(math_mode='verbatim')
+        self.assertEqualUpToWhitespace(
+            l2t.latex_to_text(latex),
+            latex # math stays verbatim
+        )
+
 
 
 
