@@ -259,7 +259,14 @@ def get_builtin_conversion_rules(which):
     r"""
     Return a built-in set of conversion rules specified by name `which`.
 
-    Currently, only the name `which='defaults'` is accepted.
+    There are two builtin conversion rules:
+
+      - `which='defaults'` the default conversion rules, a custom-curated list
+        of unicode chars to LaTeX escapes.
+
+      - `which='unicodexml'` the conversion rules derived from the comprehensive
+        `unicode.xml` file maintained at
+        https://www.w3.org/TR/xml-entity-names/#source by David Carlisle.
 
     The return value is a list of :py:class:`UnicodeToLatexConversionRule`
     objects that can be either directly specified to the `conversion_rules=`
@@ -273,6 +280,10 @@ def get_builtin_conversion_rules(which):
     if which == 'defaults':
         return [ UnicodeToLatexConversionRule(rule_type=RULE_DICT,
                                               rule=get_builtin_uni2latex_dict()) ]
+    if which == 'unicodexml':
+        from . import _uni2latexmap_xml
+        return [ UnicodeToLatexConversionRule(rule_type=RULE_DICT,
+                                              rule=_uni2latexmap_xml.uni2latex) ]
     raise ValueError("Unknown builtin rule set: {}".format(which))
 
 

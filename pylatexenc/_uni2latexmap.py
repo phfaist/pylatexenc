@@ -84,6 +84,7 @@ uni2latex = {
 0x00AA: r'\textordfeminine',                     # character ª
 0x00AB: r'\guillemotleft',                       # character «
 0x00AC: r'\textlnot',                            # character ¬
+0x00AD: r'\-',                                   # SOFT HYPHEN [­]
 0x00AE: r'\textregistered',                      # character ®
 0x00AF: r'\textasciimacron',                     # character ¯
 0x00B0: r'\textdegree',                          # character °
@@ -293,18 +294,28 @@ uni2latex = {
 0x017D: r'\v{Z}',
 0x017E: r'\v{z}',
 0x0192: r'\textflorin',                          # 0x0192
+0x0195: r'\texthvlig',                            # LATIN SMALL LETTER HV [ƕ]
+0x019E: r'\textnrleg',                            # LATIN SMALL LETTER N WITH LONG RIGHT LEG [ƞ]
+0x01F5: r"\'{g}",                                 # LATIN SMALL LETTER G WITH ACUTE [ǵ]
+
 
 0x0228: r'\c{E}',
 0x0229: r'\c{e}',
 
 # chars in linguistics, thanks @roedoejet (https://github.com/roedoejet/pylatexenc)
 0x0259: r'\textschwa',
+0x025B: r'\varepsilon',                           # LATIN SMALL LETTER OPEN E [ɛ]
+0x0278: r'\textphi',                              # LATIN SMALL LETTER PHI [ɸ]
 0x0294: r'\textglotstop',
+0x029E: r'\textturnk',                            # LATIN SMALL LETTER TURNED K [ʞ]
 0x02B7: r'\textsuperscript{w}',
 
 0x02C6: r'\textasciicircum',                     # 0x02C6
 0x02C7: r'\textasciicaron',
 0x02D8: r'\textasciibreve',
+0x02D9: r'\textperiodcentered',                   # DOT ABOVE [˙]
+0x02DA: r'\r{}',                                  # RING ABOVE [˚]
+0x02DB: r'\k{}',                                  # OGONEK [˛]
 0x02DC: r'\textasciitilde',
 0x02DD: r'\textacutedbl',                        # 0x02DD
 
@@ -317,6 +328,14 @@ uni2latex = {
 0x0307: r'\ensuremath{\dot{}}',
 0x0308: r'\ensuremath{\ddot{}}',
 
+0x0386: "\\'{}A",                                 # GREEK CAPITAL LETTER ALPHA WITH TONOS [Ά]
+0x0388: "\\'{}E",                                 # GREEK CAPITAL LETTER EPSILON WITH TONOS [Έ]
+0x0389: "\\'{}H",                                 # GREEK CAPITAL LETTER ETA WITH TONOS [Ή]
+0x038A: "\\'{}I",                               # GREEK CAPITAL LETTER IOTA WITH TONOS [Ί]
+0x038C: "\\'{}O",                                 # GREEK CAPITAL LETTER OMICRON WITH TONOS [Ό]
+0x038E: "\\'{}Y",                                 # GREEK CAPITAL LETTER UPSILON WITH TONOS [Ύ]
+0x038F: "\\'{}\\ensuremath{\\Omega}",             # GREEK CAPITAL LETTER OMEGA WITH TONOS [Ώ]
+0x0390: r'\acute{\ddot{\iota}}',                  # GREEK SMALL LETTER IOTA WITH DIALYTIKA AND TONOS [ΐ]
 0x0391: r'A',                                    # GREEK CAPITAL LETTER ALPHA
 0x0392: r'B',                                    # GREEK CAPITAL LETTER BETA
 0x0393: r'\ensuremath{\Gamma}',                  # GREEK CAPITAL LETTER GAMMA
@@ -342,6 +361,19 @@ uni2latex = {
 0x03A8: r'\ensuremath{\Psi}',
 0x03A9: r'\ensuremath{\Omega}',
 # tonos letters [ ... ]
+0x03AA: r'\ensuremath{\ddot{I}}',                 # GREEK CAPITAL LETTER IOTA WITH DIALYTIKA [Ϊ]
+0x03AB: r'\ensuremath{\ddot{Y}}',                 # GREEK CAPITAL LETTER UPSILON WITH DIALYTIKA [Ϋ]
+0x03AC: r"\ensuremath{\acute\alpha}",             # GREEK SMALL LETTER ALPHA WITH TONOS [ά]
+0x03AD: r"\ensuremath{\acute\epsilon}",           # GREEK SMALL LETTER EPSILON WITH TONOS [έ]
+0x03AE: r"\ensuremath{\acute\eta}",               # GREEK SMALL LETTER ETA WITH TONOS [ή]
+0x03AF: r"\ensuremath{\acute\iota}",              # GREEK SMALL LETTER IOTA WITH TONOS [ί]
+0x03B0: r'\ensuremath{\acute{\ddot{\upsilon}}}',  # GREEK SMALL LETTER UPSILON WITH DIALYTIKA AND TONOS [ΰ]
+0x03CA: r'\ensuremath{\ddot\iota}',               # GREEK SMALL LETTER IOTA WITH DIALYTIKA [ϊ]
+0x03CB: r'\ensuremath{\ddot{\upsilon}}',          # GREEK SMALL LETTER UPSILON WITH DIALYTIKA [ϋ]
+0x03CC: r"\'{o}",                                 # GREEK SMALL LETTER OMICRON WITH TONOS [ό]
+0x03CD: r"\ensuremath{\acute\upsilon}",           # GREEK SMALL LETTER UPSILON WITH TONOS [ύ]
+0x03CE: r"\ensuremath{\acute\omega}",             # GREEK SMALL LETTER OMEGA WITH TONOS [ώ]
+
 0x03B1: r'\ensuremath{\alpha}',                  # Greek Small Letter Alpha
 0x03B2: r'\ensuremath{\beta}',
 0x03B3: r'\ensuremath{\gamma}',
@@ -369,9 +401,12 @@ uni2latex = {
 0x03C9: r'\ensuremath{\omega}',
 
 0x03D1: r'\ensuremath{\vartheta}',               # Greek Theta Symbol
+0x03D2: r'\Upsilon',                              # GREEK UPSILON WITH HOOK SYMBOL [ϒ]
 0x03D5: r'\ensuremath{\phi}',                    # Greek Phi Symbol
 0x03D6: r'\ensuremath{\varpi}',                  # Greek Pi Symbol
+0x03F0: r'\ensuremath{\varkappa}',                # GREEK KAPPA SYMBOL [ϰ]
 0x03F1: r'\ensuremath{\varrho}',                 # Greek rho symbol
+0x03F6: r'\ensuremath{\backepsilon}',             # GREEK REVERSED LUNATE EPSILON SYMBOL [϶]
 
 
 0x0400: r'\`\CYRE',                              # 0x0400
@@ -470,16 +505,43 @@ uni2latex = {
 0x045D: r'\`\cyri',
 0x045E: r'\cyrushrt',
 0x045F: r'\cyrdzhe',
+0x0460: r'\cyrchar\CYROMEGA',                     # CYRILLIC CAPITAL LETTER OMEGA [Ѡ]
+0x0461: r'\cyrchar\cyromega',                     # CYRILLIC SMALL LETTER OMEGA [ѡ]
 0x0462: r'\CYRYAT',
 0x0463: r'\cyryat',
+0x0464: r'\cyrchar\CYRIOTE',                      # CYRILLIC CAPITAL LETTER IOTIFIED E [Ѥ]
+0x0465: r'\cyrchar\cyriote',                      # CYRILLIC SMALL LETTER IOTIFIED E [ѥ]
+0x0466: r'\cyrchar\CYRLYUS',                      # CYRILLIC CAPITAL LETTER LITTLE YUS [Ѧ]
+0x0467: r'\cyrchar\cyrlyus',                      # CYRILLIC SMALL LETTER LITTLE YUS [ѧ]
+0x0468: r'\cyrchar\CYRIOTLYUS',                   # CYRILLIC CAPITAL LETTER IOTIFIED LITTLE YUS [Ѩ]
+0x0469: r'\cyrchar\cyriotlyus',                   # CYRILLIC SMALL LETTER IOTIFIED LITTLE YUS [ѩ]
 0x046A: r'\CYRBYUS',
 0x046B: r'\cyrbyus',
+0x046C: r'\cyrchar\CYRIOTBYUS',                   # CYRILLIC CAPITAL LETTER IOTIFIED BIG YUS [Ѭ]
+0x046D: r'\cyrchar\cyriotbyus',                   # CYRILLIC SMALL LETTER IOTIFIED BIG YUS [ѭ]
+0x046E: r'\cyrchar\CYRKSI',                       # CYRILLIC CAPITAL LETTER KSI [Ѯ]
+0x046F: r'\cyrchar\cyrksi',                       # CYRILLIC SMALL LETTER KSI [ѯ]
+0x0470: r'\cyrchar\CYRPSI',                       # CYRILLIC CAPITAL LETTER PSI [Ѱ]
+0x0471: r'\cyrchar\cyrpsi',                       # CYRILLIC SMALL LETTER PSI [ѱ]
 0x0472: r'\CYRFITA',
 0x0473: r'\cyrfita',
 0x0474: r'\CYRIZH',
 0x0475: r'\cyrizh',
 0x0476: r'\C\CYRIZH',
 0x0477: r'\C\cyrizh',
+0x0478: r'\cyrchar\CYRUK',                        # CYRILLIC CAPITAL LETTER UK [Ѹ]
+0x0479: r'\cyrchar\cyruk',                        # CYRILLIC SMALL LETTER UK [ѹ]
+0x047A: r'\cyrchar\CYROMEGARND',                  # CYRILLIC CAPITAL LETTER ROUND OMEGA [Ѻ]
+0x047B: r'\cyrchar\cyromegarnd',                  # CYRILLIC SMALL LETTER ROUND OMEGA [ѻ]
+0x047C: r'\cyrchar\CYROMEGATITLO',                # CYRILLIC CAPITAL LETTER OMEGA WITH TITLO [Ѽ]
+0x047D: r'\cyrchar\cyromegatitlo',                # CYRILLIC SMALL LETTER OMEGA WITH TITLO [ѽ]
+0x047E: r'\cyrchar\CYROT',                        # CYRILLIC CAPITAL LETTER OT [Ѿ]
+0x047F: r'\cyrchar\cyrot',                        # CYRILLIC SMALL LETTER OT [ѿ]
+0x0480: r'\cyrchar\CYRKOPPA',                     # CYRILLIC CAPITAL LETTER KOPPA [Ҁ]
+0x0481: r'\cyrchar\cyrkoppa',                     # CYRILLIC SMALL LETTER KOPPA [ҁ]
+0x0482: r'\cyrchar\cyrthousands',                 # CYRILLIC THOUSANDS SIGN [҂]
+0x0488: r'\cyrchar\cyrhundredthousands',          # COMBINING CYRILLIC HUNDRED THOUSANDS SIGN [҈]
+0x0489: r'\cyrchar\cyrmillions',                  # COMBINING CYRILLIC MILLIONS SIGN [҉]
 0x048C: r'\CYRSEMISFTSN',
 0x048D: r'\cyrsemisftsn',
 0x048E: r'\CYRRTICK',
@@ -627,9 +689,15 @@ uni2latex = {
 0x2020: r'\textdagger',
 0x2021: r'\textdaggerdbl',
 0x2022: r'\textbullet',
+0x2024: r'.',                                     # ONE DOT LEADER [․]
+0x2025: r'..',                                    # TWO DOT LEADER [‥]
 0x2026: r'\textellipsis',
 0x2030: r'\textperthousand',
 0x2031: r'\textpertenthousand',
+0x2032: "'",                                      # PRIME [′]
+0x2033: "''",                                     # DOUBLE PRIME [″]
+0x2034: "'''",                                    # TRIPLE PRIME [‴]
+0x2035: r'\ensuremath{\backprime}',               # REVERSED PRIME [‵]
 0x2039: r'\guilsinglleft',
 0x203A: r'\guilsinglright',
 0x203B: r'\textreferencemark',
@@ -637,7 +705,10 @@ uni2latex = {
 0x2044: r'\textfractionsolidus',
 0x204E: r'\textasteriskcentered',
 0x2052: r'\textdiscount',                        # 0x2052
+0x2057: "''''",                                   # QUADRUPLE PRIME [⁗]
 
+0x205F: r'\hspace{0.22em}',                             # MEDIUM MATHEMATICAL SPACE [ ]
+0x2060: r'\nolinebreak',                          # WORD JOINER [⁠]
 0x2061: r'',                                     # FUNCTION APPLICATION
 
 0x20A1: r'\textcolonmonetary',                   # 0x20A1
@@ -666,6 +737,7 @@ uni2latex = {
 0x2115: r'\ensuremath{\mathbb{N}}',              # DOUBLE-STRUCK CAPITAL N
 0x2116: r'\textnumero',                          # NUMERO SIGN
 0x2117: r'\textcircledP',                        # SOUND RECORDING COPYRIGHT
+0x2118: r'\ensuremath{\wp}',                     # SCRIPT CAPITAL P [℘]
 0x211E: r'\textrecipe',                          # PRESCRIPTION TAKE
 0x2119: r'\ensuremath{\mathbb{P}}',              # DOUBLE-STRUCK CAPITAL P
 0x211A: r'\ensuremath{\mathbb{Q}}',              # DOUBLE-STRUCK CAPITAL Q
@@ -689,12 +761,84 @@ uni2latex = {
 0x2133: r'\ensuremath{\mathscr{M}}',             # SCRIPT CAPITAL M
 0x2134: r'\ensuremath{o}',                       # SCRIPT SMALL O
 0x2135: r'\ensuremath{\aleph}',                  # ALEF SYMBOL
+0x2136: r'\ensuremath{\beth}',                    # BET SYMBOL [ℶ]
+0x2137: r'\ensuremath{\gimel}',                   # GIMEL SYMBOL [ℷ]
+0x2138: r'\ensuremath{\daleth}',                  # DALET SYMBOL [ℸ]
 
+0x2153: r'\textfrac{1}{3}',                       # VULGAR FRACTION ONE THIRD [⅓]
+0x2154: r'\textfrac{2}{3}',                       # VULGAR FRACTION TWO THIRDS [⅔]
+0x2155: r'\textfrac{1}{5}',                       # VULGAR FRACTION ONE FIFTH [⅕]
+0x2156: r'\textfrac{2}{5}',                       # VULGAR FRACTION TWO FIFTHS [⅖]
+0x2157: r'\textfrac{3}{5}',                       # VULGAR FRACTION THREE FIFTHS [⅗]
+0x2158: r'\textfrac{4}{5}',                       # VULGAR FRACTION FOUR FIFTHS [⅘]
+0x2159: r'\textfrac{1}{6}',                       # VULGAR FRACTION ONE SIXTH [⅙]
+0x215A: r'\textfrac{5}{6}',                       # VULGAR FRACTION FIVE SIXTHS [⅚]
+0x215B: r'\textfrac{1}{8}',                       # VULGAR FRACTION ONE EIGHTH [⅛]
+0x215C: r'\textfrac{3}{8}',                       # VULGAR FRACTION THREE EIGHTHS [⅜]
+0x215D: r'\textfrac{5}{8}',                       # VULGAR FRACTION FIVE EIGHTHS [⅝]
+0x215E: r'\textfrac{7}{8}',                       # VULGAR FRACTION SEVEN EIGHTHS [⅞]
 
 0x2190: r'\textleftarrow',                       # 0x2190
 0x2191: r'\textuparrow',
 0x2192: r'\textrightarrow',
 0x2193: r'\textdownarrow',                       # 0x2193
+0x2194: r'\ensuremath{\leftrightarrow}',          # LEFT RIGHT ARROW [↔]
+0x2195: r'\ensuremath{\updownarrow}',                         # UP DOWN ARROW [↕]
+0x2196: r'\ensuremath{\nwarrow}',                             # NORTH WEST ARROW [↖]
+0x2197: r'\ensuremath{\nearrow}',                             # NORTH EAST ARROW [↗]
+0x2198: r'\ensuremath{\searrow}',                             # SOUTH EAST ARROW [↘]
+0x2199: r'\ensuremath{\swarrow}',                             # SOUTH WEST ARROW [↙]
+0x219A: r'\ensuremath{\nleftarrow}',                          # LEFTWARDS ARROW WITH STROKE [↚]
+0x219B: r'\ensuremath{\nrightarrow}',                         # RIGHTWARDS ARROW WITH STROKE [↛]
+0x219C: r'\ensuremath{\arrowwaveleft}',                       # LEFTWARDS WAVE ARROW [↜]
+0x219D: r'\ensuremath{\arrowwaveright}',                      # RIGHTWARDS WAVE ARROW [↝]
+0x219E: r'\ensuremath{\twoheadleftarrow}',                    # LEFTWARDS TWO HEADED ARROW [↞]
+0x21A0: r'\ensuremath{\twoheadrightarrow}',                   # RIGHTWARDS TWO HEADED ARROW [↠]
+0x21A2: r'\ensuremath{\leftarrowtail}',                       # LEFTWARDS ARROW WITH TAIL [↢]
+0x21A3: r'\ensuremath{\rightarrowtail}',                      # RIGHTWARDS ARROW WITH TAIL [↣]
+0x21A6: r'\ensuremath{\mapsto}',                              # RIGHTWARDS ARROW FROM BAR [↦]
+0x21A9: r'\ensuremath{\hookleftarrow}',                       # LEFTWARDS ARROW WITH HOOK [↩]
+0x21AA: r'\ensuremath{\hookrightarrow}',                      # RIGHTWARDS ARROW WITH HOOK [↪]
+0x21AB: r'\ensuremath{\looparrowleft}',                       # LEFTWARDS ARROW WITH LOOP [↫]
+0x21AC: r'\ensuremath{\looparrowright}',                      # RIGHTWARDS ARROW WITH LOOP [↬]
+0x21AD: r'\ensuremath{\leftrightsquigarrow}',                 # LEFT RIGHT WAVE ARROW [↭]
+0x21AE: r'\ensuremath{\nleftrightarrow}',                     # LEFT RIGHT ARROW WITH STROKE [↮]
+0x21B0: r'\ensuremath{\Lsh}',                                 # UPWARDS ARROW WITH TIP LEFTWARDS [↰]
+0x21B1: r'\ensuremath{\Rsh}',                                 # UPWARDS ARROW WITH TIP RIGHTWARDS [↱]
+0x21B6: r'\ensuremath{\curvearrowleft}',                      # ANTICLOCKWISE TOP SEMICIRCLE ARROW [↶]
+0x21B7: r'\ensuremath{\curvearrowright}',                     # CLOCKWISE TOP SEMICIRCLE ARROW [↷]
+0x21BA: r'\ensuremath{\circlearrowleft}',                     # ANTICLOCKWISE OPEN CIRCLE ARROW [↺]
+0x21BB: r'\ensuremath{\circlearrowright}',                    # CLOCKWISE OPEN CIRCLE ARROW [↻]
+0x21BC: r'\ensuremath{\leftharpoonup}',                       # LEFTWARDS HARPOON WITH BARB UPWARDS [↼]
+0x21BD: r'\ensuremath{\leftharpoondown}',                     # LEFTWARDS HARPOON WITH BARB DOWNWARDS [↽]
+0x21BE: r'\ensuremath{\upharpoonright}',                      # UPWARDS HARPOON WITH BARB RIGHTWARDS [↾]
+0x21BF: r'\ensuremath{\upharpoonleft}',                       # UPWARDS HARPOON WITH BARB LEFTWARDS [↿]
+0x21C0: r'\ensuremath{\rightharpoonup}',                      # RIGHTWARDS HARPOON WITH BARB UPWARDS [⇀]
+0x21C1: r'\ensuremath{\rightharpoondown}',                    # RIGHTWARDS HARPOON WITH BARB DOWNWARDS [⇁]
+0x21C2: r'\ensuremath{\downharpoonright}',                    # DOWNWARDS HARPOON WITH BARB RIGHTWARDS [⇂]
+0x21C3: r'\ensuremath{\downharpoonleft}',                     # DOWNWARDS HARPOON WITH BARB LEFTWARDS [⇃]
+0x21C4: r'\ensuremath{\rightleftarrows}',                     # RIGHTWARDS ARROW OVER LEFTWARDS ARROW [⇄]
+0x21C5: r'\ensuremath{\dblarrowupdown}',                      # UPWARDS ARROW LEFTWARDS OF DOWNWARDS ARROW [⇅]
+0x21C6: r'\ensuremath{\leftrightarrows}',                     # LEFTWARDS ARROW OVER RIGHTWARDS ARROW [⇆]
+0x21C7: r'\ensuremath{\leftleftarrows}',                      # LEFTWARDS PAIRED ARROWS [⇇]
+0x21C8: r'\ensuremath{\upuparrows}',                          # UPWARDS PAIRED ARROWS [⇈]
+0x21C9: r'\ensuremath{\rightrightarrows}',                    # RIGHTWARDS PAIRED ARROWS [⇉]
+0x21CA: r'\ensuremath{\downdownarrows}',                      # DOWNWARDS PAIRED ARROWS [⇊]
+0x21CB: r'\ensuremath{\leftrightharpoons}',                   # LEFTWARDS HARPOON OVER RIGHTWARDS HARPOON [⇋]
+0x21CC: r'\ensuremath{\rightleftharpoons}',                   # RIGHTWARDS HARPOON OVER LEFTWARDS HARPOON [⇌]
+0x21CD: r'\ensuremath{\nLeftarrow}',                          # LEFTWARDS DOUBLE ARROW WITH STROKE [⇍]
+0x21CE: r'\ensuremath{\nLeftrightarrow}',                     # LEFT RIGHT DOUBLE ARROW WITH STROKE [⇎]
+0x21CF: r'\ensuremath{\nRightarrow}',                         # RIGHTWARDS DOUBLE ARROW WITH STROKE [⇏]
+0x21D0: r'\ensuremath{\Leftarrow}',                           # LEFTWARDS DOUBLE ARROW [⇐]
+0x21D1: r'\ensuremath{\Uparrow}',                             # UPWARDS DOUBLE ARROW [⇑]
+0x21D2: r'\ensuremath{\Rightarrow}',                          # RIGHTWARDS DOUBLE ARROW [⇒]
+0x21D3: r'\ensuremath{\Downarrow}',                           # DOWNWARDS DOUBLE ARROW [⇓]
+0x21D4: r'\ensuremath{\Leftrightarrow}',                      # LEFT RIGHT DOUBLE ARROW [⇔]
+0x21D5: r'\ensuremath{\Updownarrow}',                         # UP DOWN DOUBLE ARROW [⇕]
+0x21DA: r'\ensuremath{\Lleftarrow}',                          # LEFTWARDS TRIPLE ARROW [⇚]
+0x21DB: r'\ensuremath{\Rrightarrow}',                         # RIGHTWARDS TRIPLE ARROW [⇛]
+0x21DD: r'\ensuremath{\rightsquigarrow}',                     # RIGHTWARDS SQUIGGLE ARROW [⇝]
+0x21F5: r'\ensuremath{\DownArrowUpArrow}',                    # DOWNWARDS ARROW LEFTWARDS OF UPWARDS ARROW [⇵]
 
 
 # Math operators and symbols (U+22XX)
@@ -718,7 +862,7 @@ uni2latex = {
 0x2211: r'\ensuremath{\sum}',
 0x2212: r'\ensuremath{-}',
 0x2213: r'\ensuremath{\mp}',
-#0x2214: DOT PLUS
+0x2214: r'\ensuremath{\dotplus}',                             # DOT PLUS [∔]
 0x2215: r'\ensuremath{/}',
 0x2216: r'\ensuremath{\smallsetminus}',
 0x2217: r'\ensuremath{*}',
@@ -729,10 +873,10 @@ uni2latex = {
 0x221C: r'\ensuremath{\sqrt[4]{}}',
 0x221D: r'\ensuremath{\propto}',
 0x221E: r'\ensuremath{\infty}',
-#0x221F: RIGHT ANGLE
-#0x2220: ANGLE
-#0x2221: MEASURED ANGLE
-#0x2222: SPHERICAL ANGLE
+0x221F: r'\ensuremath{\rightangle}',                          # RIGHT ANGLE [∟]
+0x2220: r'\ensuremath{\angle}',                               # ANGLE [∠]
+0x2221: r'\ensuremath{\measuredangle}',                       # MEASURED ANGLE [∡]
+0x2222: r'\ensuremath{\sphericalangle}',                      # SPHERICAL ANGLE [∢]
 0x2223: r'\ensuremath{\mid}',
 0x2224: r'\ensuremath{\nmid}',
 0x2225: r'\ensuremath{\parallel}',
@@ -745,10 +889,10 @@ uni2latex = {
 0x222C: r'\ensuremath{\iint}',
 0x222D: r'\ensuremath{\iiint}',
 0x222E: r'\ensuremath{\oint}',
-#0x222F: SURFACE INTEGRAL
-#0x2230: VOLUME INTEGRAL
-#0x2231: CLOCKWISE INTEGRAL
-#0x2232: CLOCKWIZSE CONTOUR INTEGRAL
+0x222F: r'\ensuremath{\surfintegral}',                        # SURFACE INTEGRAL [∯]
+0x2230: r'\ensuremath{\volintegral}',                         # VOLUME INTEGRAL [∰]
+0x2231: r'\ensuremath{\clwintegral}',                         # CLOCKWISE INTEGRAL [∱]
+#0x2232: CLOCKWISE CONTOUR INTEGRAL
 #0x2233: ANTICLOCKWISE CONTOUR INTEGRAL
 0x2234: r'\ensuremath{\therefore}',
 0x2235: r'\ensuremath{\because}',
@@ -756,10 +900,38 @@ uni2latex = {
 0x2237: r'\ensuremath{::}',
 #0x2238: DOT MINUS
 #...
+0x223A: r'\ensuremath{\mathbin{{:}\!\!{-}\!\!{:}}}', # GEOMETRIC PROPORTION [∺]
+0x223B: r'\ensuremath{\homothetic}',              # HOMOTHETIC [∻]
 0x223C: r'\ensuremath{\sim}',
 0x223D: r'\ensuremath{\backsim}',
+0x223E: r'\ensuremath{\lazysinv}',                            # INVERTED LAZY S [∾]
 #
+0x2240: r'\ensuremath{\wr}',                                  # WREATH PRODUCT [≀]
+0x2241: r'\ensuremath{\not\sim}',                             # NOT TILDE [≁]
+0x2243: r'\ensuremath{\simeq}',                               # ASYMPTOTICALLY EQUAL TO [≃]
+0x2244: r'\ensuremath{\not\simeq}',                           # NOT ASYMPTOTICALLY EQUAL TO [≄]
+0x2245: r'\ensuremath{\cong}',                                # APPROXIMATELY EQUAL TO [≅]
+0x2246: r'\ensuremath{\approxnotequal}',          # APPROXIMATELY BUT NOT ACTUALLY EQUAL TO [≆]
+0x2247: r'\ensuremath{\not\cong}',                # NEITHER APPROXIMATELY NOR ACTUALLY EQUAL TO [≇]
 0x2248: r'\ensuremath{\approx}',
+0x2249: r'\ensuremath{\not\approx}',                          # NOT ALMOST EQUAL TO [≉]
+0x224A: r'\ensuremath{\approxeq}',                            # ALMOST EQUAL OR EQUAL TO [≊]
+0x224B: r'\ensuremath{\tildetrpl}',                           # TRIPLE TILDE [≋]
+0x224C: r'\ensuremath{\allequal}',                            # ALL EQUAL TO [≌]
+0x224D: r'\ensuremath{\asymp}',                               # EQUIVALENT TO [≍]
+0x224E: r'\ensuremath{\Bumpeq}',                              # GEOMETRICALLY EQUIVALENT TO [≎]
+0x224F: r'\ensuremath{\bumpeq}',                              # DIFFERENCE BETWEEN [≏]
+0x2250: r'\ensuremath{\doteq}',                               # APPROACHES THE LIMIT [≐]
+0x2251: r'\ensuremath{\doteqdot}',                            # GEOMETRICALLY EQUAL TO [≑]
+0x2252: r'\ensuremath{\fallingdotseq}',                       # APPROXIMATELY EQUAL TO OR THE IMAGE OF [≒]
+0x2253: r'\ensuremath{\risingdotseq}',                        # IMAGE OF OR APPROXIMATELY EQUAL TO [≓]
+0x2254: r'\ensuremath{:=}',                                    # COLON EQUALS [≔]
+0x2255: r'\ensuremath{=:}',                                    # EQUALS COLON [≕]
+0x2256: r'\ensuremath{\eqcirc}',                              # RING IN EQUAL TO [≖]
+0x2257: r'\ensuremath{\circeq}',                              # RING EQUAL TO [≗]
+0x2259: r'\ensuremath{\estimates}',                           # ESTIMATES [≙]
+0x225B: r'\ensuremath{\starequal}',                           # STAR EQUALS [≛]
+0x225C: r'\ensuremath{\triangleq}',                           # DELTA EQUAL TO [≜]
 #
 0x2260: r'\ensuremath{\neq}',
 0x2261: r'\ensuremath{\equiv}',
@@ -773,8 +945,8 @@ uni2latex = {
 0x2269: r'\ensuremath{\gneqq}',
 0x226A: r'\ensuremath{\ll}',
 0x226B: r'\ensuremath{\gg}',
-#0x226C: BETWEEN
-#0x226D: NOT EQUIVLAENT TO
+0x226C: r'\ensuremath{\between}',                             # BETWEEN [≬]
+0x226D: r'\ensuremath{\not\kern-0.3em\times}',                # NOT EQUIVALENT TO [≭]
 0x226E: r'\ensuremath{\nless}',
 0x226F: r'\ensuremath{\ngtr}',
 0x2270: r'\ensuremath{\nleq}',
@@ -785,8 +957,8 @@ uni2latex = {
 0x2275: r'\ensuremath{\not\gtrsim}',
 0x2276: r'\ensuremath{\lessgtr}',
 0x2277: r'\ensuremath{\gtrless}',
-#0x2278: NEITHER LESS-THAN NOR GREATER-THAN
-#0x2279: NEITHER GREATER-THAN NOR LESS-THAN
+0x2278: r'\ensuremath{\notlessgreater}',                      # NEITHER LESS-THAN NOR GREATER-THAN [≸]
+0x2279: r'\ensuremath{\notgreaterless}',                      # NEITHER GREATER-THAN NOR LESS-THAN [≹]
 0x227A: r'\ensuremath{\prec}',
 0x227B: r'\ensuremath{\succ}',
 0x227C: r'\ensuremath{\preceq}',
@@ -805,7 +977,11 @@ uni2latex = {
 0x2289: r'\ensuremath{\nsupseteq}',
 0x228A: r'\ensuremath{\subsetneq}',
 0x228B: r'\ensuremath{\supsetneq}',
-#...
+0x228E: r'\ensuremath{\uplus}',                               # MULTISET UNION [⊎]
+0x228F: r'\ensuremath{\sqsubset}',                            # SQUARE IMAGE OF [⊏]
+0x2290: r'\ensuremath{\sqsupset}',                            # SQUARE ORIGINAL OF [⊐]
+0x2291: r'\ensuremath{\sqsubseteq}',                          # SQUARE IMAGE OF OR EQUAL TO [⊑]
+0x2292: r'\ensuremath{\sqsupseteq}',                          # SQUARE ORIGINAL OF OR EQUAL TO [⊒]
 0x2293: r'\ensuremath{\sqcap}',
 0x2294: r'\ensuremath{\sqcup}',
 0x2295: r'\ensuremath{\oplus}',
@@ -813,7 +989,37 @@ uni2latex = {
 0x2297: r'\ensuremath{\otimes}',
 0x2298: r'\ensuremath{\oslash}',
 0x2299: r'\ensuremath{\odot}',
-# ...
+0x229A: r'\ensuremath{\circledcirc}',                         # CIRCLED RING OPERATOR [⊚]
+0x229B: r'\ensuremath{\circledast}',                          # CIRCLED ASTERISK OPERATOR [⊛]
+0x229D: r'\ensuremath{\circleddash}',                         # CIRCLED DASH [⊝]
+0x229E: r'\ensuremath{\boxplus}',                             # SQUARED PLUS [⊞]
+0x229F: r'\ensuremath{\boxminus}',                            # SQUARED MINUS [⊟]
+0x22A0: r'\ensuremath{\boxtimes}',                            # SQUARED TIMES [⊠]
+0x22A1: r'\ensuremath{\boxdot}',                              # SQUARED DOT OPERATOR [⊡]
+0x22A2: r'\ensuremath{\vdash}',                               # RIGHT TACK [⊢]
+0x22A3: r'\ensuremath{\dashv}',                               # LEFT TACK [⊣]
+0x22A4: r'\ensuremath{\top}',                                 # DOWN TACK [⊤]
+0x22A5: r'\ensuremath{\perp}',                                # UP TACK [⊥]
+0x22A7: r'\ensuremath{\truestate}',                           # MODELS [⊧]
+0x22A8: r'\ensuremath{\forcesextra}',                         # TRUE [⊨]
+0x22A9: r'\ensuremath{\Vdash}',                               # FORCES [⊩]
+0x22AA: r'\ensuremath{\Vvdash}',                              # TRIPLE VERTICAL BAR RIGHT TURNSTILE [⊪]
+0x22AB: r'\ensuremath{\VDash}',                   # DOUBLE VERTICAL BAR DOUBLE RIGHT TURNSTILE [⊫]
+0x22AC: r'\ensuremath{\nvdash}',                              # DOES NOT PROVE [⊬]
+0x22AD: r'\ensuremath{\nvDash}',                              # NOT TRUE [⊭]
+0x22AE: r'\ensuremath{\nVdash}',                              # DOES NOT FORCE [⊮]
+0x22AF: r'\ensuremath{\nVDash}',                  # NEGATED DOUBLE VERTICAL BAR DOUBLE RIGHT TURNSTILE [⊯]
+0x22B2: r'\ensuremath{\vartriangleleft}',                     # NORMAL SUBGROUP OF [⊲]
+0x22B3: r'\ensuremath{\vartriangleright}',                    # CONTAINS AS NORMAL SUBGROUP [⊳]
+0x22B4: r'\ensuremath{\trianglelefteq}',                      # NORMAL SUBGROUP OF OR EQUAL TO [⊴]
+0x22B5: r'\ensuremath{\trianglerighteq}',                     # CONTAINS AS NORMAL SUBGROUP OR EQUAL TO [⊵]
+0x22B6: r'\ensuremath{\original}',                            # ORIGINAL OF [⊶]
+0x22B7: r'\ensuremath{\image}',                               # IMAGE OF [⊷]
+0x22B8: r'\ensuremath{\multimap}',                            # MULTIMAP [⊸]
+0x22B9: r'\ensuremath{\hermitconjmatrix}',                    # HERMITIAN CONJUGATE MATRIX [⊹]
+0x22BA: r'\ensuremath{\intercal}',                            # INTERCALATE [⊺]
+0x22BB: r'\ensuremath{\veebar}',                              # XOR [⊻]
+0x22BE: r'\ensuremath{\rightanglearc}',                       # RIGHT ANGLE WITH ARC [⊾]
 0x22C0: r'\ensuremath{\bigwedge}',
 0x22C1: r'\ensuremath{\bigvee}',
 0x22C2: r'\ensuremath{\bigcap}',
@@ -827,29 +1033,131 @@ uni2latex = {
 0x22CA: r'\ensuremath{\rtimes}',
 0x22CB: r'\ensuremath{\leftthreetimes}',
 0x22CC: r'\ensuremath{\rightthreetimes}',
-# ...
+0x22CD: r'\ensuremath{\backsimeq}',                           # REVERSED TILDE EQUALS [⋍]
+0x22CE: r'\ensuremath{\curlyvee}',                            # CURLY LOGICAL OR [⋎]
+0x22CF: r'\ensuremath{\curlywedge}',                          # CURLY LOGICAL AND [⋏]
+0x22D0: r'\ensuremath{\Subset}',                              # DOUBLE SUBSET [⋐]
+0x22D1: r'\ensuremath{\Supset}',                              # DOUBLE SUPERSET [⋑]
+0x22D2: r'\ensuremath{\Cap}',                                 # DOUBLE INTERSECTION [⋒]
+0x22D3: r'\ensuremath{\Cup}',                                 # DOUBLE UNION [⋓]
+0x22D4: r'\ensuremath{\pitchfork}',                           # PITCHFORK [⋔]
+0x22D6: r'\ensuremath{\lessdot}',                             # LESS-THAN WITH DOT [⋖]
+0x22D7: r'\ensuremath{\gtrdot}',                              # GREATER-THAN WITH DOT [⋗]
+0x22D8: r'\ensuremath{\verymuchless}',                        # VERY MUCH LESS-THAN [⋘]
+0x22D9: r'\ensuremath{\verymuchgreater}',                     # VERY MUCH GREATER-THAN [⋙]
+0x22DA: r'\ensuremath{\lesseqgtr}',                           # LESS-THAN EQUAL TO OR GREATER-THAN [⋚]
+0x22DB: r'\ensuremath{\gtreqless}',                           # GREATER-THAN EQUAL TO OR LESS-THAN [⋛]
+0x22DE: r'\ensuremath{\curlyeqprec}',                         # EQUAL TO OR PRECEDES [⋞]
+0x22DF: r'\ensuremath{\curlyeqsucc}',                         # EQUAL TO OR SUCCEEDS [⋟]
+0x22E2: r'\ensuremath{\not\sqsubseteq}',                      # NOT SQUARE IMAGE OF OR EQUAL TO [⋢]
+0x22E3: r'\ensuremath{\not\sqsupseteq}',                      # NOT SQUARE ORIGINAL OF OR EQUAL TO [⋣]
+0x22E6: r'\ensuremath{\lnsim}',                               # LESS-THAN BUT NOT EQUIVALENT TO [⋦]
+0x22E7: r'\ensuremath{\gnsim}',                               # GREATER-THAN BUT NOT EQUIVALENT TO [⋧]
+0x22E8: r'\ensuremath{\precedesnotsimilar}',                  # PRECEDES BUT NOT EQUIVALENT TO [⋨]
+0x22E9: r'\ensuremath{\succnsim}',                            # SUCCEEDS BUT NOT EQUIVALENT TO [⋩]
+0x22EA: r'\ensuremath{\ntriangleleft}',                       # NOT NORMAL SUBGROUP OF [⋪]
+0x22EB: r'\ensuremath{\ntriangleright}',                      # DOES NOT CONTAIN AS NORMAL SUBGROUP [⋫]
+0x22EC: r'\ensuremath{\ntrianglelefteq}',                     # NOT NORMAL SUBGROUP OF OR EQUAL TO [⋬]
+0x22ED: r'\ensuremath{\ntrianglerighteq}',        # DOES NOT CONTAIN AS NORMAL SUBGROUP OR EQUAL [⋭]
 0x22EE: r'\ensuremath{\vdots}',
 0x22EF: r'\ensuremath{\cdots}',
 0x22F0: r'\ensuremath{\udots}',
 0x22F1: r'\ensuremath{\ddots}',
 # ...
+0x2305: r'\ensuremath{\barwedge}',                            # PROJECTIVE [⌅]
+0x2306: r'\ensuremath{\varperspcorrespond}',                  # PERSPECTIVE [⌆]
+0x2308: r'\ensuremath{\lceil}',                               # LEFT CEILING [⌈]
+0x2309: r'\ensuremath{\rceil}',                               # RIGHT CEILING [⌉]
+0x230A: r'\ensuremath{\lfloor}',                              # LEFT FLOOR [⌊]
+0x230B: r'\ensuremath{\rfloor}',                              # RIGHT FLOOR [⌋]
+0x2315: r'\ensuremath{\recorder}',                            # TELEPHONE RECORDER [⌕]
+0x2316: r'\ensuremath{\mathchar"2208}',                        # POSITION INDICATOR [⌖]
+0x231C: r'\ensuremath{\ulcorner}',                            # TOP LEFT CORNER [⌜]
+0x231D: r'\ensuremath{\urcorner}',                            # TOP RIGHT CORNER [⌝]
+0x231E: r'\ensuremath{\llcorner}',                            # BOTTOM LEFT CORNER [⌞]
+0x231F: r'\ensuremath{\lrcorner}',                            # BOTTOM RIGHT CORNER [⌟]
+0x2322: r'\ensuremath{\frown}',                               # FROWN [⌢]
+0x2323: r'\ensuremath{\smile}',                               # SMILE [⌣]
 
+0x23B0: r'\ensuremath{\lmoustache}',              # UPPER LEFT OR LOWER RIGHT CURLY BRACKET SECTION [⎰]
+0x23B1: r'\ensuremath{\rmoustache}',              # UPPER RIGHT OR LOWER LEFT CURLY BRACKET SECTION [⎱]
 
 0x2329: r'\textlangle',                          # 0x2329
 0x232A: r'\textrangle',
 0x2422: r'\textblank',
 0x2423: r'\textvisiblespace',
+0x25A0: r'\ensuremath{\blacksquare}',             # BLACK SQUARE [■]
+0x25A1: r'\ensuremath{\square}',                  # WHITE SQUARE [□]
+0x25AA: r'{\small\ensuremath{\blacksquare}}',     # BLACK SMALL SQUARE [▪]
+0x25AD: r'\fbox{~~}',                             # WHITE RECTANGLE [▭]
+0x25B3: r'\ensuremath{\bigtriangleup}',                       # WHITE UP-POINTING TRIANGLE [△]
+0x25B4: r'\ensuremath{\blacktriangle}',                       # BLACK UP-POINTING SMALL TRIANGLE [▴]
+0x25B5: r'\ensuremath{\vartriangle}',                         # WHITE UP-POINTING SMALL TRIANGLE [▵]
+0x25B8: r'\ensuremath{\blacktriangleright}',                  # BLACK RIGHT-POINTING SMALL TRIANGLE [▸]
+0x25B9: r'\ensuremath{\triangleright}',                       # WHITE RIGHT-POINTING SMALL TRIANGLE [▹]
+0x25BD: r'\ensuremath{\bigtriangledown}',                     # WHITE DOWN-POINTING TRIANGLE [▽]
+0x25BE: r'\ensuremath{\blacktriangledown}',                   # BLACK DOWN-POINTING SMALL TRIANGLE [▾]
+0x25BF: r'\ensuremath{\triangledown}',                        # WHITE DOWN-POINTING SMALL TRIANGLE [▿]
+0x25C2: r'\ensuremath{\blacktriangleleft}',                   # BLACK LEFT-POINTING SMALL TRIANGLE [◂]
+0x25C3: r'\ensuremath{\triangleleft}',                        # WHITE LEFT-POINTING SMALL TRIANGLE [◃]
+0x25CA: r'\ensuremath{\lozenge}',                             # LOZENGE [◊]
+0x25CB: r'\ensuremath{\bigcirc}',                             # WHITE CIRCLE [○]
+
 0x25E6: r'\textopenbullet',
 0x25EF: r'\textbigcircle',
+0x2662: r'\ensuremath{\diamond}',                             # WHITE DIAMOND SUIT [♢]
 0x266A: r'\textmusicalnote',                     # 0x266A
+0x2669: r'\quarternote',                          # QUARTER NOTE [♩]
+0x266D: r'\flat',                                 # MUSIC FLAT SIGN [♭]
+0x266E: r'\natural',                              # MUSIC NATURAL SIGN [♮]
+0x266F: r'\sharp',                                # MUSIC SHARP SIGN [♯]
 
 
 0x27E8: r'\ensuremath{\langle}',                 # MATHEMATICAL LEFT ANGLE BRACKET
 0x27E9: r'\ensuremath{\rangle}',                 # MATHEMATICAL RIGHT ANGLE BRACKET
 
+0x27F5: r'\ensuremath{\longleftarrow}',                       # LONG LEFTWARDS ARROW [⟵]
+0x27F6: r'\ensuremath{\longrightarrow}',                      # LONG RIGHTWARDS ARROW [⟶]
+0x27F7: r'\ensuremath{\longleftrightarrow}',                  # LONG LEFT RIGHT ARROW [⟷]
+0x27F8: r'\ensuremath{\Longleftarrow}',                       # LONG LEFTWARDS DOUBLE ARROW [⟸]
+0x27F9: r'\ensuremath{\Longrightarrow}',                      # LONG RIGHTWARDS DOUBLE ARROW [⟹]
+0x27FA: r'\ensuremath{\Longleftrightarrow}',                  # LONG LEFT RIGHT DOUBLE ARROW [⟺]
+0x27FC: r'\ensuremath{\longmapsto}',                          # LONG RIGHTWARDS ARROW FROM BAR [⟼]
+0x27FF: r'\ensuremath{\sim\joinrel\leadsto}',                 # LONG RIGHTWARDS SQUIGGLE ARROW [⟿]
+
+0x2993: r'\ensuremath{<\kern-0.58em(}',                        # LEFT ARC LESS-THAN BRACKET [⦓]
+0x29EB: r'\ensuremath{\blacklozenge}',                        # BLACK LOZENGE [⧫]
 # Supplemental Mathematical Operators U+2AXX
+0x2A0F: r'\ensuremath{\clockoint}',                           # INTEGRAL AVERAGE WITH SLASH [⨏]
+0x2A16: r'\ensuremath{\sqrint}',                              # QUATERNION INTEGRAL OPERATOR [⨖]
+0x2A3F: r'\ensuremath{\amalg}',                               # AMALGAMATION OR COPRODUCT [⨿]
+0x2A6E: r'\ensuremath{\stackrel{*}{=}}',                       # EQUALS WITH ASTERISK [⩮]
+0x2A75: r'==',                               # TWO CONSECUTIVE EQUALS SIGNS [⩵]
 0x2A7D: r'\ensuremath{\leqslant}',
 0x2A7E: r'\ensuremath{\geqslant}',
+0x2A85: r'\ensuremath{\lessapprox}',                          # LESS-THAN OR APPROXIMATE [⪅]
+0x2A86: r'\ensuremath{\gtrapprox}',                           # GREATER-THAN OR APPROXIMATE [⪆]
+0x2A87: r'\ensuremath{\lneq}',                                # LESS-THAN AND SINGLE-LINE NOT EQUAL TO [⪇]
+0x2A88: r'\ensuremath{\gneq}',                                # GREATER-THAN AND SINGLE-LINE NOT EQUAL TO [⪈]
+0x2A89: r'\ensuremath{\lnapprox}',                            # LESS-THAN AND NOT APPROXIMATE [⪉]
+0x2A8A: r'\ensuremath{\gnapprox}',                            # GREATER-THAN AND NOT APPROXIMATE [⪊]
+0x2A8B: r'\ensuremath{\lesseqqgtr}',              # LESS-THAN ABOVE DOUBLE-LINE EQUAL ABOVE GREATER-THAN [⪋]
+0x2A8C: r'\ensuremath{\gtreqqless}',              # GREATER-THAN ABOVE DOUBLE-LINE EQUAL ABOVE LESS-THAN [⪌]
+0x2A95: r'\ensuremath{\eqslantless}',                         # SLANTED EQUAL TO OR LESS-THAN [⪕]
+0x2A96: r'\ensuremath{\eqslantgtr}',                          # SLANTED EQUAL TO OR GREATER-THAN [⪖]
+0x2AAF: r'\ensuremath{\preceq}',                              # PRECEDES ABOVE SINGLE-LINE EQUALS SIGN [⪯]
+0x2AB0: r'\ensuremath{\succeq}',                              # SUCCEEDS ABOVE SINGLE-LINE EQUALS SIGN [⪰]
+0x2AB5: r'\ensuremath{\precneqq}',                            # PRECEDES ABOVE NOT EQUAL TO [⪵]
+0x2AB6: r'\ensuremath{\succneqq}',                            # SUCCEEDS ABOVE NOT EQUAL TO [⪶]
+0x2AB7: r'\ensuremath{\precapprox}',                          # PRECEDES ABOVE ALMOST EQUAL TO [⪷]
+0x2AB8: r'\ensuremath{\succapprox}',                          # SUCCEEDS ABOVE ALMOST EQUAL TO [⪸]
+0x2AB9: r'\ensuremath{\precnapprox}',                         # PRECEDES ABOVE NOT ALMOST EQUAL TO [⪹]
+0x2ABA: r'\ensuremath{\succnapprox}',                         # SUCCEEDS ABOVE NOT ALMOST EQUAL TO [⪺]
+0x2AC5: r'\ensuremath{\subseteqq}',                           # SUBSET OF ABOVE EQUALS SIGN [⫅]
+0x2AC6: r'\ensuremath{\supseteqq}',                           # SUPERSET OF ABOVE EQUALS SIGN [⫆]
+0x2ACB: r'\ensuremath{\subsetneqq}',                          # SUBSET OF ABOVE NOT EQUAL TO [⫋]
+0x2ACC: r'\ensuremath{\supsetneqq}',                          # SUPERSET OF ABOVE NOT EQUAL TO [⫌]
+0x2AFD: r'\ensuremath{{{/}\!\!{/}}}',                          # DOUBLE SOLIDUS OPERATOR [⫽]
 
 # CJK Symbols Punktuation (!) U+3000 : for \langle/\rangle
 0x3008: r'\ensuremath{\langle}',
@@ -1052,6 +1360,29 @@ uni2latex = {
 0x1D4B3: r'\ensuremath{\mathscr{X}}',             # MATHEMATICAL SCRIPT CAPITAL X
 0x1D4B4: r'\ensuremath{\mathscr{Y}}',             # MATHEMATICAL SCRIPT CAPITAL Y
 0x1D4B5: r'\ensuremath{\mathscr{Z}}',             # MATHEMATICAL SCRIPT CAPITAL Z
+0x1D4B6: r'\ensuremath{\mathscr{a}}',                          # MATHEMATICAL SCRIPT SMALL A [𝒶]
+0x1D4B7: r'\ensuremath{\mathscr{b}}',                          # MATHEMATICAL SCRIPT SMALL B [𝒷]
+0x1D4B8: r'\ensuremath{\mathscr{c}}',                          # MATHEMATICAL SCRIPT SMALL C [𝒸]
+0x1D4B9: r'\ensuremath{\mathscr{d}}',                          # MATHEMATICAL SCRIPT SMALL D [𝒹]
+0x1D4BB: r'\ensuremath{\mathscr{f}}',                          # MATHEMATICAL SCRIPT SMALL F [𝒻]
+0x1D4BD: r'\ensuremath{\mathscr{h}}',                          # MATHEMATICAL SCRIPT SMALL H [𝒽]
+0x1D4BE: r'\ensuremath{\mathscr{i}}',                          # MATHEMATICAL SCRIPT SMALL I [𝒾]
+0x1D4BF: r'\ensuremath{\mathscr{j}}',                          # MATHEMATICAL SCRIPT SMALL J [𝒿]
+0x1D4C0: r'\ensuremath{\mathscr{k}}',                          # MATHEMATICAL SCRIPT SMALL K [𝓀]
+0x1D4C1: r'\ensuremath{\mathscr{l}}',                          # MATHEMATICAL SCRIPT SMALL L [𝓁]
+0x1D4C2: r'\ensuremath{\mathscr{m}}',                          # MATHEMATICAL SCRIPT SMALL M [𝓂]
+0x1D4C3: r'\ensuremath{\mathscr{n}}',                          # MATHEMATICAL SCRIPT SMALL N [𝓃]
+0x1D4C5: r'\ensuremath{\mathscr{p}}',                          # MATHEMATICAL SCRIPT SMALL P [𝓅]
+0x1D4C6: r'\ensuremath{\mathscr{q}}',                          # MATHEMATICAL SCRIPT SMALL Q [𝓆]
+0x1D4C7: r'\ensuremath{\mathscr{r}}',                          # MATHEMATICAL SCRIPT SMALL R [𝓇]
+0x1D4C8: r'\ensuremath{\mathscr{s}}',                          # MATHEMATICAL SCRIPT SMALL S [𝓈]
+0x1D4C9: r'\ensuremath{\mathscr{t}}',                          # MATHEMATICAL SCRIPT SMALL T [𝓉]
+0x1D4CA: r'\ensuremath{\mathscr{u}}',                          # MATHEMATICAL SCRIPT SMALL U [𝓊]
+0x1D4CB: r'\ensuremath{\mathscr{v}}',                          # MATHEMATICAL SCRIPT SMALL V [𝓋]
+0x1D4CC: r'\ensuremath{\mathscr{w}}',                          # MATHEMATICAL SCRIPT SMALL W [𝓌]
+0x1D4CD: r'\ensuremath{\mathscr{x}}',                          # MATHEMATICAL SCRIPT SMALL X [𝓍]
+0x1D4CE: r'\ensuremath{\mathscr{y}}',                          # MATHEMATICAL SCRIPT SMALL Y [𝓎]
+0x1D4CF: r'\ensuremath{\mathscr{z}}',                          # MATHEMATICAL SCRIPT SMALL Z [𝓏]
 
 0x1D504: r'\ensuremath{\mathfrak{A}}',            # MATHEMATICAL FRAKTUR CAPITAL A
 0x1D505: r'\ensuremath{\mathfrak{B}}',            # MATHEMATICAL FRAKTUR CAPITAL B
@@ -1133,6 +1464,181 @@ uni2latex = {
 0x1D54F: r'\ensuremath{\mathbb{X}}',              # MATHEMATICAL DOUBLE-STRUCK CAPITAL X
 0x1D550: r'\ensuremath{\mathbb{Y}}',              # MATHEMATICAL DOUBLE-STRUCK CAPITAL Y
 0x1D551: r'\ensuremath{\mathbb{Z}}',              # MATHEMATICAL DOUBLE-STRUCK CAPITAL Z
+0x1D552: r'\ensuremath{\mathbb{a}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL A [𝕒]
+0x1D553: r'\ensuremath{\mathbb{b}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL B [𝕓]
+0x1D554: r'\ensuremath{\mathbb{c}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL C [𝕔]
+0x1D555: r'\ensuremath{\mathbb{d}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL D [𝕕]
+0x1D556: r'\ensuremath{\mathbb{e}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL E [𝕖]
+0x1D557: r'\ensuremath{\mathbb{f}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL F [𝕗]
+0x1D558: r'\ensuremath{\mathbb{g}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL G [𝕘]
+0x1D559: r'\ensuremath{\mathbb{h}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL H [𝕙]
+0x1D55A: r'\ensuremath{\mathbb{i}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL I [𝕚]
+0x1D55B: r'\ensuremath{\mathbb{j}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL J [𝕛]
+0x1D55C: r'\ensuremath{\mathbb{k}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL K [𝕜]
+0x1D55D: r'\ensuremath{\mathbb{l}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL L [𝕝]
+0x1D55E: r'\ensuremath{\mathbb{m}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL M [𝕞]
+0x1D55F: r'\ensuremath{\mathbb{n}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL N [𝕟]
+0x1D560: r'\ensuremath{\mathbb{o}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL O [𝕠]
+0x1D561: r'\ensuremath{\mathbb{p}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL P [𝕡]
+0x1D562: r'\ensuremath{\mathbb{q}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL Q [𝕢]
+0x1D563: r'\ensuremath{\mathbb{r}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL R [𝕣]
+0x1D564: r'\ensuremath{\mathbb{s}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL S [𝕤]
+0x1D565: r'\ensuremath{\mathbb{t}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL T [𝕥]
+0x1D566: r'\ensuremath{\mathbb{u}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL U [𝕦]
+0x1D567: r'\ensuremath{\mathbb{v}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL V [𝕧]
+0x1D568: r'\ensuremath{\mathbb{w}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL W [𝕨]
+0x1D569: r'\ensuremath{\mathbb{x}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL X [𝕩]
+0x1D56A: r'\ensuremath{\mathbb{y}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL Y [𝕪]
+0x1D56B: r'\ensuremath{\mathbb{z}}',                           # MATHEMATICAL DOUBLE-STRUCK SMALL Z [𝕫]
+
+0x1D5A0: r'\ensuremath{\mathsf{A}}',                           # MATHEMATICAL SANS-SERIF CAPITAL A [𝖠]
+0x1D5A1: r'\ensuremath{\mathsf{B}}',                           # MATHEMATICAL SANS-SERIF CAPITAL B [𝖡]
+0x1D5A2: r'\ensuremath{\mathsf{C}}',                           # MATHEMATICAL SANS-SERIF CAPITAL C [𝖢]
+0x1D5A3: r'\ensuremath{\mathsf{D}}',                           # MATHEMATICAL SANS-SERIF CAPITAL D [𝖣]
+0x1D5A4: r'\ensuremath{\mathsf{E}}',                           # MATHEMATICAL SANS-SERIF CAPITAL E [𝖤]
+0x1D5A5: r'\ensuremath{\mathsf{F}}',                           # MATHEMATICAL SANS-SERIF CAPITAL F [𝖥]
+0x1D5A6: r'\ensuremath{\mathsf{G}}',                           # MATHEMATICAL SANS-SERIF CAPITAL G [𝖦]
+0x1D5A7: r'\ensuremath{\mathsf{H}}',                           # MATHEMATICAL SANS-SERIF CAPITAL H [𝖧]
+0x1D5A8: r'\ensuremath{\mathsf{I}}',                           # MATHEMATICAL SANS-SERIF CAPITAL I [𝖨]
+0x1D5A9: r'\ensuremath{\mathsf{J}}',                           # MATHEMATICAL SANS-SERIF CAPITAL J [𝖩]
+0x1D5AA: r'\ensuremath{\mathsf{K}}',                           # MATHEMATICAL SANS-SERIF CAPITAL K [𝖪]
+0x1D5AB: r'\ensuremath{\mathsf{L}}',                           # MATHEMATICAL SANS-SERIF CAPITAL L [𝖫]
+0x1D5AC: r'\ensuremath{\mathsf{M}}',                           # MATHEMATICAL SANS-SERIF CAPITAL M [𝖬]
+0x1D5AD: r'\ensuremath{\mathsf{N}}',                           # MATHEMATICAL SANS-SERIF CAPITAL N [𝖭]
+0x1D5AE: r'\ensuremath{\mathsf{O}}',                           # MATHEMATICAL SANS-SERIF CAPITAL O [𝖮]
+0x1D5AF: r'\ensuremath{\mathsf{P}}',                           # MATHEMATICAL SANS-SERIF CAPITAL P [𝖯]
+0x1D5B0: r'\ensuremath{\mathsf{Q}}',                           # MATHEMATICAL SANS-SERIF CAPITAL Q [𝖰]
+0x1D5B1: r'\ensuremath{\mathsf{R}}',                           # MATHEMATICAL SANS-SERIF CAPITAL R [𝖱]
+0x1D5B2: r'\ensuremath{\mathsf{S}}',                           # MATHEMATICAL SANS-SERIF CAPITAL S [𝖲]
+0x1D5B3: r'\ensuremath{\mathsf{T}}',                           # MATHEMATICAL SANS-SERIF CAPITAL T [𝖳]
+0x1D5B4: r'\ensuremath{\mathsf{U}}',                           # MATHEMATICAL SANS-SERIF CAPITAL U [𝖴]
+0x1D5B5: r'\ensuremath{\mathsf{V}}',                           # MATHEMATICAL SANS-SERIF CAPITAL V [𝖵]
+0x1D5B6: r'\ensuremath{\mathsf{W}}',                           # MATHEMATICAL SANS-SERIF CAPITAL W [𝖶]
+0x1D5B7: r'\ensuremath{\mathsf{X}}',                           # MATHEMATICAL SANS-SERIF CAPITAL X [𝖷]
+0x1D5B8: r'\ensuremath{\mathsf{Y}}',                           # MATHEMATICAL SANS-SERIF CAPITAL Y [𝖸]
+0x1D5B9: r'\ensuremath{\mathsf{Z}}',                           # MATHEMATICAL SANS-SERIF CAPITAL Z [𝖹]
+0x1D5BA: r'\ensuremath{\mathsf{a}}',                           # MATHEMATICAL SANS-SERIF SMALL A [𝖺]
+0x1D5BB: r'\ensuremath{\mathsf{b}}',                           # MATHEMATICAL SANS-SERIF SMALL B [𝖻]
+0x1D5BC: r'\ensuremath{\mathsf{c}}',                           # MATHEMATICAL SANS-SERIF SMALL C [𝖼]
+0x1D5BD: r'\ensuremath{\mathsf{d}}',                           # MATHEMATICAL SANS-SERIF SMALL D [𝖽]
+0x1D5BE: r'\ensuremath{\mathsf{e}}',                           # MATHEMATICAL SANS-SERIF SMALL E [𝖾]
+0x1D5BF: r'\ensuremath{\mathsf{f}}',                           # MATHEMATICAL SANS-SERIF SMALL F [𝖿]
+0x1D5C0: r'\ensuremath{\mathsf{g}}',                           # MATHEMATICAL SANS-SERIF SMALL G [𝗀]
+0x1D5C1: r'\ensuremath{\mathsf{h}}',                           # MATHEMATICAL SANS-SERIF SMALL H [𝗁]
+0x1D5C2: r'\ensuremath{\mathsf{i}}',                           # MATHEMATICAL SANS-SERIF SMALL I [𝗂]
+0x1D5C3: r'\ensuremath{\mathsf{j}}',                           # MATHEMATICAL SANS-SERIF SMALL J [𝗃]
+0x1D5C4: r'\ensuremath{\mathsf{k}}',                           # MATHEMATICAL SANS-SERIF SMALL K [𝗄]
+0x1D5C5: r'\ensuremath{\mathsf{l}}',                           # MATHEMATICAL SANS-SERIF SMALL L [𝗅]
+0x1D5C6: r'\ensuremath{\mathsf{m}}',                           # MATHEMATICAL SANS-SERIF SMALL M [𝗆]
+0x1D5C7: r'\ensuremath{\mathsf{n}}',                           # MATHEMATICAL SANS-SERIF SMALL N [𝗇]
+0x1D5C8: r'\ensuremath{\mathsf{o}}',                           # MATHEMATICAL SANS-SERIF SMALL O [𝗈]
+0x1D5C9: r'\ensuremath{\mathsf{p}}',                           # MATHEMATICAL SANS-SERIF SMALL P [𝗉]
+0x1D5CA: r'\ensuremath{\mathsf{q}}',                           # MATHEMATICAL SANS-SERIF SMALL Q [𝗊]
+0x1D5CB: r'\ensuremath{\mathsf{r}}',                           # MATHEMATICAL SANS-SERIF SMALL R [𝗋]
+0x1D5CC: r'\ensuremath{\mathsf{s}}',                           # MATHEMATICAL SANS-SERIF SMALL S [𝗌]
+0x1D5CD: r'\ensuremath{\mathsf{t}}',                           # MATHEMATICAL SANS-SERIF SMALL T [𝗍]
+0x1D5CE: r'\ensuremath{\mathsf{u}}',                           # MATHEMATICAL SANS-SERIF SMALL U [𝗎]
+0x1D5CF: r'\ensuremath{\mathsf{v}}',                           # MATHEMATICAL SANS-SERIF SMALL V [𝗏]
+0x1D5D0: r'\ensuremath{\mathsf{w}}',                           # MATHEMATICAL SANS-SERIF SMALL W [𝗐]
+0x1D5D1: r'\ensuremath{\mathsf{x}}',                           # MATHEMATICAL SANS-SERIF SMALL X [𝗑]
+0x1D5D2: r'\ensuremath{\mathsf{y}}',                           # MATHEMATICAL SANS-SERIF SMALL Y [𝗒]
+0x1D5D3: r'\ensuremath{\mathsf{z}}',                           # MATHEMATICAL SANS-SERIF SMALL Z [𝗓]
+
+0x1D670: r'\ensuremath{\mathtt{A}}',                           # MATHEMATICAL MONOSPACE CAPITAL A [𝙰]
+0x1D671: r'\ensuremath{\mathtt{B}}',                           # MATHEMATICAL MONOSPACE CAPITAL B [𝙱]
+0x1D672: r'\ensuremath{\mathtt{C}}',                           # MATHEMATICAL MONOSPACE CAPITAL C [𝙲]
+0x1D673: r'\ensuremath{\mathtt{D}}',                           # MATHEMATICAL MONOSPACE CAPITAL D [𝙳]
+0x1D674: r'\ensuremath{\mathtt{E}}',                           # MATHEMATICAL MONOSPACE CAPITAL E [𝙴]
+0x1D675: r'\ensuremath{\mathtt{F}}',                           # MATHEMATICAL MONOSPACE CAPITAL F [𝙵]
+0x1D676: r'\ensuremath{\mathtt{G}}',                           # MATHEMATICAL MONOSPACE CAPITAL G [𝙶]
+0x1D677: r'\ensuremath{\mathtt{H}}',                           # MATHEMATICAL MONOSPACE CAPITAL H [𝙷]
+0x1D678: r'\ensuremath{\mathtt{I}}',                           # MATHEMATICAL MONOSPACE CAPITAL I [𝙸]
+0x1D679: r'\ensuremath{\mathtt{J}}',                           # MATHEMATICAL MONOSPACE CAPITAL J [𝙹]
+0x1D67A: r'\ensuremath{\mathtt{K}}',                           # MATHEMATICAL MONOSPACE CAPITAL K [𝙺]
+0x1D67B: r'\ensuremath{\mathtt{L}}',                           # MATHEMATICAL MONOSPACE CAPITAL L [𝙻]
+0x1D67C: r'\ensuremath{\mathtt{M}}',                           # MATHEMATICAL MONOSPACE CAPITAL M [𝙼]
+0x1D67D: r'\ensuremath{\mathtt{N}}',                           # MATHEMATICAL MONOSPACE CAPITAL N [𝙽]
+0x1D67E: r'\ensuremath{\mathtt{O}}',                           # MATHEMATICAL MONOSPACE CAPITAL O [𝙾]
+0x1D67F: r'\ensuremath{\mathtt{P}}',                           # MATHEMATICAL MONOSPACE CAPITAL P [𝙿]
+0x1D680: r'\ensuremath{\mathtt{Q}}',                           # MATHEMATICAL MONOSPACE CAPITAL Q [𝚀]
+0x1D681: r'\ensuremath{\mathtt{R}}',                           # MATHEMATICAL MONOSPACE CAPITAL R [𝚁]
+0x1D682: r'\ensuremath{\mathtt{S}}',                           # MATHEMATICAL MONOSPACE CAPITAL S [𝚂]
+0x1D683: r'\ensuremath{\mathtt{T}}',                           # MATHEMATICAL MONOSPACE CAPITAL T [𝚃]
+0x1D684: r'\ensuremath{\mathtt{U}}',                           # MATHEMATICAL MONOSPACE CAPITAL U [𝚄]
+0x1D685: r'\ensuremath{\mathtt{V}}',                           # MATHEMATICAL MONOSPACE CAPITAL V [𝚅]
+0x1D686: r'\ensuremath{\mathtt{W}}',                           # MATHEMATICAL MONOSPACE CAPITAL W [𝚆]
+0x1D687: r'\ensuremath{\mathtt{X}}',                           # MATHEMATICAL MONOSPACE CAPITAL X [𝚇]
+0x1D688: r'\ensuremath{\mathtt{Y}}',                           # MATHEMATICAL MONOSPACE CAPITAL Y [𝚈]
+0x1D689: r'\ensuremath{\mathtt{Z}}',                           # MATHEMATICAL MONOSPACE CAPITAL Z [𝚉]
+0x1D68A: r'\ensuremath{\mathtt{a}}',                           # MATHEMATICAL MONOSPACE SMALL A [𝚊]
+0x1D68B: r'\ensuremath{\mathtt{b}}',                           # MATHEMATICAL MONOSPACE SMALL B [𝚋]
+0x1D68C: r'\ensuremath{\mathtt{c}}',                           # MATHEMATICAL MONOSPACE SMALL C [𝚌]
+0x1D68D: r'\ensuremath{\mathtt{d}}',                           # MATHEMATICAL MONOSPACE SMALL D [𝚍]
+0x1D68E: r'\ensuremath{\mathtt{e}}',                           # MATHEMATICAL MONOSPACE SMALL E [𝚎]
+0x1D68F: r'\ensuremath{\mathtt{f}}',                           # MATHEMATICAL MONOSPACE SMALL F [𝚏]
+0x1D690: r'\ensuremath{\mathtt{g}}',                           # MATHEMATICAL MONOSPACE SMALL G [𝚐]
+0x1D691: r'\ensuremath{\mathtt{h}}',                           # MATHEMATICAL MONOSPACE SMALL H [𝚑]
+0x1D692: r'\ensuremath{\mathtt{i}}',                           # MATHEMATICAL MONOSPACE SMALL I [𝚒]
+0x1D693: r'\ensuremath{\mathtt{j}}',                           # MATHEMATICAL MONOSPACE SMALL J [𝚓]
+0x1D694: r'\ensuremath{\mathtt{k}}',                           # MATHEMATICAL MONOSPACE SMALL K [𝚔]
+0x1D695: r'\ensuremath{\mathtt{l}}',                           # MATHEMATICAL MONOSPACE SMALL L [𝚕]
+0x1D696: r'\ensuremath{\mathtt{m}}',                           # MATHEMATICAL MONOSPACE SMALL M [𝚖]
+0x1D697: r'\ensuremath{\mathtt{n}}',                           # MATHEMATICAL MONOSPACE SMALL N [𝚗]
+0x1D698: r'\ensuremath{\mathtt{o}}',                           # MATHEMATICAL MONOSPACE SMALL O [𝚘]
+0x1D699: r'\ensuremath{\mathtt{p}}',                           # MATHEMATICAL MONOSPACE SMALL P [𝚙]
+0x1D69A: r'\ensuremath{\mathtt{q}}',                           # MATHEMATICAL MONOSPACE SMALL Q [𝚚]
+0x1D69B: r'\ensuremath{\mathtt{r}}',                           # MATHEMATICAL MONOSPACE SMALL R [𝚛]
+0x1D69C: r'\ensuremath{\mathtt{s}}',                           # MATHEMATICAL MONOSPACE SMALL S [𝚜]
+0x1D69D: r'\ensuremath{\mathtt{t}}',                           # MATHEMATICAL MONOSPACE SMALL T [𝚝]
+0x1D69E: r'\ensuremath{\mathtt{u}}',                           # MATHEMATICAL MONOSPACE SMALL U [𝚞]
+0x1D69F: r'\ensuremath{\mathtt{v}}',                           # MATHEMATICAL MONOSPACE SMALL V [𝚟]
+0x1D6A0: r'\ensuremath{\mathtt{w}}',                           # MATHEMATICAL MONOSPACE SMALL W [𝚠]
+0x1D6A1: r'\ensuremath{\mathtt{x}}',                           # MATHEMATICAL MONOSPACE SMALL X [𝚡]
+0x1D6A2: r'\ensuremath{\mathtt{y}}',                           # MATHEMATICAL MONOSPACE SMALL Y [𝚢]
+0x1D6A3: r'\ensuremath{\mathtt{z}}',                           # MATHEMATICAL MONOSPACE SMALL Z [𝚣]
+
+0x1D7CE: r'\ensuremath{\mathbf{0}}',                           # MATHEMATICAL BOLD DIGIT ZERO [𝟎]
+0x1D7CF: r'\ensuremath{\mathbf{1}}',                           # MATHEMATICAL BOLD DIGIT ONE [𝟏]
+0x1D7D0: r'\ensuremath{\mathbf{2}}',                           # MATHEMATICAL BOLD DIGIT TWO [𝟐]
+0x1D7D1: r'\ensuremath{\mathbf{3}}',                           # MATHEMATICAL BOLD DIGIT THREE [𝟑]
+0x1D7D2: r'\ensuremath{\mathbf{4}}',                           # MATHEMATICAL BOLD DIGIT FOUR [𝟒]
+0x1D7D3: r'\ensuremath{\mathbf{5}}',                           # MATHEMATICAL BOLD DIGIT FIVE [𝟓]
+0x1D7D4: r'\ensuremath{\mathbf{6}}',                           # MATHEMATICAL BOLD DIGIT SIX [𝟔]
+0x1D7D5: r'\ensuremath{\mathbf{7}}',                           # MATHEMATICAL BOLD DIGIT SEVEN [𝟕]
+0x1D7D6: r'\ensuremath{\mathbf{8}}',                           # MATHEMATICAL BOLD DIGIT EIGHT [𝟖]
+0x1D7D7: r'\ensuremath{\mathbf{9}}',                           # MATHEMATICAL BOLD DIGIT NINE [𝟗]
+0x1D7D8: r'\ensuremath{\mathbb{0}}',                           # MATHEMATICAL DOUBLE-STRUCK DIGIT ZERO [𝟘]
+0x1D7D9: r'\ensuremath{\mathbb{1}}',                           # MATHEMATICAL DOUBLE-STRUCK DIGIT ONE [𝟙]
+0x1D7DA: r'\ensuremath{\mathbb{2}}',                           # MATHEMATICAL DOUBLE-STRUCK DIGIT TWO [𝟚]
+0x1D7DB: r'\ensuremath{\mathbb{3}}',                           # MATHEMATICAL DOUBLE-STRUCK DIGIT THREE [𝟛]
+0x1D7DC: r'\ensuremath{\mathbb{4}}',                           # MATHEMATICAL DOUBLE-STRUCK DIGIT FOUR [𝟜]
+0x1D7DD: r'\ensuremath{\mathbb{5}}',                           # MATHEMATICAL DOUBLE-STRUCK DIGIT FIVE [𝟝]
+0x1D7DE: r'\ensuremath{\mathbb{6}}',                           # MATHEMATICAL DOUBLE-STRUCK DIGIT SIX [𝟞]
+0x1D7DF: r'\ensuremath{\mathbb{7}}',                           # MATHEMATICAL DOUBLE-STRUCK DIGIT SEVEN [𝟟]
+0x1D7E0: r'\ensuremath{\mathbb{8}}',                           # MATHEMATICAL DOUBLE-STRUCK DIGIT EIGHT [𝟠]
+0x1D7E1: r'\ensuremath{\mathbb{9}}',                           # MATHEMATICAL DOUBLE-STRUCK DIGIT NINE [𝟡]
+0x1D7E2: r'\ensuremath{\mathsf{0}}',                           # MATHEMATICAL SANS-SERIF DIGIT ZERO [𝟢]
+0x1D7E3: r'\ensuremath{\mathsf{1}}',                           # MATHEMATICAL SANS-SERIF DIGIT ONE [𝟣]
+0x1D7E4: r'\ensuremath{\mathsf{2}}',                           # MATHEMATICAL SANS-SERIF DIGIT TWO [𝟤]
+0x1D7E5: r'\ensuremath{\mathsf{3}}',                           # MATHEMATICAL SANS-SERIF DIGIT THREE [𝟥]
+0x1D7E6: r'\ensuremath{\mathsf{4}}',                           # MATHEMATICAL SANS-SERIF DIGIT FOUR [𝟦]
+0x1D7E7: r'\ensuremath{\mathsf{5}}',                           # MATHEMATICAL SANS-SERIF DIGIT FIVE [𝟧]
+0x1D7E8: r'\ensuremath{\mathsf{6}}',                           # MATHEMATICAL SANS-SERIF DIGIT SIX [𝟨]
+0x1D7E9: r'\ensuremath{\mathsf{7}}',                           # MATHEMATICAL SANS-SERIF DIGIT SEVEN [𝟩]
+0x1D7EA: r'\ensuremath{\mathsf{8}}',                           # MATHEMATICAL SANS-SERIF DIGIT EIGHT [𝟪]
+0x1D7EB: r'\ensuremath{\mathsf{9}}',                           # MATHEMATICAL SANS-SERIF DIGIT NINE [𝟫]
+
+0x1D7F6: r'\ensuremath{\mathtt{0}}',                           # MATHEMATICAL MONOSPACE DIGIT ZERO [𝟶]
+0x1D7F7: r'\ensuremath{\mathtt{1}}',                           # MATHEMATICAL MONOSPACE DIGIT ONE [𝟷]
+0x1D7F8: r'\ensuremath{\mathtt{2}}',                           # MATHEMATICAL MONOSPACE DIGIT TWO [𝟸]
+0x1D7F9: r'\ensuremath{\mathtt{3}}',                           # MATHEMATICAL MONOSPACE DIGIT THREE [𝟹]
+0x1D7FA: r'\ensuremath{\mathtt{4}}',                           # MATHEMATICAL MONOSPACE DIGIT FOUR [𝟺]
+0x1D7FB: r'\ensuremath{\mathtt{5}}',                           # MATHEMATICAL MONOSPACE DIGIT FIVE [𝟻]
+0x1D7FC: r'\ensuremath{\mathtt{6}}',                           # MATHEMATICAL MONOSPACE DIGIT SIX [𝟼]
+0x1D7FD: r'\ensuremath{\mathtt{7}}',                           # MATHEMATICAL MONOSPACE DIGIT SEVEN [𝟽]
+0x1D7FE: r'\ensuremath{\mathtt{8}}',                           # MATHEMATICAL MONOSPACE DIGIT EIGHT [𝟾]
+0x1D7FF: r'\ensuremath{\mathtt{9}}',                           # MATHEMATICAL MONOSPACE DIGIT NINE [𝟿]
+
 
 }
 

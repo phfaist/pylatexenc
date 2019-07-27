@@ -106,6 +106,7 @@
 0x00AA [FEMININE ORDINAL INDICATOR]                          |{\textordfeminine}|
 0x00AB [LEFT-POINTING DOUBLE ANGLE QUOTATION MARK]           |{\guillemotleft}|
 0x00AC [NOT SIGN]                                            |{\textlnot}|
+0x00AD [SOFT HYPHEN]                                         |{\-}|
 0x00AE [REGISTERED SIGN]                                     |{\textregistered}|
 0x00AF [MACRON]                                              |{\textasciimacron}|
 0x00B0 [DEGREE SIGN]                                         |{\textdegree}|
@@ -315,21 +316,38 @@
 0x017D [LATIN CAPITAL LETTER Z WITH CARON]                   |{\v{Z}}|
 0x017E [LATIN SMALL LETTER Z WITH CARON]                     |{\v{z}}|
 0x0192 [LATIN SMALL LETTER F WITH HOOK]                      |{\textflorin}|
+0x0195 [LATIN SMALL LETTER HV]                               |{\texthvlig}|
+0x019E [LATIN SMALL LETTER N WITH LONG RIGHT LEG]            |{\textnrleg}|
+0x01F5 [LATIN SMALL LETTER G WITH ACUTE]                     |{\'{g}}|
 0x0228 [LATIN CAPITAL LETTER E WITH CEDILLA]                 |{\c{E}}|
 0x0229 [LATIN SMALL LETTER E WITH CEDILLA]                   |{\c{e}}|
 0x0259 [LATIN SMALL LETTER SCHWA]                            |{\textschwa}|
+0x025B [LATIN SMALL LETTER OPEN E]                           |{\varepsilon}|
+0x0278 [LATIN SMALL LETTER PHI]                              |{\textphi}|
 0x0294 [LATIN LETTER GLOTTAL STOP]                           |{\textglotstop}|
+0x029E [LATIN SMALL LETTER TURNED K]                         |{\textturnk}|
 0x02B7 [MODIFIER LETTER SMALL W]                             |{\textsuperscript{w}}|
 0x02BC [MODIFIER LETTER APOSTROPHE]                          |'|
 0x02C6 [MODIFIER LETTER CIRCUMFLEX ACCENT]                   |{\textasciicircum}|
 0x02C7 [CARON]                                               |{\textasciicaron}|
 0x02D8 [BREVE]                                               |{\textasciibreve}|
+0x02D9 [DOT ABOVE]                                           |{\textperiodcentered}|
+0x02DA [RING ABOVE]                                          |{\r{}}|
+0x02DB [OGONEK]                                              |{\k{}}|
 0x02DC [SMALL TILDE]                                         |{\textasciitilde}|
 0x02DD [DOUBLE ACUTE ACCENT]                                 |{\textacutedbl}|
 0x0307 [COMBINING DOT ABOVE]                                 |{\ensuremath{\dot{}}}|
 0x0308 [COMBINING DIAERESIS]                                 |{\ensuremath{\ddot{}}}|
 0x037E [GREEK QUESTION MARK]                                 |;|
+0x0386 [GREEK CAPITAL LETTER ALPHA WITH TONOS]               |{\'{}A}|
 0x0387 [GREEK ANO TELEIA]                                    |{\textperiodcentered}|
+0x0388 [GREEK CAPITAL LETTER EPSILON WITH TONOS]             |{\'{}E}|
+0x0389 [GREEK CAPITAL LETTER ETA WITH TONOS]                 |{\'{}H}|
+0x038A [GREEK CAPITAL LETTER IOTA WITH TONOS]                |{\'{}I}|
+0x038C [GREEK CAPITAL LETTER OMICRON WITH TONOS]             |{\'{}O}|
+0x038E [GREEK CAPITAL LETTER UPSILON WITH TONOS]             |{\'{}Y}|
+0x038F [GREEK CAPITAL LETTER OMEGA WITH TONOS]               |{\'{}\ensuremath{\Omega}}|
+0x0390 [GREEK SMALL LETTER IOTA WITH DIALYTIKA AND TONOS]    |{\acute{\ddot{\iota}}}|
 0x0391 [GREEK CAPITAL LETTER ALPHA]                          |A|
 0x0392 [GREEK CAPITAL LETTER BETA]                           |B|
 0x0393 [GREEK CAPITAL LETTER GAMMA]                          |{\ensuremath{\Gamma}}|
@@ -354,6 +372,13 @@
 0x03A7 [GREEK CAPITAL LETTER CHI]                            |X|
 0x03A8 [GREEK CAPITAL LETTER PSI]                            |{\ensuremath{\Psi}}|
 0x03A9 [GREEK CAPITAL LETTER OMEGA]                          |{\ensuremath{\Omega}}|
+0x03AA [GREEK CAPITAL LETTER IOTA WITH DIALYTIKA]            |{\ensuremath{\ddot{I}}}|
+0x03AB [GREEK CAPITAL LETTER UPSILON WITH DIALYTIKA]         |{\ensuremath{\ddot{Y}}}|
+0x03AC [GREEK SMALL LETTER ALPHA WITH TONOS]                 |{\ensuremath{\acute\alpha}}|
+0x03AD [GREEK SMALL LETTER EPSILON WITH TONOS]               |{\ensuremath{\acute\epsilon}}|
+0x03AE [GREEK SMALL LETTER ETA WITH TONOS]                   |{\ensuremath{\acute\eta}}|
+0x03AF [GREEK SMALL LETTER IOTA WITH TONOS]                  |{\ensuremath{\acute\iota}}|
+0x03B0 [GREEK SMALL LETTER UPSILON WITH DIALYTIKA AND TONOS]    |{\ensuremath{\acute{\ddot{\upsilon}}}}|
 0x03B1 [GREEK SMALL LETTER ALPHA]                            |{\ensuremath{\alpha}}|
 0x03B2 [GREEK SMALL LETTER BETA]                             |{\ensuremath{\beta}}|
 0x03B3 [GREEK SMALL LETTER GAMMA]                            |{\ensuremath{\gamma}}|
@@ -379,10 +404,18 @@
 0x03C7 [GREEK SMALL LETTER CHI]                              |{\ensuremath{\chi}}|
 0x03C8 [GREEK SMALL LETTER PSI]                              |{\ensuremath{\psi}}|
 0x03C9 [GREEK SMALL LETTER OMEGA]                            |{\ensuremath{\omega}}|
+0x03CA [GREEK SMALL LETTER IOTA WITH DIALYTIKA]              |{\ensuremath{\ddot\iota}}|
+0x03CB [GREEK SMALL LETTER UPSILON WITH DIALYTIKA]           |{\ensuremath{\ddot{\upsilon}}}|
+0x03CC [GREEK SMALL LETTER OMICRON WITH TONOS]               |{\'{o}}|
+0x03CD [GREEK SMALL LETTER UPSILON WITH TONOS]               |{\ensuremath{\acute\upsilon}}|
+0x03CE [GREEK SMALL LETTER OMEGA WITH TONOS]                 |{\ensuremath{\acute\omega}}|
 0x03D1 [GREEK THETA SYMBOL]                                  |{\ensuremath{\vartheta}}|
+0x03D2 [GREEK UPSILON WITH HOOK SYMBOL]                      |{\Upsilon}|
 0x03D5 [GREEK PHI SYMBOL]                                    |{\ensuremath{\phi}}|
 0x03D6 [GREEK PI SYMBOL]                                     |{\ensuremath{\varpi}}|
+0x03F0 [GREEK KAPPA SYMBOL]                                  |{\ensuremath{\varkappa}}|
 0x03F1 [GREEK RHO SYMBOL]                                    |{\ensuremath{\varrho}}|
+0x03F6 [GREEK REVERSED LUNATE EPSILON SYMBOL]                |{\ensuremath{\backepsilon}}|
 0x0400 [CYRILLIC CAPITAL LETTER IE WITH GRAVE]               |{\`\CYRE}|
 0x0401 [CYRILLIC CAPITAL LETTER IO]                          |{\CYRYO}|
 0x0402 [CYRILLIC CAPITAL LETTER DJE]                         |{\CYRDJE}|
@@ -479,16 +512,43 @@
 0x045D [CYRILLIC SMALL LETTER I WITH GRAVE]                  |{\`\cyri}|
 0x045E [CYRILLIC SMALL LETTER SHORT U]                       |{\cyrushrt}|
 0x045F [CYRILLIC SMALL LETTER DZHE]                          |{\cyrdzhe}|
+0x0460 [CYRILLIC CAPITAL LETTER OMEGA]                       |{\cyrchar\CYROMEGA}|
+0x0461 [CYRILLIC SMALL LETTER OMEGA]                         |{\cyrchar\cyromega}|
 0x0462 [CYRILLIC CAPITAL LETTER YAT]                         |{\CYRYAT}|
 0x0463 [CYRILLIC SMALL LETTER YAT]                           |{\cyryat}|
+0x0464 [CYRILLIC CAPITAL LETTER IOTIFIED E]                  |{\cyrchar\CYRIOTE}|
+0x0465 [CYRILLIC SMALL LETTER IOTIFIED E]                    |{\cyrchar\cyriote}|
+0x0466 [CYRILLIC CAPITAL LETTER LITTLE YUS]                  |{\cyrchar\CYRLYUS}|
+0x0467 [CYRILLIC SMALL LETTER LITTLE YUS]                    |{\cyrchar\cyrlyus}|
+0x0468 [CYRILLIC CAPITAL LETTER IOTIFIED LITTLE YUS]         |{\cyrchar\CYRIOTLYUS}|
+0x0469 [CYRILLIC SMALL LETTER IOTIFIED LITTLE YUS]           |{\cyrchar\cyriotlyus}|
 0x046A [CYRILLIC CAPITAL LETTER BIG YUS]                     |{\CYRBYUS}|
 0x046B [CYRILLIC SMALL LETTER BIG YUS]                       |{\cyrbyus}|
+0x046C [CYRILLIC CAPITAL LETTER IOTIFIED BIG YUS]            |{\cyrchar\CYRIOTBYUS}|
+0x046D [CYRILLIC SMALL LETTER IOTIFIED BIG YUS]              |{\cyrchar\cyriotbyus}|
+0x046E [CYRILLIC CAPITAL LETTER KSI]                         |{\cyrchar\CYRKSI}|
+0x046F [CYRILLIC SMALL LETTER KSI]                           |{\cyrchar\cyrksi}|
+0x0470 [CYRILLIC CAPITAL LETTER PSI]                         |{\cyrchar\CYRPSI}|
+0x0471 [CYRILLIC SMALL LETTER PSI]                           |{\cyrchar\cyrpsi}|
 0x0472 [CYRILLIC CAPITAL LETTER FITA]                        |{\CYRFITA}|
 0x0473 [CYRILLIC SMALL LETTER FITA]                          |{\cyrfita}|
 0x0474 [CYRILLIC CAPITAL LETTER IZHITSA]                     |{\CYRIZH}|
 0x0475 [CYRILLIC SMALL LETTER IZHITSA]                       |{\cyrizh}|
 0x0476 [CYRILLIC CAPITAL LETTER IZHITSA WITH DOUBLE GRAVE ACCENT]    |{\C\CYRIZH}|
 0x0477 [CYRILLIC SMALL LETTER IZHITSA WITH DOUBLE GRAVE ACCENT]    |{\C\cyrizh}|
+0x0478 [CYRILLIC CAPITAL LETTER UK]                          |{\cyrchar\CYRUK}|
+0x0479 [CYRILLIC SMALL LETTER UK]                            |{\cyrchar\cyruk}|
+0x047A [CYRILLIC CAPITAL LETTER ROUND OMEGA]                 |{\cyrchar\CYROMEGARND}|
+0x047B [CYRILLIC SMALL LETTER ROUND OMEGA]                   |{\cyrchar\cyromegarnd}|
+0x047C [CYRILLIC CAPITAL LETTER OMEGA WITH TITLO]            |{\cyrchar\CYROMEGATITLO}|
+0x047D [CYRILLIC SMALL LETTER OMEGA WITH TITLO]              |{\cyrchar\cyromegatitlo}|
+0x047E [CYRILLIC CAPITAL LETTER OT]                          |{\cyrchar\CYROT}|
+0x047F [CYRILLIC SMALL LETTER OT]                            |{\cyrchar\cyrot}|
+0x0480 [CYRILLIC CAPITAL LETTER KOPPA]                       |{\cyrchar\CYRKOPPA}|
+0x0481 [CYRILLIC SMALL LETTER KOPPA]                         |{\cyrchar\cyrkoppa}|
+0x0482 [CYRILLIC THOUSANDS SIGN]                             |{\cyrchar\cyrthousands}|
+0x0488 [COMBINING CYRILLIC HUNDRED THOUSANDS SIGN]           |{\cyrchar\cyrhundredthousands}|
+0x0489 [COMBINING CYRILLIC MILLIONS SIGN]                    |{\cyrchar\cyrmillions}|
 0x048C [CYRILLIC CAPITAL LETTER SEMISOFT SIGN]               |{\CYRSEMISFTSN}|
 0x048D [CYRILLIC SMALL LETTER SEMISOFT SIGN]                 |{\cyrsemisftsn}|
 0x048E [CYRILLIC CAPITAL LETTER ER WITH TICK]                |{\CYRRTICK}|
@@ -601,8 +661,24 @@
 0x04FE [CYRILLIC CAPITAL LETTER HA WITH STROKE]              |{\CYRHHCRS}|
 0x04FF [CYRILLIC SMALL LETTER HA WITH STROKE]                |{\cyrhhcrs}|
 0x0E3F [THAI CURRENCY SYMBOL BAHT]                           |{\textbaht}|
+0x1F71 [GREEK SMALL LETTER ALPHA WITH OXIA]                  |{\ensuremath{\acute\alpha}}|
+0x1F73 [GREEK SMALL LETTER EPSILON WITH OXIA]                |{\ensuremath{\acute\epsilon}}|
+0x1F75 [GREEK SMALL LETTER ETA WITH OXIA]                    |{\ensuremath{\acute\eta}}|
+0x1F77 [GREEK SMALL LETTER IOTA WITH OXIA]                   |{\ensuremath{\acute\iota}}|
+0x1F79 [GREEK SMALL LETTER OMICRON WITH OXIA]                |{\'{o}}|
+0x1F7B [GREEK SMALL LETTER UPSILON WITH OXIA]                |{\ensuremath{\acute\upsilon}}|
+0x1F7D [GREEK SMALL LETTER OMEGA WITH OXIA]                  |{\ensuremath{\acute\omega}}|
+0x1FBB [GREEK CAPITAL LETTER ALPHA WITH OXIA]                |{\'{}A}|
 0x1FBE [GREEK PROSGEGRAMMENI]                                |{\ensuremath{\i}}|
+0x1FC9 [GREEK CAPITAL LETTER EPSILON WITH OXIA]              |{\'{}E}|
+0x1FCB [GREEK CAPITAL LETTER ETA WITH OXIA]                  |{\'{}H}|
+0x1FD3 [GREEK SMALL LETTER IOTA WITH DIALYTIKA AND OXIA]     |{\acute{\ddot{\iota}}}|
+0x1FDB [GREEK CAPITAL LETTER IOTA WITH OXIA]                 |{\'{}I}|
+0x1FE3 [GREEK SMALL LETTER UPSILON WITH DIALYTIKA AND OXIA]    |{\ensuremath{\acute{\ddot{\upsilon}}}}|
+0x1FEB [GREEK CAPITAL LETTER UPSILON WITH OXIA]              |{\'{}Y}|
 0x1FEF [GREEK VARIA]                                         |`|
+0x1FF9 [GREEK CAPITAL LETTER OMICRON WITH OXIA]              |{\'{}O}|
+0x1FFB [GREEK CAPITAL LETTER OMEGA WITH OXIA]                |{\'{}\ensuremath{\Omega}}|
 0x1FFD [GREEK OXIA]                                          |{\textasciiacute}|
 0x2000 [EN QUAD]                                             |{\enskip}|
 0x2001 [EM QUAD]                                             |{\quad}|
@@ -632,9 +708,15 @@
 0x2020 [DAGGER]                                              |{\textdagger}|
 0x2021 [DOUBLE DAGGER]                                       |{\textdaggerdbl}|
 0x2022 [BULLET]                                              |{\textbullet}|
+0x2024 [ONE DOT LEADER]                                      |.|
+0x2025 [TWO DOT LEADER]                                      |..|
 0x2026 [HORIZONTAL ELLIPSIS]                                 |{\textellipsis}|
 0x2030 [PER MILLE SIGN]                                      |{\textperthousand}|
 0x2031 [PER TEN THOUSAND SIGN]                               |{\textpertenthousand}|
+0x2032 [PRIME]                                               |'|
+0x2033 [DOUBLE PRIME]                                        |''|
+0x2034 [TRIPLE PRIME]                                        |'''|
+0x2035 [REVERSED PRIME]                                      |{\ensuremath{\backprime}}|
 0x2039 [SINGLE LEFT-POINTING ANGLE QUOTATION MARK]           |{\guilsinglleft}|
 0x203A [SINGLE RIGHT-POINTING ANGLE QUOTATION MARK]          |{\guilsinglright}|
 0x203B [REFERENCE MARK]                                      |{\textreferencemark}|
@@ -642,6 +724,9 @@
 0x2044 [FRACTION SLASH]                                      |{\textfractionsolidus}|
 0x204E [LOW ASTERISK]                                        |{\textasteriskcentered}|
 0x2052 [COMMERCIAL MINUS SIGN]                               |{\textdiscount}|
+0x2057 [QUADRUPLE PRIME]                                     |''''|
+0x205F [MEDIUM MATHEMATICAL SPACE]                           |{\hspace{0.22em}}|
+0x2060 [WORD JOINER]                                         |{\nolinebreak}|
 0x2061 [FUNCTION APPLICATION]                                ||
 0x20A1 [COLON SIGN]                                          |{\textcolonmonetary}|
 0x20A4 [LIRA SIGN]                                           |{\textlira}|
@@ -666,6 +751,7 @@
 0x2115 [DOUBLE-STRUCK CAPITAL N]                             |{\ensuremath{\mathbb{N}}}|
 0x2116 [NUMERO SIGN]                                         |{\textnumero}|
 0x2117 [SOUND RECORDING COPYRIGHT]                           |{\textcircledP}|
+0x2118 [SCRIPT CAPITAL P]                                    |{\ensuremath{\wp}}|
 0x2119 [DOUBLE-STRUCK CAPITAL P]                             |{\ensuremath{\mathbb{P}}}|
 0x211A [DOUBLE-STRUCK CAPITAL Q]                             |{\ensuremath{\mathbb{Q}}}|
 0x211B [SCRIPT CAPITAL R]                                    |{\ensuremath{\mathscr{R}}}|
@@ -689,10 +775,82 @@
 0x2133 [SCRIPT CAPITAL M]                                    |{\ensuremath{\mathscr{M}}}|
 0x2134 [SCRIPT SMALL O]                                      |{\ensuremath{o}}|
 0x2135 [ALEF SYMBOL]                                         |{\ensuremath{\aleph}}|
+0x2136 [BET SYMBOL]                                          |{\ensuremath{\beth}}|
+0x2137 [GIMEL SYMBOL]                                        |{\ensuremath{\gimel}}|
+0x2138 [DALET SYMBOL]                                        |{\ensuremath{\daleth}}|
+0x2153 [VULGAR FRACTION ONE THIRD]                           |{\textfrac{1}{3}}|
+0x2154 [VULGAR FRACTION TWO THIRDS]                          |{\textfrac{2}{3}}|
+0x2155 [VULGAR FRACTION ONE FIFTH]                           |{\textfrac{1}{5}}|
+0x2156 [VULGAR FRACTION TWO FIFTHS]                          |{\textfrac{2}{5}}|
+0x2157 [VULGAR FRACTION THREE FIFTHS]                        |{\textfrac{3}{5}}|
+0x2158 [VULGAR FRACTION FOUR FIFTHS]                         |{\textfrac{4}{5}}|
+0x2159 [VULGAR FRACTION ONE SIXTH]                           |{\textfrac{1}{6}}|
+0x215A [VULGAR FRACTION FIVE SIXTHS]                         |{\textfrac{5}{6}}|
+0x215B [VULGAR FRACTION ONE EIGHTH]                          |{\textfrac{1}{8}}|
+0x215C [VULGAR FRACTION THREE EIGHTHS]                       |{\textfrac{3}{8}}|
+0x215D [VULGAR FRACTION FIVE EIGHTHS]                        |{\textfrac{5}{8}}|
+0x215E [VULGAR FRACTION SEVEN EIGHTHS]                       |{\textfrac{7}{8}}|
 0x2190 [LEFTWARDS ARROW]                                     |{\textleftarrow}|
 0x2191 [UPWARDS ARROW]                                       |{\textuparrow}|
 0x2192 [RIGHTWARDS ARROW]                                    |{\textrightarrow}|
 0x2193 [DOWNWARDS ARROW]                                     |{\textdownarrow}|
+0x2194 [LEFT RIGHT ARROW]                                    |{\ensuremath{\leftrightarrow}}|
+0x2195 [UP DOWN ARROW]                                       |{\ensuremath{\updownarrow}}|
+0x2196 [NORTH WEST ARROW]                                    |{\ensuremath{\nwarrow}}|
+0x2197 [NORTH EAST ARROW]                                    |{\ensuremath{\nearrow}}|
+0x2198 [SOUTH EAST ARROW]                                    |{\ensuremath{\searrow}}|
+0x2199 [SOUTH WEST ARROW]                                    |{\ensuremath{\swarrow}}|
+0x219A [LEFTWARDS ARROW WITH STROKE]                         |{\ensuremath{\nleftarrow}}|
+0x219B [RIGHTWARDS ARROW WITH STROKE]                        |{\ensuremath{\nrightarrow}}|
+0x219C [LEFTWARDS WAVE ARROW]                                |{\ensuremath{\arrowwaveleft}}|
+0x219D [RIGHTWARDS WAVE ARROW]                               |{\ensuremath{\arrowwaveright}}|
+0x219E [LEFTWARDS TWO HEADED ARROW]                          |{\ensuremath{\twoheadleftarrow}}|
+0x21A0 [RIGHTWARDS TWO HEADED ARROW]                         |{\ensuremath{\twoheadrightarrow}}|
+0x21A2 [LEFTWARDS ARROW WITH TAIL]                           |{\ensuremath{\leftarrowtail}}|
+0x21A3 [RIGHTWARDS ARROW WITH TAIL]                          |{\ensuremath{\rightarrowtail}}|
+0x21A6 [RIGHTWARDS ARROW FROM BAR]                           |{\ensuremath{\mapsto}}|
+0x21A9 [LEFTWARDS ARROW WITH HOOK]                           |{\ensuremath{\hookleftarrow}}|
+0x21AA [RIGHTWARDS ARROW WITH HOOK]                          |{\ensuremath{\hookrightarrow}}|
+0x21AB [LEFTWARDS ARROW WITH LOOP]                           |{\ensuremath{\looparrowleft}}|
+0x21AC [RIGHTWARDS ARROW WITH LOOP]                          |{\ensuremath{\looparrowright}}|
+0x21AD [LEFT RIGHT WAVE ARROW]                               |{\ensuremath{\leftrightsquigarrow}}|
+0x21AE [LEFT RIGHT ARROW WITH STROKE]                        |{\ensuremath{\nleftrightarrow}}|
+0x21B0 [UPWARDS ARROW WITH TIP LEFTWARDS]                    |{\ensuremath{\Lsh}}|
+0x21B1 [UPWARDS ARROW WITH TIP RIGHTWARDS]                   |{\ensuremath{\Rsh}}|
+0x21B6 [ANTICLOCKWISE TOP SEMICIRCLE ARROW]                  |{\ensuremath{\curvearrowleft}}|
+0x21B7 [CLOCKWISE TOP SEMICIRCLE ARROW]                      |{\ensuremath{\curvearrowright}}|
+0x21BA [ANTICLOCKWISE OPEN CIRCLE ARROW]                     |{\ensuremath{\circlearrowleft}}|
+0x21BB [CLOCKWISE OPEN CIRCLE ARROW]                         |{\ensuremath{\circlearrowright}}|
+0x21BC [LEFTWARDS HARPOON WITH BARB UPWARDS]                 |{\ensuremath{\leftharpoonup}}|
+0x21BD [LEFTWARDS HARPOON WITH BARB DOWNWARDS]               |{\ensuremath{\leftharpoondown}}|
+0x21BE [UPWARDS HARPOON WITH BARB RIGHTWARDS]                |{\ensuremath{\upharpoonright}}|
+0x21BF [UPWARDS HARPOON WITH BARB LEFTWARDS]                 |{\ensuremath{\upharpoonleft}}|
+0x21C0 [RIGHTWARDS HARPOON WITH BARB UPWARDS]                |{\ensuremath{\rightharpoonup}}|
+0x21C1 [RIGHTWARDS HARPOON WITH BARB DOWNWARDS]              |{\ensuremath{\rightharpoondown}}|
+0x21C2 [DOWNWARDS HARPOON WITH BARB RIGHTWARDS]              |{\ensuremath{\downharpoonright}}|
+0x21C3 [DOWNWARDS HARPOON WITH BARB LEFTWARDS]               |{\ensuremath{\downharpoonleft}}|
+0x21C4 [RIGHTWARDS ARROW OVER LEFTWARDS ARROW]               |{\ensuremath{\rightleftarrows}}|
+0x21C5 [UPWARDS ARROW LEFTWARDS OF DOWNWARDS ARROW]          |{\ensuremath{\dblarrowupdown}}|
+0x21C6 [LEFTWARDS ARROW OVER RIGHTWARDS ARROW]               |{\ensuremath{\leftrightarrows}}|
+0x21C7 [LEFTWARDS PAIRED ARROWS]                             |{\ensuremath{\leftleftarrows}}|
+0x21C8 [UPWARDS PAIRED ARROWS]                               |{\ensuremath{\upuparrows}}|
+0x21C9 [RIGHTWARDS PAIRED ARROWS]                            |{\ensuremath{\rightrightarrows}}|
+0x21CA [DOWNWARDS PAIRED ARROWS]                             |{\ensuremath{\downdownarrows}}|
+0x21CB [LEFTWARDS HARPOON OVER RIGHTWARDS HARPOON]           |{\ensuremath{\leftrightharpoons}}|
+0x21CC [RIGHTWARDS HARPOON OVER LEFTWARDS HARPOON]           |{\ensuremath{\rightleftharpoons}}|
+0x21CD [LEFTWARDS DOUBLE ARROW WITH STROKE]                  |{\ensuremath{\nLeftarrow}}|
+0x21CE [LEFT RIGHT DOUBLE ARROW WITH STROKE]                 |{\ensuremath{\nLeftrightarrow}}|
+0x21CF [RIGHTWARDS DOUBLE ARROW WITH STROKE]                 |{\ensuremath{\nRightarrow}}|
+0x21D0 [LEFTWARDS DOUBLE ARROW]                              |{\ensuremath{\Leftarrow}}|
+0x21D1 [UPWARDS DOUBLE ARROW]                                |{\ensuremath{\Uparrow}}|
+0x21D2 [RIGHTWARDS DOUBLE ARROW]                             |{\ensuremath{\Rightarrow}}|
+0x21D3 [DOWNWARDS DOUBLE ARROW]                              |{\ensuremath{\Downarrow}}|
+0x21D4 [LEFT RIGHT DOUBLE ARROW]                             |{\ensuremath{\Leftrightarrow}}|
+0x21D5 [UP DOWN DOUBLE ARROW]                                |{\ensuremath{\Updownarrow}}|
+0x21DA [LEFTWARDS TRIPLE ARROW]                              |{\ensuremath{\Lleftarrow}}|
+0x21DB [RIGHTWARDS TRIPLE ARROW]                             |{\ensuremath{\Rrightarrow}}|
+0x21DD [RIGHTWARDS SQUIGGLE ARROW]                           |{\ensuremath{\rightsquigarrow}}|
+0x21F5 [DOWNWARDS ARROW LEFTWARDS OF UPWARDS ARROW]          |{\ensuremath{\DownArrowUpArrow}}|
 0x2200 [FOR ALL]                                             |{\ensuremath{\forall}}|
 0x2201 [COMPLEMENT]                                          |{\ensuremath{\complement}}|
 0x2202 [PARTIAL DIFFERENTIAL]                                |{\ensuremath{\partial}}|
@@ -713,6 +871,7 @@
 0x2211 [N-ARY SUMMATION]                                     |{\ensuremath{\sum}}|
 0x2212 [MINUS SIGN]                                          |{\ensuremath{-}}|
 0x2213 [MINUS-OR-PLUS SIGN]                                  |{\ensuremath{\mp}}|
+0x2214 [DOT PLUS]                                            |{\ensuremath{\dotplus}}|
 0x2215 [DIVISION SLASH]                                      |{\ensuremath{/}}|
 0x2216 [SET MINUS]                                           |{\ensuremath{\smallsetminus}}|
 0x2217 [ASTERISK OPERATOR]                                   |{\ensuremath{*}}|
@@ -723,6 +882,10 @@
 0x221C [FOURTH ROOT]                                         |{\ensuremath{\sqrt[4]{}}}|
 0x221D [PROPORTIONAL TO]                                     |{\ensuremath{\propto}}|
 0x221E [INFINITY]                                            |{\ensuremath{\infty}}|
+0x221F [RIGHT ANGLE]                                         |{\ensuremath{\rightangle}}|
+0x2220 [ANGLE]                                               |{\ensuremath{\angle}}|
+0x2221 [MEASURED ANGLE]                                      |{\ensuremath{\measuredangle}}|
+0x2222 [SPHERICAL ANGLE]                                     |{\ensuremath{\sphericalangle}}|
 0x2223 [DIVIDES]                                             |{\ensuremath{\mid}}|
 0x2224 [DOES NOT DIVIDE]                                     |{\ensuremath{\nmid}}|
 0x2225 [PARALLEL TO]                                         |{\ensuremath{\parallel}}|
@@ -735,13 +898,44 @@
 0x222C [DOUBLE INTEGRAL]                                     |{\ensuremath{\iint}}|
 0x222D [TRIPLE INTEGRAL]                                     |{\ensuremath{\iiint}}|
 0x222E [CONTOUR INTEGRAL]                                    |{\ensuremath{\oint}}|
+0x222F [SURFACE INTEGRAL]                                    |{\ensuremath{\surfintegral}}|
+0x2230 [VOLUME INTEGRAL]                                     |{\ensuremath{\volintegral}}|
+0x2231 [CLOCKWISE INTEGRAL]                                  |{\ensuremath{\clwintegral}}|
 0x2234 [THEREFORE]                                           |{\ensuremath{\therefore}}|
 0x2235 [BECAUSE]                                             |{\ensuremath{\because}}|
 0x2236 [RATIO]                                               |{\ensuremath{:}}|
 0x2237 [PROPORTION]                                          |{\ensuremath{::}}|
+0x223A [GEOMETRIC PROPORTION]                                |{\ensuremath{\mathbin{{:}\!\!{-}\!\!{:}}}}|
+0x223B [HOMOTHETIC]                                          |{\ensuremath{\homothetic}}|
 0x223C [TILDE OPERATOR]                                      |{\ensuremath{\sim}}|
 0x223D [REVERSED TILDE]                                      |{\ensuremath{\backsim}}|
+0x223E [INVERTED LAZY S]                                     |{\ensuremath{\lazysinv}}|
+0x2240 [WREATH PRODUCT]                                      |{\ensuremath{\wr}}|
+0x2241 [NOT TILDE]                                           |{\ensuremath{\not\sim}}|
+0x2243 [ASYMPTOTICALLY EQUAL TO]                             |{\ensuremath{\simeq}}|
+0x2244 [NOT ASYMPTOTICALLY EQUAL TO]                         |{\ensuremath{\not\simeq}}|
+0x2245 [APPROXIMATELY EQUAL TO]                              |{\ensuremath{\cong}}|
+0x2246 [APPROXIMATELY BUT NOT ACTUALLY EQUAL TO]             |{\ensuremath{\approxnotequal}}|
+0x2247 [NEITHER APPROXIMATELY NOR ACTUALLY EQUAL TO]         |{\ensuremath{\not\cong}}|
 0x2248 [ALMOST EQUAL TO]                                     |{\ensuremath{\approx}}|
+0x2249 [NOT ALMOST EQUAL TO]                                 |{\ensuremath{\not\approx}}|
+0x224A [ALMOST EQUAL OR EQUAL TO]                            |{\ensuremath{\approxeq}}|
+0x224B [TRIPLE TILDE]                                        |{\ensuremath{\tildetrpl}}|
+0x224C [ALL EQUAL TO]                                        |{\ensuremath{\allequal}}|
+0x224D [EQUIVALENT TO]                                       |{\ensuremath{\asymp}}|
+0x224E [GEOMETRICALLY EQUIVALENT TO]                         |{\ensuremath{\Bumpeq}}|
+0x224F [DIFFERENCE BETWEEN]                                  |{\ensuremath{\bumpeq}}|
+0x2250 [APPROACHES THE LIMIT]                                |{\ensuremath{\doteq}}|
+0x2251 [GEOMETRICALLY EQUAL TO]                              |{\ensuremath{\doteqdot}}|
+0x2252 [APPROXIMATELY EQUAL TO OR THE IMAGE OF]              |{\ensuremath{\fallingdotseq}}|
+0x2253 [IMAGE OF OR APPROXIMATELY EQUAL TO]                  |{\ensuremath{\risingdotseq}}|
+0x2254 [COLON EQUALS]                                        |{\ensuremath{:=}}|
+0x2255 [EQUALS COLON]                                        |{\ensuremath{=:}}|
+0x2256 [RING IN EQUAL TO]                                    |{\ensuremath{\eqcirc}}|
+0x2257 [RING EQUAL TO]                                       |{\ensuremath{\circeq}}|
+0x2259 [ESTIMATES]                                           |{\ensuremath{\estimates}}|
+0x225B [STAR EQUALS]                                         |{\ensuremath{\starequal}}|
+0x225C [DELTA EQUAL TO]                                      |{\ensuremath{\triangleq}}|
 0x2260 [NOT EQUAL TO]                                        |{\ensuremath{\neq}}|
 0x2261 [IDENTICAL TO]                                        |{\ensuremath{\equiv}}|
 0x2262 [NOT IDENTICAL TO]                                    |{\ensuremath{\not\equiv}}|
@@ -753,6 +947,8 @@
 0x2269 [GREATER-THAN BUT NOT EQUAL TO]                       |{\ensuremath{\gneqq}}|
 0x226A [MUCH LESS-THAN]                                      |{\ensuremath{\ll}}|
 0x226B [MUCH GREATER-THAN]                                   |{\ensuremath{\gg}}|
+0x226C [BETWEEN]                                             |{\ensuremath{\between}}|
+0x226D [NOT EQUIVALENT TO]                                   |{\ensuremath{\not\kern-0.3em\times}}|
 0x226E [NOT LESS-THAN]                                       |{\ensuremath{\nless}}|
 0x226F [NOT GREATER-THAN]                                    |{\ensuremath{\ngtr}}|
 0x2270 [NEITHER LESS-THAN NOR EQUAL TO]                      |{\ensuremath{\nleq}}|
@@ -763,6 +959,8 @@
 0x2275 [NEITHER GREATER-THAN NOR EQUIVALENT TO]              |{\ensuremath{\not\gtrsim}}|
 0x2276 [LESS-THAN OR GREATER-THAN]                           |{\ensuremath{\lessgtr}}|
 0x2277 [GREATER-THAN OR LESS-THAN]                           |{\ensuremath{\gtrless}}|
+0x2278 [NEITHER LESS-THAN NOR GREATER-THAN]                  |{\ensuremath{\notlessgreater}}|
+0x2279 [NEITHER GREATER-THAN NOR LESS-THAN]                  |{\ensuremath{\notgreaterless}}|
 0x227A [PRECEDES]                                            |{\ensuremath{\prec}}|
 0x227B [SUCCEEDS]                                            |{\ensuremath{\succ}}|
 0x227C [PRECEDES OR EQUAL TO]                                |{\ensuremath{\preceq}}|
@@ -781,6 +979,11 @@
 0x2289 [NEITHER A SUPERSET OF NOR EQUAL TO]                  |{\ensuremath{\nsupseteq}}|
 0x228A [SUBSET OF WITH NOT EQUAL TO]                         |{\ensuremath{\subsetneq}}|
 0x228B [SUPERSET OF WITH NOT EQUAL TO]                       |{\ensuremath{\supsetneq}}|
+0x228E [MULTISET UNION]                                      |{\ensuremath{\uplus}}|
+0x228F [SQUARE IMAGE OF]                                     |{\ensuremath{\sqsubset}}|
+0x2290 [SQUARE ORIGINAL OF]                                  |{\ensuremath{\sqsupset}}|
+0x2291 [SQUARE IMAGE OF OR EQUAL TO]                         |{\ensuremath{\sqsubseteq}}|
+0x2292 [SQUARE ORIGINAL OF OR EQUAL TO]                      |{\ensuremath{\sqsupseteq}}|
 0x2293 [SQUARE CAP]                                          |{\ensuremath{\sqcap}}|
 0x2294 [SQUARE CUP]                                          |{\ensuremath{\sqcup}}|
 0x2295 [CIRCLED PLUS]                                        |{\ensuremath{\oplus}}|
@@ -788,6 +991,37 @@
 0x2297 [CIRCLED TIMES]                                       |{\ensuremath{\otimes}}|
 0x2298 [CIRCLED DIVISION SLASH]                              |{\ensuremath{\oslash}}|
 0x2299 [CIRCLED DOT OPERATOR]                                |{\ensuremath{\odot}}|
+0x229A [CIRCLED RING OPERATOR]                               |{\ensuremath{\circledcirc}}|
+0x229B [CIRCLED ASTERISK OPERATOR]                           |{\ensuremath{\circledast}}|
+0x229D [CIRCLED DASH]                                        |{\ensuremath{\circleddash}}|
+0x229E [SQUARED PLUS]                                        |{\ensuremath{\boxplus}}|
+0x229F [SQUARED MINUS]                                       |{\ensuremath{\boxminus}}|
+0x22A0 [SQUARED TIMES]                                       |{\ensuremath{\boxtimes}}|
+0x22A1 [SQUARED DOT OPERATOR]                                |{\ensuremath{\boxdot}}|
+0x22A2 [RIGHT TACK]                                          |{\ensuremath{\vdash}}|
+0x22A3 [LEFT TACK]                                           |{\ensuremath{\dashv}}|
+0x22A4 [DOWN TACK]                                           |{\ensuremath{\top}}|
+0x22A5 [UP TACK]                                             |{\ensuremath{\perp}}|
+0x22A7 [MODELS]                                              |{\ensuremath{\truestate}}|
+0x22A8 [TRUE]                                                |{\ensuremath{\forcesextra}}|
+0x22A9 [FORCES]                                              |{\ensuremath{\Vdash}}|
+0x22AA [TRIPLE VERTICAL BAR RIGHT TURNSTILE]                 |{\ensuremath{\Vvdash}}|
+0x22AB [DOUBLE VERTICAL BAR DOUBLE RIGHT TURNSTILE]          |{\ensuremath{\VDash}}|
+0x22AC [DOES NOT PROVE]                                      |{\ensuremath{\nvdash}}|
+0x22AD [NOT TRUE]                                            |{\ensuremath{\nvDash}}|
+0x22AE [DOES NOT FORCE]                                      |{\ensuremath{\nVdash}}|
+0x22AF [NEGATED DOUBLE VERTICAL BAR DOUBLE RIGHT TURNSTILE]    |{\ensuremath{\nVDash}}|
+0x22B2 [NORMAL SUBGROUP OF]                                  |{\ensuremath{\vartriangleleft}}|
+0x22B3 [CONTAINS AS NORMAL SUBGROUP]                         |{\ensuremath{\vartriangleright}}|
+0x22B4 [NORMAL SUBGROUP OF OR EQUAL TO]                      |{\ensuremath{\trianglelefteq}}|
+0x22B5 [CONTAINS AS NORMAL SUBGROUP OR EQUAL TO]             |{\ensuremath{\trianglerighteq}}|
+0x22B6 [ORIGINAL OF]                                         |{\ensuremath{\original}}|
+0x22B7 [IMAGE OF]                                            |{\ensuremath{\image}}|
+0x22B8 [MULTIMAP]                                            |{\ensuremath{\multimap}}|
+0x22B9 [HERMITIAN CONJUGATE MATRIX]                          |{\ensuremath{\hermitconjmatrix}}|
+0x22BA [INTERCALATE]                                         |{\ensuremath{\intercal}}|
+0x22BB [XOR]                                                 |{\ensuremath{\veebar}}|
+0x22BE [RIGHT ANGLE WITH ARC]                                |{\ensuremath{\rightanglearc}}|
 0x22C0 [N-ARY LOGICAL AND]                                   |{\ensuremath{\bigwedge}}|
 0x22C1 [N-ARY LOGICAL OR]                                    |{\ensuremath{\bigvee}}|
 0x22C2 [N-ARY INTERSECTION]                                  |{\ensuremath{\bigcap}}|
@@ -801,21 +1035,122 @@
 0x22CA [RIGHT NORMAL FACTOR SEMIDIRECT PRODUCT]              |{\ensuremath{\rtimes}}|
 0x22CB [LEFT SEMIDIRECT PRODUCT]                             |{\ensuremath{\leftthreetimes}}|
 0x22CC [RIGHT SEMIDIRECT PRODUCT]                            |{\ensuremath{\rightthreetimes}}|
+0x22CD [REVERSED TILDE EQUALS]                               |{\ensuremath{\backsimeq}}|
+0x22CE [CURLY LOGICAL OR]                                    |{\ensuremath{\curlyvee}}|
+0x22CF [CURLY LOGICAL AND]                                   |{\ensuremath{\curlywedge}}|
+0x22D0 [DOUBLE SUBSET]                                       |{\ensuremath{\Subset}}|
+0x22D1 [DOUBLE SUPERSET]                                     |{\ensuremath{\Supset}}|
+0x22D2 [DOUBLE INTERSECTION]                                 |{\ensuremath{\Cap}}|
+0x22D3 [DOUBLE UNION]                                        |{\ensuremath{\Cup}}|
+0x22D4 [PITCHFORK]                                           |{\ensuremath{\pitchfork}}|
+0x22D6 [LESS-THAN WITH DOT]                                  |{\ensuremath{\lessdot}}|
+0x22D7 [GREATER-THAN WITH DOT]                               |{\ensuremath{\gtrdot}}|
+0x22D8 [VERY MUCH LESS-THAN]                                 |{\ensuremath{\verymuchless}}|
+0x22D9 [VERY MUCH GREATER-THAN]                              |{\ensuremath{\verymuchgreater}}|
+0x22DA [LESS-THAN EQUAL TO OR GREATER-THAN]                  |{\ensuremath{\lesseqgtr}}|
+0x22DB [GREATER-THAN EQUAL TO OR LESS-THAN]                  |{\ensuremath{\gtreqless}}|
+0x22DE [EQUAL TO OR PRECEDES]                                |{\ensuremath{\curlyeqprec}}|
+0x22DF [EQUAL TO OR SUCCEEDS]                                |{\ensuremath{\curlyeqsucc}}|
+0x22E2 [NOT SQUARE IMAGE OF OR EQUAL TO]                     |{\ensuremath{\not\sqsubseteq}}|
+0x22E3 [NOT SQUARE ORIGINAL OF OR EQUAL TO]                  |{\ensuremath{\not\sqsupseteq}}|
+0x22E6 [LESS-THAN BUT NOT EQUIVALENT TO]                     |{\ensuremath{\lnsim}}|
+0x22E7 [GREATER-THAN BUT NOT EQUIVALENT TO]                  |{\ensuremath{\gnsim}}|
+0x22E8 [PRECEDES BUT NOT EQUIVALENT TO]                      |{\ensuremath{\precedesnotsimilar}}|
+0x22E9 [SUCCEEDS BUT NOT EQUIVALENT TO]                      |{\ensuremath{\succnsim}}|
+0x22EA [NOT NORMAL SUBGROUP OF]                              |{\ensuremath{\ntriangleleft}}|
+0x22EB [DOES NOT CONTAIN AS NORMAL SUBGROUP]                 |{\ensuremath{\ntriangleright}}|
+0x22EC [NOT NORMAL SUBGROUP OF OR EQUAL TO]                  |{\ensuremath{\ntrianglelefteq}}|
+0x22ED [DOES NOT CONTAIN AS NORMAL SUBGROUP OR EQUAL]        |{\ensuremath{\ntrianglerighteq}}|
 0x22EE [VERTICAL ELLIPSIS]                                   |{\ensuremath{\vdots}}|
 0x22EF [MIDLINE HORIZONTAL ELLIPSIS]                         |{\ensuremath{\cdots}}|
 0x22F0 [UP RIGHT DIAGONAL ELLIPSIS]                          |{\ensuremath{\udots}}|
 0x22F1 [DOWN RIGHT DIAGONAL ELLIPSIS]                        |{\ensuremath{\ddots}}|
+0x2305 [PROJECTIVE]                                          |{\ensuremath{\barwedge}}|
+0x2306 [PERSPECTIVE]                                         |{\ensuremath{\varperspcorrespond}}|
+0x2308 [LEFT CEILING]                                        |{\ensuremath{\lceil}}|
+0x2309 [RIGHT CEILING]                                       |{\ensuremath{\rceil}}|
+0x230A [LEFT FLOOR]                                          |{\ensuremath{\lfloor}}|
+0x230B [RIGHT FLOOR]                                         |{\ensuremath{\rfloor}}|
+0x2315 [TELEPHONE RECORDER]                                  |{\ensuremath{\recorder}}|
+0x2316 [POSITION INDICATOR]                                  |{\ensuremath{\mathchar"2208}}|
+0x231C [TOP LEFT CORNER]                                     |{\ensuremath{\ulcorner}}|
+0x231D [TOP RIGHT CORNER]                                    |{\ensuremath{\urcorner}}|
+0x231E [BOTTOM LEFT CORNER]                                  |{\ensuremath{\llcorner}}|
+0x231F [BOTTOM RIGHT CORNER]                                 |{\ensuremath{\lrcorner}}|
+0x2322 [FROWN]                                               |{\ensuremath{\frown}}|
+0x2323 [SMILE]                                               |{\ensuremath{\smile}}|
 0x2329 [LEFT-POINTING ANGLE BRACKET]                         |{\ensuremath{\langle}}|
 0x232A [RIGHT-POINTING ANGLE BRACKET]                        |{\ensuremath{\rangle}}|
+0x23B0 [UPPER LEFT OR LOWER RIGHT CURLY BRACKET SECTION]     |{\ensuremath{\lmoustache}}|
+0x23B1 [UPPER RIGHT OR LOWER LEFT CURLY BRACKET SECTION]     |{\ensuremath{\rmoustache}}|
 0x2422 [BLANK SYMBOL]                                        |{\textblank}|
 0x2423 [OPEN BOX]                                            |{\textvisiblespace}|
+0x25A0 [BLACK SQUARE]                                        |{\ensuremath{\blacksquare}}|
+0x25A1 [WHITE SQUARE]                                        |{\ensuremath{\square}}|
+0x25AA [BLACK SMALL SQUARE]                                  |{\small\ensuremath{\blacksquare}}|
+0x25AD [WHITE RECTANGLE]                                     |{\fbox{~~}}|
+0x25B3 [WHITE UP-POINTING TRIANGLE]                          |{\ensuremath{\bigtriangleup}}|
+0x25B4 [BLACK UP-POINTING SMALL TRIANGLE]                    |{\ensuremath{\blacktriangle}}|
+0x25B5 [WHITE UP-POINTING SMALL TRIANGLE]                    |{\ensuremath{\vartriangle}}|
+0x25B8 [BLACK RIGHT-POINTING SMALL TRIANGLE]                 |{\ensuremath{\blacktriangleright}}|
+0x25B9 [WHITE RIGHT-POINTING SMALL TRIANGLE]                 |{\ensuremath{\triangleright}}|
+0x25BD [WHITE DOWN-POINTING TRIANGLE]                        |{\ensuremath{\bigtriangledown}}|
+0x25BE [BLACK DOWN-POINTING SMALL TRIANGLE]                  |{\ensuremath{\blacktriangledown}}|
+0x25BF [WHITE DOWN-POINTING SMALL TRIANGLE]                  |{\ensuremath{\triangledown}}|
+0x25C2 [BLACK LEFT-POINTING SMALL TRIANGLE]                  |{\ensuremath{\blacktriangleleft}}|
+0x25C3 [WHITE LEFT-POINTING SMALL TRIANGLE]                  |{\ensuremath{\triangleleft}}|
+0x25CA [LOZENGE]                                             |{\ensuremath{\lozenge}}|
+0x25CB [WHITE CIRCLE]                                        |{\ensuremath{\bigcirc}}|
 0x25E6 [WHITE BULLET]                                        |{\textopenbullet}|
 0x25EF [LARGE CIRCLE]                                        |{\textbigcircle}|
+0x2662 [WHITE DIAMOND SUIT]                                  |{\ensuremath{\diamond}}|
+0x2669 [QUARTER NOTE]                                        |{\quarternote}|
 0x266A [EIGHTH NOTE]                                         |{\textmusicalnote}|
+0x266D [MUSIC FLAT SIGN]                                     |{\flat}|
+0x266E [MUSIC NATURAL SIGN]                                  |{\natural}|
+0x266F [MUSIC SHARP SIGN]                                    |{\sharp}|
 0x27E8 [MATHEMATICAL LEFT ANGLE BRACKET]                     |{\ensuremath{\langle}}|
 0x27E9 [MATHEMATICAL RIGHT ANGLE BRACKET]                    |{\ensuremath{\rangle}}|
+0x27F5 [LONG LEFTWARDS ARROW]                                |{\ensuremath{\longleftarrow}}|
+0x27F6 [LONG RIGHTWARDS ARROW]                               |{\ensuremath{\longrightarrow}}|
+0x27F7 [LONG LEFT RIGHT ARROW]                               |{\ensuremath{\longleftrightarrow}}|
+0x27F8 [LONG LEFTWARDS DOUBLE ARROW]                         |{\ensuremath{\Longleftarrow}}|
+0x27F9 [LONG RIGHTWARDS DOUBLE ARROW]                        |{\ensuremath{\Longrightarrow}}|
+0x27FA [LONG LEFT RIGHT DOUBLE ARROW]                        |{\ensuremath{\Longleftrightarrow}}|
+0x27FC [LONG RIGHTWARDS ARROW FROM BAR]                      |{\ensuremath{\longmapsto}}|
+0x27FF [LONG RIGHTWARDS SQUIGGLE ARROW]                      |{\ensuremath{\sim\joinrel\leadsto}}|
+0x2993 [LEFT ARC LESS-THAN BRACKET]                          |{\ensuremath{<\kern-0.58em(}}|
+0x29EB [BLACK LOZENGE]                                       |{\ensuremath{\blacklozenge}}|
+0x2A0F [INTEGRAL AVERAGE WITH SLASH]                         |{\ensuremath{\clockoint}}|
+0x2A16 [QUATERNION INTEGRAL OPERATOR]                        |{\ensuremath{\sqrint}}|
+0x2A3F [AMALGAMATION OR COPRODUCT]                           |{\ensuremath{\amalg}}|
+0x2A6E [EQUALS WITH ASTERISK]                                |{\ensuremath{\stackrel{*}{=}}}|
+0x2A75 [TWO CONSECUTIVE EQUALS SIGNS]                        |==|
 0x2A7D [LESS-THAN OR SLANTED EQUAL TO]                       |{\ensuremath{\leqslant}}|
 0x2A7E [GREATER-THAN OR SLANTED EQUAL TO]                    |{\ensuremath{\geqslant}}|
+0x2A85 [LESS-THAN OR APPROXIMATE]                            |{\ensuremath{\lessapprox}}|
+0x2A86 [GREATER-THAN OR APPROXIMATE]                         |{\ensuremath{\gtrapprox}}|
+0x2A87 [LESS-THAN AND SINGLE-LINE NOT EQUAL TO]              |{\ensuremath{\lneq}}|
+0x2A88 [GREATER-THAN AND SINGLE-LINE NOT EQUAL TO]           |{\ensuremath{\gneq}}|
+0x2A89 [LESS-THAN AND NOT APPROXIMATE]                       |{\ensuremath{\lnapprox}}|
+0x2A8A [GREATER-THAN AND NOT APPROXIMATE]                    |{\ensuremath{\gnapprox}}|
+0x2A8B [LESS-THAN ABOVE DOUBLE-LINE EQUAL ABOVE GREATER-THAN]    |{\ensuremath{\lesseqqgtr}}|
+0x2A8C [GREATER-THAN ABOVE DOUBLE-LINE EQUAL ABOVE LESS-THAN]    |{\ensuremath{\gtreqqless}}|
+0x2A95 [SLANTED EQUAL TO OR LESS-THAN]                       |{\ensuremath{\eqslantless}}|
+0x2A96 [SLANTED EQUAL TO OR GREATER-THAN]                    |{\ensuremath{\eqslantgtr}}|
+0x2AAF [PRECEDES ABOVE SINGLE-LINE EQUALS SIGN]              |{\ensuremath{\preceq}}|
+0x2AB0 [SUCCEEDS ABOVE SINGLE-LINE EQUALS SIGN]              |{\ensuremath{\succeq}}|
+0x2AB5 [PRECEDES ABOVE NOT EQUAL TO]                         |{\ensuremath{\precneqq}}|
+0x2AB6 [SUCCEEDS ABOVE NOT EQUAL TO]                         |{\ensuremath{\succneqq}}|
+0x2AB7 [PRECEDES ABOVE ALMOST EQUAL TO]                      |{\ensuremath{\precapprox}}|
+0x2AB8 [SUCCEEDS ABOVE ALMOST EQUAL TO]                      |{\ensuremath{\succapprox}}|
+0x2AB9 [PRECEDES ABOVE NOT ALMOST EQUAL TO]                  |{\ensuremath{\precnapprox}}|
+0x2ABA [SUCCEEDS ABOVE NOT ALMOST EQUAL TO]                  |{\ensuremath{\succnapprox}}|
+0x2AC5 [SUBSET OF ABOVE EQUALS SIGN]                         |{\ensuremath{\subseteqq}}|
+0x2AC6 [SUPERSET OF ABOVE EQUALS SIGN]                       |{\ensuremath{\supseteqq}}|
+0x2ACB [SUBSET OF ABOVE NOT EQUAL TO]                        |{\ensuremath{\subsetneqq}}|
+0x2ACC [SUPERSET OF ABOVE NOT EQUAL TO]                      |{\ensuremath{\supsetneqq}}|
+0x2AFD [DOUBLE SOLIDUS OPERATOR]                             |{\ensuremath{{{/}\!\!{/}}}}|
 0x3008 [LEFT ANGLE BRACKET]                                  |{\ensuremath{\langle}}|
 0x3009 [RIGHT ANGLE BRACKET]                                 |{\ensuremath{\rangle}}|
 0xFB00 [LATIN SMALL LIGATURE FF]                             |ff|
@@ -996,6 +1331,29 @@
 0x1D4B3 [MATHEMATICAL SCRIPT CAPITAL X]                       |{\ensuremath{\mathscr{X}}}|
 0x1D4B4 [MATHEMATICAL SCRIPT CAPITAL Y]                       |{\ensuremath{\mathscr{Y}}}|
 0x1D4B5 [MATHEMATICAL SCRIPT CAPITAL Z]                       |{\ensuremath{\mathscr{Z}}}|
+0x1D4B6 [MATHEMATICAL SCRIPT SMALL A]                         |{\ensuremath{\mathscr{a}}}|
+0x1D4B7 [MATHEMATICAL SCRIPT SMALL B]                         |{\ensuremath{\mathscr{b}}}|
+0x1D4B8 [MATHEMATICAL SCRIPT SMALL C]                         |{\ensuremath{\mathscr{c}}}|
+0x1D4B9 [MATHEMATICAL SCRIPT SMALL D]                         |{\ensuremath{\mathscr{d}}}|
+0x1D4BB [MATHEMATICAL SCRIPT SMALL F]                         |{\ensuremath{\mathscr{f}}}|
+0x1D4BD [MATHEMATICAL SCRIPT SMALL H]                         |{\ensuremath{\mathscr{h}}}|
+0x1D4BE [MATHEMATICAL SCRIPT SMALL I]                         |{\ensuremath{\mathscr{i}}}|
+0x1D4BF [MATHEMATICAL SCRIPT SMALL J]                         |{\ensuremath{\mathscr{j}}}|
+0x1D4C0 [MATHEMATICAL SCRIPT SMALL K]                         |{\ensuremath{\mathscr{k}}}|
+0x1D4C1 [MATHEMATICAL SCRIPT SMALL L]                         |{\ensuremath{\mathscr{l}}}|
+0x1D4C2 [MATHEMATICAL SCRIPT SMALL M]                         |{\ensuremath{\mathscr{m}}}|
+0x1D4C3 [MATHEMATICAL SCRIPT SMALL N]                         |{\ensuremath{\mathscr{n}}}|
+0x1D4C5 [MATHEMATICAL SCRIPT SMALL P]                         |{\ensuremath{\mathscr{p}}}|
+0x1D4C6 [MATHEMATICAL SCRIPT SMALL Q]                         |{\ensuremath{\mathscr{q}}}|
+0x1D4C7 [MATHEMATICAL SCRIPT SMALL R]                         |{\ensuremath{\mathscr{r}}}|
+0x1D4C8 [MATHEMATICAL SCRIPT SMALL S]                         |{\ensuremath{\mathscr{s}}}|
+0x1D4C9 [MATHEMATICAL SCRIPT SMALL T]                         |{\ensuremath{\mathscr{t}}}|
+0x1D4CA [MATHEMATICAL SCRIPT SMALL U]                         |{\ensuremath{\mathscr{u}}}|
+0x1D4CB [MATHEMATICAL SCRIPT SMALL V]                         |{\ensuremath{\mathscr{v}}}|
+0x1D4CC [MATHEMATICAL SCRIPT SMALL W]                         |{\ensuremath{\mathscr{w}}}|
+0x1D4CD [MATHEMATICAL SCRIPT SMALL X]                         |{\ensuremath{\mathscr{x}}}|
+0x1D4CE [MATHEMATICAL SCRIPT SMALL Y]                         |{\ensuremath{\mathscr{y}}}|
+0x1D4CF [MATHEMATICAL SCRIPT SMALL Z]                         |{\ensuremath{\mathscr{z}}}|
 0x1D504 [MATHEMATICAL FRAKTUR CAPITAL A]                      |{\ensuremath{\mathfrak{A}}}|
 0x1D505 [MATHEMATICAL FRAKTUR CAPITAL B]                      |{\ensuremath{\mathfrak{B}}}|
 0x1D507 [MATHEMATICAL FRAKTUR CAPITAL D]                      |{\ensuremath{\mathfrak{D}}}|
@@ -1062,3 +1420,173 @@
 0x1D54E [MATHEMATICAL DOUBLE-STRUCK CAPITAL W]                |{\ensuremath{\mathbb{W}}}|
 0x1D54F [MATHEMATICAL DOUBLE-STRUCK CAPITAL X]                |{\ensuremath{\mathbb{X}}}|
 0x1D550 [MATHEMATICAL DOUBLE-STRUCK CAPITAL Y]                |{\ensuremath{\mathbb{Y}}}|
+0x1D552 [MATHEMATICAL DOUBLE-STRUCK SMALL A]                  |{\ensuremath{\mathbb{a}}}|
+0x1D553 [MATHEMATICAL DOUBLE-STRUCK SMALL B]                  |{\ensuremath{\mathbb{b}}}|
+0x1D554 [MATHEMATICAL DOUBLE-STRUCK SMALL C]                  |{\ensuremath{\mathbb{c}}}|
+0x1D555 [MATHEMATICAL DOUBLE-STRUCK SMALL D]                  |{\ensuremath{\mathbb{d}}}|
+0x1D556 [MATHEMATICAL DOUBLE-STRUCK SMALL E]                  |{\ensuremath{\mathbb{e}}}|
+0x1D557 [MATHEMATICAL DOUBLE-STRUCK SMALL F]                  |{\ensuremath{\mathbb{f}}}|
+0x1D558 [MATHEMATICAL DOUBLE-STRUCK SMALL G]                  |{\ensuremath{\mathbb{g}}}|
+0x1D559 [MATHEMATICAL DOUBLE-STRUCK SMALL H]                  |{\ensuremath{\mathbb{h}}}|
+0x1D55A [MATHEMATICAL DOUBLE-STRUCK SMALL I]                  |{\ensuremath{\mathbb{i}}}|
+0x1D55B [MATHEMATICAL DOUBLE-STRUCK SMALL J]                  |{\ensuremath{\mathbb{j}}}|
+0x1D55C [MATHEMATICAL DOUBLE-STRUCK SMALL K]                  |{\ensuremath{\mathbb{k}}}|
+0x1D55D [MATHEMATICAL DOUBLE-STRUCK SMALL L]                  |{\ensuremath{\mathbb{l}}}|
+0x1D55E [MATHEMATICAL DOUBLE-STRUCK SMALL M]                  |{\ensuremath{\mathbb{m}}}|
+0x1D55F [MATHEMATICAL DOUBLE-STRUCK SMALL N]                  |{\ensuremath{\mathbb{n}}}|
+0x1D560 [MATHEMATICAL DOUBLE-STRUCK SMALL O]                  |{\ensuremath{\mathbb{o}}}|
+0x1D561 [MATHEMATICAL DOUBLE-STRUCK SMALL P]                  |{\ensuremath{\mathbb{p}}}|
+0x1D562 [MATHEMATICAL DOUBLE-STRUCK SMALL Q]                  |{\ensuremath{\mathbb{q}}}|
+0x1D563 [MATHEMATICAL DOUBLE-STRUCK SMALL R]                  |{\ensuremath{\mathbb{r}}}|
+0x1D564 [MATHEMATICAL DOUBLE-STRUCK SMALL S]                  |{\ensuremath{\mathbb{s}}}|
+0x1D565 [MATHEMATICAL DOUBLE-STRUCK SMALL T]                  |{\ensuremath{\mathbb{t}}}|
+0x1D566 [MATHEMATICAL DOUBLE-STRUCK SMALL U]                  |{\ensuremath{\mathbb{u}}}|
+0x1D567 [MATHEMATICAL DOUBLE-STRUCK SMALL V]                  |{\ensuremath{\mathbb{v}}}|
+0x1D568 [MATHEMATICAL DOUBLE-STRUCK SMALL W]                  |{\ensuremath{\mathbb{w}}}|
+0x1D569 [MATHEMATICAL DOUBLE-STRUCK SMALL X]                  |{\ensuremath{\mathbb{x}}}|
+0x1D56A [MATHEMATICAL DOUBLE-STRUCK SMALL Y]                  |{\ensuremath{\mathbb{y}}}|
+0x1D56B [MATHEMATICAL DOUBLE-STRUCK SMALL Z]                  |{\ensuremath{\mathbb{z}}}|
+0x1D5A0 [MATHEMATICAL SANS-SERIF CAPITAL A]                   |{\ensuremath{\mathsf{A}}}|
+0x1D5A1 [MATHEMATICAL SANS-SERIF CAPITAL B]                   |{\ensuremath{\mathsf{B}}}|
+0x1D5A2 [MATHEMATICAL SANS-SERIF CAPITAL C]                   |{\ensuremath{\mathsf{C}}}|
+0x1D5A3 [MATHEMATICAL SANS-SERIF CAPITAL D]                   |{\ensuremath{\mathsf{D}}}|
+0x1D5A4 [MATHEMATICAL SANS-SERIF CAPITAL E]                   |{\ensuremath{\mathsf{E}}}|
+0x1D5A5 [MATHEMATICAL SANS-SERIF CAPITAL F]                   |{\ensuremath{\mathsf{F}}}|
+0x1D5A6 [MATHEMATICAL SANS-SERIF CAPITAL G]                   |{\ensuremath{\mathsf{G}}}|
+0x1D5A7 [MATHEMATICAL SANS-SERIF CAPITAL H]                   |{\ensuremath{\mathsf{H}}}|
+0x1D5A8 [MATHEMATICAL SANS-SERIF CAPITAL I]                   |{\ensuremath{\mathsf{I}}}|
+0x1D5A9 [MATHEMATICAL SANS-SERIF CAPITAL J]                   |{\ensuremath{\mathsf{J}}}|
+0x1D5AA [MATHEMATICAL SANS-SERIF CAPITAL K]                   |{\ensuremath{\mathsf{K}}}|
+0x1D5AB [MATHEMATICAL SANS-SERIF CAPITAL L]                   |{\ensuremath{\mathsf{L}}}|
+0x1D5AC [MATHEMATICAL SANS-SERIF CAPITAL M]                   |{\ensuremath{\mathsf{M}}}|
+0x1D5AD [MATHEMATICAL SANS-SERIF CAPITAL N]                   |{\ensuremath{\mathsf{N}}}|
+0x1D5AE [MATHEMATICAL SANS-SERIF CAPITAL O]                   |{\ensuremath{\mathsf{O}}}|
+0x1D5AF [MATHEMATICAL SANS-SERIF CAPITAL P]                   |{\ensuremath{\mathsf{P}}}|
+0x1D5B0 [MATHEMATICAL SANS-SERIF CAPITAL Q]                   |{\ensuremath{\mathsf{Q}}}|
+0x1D5B1 [MATHEMATICAL SANS-SERIF CAPITAL R]                   |{\ensuremath{\mathsf{R}}}|
+0x1D5B2 [MATHEMATICAL SANS-SERIF CAPITAL S]                   |{\ensuremath{\mathsf{S}}}|
+0x1D5B3 [MATHEMATICAL SANS-SERIF CAPITAL T]                   |{\ensuremath{\mathsf{T}}}|
+0x1D5B4 [MATHEMATICAL SANS-SERIF CAPITAL U]                   |{\ensuremath{\mathsf{U}}}|
+0x1D5B5 [MATHEMATICAL SANS-SERIF CAPITAL V]                   |{\ensuremath{\mathsf{V}}}|
+0x1D5B6 [MATHEMATICAL SANS-SERIF CAPITAL W]                   |{\ensuremath{\mathsf{W}}}|
+0x1D5B7 [MATHEMATICAL SANS-SERIF CAPITAL X]                   |{\ensuremath{\mathsf{X}}}|
+0x1D5B8 [MATHEMATICAL SANS-SERIF CAPITAL Y]                   |{\ensuremath{\mathsf{Y}}}|
+0x1D5B9 [MATHEMATICAL SANS-SERIF CAPITAL Z]                   |{\ensuremath{\mathsf{Z}}}|
+0x1D5BA [MATHEMATICAL SANS-SERIF SMALL A]                     |{\ensuremath{\mathsf{a}}}|
+0x1D5BB [MATHEMATICAL SANS-SERIF SMALL B]                     |{\ensuremath{\mathsf{b}}}|
+0x1D5BC [MATHEMATICAL SANS-SERIF SMALL C]                     |{\ensuremath{\mathsf{c}}}|
+0x1D5BD [MATHEMATICAL SANS-SERIF SMALL D]                     |{\ensuremath{\mathsf{d}}}|
+0x1D5BE [MATHEMATICAL SANS-SERIF SMALL E]                     |{\ensuremath{\mathsf{e}}}|
+0x1D5BF [MATHEMATICAL SANS-SERIF SMALL F]                     |{\ensuremath{\mathsf{f}}}|
+0x1D5C0 [MATHEMATICAL SANS-SERIF SMALL G]                     |{\ensuremath{\mathsf{g}}}|
+0x1D5C1 [MATHEMATICAL SANS-SERIF SMALL H]                     |{\ensuremath{\mathsf{h}}}|
+0x1D5C2 [MATHEMATICAL SANS-SERIF SMALL I]                     |{\ensuremath{\mathsf{i}}}|
+0x1D5C3 [MATHEMATICAL SANS-SERIF SMALL J]                     |{\ensuremath{\mathsf{j}}}|
+0x1D5C4 [MATHEMATICAL SANS-SERIF SMALL K]                     |{\ensuremath{\mathsf{k}}}|
+0x1D5C5 [MATHEMATICAL SANS-SERIF SMALL L]                     |{\ensuremath{\mathsf{l}}}|
+0x1D5C6 [MATHEMATICAL SANS-SERIF SMALL M]                     |{\ensuremath{\mathsf{m}}}|
+0x1D5C7 [MATHEMATICAL SANS-SERIF SMALL N]                     |{\ensuremath{\mathsf{n}}}|
+0x1D5C8 [MATHEMATICAL SANS-SERIF SMALL O]                     |{\ensuremath{\mathsf{o}}}|
+0x1D5C9 [MATHEMATICAL SANS-SERIF SMALL P]                     |{\ensuremath{\mathsf{p}}}|
+0x1D5CA [MATHEMATICAL SANS-SERIF SMALL Q]                     |{\ensuremath{\mathsf{q}}}|
+0x1D5CB [MATHEMATICAL SANS-SERIF SMALL R]                     |{\ensuremath{\mathsf{r}}}|
+0x1D5CC [MATHEMATICAL SANS-SERIF SMALL S]                     |{\ensuremath{\mathsf{s}}}|
+0x1D5CD [MATHEMATICAL SANS-SERIF SMALL T]                     |{\ensuremath{\mathsf{t}}}|
+0x1D5CE [MATHEMATICAL SANS-SERIF SMALL U]                     |{\ensuremath{\mathsf{u}}}|
+0x1D5CF [MATHEMATICAL SANS-SERIF SMALL V]                     |{\ensuremath{\mathsf{v}}}|
+0x1D5D0 [MATHEMATICAL SANS-SERIF SMALL W]                     |{\ensuremath{\mathsf{w}}}|
+0x1D5D1 [MATHEMATICAL SANS-SERIF SMALL X]                     |{\ensuremath{\mathsf{x}}}|
+0x1D5D2 [MATHEMATICAL SANS-SERIF SMALL Y]                     |{\ensuremath{\mathsf{y}}}|
+0x1D5D3 [MATHEMATICAL SANS-SERIF SMALL Z]                     |{\ensuremath{\mathsf{z}}}|
+0x1D670 [MATHEMATICAL MONOSPACE CAPITAL A]                    |{\ensuremath{\mathtt{A}}}|
+0x1D671 [MATHEMATICAL MONOSPACE CAPITAL B]                    |{\ensuremath{\mathtt{B}}}|
+0x1D672 [MATHEMATICAL MONOSPACE CAPITAL C]                    |{\ensuremath{\mathtt{C}}}|
+0x1D673 [MATHEMATICAL MONOSPACE CAPITAL D]                    |{\ensuremath{\mathtt{D}}}|
+0x1D674 [MATHEMATICAL MONOSPACE CAPITAL E]                    |{\ensuremath{\mathtt{E}}}|
+0x1D675 [MATHEMATICAL MONOSPACE CAPITAL F]                    |{\ensuremath{\mathtt{F}}}|
+0x1D676 [MATHEMATICAL MONOSPACE CAPITAL G]                    |{\ensuremath{\mathtt{G}}}|
+0x1D677 [MATHEMATICAL MONOSPACE CAPITAL H]                    |{\ensuremath{\mathtt{H}}}|
+0x1D678 [MATHEMATICAL MONOSPACE CAPITAL I]                    |{\ensuremath{\mathtt{I}}}|
+0x1D679 [MATHEMATICAL MONOSPACE CAPITAL J]                    |{\ensuremath{\mathtt{J}}}|
+0x1D67A [MATHEMATICAL MONOSPACE CAPITAL K]                    |{\ensuremath{\mathtt{K}}}|
+0x1D67B [MATHEMATICAL MONOSPACE CAPITAL L]                    |{\ensuremath{\mathtt{L}}}|
+0x1D67C [MATHEMATICAL MONOSPACE CAPITAL M]                    |{\ensuremath{\mathtt{M}}}|
+0x1D67D [MATHEMATICAL MONOSPACE CAPITAL N]                    |{\ensuremath{\mathtt{N}}}|
+0x1D67E [MATHEMATICAL MONOSPACE CAPITAL O]                    |{\ensuremath{\mathtt{O}}}|
+0x1D67F [MATHEMATICAL MONOSPACE CAPITAL P]                    |{\ensuremath{\mathtt{P}}}|
+0x1D680 [MATHEMATICAL MONOSPACE CAPITAL Q]                    |{\ensuremath{\mathtt{Q}}}|
+0x1D681 [MATHEMATICAL MONOSPACE CAPITAL R]                    |{\ensuremath{\mathtt{R}}}|
+0x1D682 [MATHEMATICAL MONOSPACE CAPITAL S]                    |{\ensuremath{\mathtt{S}}}|
+0x1D683 [MATHEMATICAL MONOSPACE CAPITAL T]                    |{\ensuremath{\mathtt{T}}}|
+0x1D684 [MATHEMATICAL MONOSPACE CAPITAL U]                    |{\ensuremath{\mathtt{U}}}|
+0x1D685 [MATHEMATICAL MONOSPACE CAPITAL V]                    |{\ensuremath{\mathtt{V}}}|
+0x1D686 [MATHEMATICAL MONOSPACE CAPITAL W]                    |{\ensuremath{\mathtt{W}}}|
+0x1D687 [MATHEMATICAL MONOSPACE CAPITAL X]                    |{\ensuremath{\mathtt{X}}}|
+0x1D688 [MATHEMATICAL MONOSPACE CAPITAL Y]                    |{\ensuremath{\mathtt{Y}}}|
+0x1D689 [MATHEMATICAL MONOSPACE CAPITAL Z]                    |{\ensuremath{\mathtt{Z}}}|
+0x1D68A [MATHEMATICAL MONOSPACE SMALL A]                      |{\ensuremath{\mathtt{a}}}|
+0x1D68B [MATHEMATICAL MONOSPACE SMALL B]                      |{\ensuremath{\mathtt{b}}}|
+0x1D68C [MATHEMATICAL MONOSPACE SMALL C]                      |{\ensuremath{\mathtt{c}}}|
+0x1D68D [MATHEMATICAL MONOSPACE SMALL D]                      |{\ensuremath{\mathtt{d}}}|
+0x1D68E [MATHEMATICAL MONOSPACE SMALL E]                      |{\ensuremath{\mathtt{e}}}|
+0x1D68F [MATHEMATICAL MONOSPACE SMALL F]                      |{\ensuremath{\mathtt{f}}}|
+0x1D690 [MATHEMATICAL MONOSPACE SMALL G]                      |{\ensuremath{\mathtt{g}}}|
+0x1D691 [MATHEMATICAL MONOSPACE SMALL H]                      |{\ensuremath{\mathtt{h}}}|
+0x1D692 [MATHEMATICAL MONOSPACE SMALL I]                      |{\ensuremath{\mathtt{i}}}|
+0x1D693 [MATHEMATICAL MONOSPACE SMALL J]                      |{\ensuremath{\mathtt{j}}}|
+0x1D694 [MATHEMATICAL MONOSPACE SMALL K]                      |{\ensuremath{\mathtt{k}}}|
+0x1D695 [MATHEMATICAL MONOSPACE SMALL L]                      |{\ensuremath{\mathtt{l}}}|
+0x1D696 [MATHEMATICAL MONOSPACE SMALL M]                      |{\ensuremath{\mathtt{m}}}|
+0x1D697 [MATHEMATICAL MONOSPACE SMALL N]                      |{\ensuremath{\mathtt{n}}}|
+0x1D698 [MATHEMATICAL MONOSPACE SMALL O]                      |{\ensuremath{\mathtt{o}}}|
+0x1D699 [MATHEMATICAL MONOSPACE SMALL P]                      |{\ensuremath{\mathtt{p}}}|
+0x1D69A [MATHEMATICAL MONOSPACE SMALL Q]                      |{\ensuremath{\mathtt{q}}}|
+0x1D69B [MATHEMATICAL MONOSPACE SMALL R]                      |{\ensuremath{\mathtt{r}}}|
+0x1D69C [MATHEMATICAL MONOSPACE SMALL S]                      |{\ensuremath{\mathtt{s}}}|
+0x1D69D [MATHEMATICAL MONOSPACE SMALL T]                      |{\ensuremath{\mathtt{t}}}|
+0x1D69E [MATHEMATICAL MONOSPACE SMALL U]                      |{\ensuremath{\mathtt{u}}}|
+0x1D69F [MATHEMATICAL MONOSPACE SMALL V]                      |{\ensuremath{\mathtt{v}}}|
+0x1D6A0 [MATHEMATICAL MONOSPACE SMALL W]                      |{\ensuremath{\mathtt{w}}}|
+0x1D6A1 [MATHEMATICAL MONOSPACE SMALL X]                      |{\ensuremath{\mathtt{x}}}|
+0x1D6A2 [MATHEMATICAL MONOSPACE SMALL Y]                      |{\ensuremath{\mathtt{y}}}|
+0x1D6A3 [MATHEMATICAL MONOSPACE SMALL Z]                      |{\ensuremath{\mathtt{z}}}|
+0x1D7CE [MATHEMATICAL BOLD DIGIT ZERO]                        |{\ensuremath{\mathbf{0}}}|
+0x1D7CF [MATHEMATICAL BOLD DIGIT ONE]                         |{\ensuremath{\mathbf{1}}}|
+0x1D7D0 [MATHEMATICAL BOLD DIGIT TWO]                         |{\ensuremath{\mathbf{2}}}|
+0x1D7D1 [MATHEMATICAL BOLD DIGIT THREE]                       |{\ensuremath{\mathbf{3}}}|
+0x1D7D2 [MATHEMATICAL BOLD DIGIT FOUR]                        |{\ensuremath{\mathbf{4}}}|
+0x1D7D3 [MATHEMATICAL BOLD DIGIT FIVE]                        |{\ensuremath{\mathbf{5}}}|
+0x1D7D4 [MATHEMATICAL BOLD DIGIT SIX]                         |{\ensuremath{\mathbf{6}}}|
+0x1D7D5 [MATHEMATICAL BOLD DIGIT SEVEN]                       |{\ensuremath{\mathbf{7}}}|
+0x1D7D6 [MATHEMATICAL BOLD DIGIT EIGHT]                       |{\ensuremath{\mathbf{8}}}|
+0x1D7D7 [MATHEMATICAL BOLD DIGIT NINE]                        |{\ensuremath{\mathbf{9}}}|
+0x1D7D8 [MATHEMATICAL DOUBLE-STRUCK DIGIT ZERO]               |{\ensuremath{\mathbb{0}}}|
+0x1D7D9 [MATHEMATICAL DOUBLE-STRUCK DIGIT ONE]                |{\ensuremath{\mathbb{1}}}|
+0x1D7DA [MATHEMATICAL DOUBLE-STRUCK DIGIT TWO]                |{\ensuremath{\mathbb{2}}}|
+0x1D7DB [MATHEMATICAL DOUBLE-STRUCK DIGIT THREE]              |{\ensuremath{\mathbb{3}}}|
+0x1D7DC [MATHEMATICAL DOUBLE-STRUCK DIGIT FOUR]               |{\ensuremath{\mathbb{4}}}|
+0x1D7DD [MATHEMATICAL DOUBLE-STRUCK DIGIT FIVE]               |{\ensuremath{\mathbb{5}}}|
+0x1D7DE [MATHEMATICAL DOUBLE-STRUCK DIGIT SIX]                |{\ensuremath{\mathbb{6}}}|
+0x1D7DF [MATHEMATICAL DOUBLE-STRUCK DIGIT SEVEN]              |{\ensuremath{\mathbb{7}}}|
+0x1D7E0 [MATHEMATICAL DOUBLE-STRUCK DIGIT EIGHT]              |{\ensuremath{\mathbb{8}}}|
+0x1D7E1 [MATHEMATICAL DOUBLE-STRUCK DIGIT NINE]               |{\ensuremath{\mathbb{9}}}|
+0x1D7E2 [MATHEMATICAL SANS-SERIF DIGIT ZERO]                  |{\ensuremath{\mathsf{0}}}|
+0x1D7E3 [MATHEMATICAL SANS-SERIF DIGIT ONE]                   |{\ensuremath{\mathsf{1}}}|
+0x1D7E4 [MATHEMATICAL SANS-SERIF DIGIT TWO]                   |{\ensuremath{\mathsf{2}}}|
+0x1D7E5 [MATHEMATICAL SANS-SERIF DIGIT THREE]                 |{\ensuremath{\mathsf{3}}}|
+0x1D7E6 [MATHEMATICAL SANS-SERIF DIGIT FOUR]                  |{\ensuremath{\mathsf{4}}}|
+0x1D7E7 [MATHEMATICAL SANS-SERIF DIGIT FIVE]                  |{\ensuremath{\mathsf{5}}}|
+0x1D7E8 [MATHEMATICAL SANS-SERIF DIGIT SIX]                   |{\ensuremath{\mathsf{6}}}|
+0x1D7E9 [MATHEMATICAL SANS-SERIF DIGIT SEVEN]                 |{\ensuremath{\mathsf{7}}}|
+0x1D7EA [MATHEMATICAL SANS-SERIF DIGIT EIGHT]                 |{\ensuremath{\mathsf{8}}}|
+0x1D7EB [MATHEMATICAL SANS-SERIF DIGIT NINE]                  |{\ensuremath{\mathsf{9}}}|
+0x1D7F6 [MATHEMATICAL MONOSPACE DIGIT ZERO]                   |{\ensuremath{\mathtt{0}}}|
+0x1D7F7 [MATHEMATICAL MONOSPACE DIGIT ONE]                    |{\ensuremath{\mathtt{1}}}|
+0x1D7F8 [MATHEMATICAL MONOSPACE DIGIT TWO]                    |{\ensuremath{\mathtt{2}}}|
+0x1D7F9 [MATHEMATICAL MONOSPACE DIGIT THREE]                  |{\ensuremath{\mathtt{3}}}|
+0x1D7FA [MATHEMATICAL MONOSPACE DIGIT FOUR]                   |{\ensuremath{\mathtt{4}}}|
+0x1D7FB [MATHEMATICAL MONOSPACE DIGIT FIVE]                   |{\ensuremath{\mathtt{5}}}|
+0x1D7FC [MATHEMATICAL MONOSPACE DIGIT SIX]                    |{\ensuremath{\mathtt{6}}}|
+0x1D7FD [MATHEMATICAL MONOSPACE DIGIT SEVEN]                  |{\ensuremath{\mathtt{7}}}|
+0x1D7FE [MATHEMATICAL MONOSPACE DIGIT EIGHT]                  |{\ensuremath{\mathtt{8}}}|
+0x1D7FF [MATHEMATICAL MONOSPACE DIGIT NINE]                   |{\ensuremath{\mathtt{9}}}|
