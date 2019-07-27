@@ -269,7 +269,7 @@ def get_default_latex_context_db():
     initialized with a collection of text replacements for known macros and
     environments.
 
-    TODO: document categories.
+    TODO: clean up and document categories.
 
     If you want to add your own definitions, you should use the
     :py:meth:`pylatexenc.macrospec.LatexContextDb.add_context_category()`
@@ -693,7 +693,13 @@ class LatexNodes2Text(object):
         """
         Parses the given `latex` code and returns its textual representation.
 
-        The `parse_flags` are the flags to give on to the
+        This is equivalent to constructing a
+        :py:class:`pylatexenc.latexwalker.LatexWalker` with the given `latex`
+        string, calling its method
+        :py:meth:`~pylatexenc.latexwalker.LatexWalker.get_latex_nodes()`, and
+        providing the outcome to :py:meth:`nodelist_to_text()`.
+
+        The `parse_flags` are keyword arguments to provide to the
         :py:class:`pylatexenc.latexwalker.LatexWalker` constructor.
         """
         return self.nodelist_to_text(latexwalker.LatexWalker(latex, **parse_flags).get_latex_nodes()[0])
@@ -701,12 +707,14 @@ class LatexNodes2Text(object):
 
     def nodelist_to_text(self, nodelist):
         """
-        Extracts text from a node list. `nodelist` is a list of nodes as returned by
+        Extracts text from a node list. `nodelist` is a list of `latexwalker` nodes,
+        typically returned by
         :py:meth:`pylatexenc.latexwalker.LatexWalker.get_latex_nodes()`.
 
-        Turn the node list to text representations of each node.  Basically apply
-        `node_to_text()` to each node.  (But not quite actually, since we take
-        some care as to where we add whitespace.)
+        This function basically applies `node_to_text()` to each node and
+        concatenates the results into one string.  (But not quite actually,
+        since we take some care as to where we add whitespace according to the
+        class options.)
         """
 
         s = ''
@@ -890,7 +898,7 @@ class LatexNodes2Text(object):
   
         to::
   
-          # pylatexenc 2 text_replacements compatibility
+          # pylatexenc 2 text_replacements compatibility code
           text_replacements = ...
           l2t = LatexNodes2Text(...)
           temp = l2t.nodelist_to_text(...)

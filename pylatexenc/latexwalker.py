@@ -207,9 +207,13 @@ def MacrosDef(macname, optarg, numargs):
        thing, or invoke the :py:class:`~pylatexenc.macrospec.MacroSpec` class
        directly (or a subclass).
 
-       Since `pylatexenc 2.0`, `MacrosDef` is a function which returns a
+       In `pylatexenc 1.x`, `MacrosDef` was a class.  Since `pylatexenc 2.0`,
+       `MacrosDef` is a function which returns a
        :py:class:`~pylatexenc.macrospec.MacroSpec` instance.  In this way the
-       earlier idiom ``MacrosDef(...)`` still works in `pylatexenc 2`.
+       earlier idiom ``MacrosDef(...)`` still works in `pylatexenc 2`.  The
+       field names of the constructed object might have changed since
+       `pylatexenc 1.x`, so you might have to adapt existing code if you were
+       accessing individual fields of `MacrosDef` objects.
     """
     return macrospec.std_macro(macname, optarg, numargs)
 

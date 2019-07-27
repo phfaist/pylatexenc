@@ -1,5 +1,5 @@
 ============
- Change Log
+Changes
 ============
 
 pylatexenc 2.0
@@ -38,7 +38,7 @@ pylatexenc 2.0
 - New interface for :py:mod:`pylatexenc.latexencode`, with
   :py:class:`~pylatexenc.latexencode.UnicodeToLatexEncoder` and
   :py:func:`~pylatexenc.latexencode.unicode_to_latex()`.  You can specify
-   custom conversion rules, custom behavior for unknown characters, and more.
+  custom conversion rules, custom behavior for unknown characters, and more.
 
   Additional latex escapes from the ``unicode.xml`` file maintained at
   https://www.w3.org/TR/xml-entity-names/#source were added to the default set
@@ -76,15 +76,16 @@ pylatexenc 2.0
 With the important changes introduced in `pylatexenc 2.0`, some parts of the API
 were improved and are not necessarily 100% source compatible with `pylatexenc
 1.x`.  Code that uses the high-level features of `pylatexenc 1.x` should run
-without any modification required.  However if you use some advanced features of
+without any modifications.  However if you are using some advanced features of
 `pylatexenc`, you might have to make some small changes to your code to adapt to
 the new API.
 
-- The specification of known macros, environments, and latex specials for both
-  :py:class:`~pylatexenc.latexwalker.LatexWalker` and
-  :py:class:`~pylatexenc.latex2text.LatexNodes2Text` are organized into
-  categories and stored into a :py:class:`~pylatexenc.macrospec.LatexContextDb`
-  object (one for each of these modules).
+- **The specification of known macros, environments, and latex specials** for
+  both :py:class:`~pylatexenc.latexwalker.LatexWalker` and
+  :py:class:`~pylatexenc.latex2text.LatexNodes2Text` have changed.  The
+  specifications are now streamlined and organized into categories and stored
+  into a :py:class:`~pylatexenc.macrospec.LatexContextDb` object (one for each
+  of these modules).
 
   Previously, to introduce a custom macro in `latexwalker`, one could write::
 
@@ -96,10 +97,9 @@ the new API.
     >>> nodelist[1].nodeoptarg
     LatexGroupNode(nodelist=[LatexCharsNode(chars='yes')])
 
-  This code still works in `pylatexenc 2.0`, so *it's not strictly necessary to
-  change your code.*  Simply, the new interface is more powerful and is henceforth
-  recommended (see doc of :py:mod:`pylatexenc.macrospec`).  The above example
-  would now be written as::
+  *This code still works in `pylatexenc 2.0`.* It's recommended to use however
+  the new interface, which is more useful and powerful (see doc of
+  :py:mod:`pylatexenc.macrospec`).  The above example would now be written as::
 
     >>> from pylatexenc.latexwalker import LatexWalker, get_default_latex_context_db
     >>> from pylatexenc.macrospec import MacroSpec
@@ -140,7 +140,8 @@ the new API.
   :py:class:`pylatexenc.latex2text.SpecialsTextSpec` objects, which replace
   replace the `MacroDef` and `EnvironmentDef` objects in `pylatexenc 1.x`.
 
-  If you used custom `text_replacements=` in
+* **Text replacements** are gone in :py:mod:`~pylatexenc.latex2text`. If you
+  used custom `text_replacements=` in
   :py:class:`~pylatexenc.latex2text.LatexNodes2Text`, then you will have to
   change::
 
@@ -151,7 +152,7 @@ the new API.
 
   to::
 
-    # pylatexenc 2 text_replacements compatibility
+    # pylatexenc 2 text_replacements equivalent compatibility code
     text_replacements = ...
     l2t = LatexNodes2Text(...)
     temp = l2t.nodelist_to_text(...)
@@ -184,22 +185,18 @@ the new API.
 
   The result might differ when you run the same code with `pylatexenc 2.0`.
   However you can restore the required behavior by simply replacing the
-  following idioms as follows::
+  following idioms as follows (recall that the keyword argument to
+  `latex_to_text()` is the option passed to
+  :py:class:`~pylatexenc.latexwalker.LatexWalker`)::
 
     LatexNodes2Text(keep_inline_math=True).latex_to_text(..., keep_inline_math=True)
-    -->
-    LatexNodes2Text(math_mode='verbatim').latex_to_text(...)
+      →  LatexNodes2Text(math_mode='verbatim').latex_to_text(...)
 
     LatexNodes2Text(keep_inline_math=True).latex_to_text(..., keep_inline_math=False)
-    -->
-    LatexNodes2Text(math_mode='with-delimiters').latex_to_text(...)
+      →  LatexNodes2Text(math_mode='with-delimiters').latex_to_text(...)
 
     LatexNodes2Text(keep_inline_math=False).latex_to_text(..., keep_inline_math=True|False)
-    -->
-    LatexNodes2Text(math_mode='text').latex_to_text(...)
-
-  [Note that the keyword argument to `latex_to_text()` is the option passed to
-  the constructor of the `LatexWalker` object.
+      →  LatexNodes2Text(math_mode='text').latex_to_text(...)
 
 - The node structure classes were changed to allow macros, environments and
   latex specials to have arbitrarily complicated, non-standard arguments.  If

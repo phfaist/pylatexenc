@@ -26,7 +26,7 @@
 r"""
 Provides classes and helper functions to describe a LaTeX context of known
 macros and environments, specifying how they should be parsed by
-:py:mod:`latexwalker`.
+:py:mod:`pylatexenc.latexwalker`.
 
 .. versionadded:: 2.0
 
