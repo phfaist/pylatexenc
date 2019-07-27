@@ -37,12 +37,18 @@ pylatexenc 2.0
 
 - New interface for :py:mod:`pylatexenc.latexencode`, with
   :py:class:`~pylatexenc.latexencode.UnicodeToLatexEncoder` and
-  :py:func:`~pylatexenc.latexencode.unicode_to_latex()`.
+  :py:func:`~pylatexenc.latexencode.unicode_to_latex()`.  You can specify
+   custom conversion rules, custom behavior for unknown characters, and more.
+
+  Additional latex escapes from the ``unicode.xml`` file maintained at
+  https://www.w3.org/TR/xml-entity-names/#source were added to the default set
+  of latex codes for unicode characters.  You can also opt to use only the rules
+  from ``unicode.xml``.
 
   The earlier function :py:func:`pylatexenc.latexencode.utf8tolatex()` was
   poorly named, given that its argument was a python unicode string, not a
-  `utf-8`-encoded string.  The old function is still provided as is to keep code
-  that was designed for `pylatexenc 1.x` working.
+  `utf-8`-encoded string.  The old function is still provided as is to keep
+  existing code working.
 
 - Improvements to the parser may mean that the results might differ slightly
   from earlier versions.
