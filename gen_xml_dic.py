@@ -1,6 +1,7 @@
 #
 # mini-script to generate the pylatexenc._uni2latexmap_xml dict mapping
 #
+import re
 import sys
 
 if sys.version_info.major > 2:
@@ -33,6 +34,11 @@ for chxml in e.find('charlist').iter('character'):
     if latexval.startswith(r'\ElsevierGlyph') or latexval.startswith(r'\El') \
        or latexval.startswith(r'\ensuremath{\El'):
         continue
+    if re.search(r'\\[a-zA-Z]+\s+$', latexval):
+        # ends with named macro+space, remove space because
+        # latexencode.UnicodeToLatexEncoder will handle that with
+        # replacement_latex_protection
+        latexval = latexval.rstrip()
     d[charord] = latexval
     dnames[charord] = chxml.find('description').text
 

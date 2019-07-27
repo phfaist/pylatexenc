@@ -55,14 +55,15 @@ you like and invoke its method
 Example using custom conversion rules::
 
   >>> from pylatexenc.latexencode import UnicodeToLatexEncoder, \
-  ...     UnicodeToLatexConversionRule, RULE_REGEX, get_builtin_conversion_rules
+  ...     UnicodeToLatexConversionRule, RULE_REGEX
   >>> u = UnicodeToLatexEncoder(
   ...     conversion_rules=[
   ...         UnicodeToLatexConversionRule(rule_type=RULE_REGEX, rule=[
   ...             (re.compile(r'-->'), r'\\textrightarrow'),
   ...             (re.compile(r'<--'), r'\\textleftarrow'),
-  ...         ])
-  ...     ] + get_builtin_conversion_rules('defaults')
+  ...         ]),
+  ...         'defaults'
+  ...     ]
   ... )
   >>> print(u.unicode_to_latex("Cheers --> À votre santé"))
   Cheers {\textrightarrow} \`A votre sant\'e
@@ -85,7 +86,8 @@ from __future__ import print_function, absolute_import, unicode_literals
 import unicodedata
 import logging
 import sys
-import functools 
+import functools
+import itertools
 
 if sys.version_info.major > 2:
     def unicode(string): return string
@@ -264,7 +266,7 @@ def get_builtin_conversion_rules(which):
       - `which='defaults'` the default conversion rules, a custom-curated list
         of unicode chars to LaTeX escapes.
 
-      - `which='unicodexml'` the conversion rules derived from the comprehensive
+      - `which='unicode-xml'` the conversion rules derived from the
         `unicode.xml` file maintained at
         https://www.w3.org/TR/xml-entity-names/#source by David Carlisle.
 
@@ -280,7 +282,7 @@ def get_builtin_conversion_rules(which):
     if which == 'defaults':
         return [ UnicodeToLatexConversionRule(rule_type=RULE_DICT,
                                               rule=get_builtin_uni2latex_dict()) ]
-    if which == 'unicodexml':
+    if which == 'unicode-xml':
         from . import _uni2latexmap_xml
         return [ UnicodeToLatexConversionRule(rule_type=RULE_DICT,
                                               rule=_uni2latexmap_xml.uni2latex) ]
@@ -311,12 +313,43 @@ class UnicodeToLatexEncoder(object):
     .. py:attribute:: conversion_rules
 
        The conversion rules, specified as a list of
-       :py:class:`UnicodeToLatexConversionRule` objects.  If you specify your
-       own list of rules using this argument, you will probably want to add
-       presumably at the end of your list the list of rules obtained by
-       ``get_builtin_conversion_rules('defaults')`` to include all built-in
-       default conversion rules.  To override built-in rules, simply add your
-       custom rules earlier in the list.
+       :py:class:`UnicodeToLatexConversionRule` objects.  For each position in
+       the string, the rules will be applied in the given sequence until a
+       replacement string is found.
+
+       Instead of a :py:class:`UnicodeToLatexConversionRule` object you may also
+       specify a string specifying a built-in rule (e.g., 'defaults'), which
+       will be expanded to the corresponding rules according to
+       :py:func:`get_builtin_conversion_rules()`.
+    
+       If you specify your own list of rules using this argument, you will
+       probably want to include presumably at the end of your list the element
+       'defaults' to include all built-in default conversion rules.  To override
+       built-in rules, simply add your custom rules earlier in the list.
+       Example::
+
+         conversion_rules = [
+             # our custom rules
+             UnicodeToLatexConversionRule(RULE_REGEX, [
+                 ( re.compile(r'...'), r'\\ldots' ),
+                 ( re.compile(r'î'), r'\\^i' ),
+             ]),
+             # all the default rules
+             'defaults'
+         ]
+         u = UnicodeToLatexEncoder(conversion_rules=conversion_rules)
+         #
+         # which is equivalent to:
+         #
+         conversion_rules = [
+             # our custom rules
+             UnicodeToLatexConversionRule(RULE_REGEX, [
+                 ( re.compile(r'...'), r'\\ldots' ),
+                 ( re.compile(r'î'), r'\\^i' ),
+             ]),
+             # all the default rules
+             ] + get_builtin_conversion_rules('defaults')
+         u = UnicodeToLatexEncoder(conversion_rules=conversion_rules)
 
     .. py:attribute:: replacement_latex_protection
 
@@ -333,26 +366,26 @@ class UnicodeToLatexEncoder(object):
 
        Possible protection schemes are:
 
-         - 'braces' (the default).  Any suspicious replacement text (that
+         - 'braces' (the default):  Any suspicious replacement text (that
            might look fragile) is placed in curly braces ``{...}``.
 
-         - 'braces-all'.  All replacement latex escapes are surrounded in
+         - 'braces-all':  All replacement latex escapes are surrounded in
            protective curly braces ``{...}``, regardless of whether or not they
            might be deemed "fragile" or "unsafe".
 
-         - 'braces-almost-all'.  Almost all replacement latex escapes are
+         - 'braces-almost-all':  Almost all replacement latex escapes are
            surrounded in protective curly braces ``{...}``.  This option
            emulates closely the behavior of `brackets=True` of the function
            `utf8tolatex()` in `pylatexenc 1.x`, though I'm not sure it is really
            useful.  [Specifically, all those replacement strings that start with
-           a backslash are protected in curly braces].
+           a backslash are surrounded by curly braces].
 
-         - 'braces-after-macro'.  In the situation where the replacement latex
+         - 'braces-after-macro':  In the situation where the replacement latex
            code ends with a string-named macro, then a pair of empty braces is
            added at the end of the replacement text to protect the macro.
 
-         - `none`.  No protection is applied, even in "unsafe" cases.  This is
-           not recommended, you will likely get invalid LaTeX code.
+         - `none`:  No protection is applied, even in "unsafe" cases.  This is
+           not recommended, as this will likely result in invalid LaTeX code.
 
     .. py:attribute:: unknown_char_policy
 
@@ -396,8 +429,7 @@ class UnicodeToLatexEncoder(object):
     """
     def __init__(self, **kwargs):
         self.non_ascii_only = kwargs.pop('non_ascii_only', False)
-        self.conversion_rules = kwargs.pop('conversion_rules', 
-                                           get_builtin_conversion_rules('defaults'))
+        self.conversion_rules = kwargs.pop('conversion_rules', ['defaults'])
         self.replacement_latex_protection = kwargs.pop('replacement_latex_protection', 'braces')
         self.unknown_char_policy = kwargs.pop('unknown_char_policy', 'keep')
         self.unknown_char_warning = kwargs.pop('unknown_char_warning', True)
@@ -407,6 +439,12 @@ class UnicodeToLatexEncoder(object):
 
         super(UnicodeToLatexEncoder, self).__init__(**kwargs)
 
+        # build generator that expands built-in conversion rules
+        expanded_conversion_rules = itertools.chain.from_iterable(
+            (get_builtin_conversion_rules(r) if isinstance(r, basestring) else [ r ])
+            for r in self.conversion_rules
+        )
+
         #
         # now "pre-compile" some stuff so that calls to unicode_to_latex() can
         # execute fast
@@ -414,16 +452,22 @@ class UnicodeToLatexEncoder(object):
 
         # "pre-compile" rules and check rule types:
         self._compiled_rules = []
-        for rule in self.conversion_rules:
+        for rule in expanded_conversion_rules:
             if rule.rule_type == RULE_DICT:
-                self._compiled_rules.append( functools.partial(self._apply_rule_dict, rule.rule) )
+                self._compiled_rules.append(
+                    functools.partial(self._apply_rule_dict, rule.rule)
+                )
             elif rule.rule_type == RULE_REGEX:
-                self._compiled_rules.append( functools.partial(self._apply_rule_regex, rule.rule) )
+                self._compiled_rules.append(
+                    functools.partial(self._apply_rule_regex, rule.rule)
+                )
             elif rule.rule_type == RULE_CALLABLE:
                 thecallable = rule.rule
                 if 'u2lobj' in getfullargspec(thecallable)[0]:
-                    thecallable = partial(rule.rule, u2lobj=self)
-                self._compiled_rules.append( functools.partial(self._apply_rule_callable, thecallable) )
+                    thecallable = functools.partial(rule.rule, u2lobj=self)
+                self._compiled_rules.append(
+                    functools.partial(self._apply_rule_callable, thecallable)
+                )
             else:
                 raise TypeError("Invalid rule type: {}".format(rule.rule_type))
         
@@ -431,7 +475,8 @@ class UnicodeToLatexEncoder(object):
         if isinstance(self.unknown_char_policy, basestring):
             selfmethname = '_do_unknown_char_'+self.unknown_char_policy
             if not hasattr(self, selfmethname):
-                raise ValueError("Invalid bad-char policy: {}".format(self.unknown_char_policy))
+                raise ValueError("Invalid bad-char policy: {}"
+                                 .format(self.unknown_char_policy))
             self._do_unknown_char = getattr(self, selfmethname)
         elif callable(self.unknown_char_policy):
             fn = self.unknown_char_policy
@@ -440,7 +485,8 @@ class UnicodeToLatexEncoder(object):
             else:
                 self._do_unknown_char = self.unknown_char_policy
         else:
-            raise TypeError("Invalid argument for unknown_char_policy: {!r}".format(self.unknown_char_policy))
+            raise TypeError("Invalid argument for unknown_char_policy: {!r}"
+                            .format(self.unknown_char_policy))
 
         # bad char warning:
         if not self.unknown_char_warning:
@@ -453,15 +499,12 @@ class UnicodeToLatexEncoder(object):
             self._maybe_skip_ascii = lambda s, p: False
 
         # set a method to protect replacement latex code, if necessary:
-        if self.replacement_latex_protection and self.replacement_latex_protection != 'none':
-            selfmethname = '_apply_protection_'+self.replacement_latex_protection.replace('-', '_')
-            if not hasattr(self, selfmethname):
-                raise ValueError("Invalid replacement_latex_protection: {}".format(
-                    self.replacement_latex_protection
-                ))
-            self._apply_protection = getattr(self, selfmethname)
-        else:
-            self._apply_protection = lambda x: x
+        selfmethname = '_apply_protection_'+self.replacement_latex_protection.replace('-', '_')
+        if not hasattr(self, selfmethname):
+            raise ValueError("Invalid replacement_latex_protection: {}".format(
+                self.replacement_latex_protection
+            ))
+        self._apply_protection = getattr(self, selfmethname)
 
 
     def unicode_to_latex(self, s):
@@ -546,6 +589,9 @@ class UnicodeToLatexEncoder(object):
         p.latex += repl
         p.pos += numchars
 
+    def _apply_protection_none(self, repl):
+        # no protection
+        return repl
     def _apply_protection_braces(self, repl):
         k = repl.rfind('\\')
         if k >= 0 and repl[k+1:].isalpha():
