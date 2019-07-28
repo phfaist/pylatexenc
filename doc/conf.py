@@ -96,6 +96,11 @@ html_theme_options = {
     'font_family': 'Open Sans',
     'font_size': '16px',
     'head_font_family': 'Open Sans',
+    'github_user': 'phfaist',
+    'github_repo': 'pylatexenc',
+    'github_button': True,
+    'github_type': 'star',
+    'github_count': 'true',
 }
 #
 html_sidebars = {

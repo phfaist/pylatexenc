@@ -2,7 +2,8 @@
 when appropriate. This particular formulation became active on December 31 2002,
 superseding the 1998 version.]
 
-unicode.xml: https://www.w3.org/TR/xml-entity-names/#source
+unicode.xml: https://www.w3.org/2003/entities/2007xml/unicode.xml
+             https://www.w3.org/TR/xml-entity-names/#source
 
     Copyright © 2015 World Wide Web Consortium, (Massachusetts Institute of
     Technology, European Research Consortium for Informatics and Mathematics,

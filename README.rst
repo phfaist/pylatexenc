@@ -35,7 +35,9 @@ Parsing LaTeX code & converting to plain text (unicode)
 
 The ``latexwalker`` module provides a series of routines that parse the LaTeX
 structure of given LaTeX code and returns a logical structure of objects, which
-can then be used to produce output in another format such as plain text.
+can then be used to produce output in another format such as plain text.  This
+is not a replacement for a full (La)TeX engine, rather, this module provides a
+way to parse a chunk of LaTeX code as mark-up code.
 
 The ``latex2text`` module builds up on top of ``latexwalker`` and provides
 functions to convert given LaTeX code to plain text with unicode characters.
@@ -56,6 +58,6 @@ License
 
 See LICENSE.txt (MIT License).
 
-NOTE: See copyright notice and license information for file ``unicode.xml`` in
-``unicode.xml.LICENSE`` (the file ``unicode.xml`` was downloaded from
-https://www.w3.org/TR/xml-entity-names/#source).
+NOTE: See copyright notice and license information for file ``unicode.xml``
+provided in the file ``unicode.xml.LICENSE`` (the file ``unicode.xml`` was
+downloaded from https://www.w3.org/2003/entities/2007xml/unicode.xml.)
