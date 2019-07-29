@@ -1,8 +1,7 @@
 pylatexenc
 ==========
 
-Simple LaTeX parser providing heuristic latex-to-unicode and unicode-to-latex
-conversion
+Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion
 
 .. image:: https://img.shields.io/github/license/phfaist/pylatexenc.svg?style=flat
    :target: https://github.com/phfaist/pylatexenc/blob/master/LICENSE.txt
