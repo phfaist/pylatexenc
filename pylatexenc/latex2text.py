@@ -923,6 +923,14 @@ class LatexNodes2Text(object):
         might act on text generated from macros and environments and give
         unwanted results.)  See :py:class:`pylatexenc.macrospec.SpecialsSpec`
         and :py:class:`SpecialsTextSpec`.
+
+        .. deprecated:: 2.0
+
+           The `apply_text_replacements()` method was introduced in `pylatexenc
+           2.0` as a deprecated method.  You can use it as a quick fix to make
+           existing code run as it did in `pylatexenc 1.x`.  Its use is however
+           not recommended for new code.  You should use "latex specials"
+           instead for characters that have special LaTeX meaning.
         """
         
         # perform suitable replacements
