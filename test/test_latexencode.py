@@ -198,6 +198,26 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
 
 
 
+    def test_latex_string_class(self):
+        
+        class LatexChunkList:
+            def __init__(self):
+                self.chunks = []
+
+            def __iadd__(self, s):
+                self.chunks.append(s)
+                return self
+
+        u = UnicodeToLatexEncoder(latex_string_class=LatexChunkList,
+                                  replacement_latex_protection='none')
+        result = u.unicode_to_latex("A é → α")
+        # result is an object of custom type LatexChunkList
+        self.assertEqual(
+            result.chunks,
+            ['A', ' ', r'\'e', ' ', r'\textrightarrow', ' ', r'\ensuremath{\alpha}']
+        )
+
+
 
 class TestUtf8tolatex(unittest.TestCase, ProvideAssertCmds):
 

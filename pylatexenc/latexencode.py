@@ -94,7 +94,7 @@ import itertools
 #import warnings
 
 if sys.version_info.major > 2:
-    def unicode(string): return string
+    unicode = str # need to support unicode() w/ no arguments
     basestring = str
     # use MappingProxyType for keeping
     from types import MappingProxyType as _MappingProxyType
@@ -358,7 +358,7 @@ class UnicodeToLatexEncoder(object):
              UnicodeToLatexConversionRule(RULE_REGEX, [
                  ( re.compile(r'...'), r'\\ldots' ),
                  ( re.compile(r'î'), r'\\^i' ),
-             ]),
+               ]),
              # all the default rules
              ] + get_builtin_conversion_rules('defaults')
          u = UnicodeToLatexEncoder(conversion_rules=conversion_rules)
@@ -429,6 +429,35 @@ class UnicodeToLatexEncoder(object):
        nonascii character without any known latex representation is
        encountered. (Default: True)
 
+    .. py:attribute:: latex_string_class
+
+       The return type of :py:meth:`unicode_to_latex()`.  Normally this is a
+       simple unicode string (`str` on `Python 3` or `unicode` on `Python 2`).
+
+       But you can specify your custom string type via the `latex_string_class`
+       argument.  The `latex_string_class` will be invoked with no arguments to
+       construct an empty object (so `latex_string_class` can be either an
+       object that can be constructed with no arguments or it can be a function
+       with no arguments that return a fresh object instance).  The object must
+       support the operation "+=", i.e., you should overload the ``__iadd__()``
+       method.
+
+       For instance, you can record the chunks that would have been appended
+       into a single string as follows::
+
+           class LatexChunkList:
+               def __init__(self):
+                   self.chunks = []
+
+               def __iadd__(self, s):
+                   self.chunks.append(s)
+                   return self
+
+           u = UnicodeToLatexEncoder(latex_string_class=LatexChunkList,
+                                     replacement_latex_protection='none')
+           result = u.unicode_to_latex("é → α")
+           # result.chunks == [ r"\'e", ' ', r'\textrightarrow', ' ',
+           #                    r'\ensuremath{\alpha}' ]
 
     .. warning::
       
@@ -448,6 +477,7 @@ class UnicodeToLatexEncoder(object):
         self.replacement_latex_protection = kwargs.pop('replacement_latex_protection', 'braces')
         self.unknown_char_policy = kwargs.pop('unknown_char_policy', 'keep')
         self.unknown_char_warning = kwargs.pop('unknown_char_warning', True)
+        self.latex_string_class = kwargs.pop('latex_string_class', unicode)
 
         if kwargs:
             logger.warning("Ignoring unknown keyword arguments: %s", ",".join(kwargs.keys())) 
@@ -533,7 +563,7 @@ class UnicodeToLatexEncoder(object):
 
         class _NS: pass
         p = _NS()
-        p.latex = ''
+        p.latex = self.latex_string_class()
         p.pos = 0
 
         while p.pos < len(s):
@@ -669,8 +699,12 @@ def unicode_to_latex(s, non_ascii_only=False, replacement_latex_protection='brac
     :py:class:`UnicodeToLatexEncoder` constructor.  See the class doc for
     :py:class:`UnicodeToLatexEncoder` for more information about their effect.
 
-    It is not possible to specify custom conversion rules with this helper
-    function.  If you need custom conversion rules, simply create a
+    You may only use arguments to this function that are python hashable (like
+    `True`, `False`, or simple strings) to help us keep a cache of previously
+    constructed :py:class:`UnicodeToLatexEncoder` instances.  For instance, it
+    is not possible to provide a callable to `unknown_char_policy`.  It is also
+    not possible to specify custom conversion rules with this helper function.
+    If you need any of these features, simply create a
     :py:class:`UnicodeToLatexEncoder` instance directly.
     """
 
