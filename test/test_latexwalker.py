@@ -386,9 +386,10 @@ Also: {\itshape some italic text}.
                                ],
                                pos=p+6,len=33-6),
                 LatexCharsNode(parsed_context=lw.parsed_context,
-                               chars='.',
-                               pos=p+33,len=1)
-            ], p, len(latextext)-p-1)) # trailing '\n' is not included
+                               chars='.\n',
+                               pos=p+33,len=2)
+            ], p, len(latextext)-p)
+        )
 
         p = latextext.find('Also: {')+len('Also: {') # points inside right after open brace
         self.assertEqual(

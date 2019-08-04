@@ -141,6 +141,7 @@ class ParsedMacroArgs(object):
         )
 
 
+
 class MacroStandardArgsParser(object):
     r"""
     Parses the arguments to a LaTeX macro.

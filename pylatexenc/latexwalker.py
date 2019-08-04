@@ -115,6 +115,11 @@ else:
 logger = logging.getLogger(__name__)
 
 
+def _maketuple(*args):
+    # for use with Python 2, where we don't have *args expansion in tuples and
+    # lists
+    return tuple(args)
+
 
 class LatexWalkerError(Exception):
     """
@@ -167,7 +172,9 @@ class LatexWalkerEndOfStream(LatexWalkerError):
     """
     Reached end of input stream (e.g., end of file).
     """
-    pass
+    def __init__(self, final_space=''):
+        super(LatexWalkerEndOfStream, self).__init__()
+        self.final_space = final_space
 
 
 
@@ -1149,7 +1156,7 @@ class LatexWalker(object):
                 return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space=space[:-2])
 
         if pos >= len(s):
-            raise LatexWalkerEndOfStream()
+            raise LatexWalkerEndOfStream(final_space=space)
 
         if s[pos] == '\\':
             # escape sequence
@@ -1697,9 +1704,9 @@ class LatexWalker(object):
             try:
                 tok = self.get_token(p.pos, include_brace_chars=include_brace_chars,
                                      parsing_context=parsing_context)
-            except LatexWalkerEndOfStream:
+            except LatexWalkerEndOfStream as e:
                 if self.tolerant_parsing:
-                    return True
+                    return e
                 raise # re-raise
 
             p.pos = tok.pos + tok.len
@@ -1814,8 +1821,8 @@ class LatexWalker(object):
                         parsing_context=parsing_context_inner
                     )
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append( ('math mode "{}"'.format(tok.arg), tok.pos,
-                                             *self.pos_to_lineno_colno(tok.pos),) )
+                    e.open_contexts.append( _maketuple('math mode "{}"'.format(tok.arg), tok.pos,
+                                                       *self.pos_to_lineno_colno(tok.pos)) )
                     raise
                 p.pos = mpos + mlen
 
@@ -1845,8 +1852,8 @@ class LatexWalker(object):
                         parsing_context=parsing_context
                     )
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append( ('open brace', tok.pos,
-                                             *self.pos_to_lineno_colno(tok.pos),) )
+                    e.open_contexts.append( _maketuple('open brace', tok.pos,
+                                                       *self.pos_to_lineno_colno(tok.pos)) )
                     raise
 
                 p.pos = bpos + blen
@@ -1861,8 +1868,10 @@ class LatexWalker(object):
                     (envnode, epos, elen) = self.get_latex_environment(tok.pos, environmentname=tok.arg,
                                                                        parsing_context=parsing_context)
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append( ('begin environment "{}"'.format(tok.arg), tok.pos,
-                                             *self.pos_to_lineno_colno(tok.pos),) )
+                    e.open_contexts.append(
+                        _maketuple('begin environment "{}"'.format(tok.arg), tok.pos,
+                                   *self.pos_to_lineno_colno(tok.pos))
+                    )
                     raise
                 p.pos = epos + elen
                 # add node and continue.
@@ -1882,8 +1891,10 @@ class LatexWalker(object):
                     (nodeargd, mapos, malen) = \
                         mspec.parse_args(w=self, pos=tok.pos + tok.len, parsing_context=parsing_context)
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append( ('arguments of macro "{}"'.format(macroname), tok.pos,
-                                             *self.pos_to_lineno_colno(tok.pos),) )
+                    e.open_contexts.append(
+                        _maketuple('arguments of macro "{}"'.format(macroname), tok.pos,
+                                   *self.pos_to_lineno_colno(tok.pos))
+                    )
                     raise
 
                 p.pos = mapos + malen
@@ -1917,8 +1928,10 @@ class LatexWalker(object):
                 try:
                     res = sspec.parse_args(w=self, pos=p.pos, parsing_context=parsing_context)
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append( ('arguments of specials "{}"'.format(sspec.specials_chars),
-                                             tok.pos, *self.pos_to_lineno_colno(tok.pos),) )
+                    e.open_contexts.append(
+                        _maketuple('arguments of specials "{}"'.format(sspec.specials_chars),
+                                   tok.pos, *self.pos_to_lineno_colno(tok.pos))
+                    )
                     raise
 
                 if res is not None:
@@ -1956,7 +1969,7 @@ class LatexWalker(object):
                     r_endnow = False
                 else:
                     raise
-            except LatexWalkerEndOfStream:
+            except LatexWalkerEndOfStream as e:
                 if stop_upon_closing_brace or stop_upon_end_environment or stop_upon_closing_mathmode:
                     # unexpected eof
                     if not self.tolerant_parsing:
@@ -1971,10 +1984,13 @@ class LatexWalker(object):
                     else:
                         r_endnow = False
                 else:
-                    r_endnow = True
+                    r_endnow = e
 
-            if (r_endnow):
-                # add last chars
+            if r_endnow:
+                # add last chars and last space
+                if isinstance(r_endnow, LatexWalkerEndOfStream):
+                    p.lastchars += r_endnow.final_space
+                    p.pos += len(r_endnow.final_space)
                 if p.lastchars:
                     strnode = self.make_node(LatexCharsNode, chars=p.lastchars,
                                              pos=p.lastchars_pos, len=len(p.lastchars))
