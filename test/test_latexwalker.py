@@ -669,6 +669,63 @@ New paragraph here.
              0,len(latextext))
         )
 
+        latextext = r"""
+Line with % a comment here
+
+% line comment on its own
+% and a second line
+
+Also a \itshape% comment after a macro
+% and also a second line
+some italic text.""".lstrip()
+        
+        lw = LatexWalker(latextext, tolerant_parsing=True)
+
+        self.assertEqual(
+            lw.get_latex_nodes(pos=0),
+            ([
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='Line with ',
+                               pos=0, len=10),
+                LatexCommentNode(parsed_context=lw.parsed_context,
+                                 comment=' a comment here',
+                                 comment_post_space='',
+                                 pos=10, len=26-10),
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='\n\n',
+                               pos=26, len=2),
+                LatexCommentNode(parsed_context=lw.parsed_context,
+                                 comment=' line comment on its own',
+                                 comment_post_space='\n',
+                                 pos=27+1, len=25+1),
+                LatexCommentNode(parsed_context=lw.parsed_context,
+                                 comment=' and a second line',
+                                 comment_post_space='',
+                                 pos=27+1+26, len=19),
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='\n\nAlso a ',
+                               pos=27+1+26+19, len=2+7),
+                LatexMacroNode(parsed_context=lw.parsed_context,
+                               macroname=r'itshape',
+                               macro_post_space='',
+                               nodeargd=macrospec.ParsedMacroArgs(argspec='',argnlist=[]),
+                               pos=27+1+26+20+1+7, len=15-7),
+                LatexCommentNode(parsed_context=lw.parsed_context,
+                                 comment=' comment after a macro',
+                                 comment_post_space='\n',
+                                 pos=27+1+26+20+1+15, len=39-15),
+                LatexCommentNode(parsed_context=lw.parsed_context,
+                                 comment=' and also a second line',
+                                 comment_post_space='\n',
+                                 pos=27+1+26+20+1+39, len=25),
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='some italic text.',
+                               pos=27+1+26+20+1+39+25, len=17),
+
+             ],
+             0,len(latextext))
+        )
+
 
     def test_get_latex_nodes_read_max_nodes(self):
 
