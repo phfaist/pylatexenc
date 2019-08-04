@@ -184,6 +184,7 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
                           p, 2))
 
 
+
     def test_get_latex_maybe_optional_arg(self):
         
         latextext = r'''Text and \`accent and \textbf{bold text} and $\vec b$ more stuff for Fran\c cois
@@ -629,6 +630,43 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
                           displaytype='inline',
                           nodelist=good_parsed_structure, delimiters=(r'\(', r'\)'),
                           pos=p, len=latextext.rfind(r'\)') + 2 - p)
+        )
+
+
+    def test_get_latex_nodes_comments(self):
+
+        latextext = r'''
+Hello % comment here
+  % more comments 
+
+New paragraph here.
+% comment at end'''.lstrip()
+
+        lw = LatexWalker(latextext, tolerant_parsing=True)
+
+        self.assertEqual(
+            lw.get_latex_nodes(pos=0),
+            ([
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='Hello ',
+                               pos=0, len=6),
+                LatexCommentNode(parsed_context=lw.parsed_context,
+                                 comment=' comment here',
+                                 comment_post_space='\n  ',
+                                 pos=6, len=20-6+1+2),
+                LatexCommentNode(parsed_context=lw.parsed_context,
+                                 comment=' more comments ',
+                                 comment_post_space='',
+                                 pos=21+2, len=18-2),
+                LatexCharsNode(parsed_context=lw.parsed_context,
+                               chars='\n\nNew paragraph here.\n',
+                               pos=21+18, len=1+1+19+1),
+                LatexCommentNode(parsed_context=lw.parsed_context,
+                                 comment=' comment at end',
+                                 comment_post_space='',
+                                 pos=21+18+2+20, len=16),
+             ],
+             0,len(latextext))
         )
 
 

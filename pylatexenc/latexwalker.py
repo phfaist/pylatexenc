@@ -1214,12 +1214,19 @@ class LatexWalker(object):
 
         if s[pos] == '%':
             # latex comment
-            m = re.search(r'(\n|\r|\n\r)\s*', s[pos:])
+            m = re.compile(r'(\n|\r|\n\r)(?P<extraspace>\s*)').search(s, pos)
             mlen = None
             if m is not None:
-                arglen = m.start() # relative to pos already
-                mlen = m.end() # relative to pos already
-                mspace = m.group()
+                if m.group('extraspace').startswith( ('\n', '\r', '\n\r',) ):
+                    # special case where there is a \n immediately following the
+                    # first one -- this is a new paragraph
+                    arglen = m.start()-pos
+                    mlen = m.start()-pos
+                    mspace = ''
+                else:
+                    arglen = m.start()-pos
+                    mlen = m.end()-pos
+                    mspace = m.group()
             else:
                 arglen = len(s)-pos# [  ==len(s[pos:])  ]
                 mlen = arglen
