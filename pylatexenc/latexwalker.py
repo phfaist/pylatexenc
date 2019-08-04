@@ -93,6 +93,7 @@ import re
 import sys
 import logging
 import json
+import bisect
 import warnings
 
 import pylatexenc
@@ -127,22 +128,34 @@ class LatexWalkerParseError(LatexWalkerError):
     message), `s` (the parsed string), `pos` (the position of the error in the
     string, 0-based index).
     """
-    def __init__(self, msg, s=None, pos=None):
+    def __init__(self, msg, s=None, pos=None, lineno=None, colno=None):
+        self.input_source = None # attribute can be set to add to error msg display
         self.msg = msg
         self.s = s
         self.pos = pos
+        self.lineno = lineno
+        self.colno = colno
         self.open_contexts = []
         super(LatexWalkerParseError, self).__init__(self._dispstr())
 
     def _dispstr(self):
-        disp = '...'+self.s[max(self.pos-25,0):self.pos]
-        disp = '\n%s\n'%(disp)  +  (' '*len(disp)) + self.s[self.pos:self.pos+25]+'...'
-        disp = self.msg + ( " @ %d:\n%s" %(self.pos, disp) )
+        msg = self.msg
+        if self.input_source:
+            msg += '\nin {}'.format(self.input_source)
+        disp = msg + " @%s"%(self._fmt_pos(self.pos, self.lineno, self.colno))
         if self.open_contexts:
             disp += '\nOpen LaTeX blocks:\n'
             for context in self.open_contexts:
-                disp += ' '*8 + '* ' + context + '\n'
+                what, pos, lineno, colno = context
+                disp += ' '*8 + '* ' + what + ' @%s'%(self._fmt_pos(pos,lineno,colno)) + '\n'
         return disp
+
+    def _fmt_pos(self, pos, lineno, colno):
+        if lineno is not None:
+            if colno is not None:
+                return '@(%d,%d)'%(lineno, colno)
+            return '@%d'%(lineno)
+        return '@ char %d'%(pos)
 
     def __str__(self):
         return self._dispstr()
@@ -979,6 +992,9 @@ class LatexWalker(object):
 
         self.s = s
 
+        # will be determined lazily automatically by pos_to_lineno_colno(...)
+        self._pos_new_lines = None
+
         self.debug_nodes = False
 
         if latex_context is None:
@@ -1164,7 +1180,8 @@ class LatexWalker(object):
                     raise LatexWalkerParseError(
                         s=s,
                         pos=pos,
-                        msg=r"Bad \{} macro: expected {{<environment-name>}}".format(macro)
+                        msg=r"Bad \{} macro: expected {{<environment-name>}}".format(macro),
+                        **self.pos_to_lineno_colno(pos, as_dict=True)
                     )
 
                 return LatexToken(
@@ -1251,6 +1268,48 @@ class LatexWalker(object):
     def _mknodeposlen(self, nclass, **kwargs):
         return ( self.make_node(nclass, **kwargs), kwargs['pos'], kwargs['len'] )
 
+    
+    def pos_to_lineno_colno(self, pos, as_dict=False):
+        r"""
+        Return the line and column number corresponding to the given `pos` in our
+        string `self.s`.
+
+        The first time this function is called, line numbers are calculated for
+        the entire string.  These are cached for future calls which are then
+        fast.
+
+        Return a tuple `(lineno, colno)` giving line number and column number.
+        Both start at 1, i.e., the beginning of the document (`pos=0`) has line
+        and column number `(1,1)`.  If `as_dict=True`, then a dictionary with
+        keys 'lineno', 'colno' is returned instead of a tuple.
+        """
+
+        if self._pos_new_lines is None:
+            # determine line number information
+            def find_all_new_lines(x):
+                # first line starts at the beginning of the string
+                yield 0
+                k = 0
+                while k < len(x):
+                    k = x.find('\n', k)
+                    if k == -1:
+                        return
+                    k += 1
+                    # s[k] is the character after the newline, i.e., the 0-th column
+                    # of the new line
+                    yield k
+
+            self._pos_new_lines = list(find_all_new_lines(self.s))
+
+        # find line number in list
+
+        line_no = bisect.bisect_left(self._pos_new_lines, pos)
+        col_no = pos - self._pos_new_lines[line_no]
+        # 1+... so that line and column numbers start at 1
+        if as_dict:
+            return dict(lineno=1 + line_no, colno=1 + col_no)
+        return (1 + line_no, 1 + col_no)
+
 
     def get_latex_expression(self, pos, strict_braces=None,
                              parsing_context=ParsingContext()):
@@ -1281,7 +1340,8 @@ class LatexWalker(object):
                 if tok.arg == 'end':
                     if not self.tolerant_parsing:
                         # error, we were expecting a single token
-                        raise LatexWalkerParseError(r"Expected expression, got \end", self.s, pos)
+                        raise LatexWalkerParseError(r"Expected expression, got \end", self.s, pos,
+                                                    **self.pos_to_lineno_colno(pos, as_dict=True))
                     else:
                         return self._mknodeposlen(LatexCharsNode, chars='', pos=tok.pos, len=0)
                 return self._mknodeposlen(LatexMacroNode, macroname=tok.arg,
@@ -1301,7 +1361,8 @@ class LatexWalker(object):
                 if self.strict_braces and not self.tolerant_parsing:
                     raise LatexWalkerParseError(
                         "Expected expression, got closing brace '{}'".format(tok.arg),
-                        self.s, pos
+                        self.s, pos,
+                        **self.pos_to_lineno_colno(pos, as_dict=True)
                     )
                 return self._mknodeposlen(LatexCharsNode, chars='', pos=tok.pos, len=0)
             if tok.tok == 'char':
@@ -1316,7 +1377,8 @@ class LatexWalker(object):
                 else:
                     return self._mknodeposlen(LatexCharsNode, chars=tok.arg, pos=tok.pos, len=tok.len)
 
-            raise LatexWalkerParseError("Unknown token type: {}".format(tok.tok), self.s, pos)
+            raise LatexWalkerParseError("Unknown token type: {}".format(tok.tok), self.s, pos,
+                                        **self.pos_to_lineno_colno(pos, as_dict=True))
 
 
     def get_latex_maybe_optional_arg(self, pos, parsing_context=ParsingContext()):
@@ -1385,7 +1447,8 @@ class LatexWalker(object):
         elif len(brace_type) == 2:
             brace_type, closing_brace = brace_type
         else:
-            raise LatexWalkerParseError(s=self.s, pos=pos, msg="Uknown brace type: %s" %(brace_type))
+            raise LatexWalkerParseError(s=self.s, pos=pos, msg="Uknown brace type: %s" %(brace_type),
+                                        **self.pos_to_lineno_colno(pos, as_dict=True))
 
         include_brace_chars = None
         if brace_type and brace_type != '{':
@@ -1397,7 +1460,8 @@ class LatexWalker(object):
             raise LatexWalkerParseError(
                 s=self.s,
                 pos=pos,
-                msg='get_latex_braced_group: not an opening brace/bracket: %s' %(self.s[pos])
+                msg='get_latex_braced_group: not an opening brace/bracket: %s' %(self.s[pos]),
+                **self.pos_to_lineno_colno(pos, as_dict=True)
             )
 
         (nodelist, npos, nlen) = self.get_latex_nodes(
@@ -1447,11 +1511,15 @@ class LatexWalker(object):
         firsttok = self.get_token(pos, parsing_context=parsing_context)
         if firsttok.tok != 'begin_environment'  or  \
            (environmentname is not None and firsttok.arg != environmentname):
-            raise LatexWalkerParseError(s=self.s, pos=pos,
-                                        msg=r'get_latex_environment: expected \begin{%s}: %s' %(
-                environmentname if environmentname is not None else '<environment name>',
-                firsttok.arg
-                ))
+            raise LatexWalkerParseError(
+                s=self.s,
+                pos=pos,
+                msg=r'get_latex_environment: expected \begin{%s}: %s' %(
+                    environmentname if environmentname is not None else '<environment name>',
+                    firsttok.arg
+                ),
+                **self.pos_to_lineno_colno(pos, as_dict=True)
+            )
         if (environmentname is None):
             environmentname = firsttok.arg
 
@@ -1673,7 +1741,8 @@ class LatexWalker(object):
                     raise LatexWalkerParseError(
                         s=self.s,
                         pos=tok.pos,
-                        msg="Unexpected mismatching closing brace: '%s'"%(tok.arg)
+                        msg="Unexpected mismatching closing brace: '%s'"%(tok.arg),
+                        **self.pos_to_lineno_colno(tok.pos, as_dict=True)
                     )
                 return True
 
@@ -1683,14 +1752,16 @@ class LatexWalker(object):
                     raise LatexWalkerParseError(
                         s=self.s,
                         pos=tok.pos,
-                        msg=("Unexpected closing environment: '{}', ".format(tok.arg))
+                        msg=("Unexpected closing environment: '{}'".format(tok.arg)),
+                        **self.pos_to_lineno_colno(tok.pos, as_dict=True)
                     )
                 elif tok.arg != stop_upon_end_environment:
                     raise LatexWalkerParseError(
                         s=self.s,
                         pos=tok.pos,
                         msg=("Unexpected mismatching closing environment: '{}', "
-                             "was expecting '{}'".format(tok.arg, stop_upon_end_environment))
+                             "was expecting '{}'".format(tok.arg, stop_upon_end_environment)),
+                        **self.pos_to_lineno_colno(tok.pos, as_dict=True)
                     )
                 return True
 
@@ -1710,7 +1781,8 @@ class LatexWalker(object):
                             pos=tok.pos,
                             msg="Mismatching closing math mode: '{}', expected '{}'".format(
                                 tok.arg, stop_upon_closing_mathmode,
-                            )
+                            ),
+                            **self.pos_to_lineno_colno(tok.pos, as_dict=True)
                         )
                     # all ok, this is a new math mode opening.  Keep an assert
                     # in case we forget to include some math-mode delimiters in
@@ -1720,11 +1792,10 @@ class LatexWalker(object):
                     # unexpected close-math-mode delimiter, but no
                     # stop_upon_closing_mathmode was specified. Parse error.
                     raise LatexWalkerParseError(
-                            s=self.s,
-                            pos=tok.pos,
-                            msg="Unexpected closing math mode: '{}'".format(
-                                tok.arg,
-                            )
+                        s=self.s,
+                        pos=tok.pos,
+                        msg="Unexpected closing math mode: '{}'".format(tok.arg),
+                        **self.pos_to_lineno_colno(tok.pos, as_dict=True)
                     )
 
                 # we have encountered a new math inline, parse the math expression
@@ -1741,7 +1812,8 @@ class LatexWalker(object):
                         parsing_context=parsing_context_inner
                     )
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append('math mode "{}" @{}'.format(tok.arg, tok.pos))
+                    e.open_contexts.append( ('math mode "{}"'.format(tok.arg), tok.pos,
+                                             *self.pos_to_lineno_colno(tok.pos),) )
                     raise
                 p.pos = mpos + mlen
 
@@ -1771,7 +1843,8 @@ class LatexWalker(object):
                         parsing_context=parsing_context
                     )
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append('open brace @{}'.format(tok.pos))
+                    e.open_contexts.append( ('open brace', tok.pos,
+                                             *self.pos_to_lineno_colno(tok.pos),) )
                     raise
 
                 p.pos = bpos + blen
@@ -1786,7 +1859,8 @@ class LatexWalker(object):
                     (envnode, epos, elen) = self.get_latex_environment(tok.pos, environmentname=tok.arg,
                                                                        parsing_context=parsing_context)
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append('begin environment "{}" @{}'.format(tok.arg, tok.pos))
+                    e.open_contexts.append( ('begin environment "{}"'.format(tok.arg), tok.pos,
+                                             *self.pos_to_lineno_colno(tok.pos),) )
                     raise
                 p.pos = epos + elen
                 # add node and continue.
@@ -1806,7 +1880,8 @@ class LatexWalker(object):
                     (nodeargd, mapos, malen) = \
                         mspec.parse_args(w=self, pos=tok.pos + tok.len, parsing_context=parsing_context)
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append('arguments of macro "{}" @{}'.format(macroname, tok.pos))
+                    e.open_contexts.append( ('arguments of macro "{}"'.format(macroname), tok.pos,
+                                             *self.pos_to_lineno_colno(tok.pos),) )
                     raise
 
                 p.pos = mapos + malen
@@ -1840,8 +1915,8 @@ class LatexWalker(object):
                 try:
                     res = sspec.parse_args(w=self, pos=p.pos, parsing_context=parsing_context)
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append('arguments of specials "{}" @{}'.format(sspec.specials_chars,
-                                                                                   tok.pos))
+                    e.open_contexts.append( ('arguments of specials "{}"'.format(sspec.specials_chars),
+                                             tok.pos, *self.pos_to_lineno_colno(tok.pos),) )
                     raise
 
                 if res is not None:
@@ -1861,7 +1936,12 @@ class LatexWalker(object):
                 return None
 
 
-            raise LatexWalkerParseError(s=self.s, pos=p.pos, msg="Unknown token: %r" %(tok))
+            raise LatexWalkerParseError(
+                s=self.s,
+                pos=p.pos,
+                msg="Unknown token: {!r}".format(tok),
+                **self.pos_to_lineno_colno(p.pos, as_dict=True)
+            )
 
 
 
