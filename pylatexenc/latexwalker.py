@@ -141,13 +141,15 @@ class LatexWalkerParseError(LatexWalkerError):
     def _dispstr(self):
         msg = self.msg
         if self.input_source:
-            msg += '\nin {}'.format(self.input_source)
-        disp = msg + " @%s"%(self._fmt_pos(self.pos, self.lineno, self.colno))
+            msg += '  in {}'.format(self.input_source)
+        disp = msg + " %s"%(self._fmt_pos(self.pos, self.lineno, self.colno))
         if self.open_contexts:
             disp += '\nOpen LaTeX blocks:\n'
-            for context in self.open_contexts:
+            for context in reversed(self.open_contexts):
                 what, pos, lineno, colno = context
-                disp += ' '*8 + '* ' + what + ' @%s'%(self._fmt_pos(pos,lineno,colno)) + '\n'
+                disp += '{empty:8}{loc:>10}  {what}\n'.format(empty='',
+                                                        loc=self._fmt_pos(pos,lineno,colno),
+                                                        what=what)
         return disp
 
     def _fmt_pos(self, pos, lineno, colno):
