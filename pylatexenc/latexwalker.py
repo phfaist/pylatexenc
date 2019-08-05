@@ -1320,6 +1320,8 @@ class LatexWalker(object):
         # find line number in list
 
         line_no = bisect.bisect_left(self._pos_new_lines, pos)
+        if line_no >= len(self._pos_new_lines):
+            line_no = len(self._pos_new_lines)-1
         col_no = pos - self._pos_new_lines[line_no]
         # 1+... so that line and column numbers start at 1
         if as_dict:
