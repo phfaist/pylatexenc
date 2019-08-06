@@ -4,6 +4,9 @@ Encode Unicode to LaTeX
 
 .. automodule:: pylatexenc.latexencode
 
+.. contents:: Contents:
+   :local:
+
 
 Unicode to Latex Conversion Class and Helper Function
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -5,6 +5,8 @@ Changes
 pylatexenc 2.0
 ==============
 
+Here is a brief list of new features:
+
 - Improvements to LaTeX parser and its API (:py:mod:`pylatexenc.latexwalker`):
 
   - More powerful and versatile way of providing a "latex context" with a

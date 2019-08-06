@@ -3,6 +3,9 @@ Specifying definitions for the parser
 
 .. automodule:: pylatexenc.macrospec
 
+.. contents:: Contents:
+   :local:
+
 
 Macro and environment definitions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

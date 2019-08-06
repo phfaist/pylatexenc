@@ -231,7 +231,7 @@ class MacroStandardArgsParser(object):
         `w.get_goken()`, `w.get_latex_expression()` etc., to parse and read
         arguments.
 
-        The argument `parsing_state` is the current parsing context in the
+        The argument `parsing_state` is the current parsing state in the
         :py:class:`~pylatexenc.latexwalker.LatexWalker` (e.g., are we currently
         in math mode?).  See doc for
         :py:class:`~pylatexenc.latexwalker.ParsingState`.

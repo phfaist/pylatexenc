@@ -4,6 +4,9 @@ Simple Latex to Text Converter
 
 .. automodule:: pylatexenc.latex2text
 
+.. contents:: Contents:
+   :local:
+
 
 Latex to Text Converter Class
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -12,9 +15,7 @@ Latex to Text Converter Class
    :members:
 
 
-
 .. autofunction:: pylatexenc.latex2text.get_default_latex_context_db
-
 
 
 

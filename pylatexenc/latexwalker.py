@@ -49,8 +49,8 @@ Simple example usage::
     >>> nodelist[1]
     LatexMacroNode(pos=1, len=18, macroname='textbf',
     nodeargd=ParsedMacroArgs(argnlist=[LatexGroupNode(pos=8, len=11,
-    nodelist=[LatexCharsNode(pos=9, len=9, chars='Hi there!')], delimiters=('{', '}'))],
-    argspec='{'), macro_post_space='')
+    nodelist=[LatexCharsNode(pos=9, len=9, chars='Hi there!')],
+    delimiters=('{', '}'))], argspec='{'), macro_post_space='')
     >>> nodelist[5].isNodeType(LatexEnvironmentNode)
     True
     >>> nodelist[5].environmentname
@@ -277,8 +277,8 @@ class LatexToken(object):
     This is used internally by :py:class:`LatexWalker`'s methods.  You probably
     don't need to worry about individual tokens.  Rather, you should use the
     high-level functions provided by :py:class:`LatexWalker` (e.g.,
-    :py:meth:`~latexwalker.LatexWalker.get_latex_nodes()`).  So most likely, you
-    can ignore this class entirely.
+    :py:meth:`~LatexWalker.get_latex_nodes()`).  So most likely, you can ignore
+    this class entirely.
 
     Instances of this class are what the method
     :py:meth:`LatexWalker.get_token()` returns.  See the doc of that function
@@ -1962,8 +1962,11 @@ class LatexWalker(object):
             if tok.tok == 'begin_environment':
                 # an environment to read.
                 try:
-                    (envnode, epos, elen) = self.get_latex_environment(tok.pos, environmentname=tok.arg,
-                                                                       parsing_state=parsing_state)
+                    (envnode, epos, elen) = self.get_latex_environment(
+                        tok.pos,
+                        environmentname=tok.arg,
+                        parsing_state=parsing_state
+                    )
                 except LatexWalkerParseError as e:
                     e.open_contexts.append(
                         _maketuple('begin environment "{}"'.format(tok.arg), tok.pos,

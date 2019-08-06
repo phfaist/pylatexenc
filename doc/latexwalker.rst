@@ -3,6 +3,9 @@ Simple Parser for LaTeX Code
 
 .. automodule:: pylatexenc.latexwalker
 
+.. contents:: Contents:
+   :local:
+
 
 The main `LatexWalker` class
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,14 +55,11 @@ Data Node Classes
 .. autoclass:: pylatexenc.latexwalker.LatexMathNode
    :show-inheritance:
 
-.. autoclass:: pylatexenc.latexwalker.ParsedContext
-   :members:
-
 
 Parsing helpers
 ~~~~~~~~~~~~~~~
 
-.. autoclass:: pylatexenc.latexwalker.ParsingContext
+.. autoclass:: pylatexenc.latexwalker.ParsingState
    :members:
 
 .. autoclass:: pylatexenc.latexwalker.LatexToken

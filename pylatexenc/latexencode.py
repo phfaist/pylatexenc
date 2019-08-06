@@ -316,7 +316,7 @@ class UnicodeToLatexEncoder(object):
 
        Whether we should convert only non-ascii characters into LaTeX sequences,
        or also all known ascii characters with special LaTeX meaning such as
-       '\\', '$', '&', etc.
+       '\\\\', '$', '&', etc.
 
        If `non_ascii_only` is set to `True` (the default is `False`), then
        conversion rules are not applied at positions in the string where an

@@ -360,7 +360,9 @@ r"""
 .. deprecated:: 2.0
 
    Text replacements are deprecated since `pylatexenc 2.0` with the advent of
-   "latex specials".
+   "latex specials".  See :py:meth:`LatexNodes2Text.apply_text_replacements()`
+   for a quick solution to keep existing code working if it uses custom text
+   replacements.
 """
 
 

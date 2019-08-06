@@ -4,3 +4,23 @@
 div.sphinxsidebar ul {
     list-style: square;
 }
+div.sphinxsidebar ul ul {
+    list-style: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPCEtLSBUaGlzIGZpbGUgd2FzIGdlbmVyYXRlZCBieSBkdmlzdmdtIDIuMS4zIC0tPgo8c3ZnIGhlaWdodD0nNC42MTQ2OXB0JyB2ZXJzaW9uPScxLjEnIHZpZXdCb3g9JzIzMC41MjQgNzcuOTk1NSA1LjUzMTI2IDQuNjE0NjknIHdpZHRoPSc1LjUzMTI2cHQnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZycgeG1sbnM6eGxpbms9J2h0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsnPgo8ZGVmcz4KPHBhdGggZD0nTTUuMzcxODYgLTEuODA5MjJDNS40OTkzOCAtMS44NjUwMSA1LjUzMTI2IC0xLjkyMDggNS41MzEyNiAtMS45ODQ1NlM1LjUwNzM1IC0yLjEwNDExIDUuMzcxODYgLTIuMTY3ODdMMC45NjQzODQgLTQuMjQwMUMwLjg2MDc3MiAtNC4yOTU4OSAwLjg0NDgzMiAtNC4yOTU4OSAwLjgyODg5MiAtNC4yOTU4OUMwLjY2MTUxOSAtNC4yOTU4OSAwLjY2MTUxOSAtNC4xNTI0MyAwLjY2MTUxOSAtNC4wMDg5N1YwLjAzOTg1MDZDMC42NjE1MTkgMC4xNzUzNDIgMC42NjE1MTkgMC4zMTg4MDQgMC44MjA5MjIgMC4zMTg4MDRDMC44NDQ4MzIgMC4zMTg4MDQgMC44NjA3NzIgMC4zMTg4MDQgMC45NjQzODQgMC4yNjMwMTRMNS4zNzE4NiAtMS44MDkyMlonIGlkPSdnMC03MycvPgo8L2RlZnM+CjxnIGlkPSdwYWdlMSc+Cjx1c2UgeD0nMjMwLjUyNCcgeGxpbms6aHJlZj0nI2cwLTczJyB5PSc4Mi4yOTE0Jy8+CjwvZz4KPC9zdmc+');
+}
+
+div.contents {
+    background-color: transparent;
+    border: 0px none;
+    margin-bottom: 3em;
+    padding: 0px;
+}
+div.contents li {
+    margin-bottom: 0.4em;
+}
+
+
+/* when we have a local TOC, don't make headers into prominent links */
+a.toc-backref {
+    color: inherit;
+    text-decoration: inherit;
+}
