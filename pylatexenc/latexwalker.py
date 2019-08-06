@@ -129,9 +129,31 @@ class LatexWalkerError(Exception):
 
 class LatexWalkerParseError(LatexWalkerError):
     """
-    Parse error.  The following attributes are available: `msg` (the error
-    message), `s` (the parsed string), `pos` (the position of the error in the
-    string, 0-based index).
+    Represents an error while parsing LaTeX code.
+
+    The following attributes are available if they were provided to the class
+    constructor:
+
+    .. py:attribute:: msg
+
+       The error message
+
+    .. py:attribute:: s
+
+       The string that was currently being parsed
+
+    .. py:attribute:: pos
+    
+       The index in the string where the error occurred, starting at zero.
+
+    .. py:attribute:: lineno
+
+       The line number where the error occurred, starting at 1.
+
+    .. py:attribute:: colno
+
+       The column number where the error occurred in the line `lineno`, starting
+       at 1.
     """
     def __init__(self, msg, s=None, pos=None, lineno=None, colno=None):
         self.input_source = None # attribute can be set to add to error msg display
