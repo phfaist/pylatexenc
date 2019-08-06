@@ -904,7 +904,7 @@ class ParsingState(object):
         If no arguments are provided, this returns a copy of the present parsing
         context object.
         """
-        p = ParsingState(**self.get_fields())
+        p = self.__class__(**self.get_fields())
         for k, v in kwargs.items():
             if k not in self._fields:
                 raise ValueError("Invalid field for ParsingState: {}={!r}".format(k, v))
