@@ -904,12 +904,19 @@ class ParsingState(object):
         If no arguments are provided, this returns a copy of the present parsing
         context object.
         """
-        p = ParsingState(**dict([(f, getattr(self, f)) for f in self._fields]))
+        p = ParsingState(**self.get_fields())
         for k, v in kwargs.items():
             if k not in self._fields:
                 raise ValueError("Invalid field for ParsingState: {}={!r}".format(k, v))
             setattr(p, k, v)
         return p
+
+    def get_fields(self):
+        r"""
+        Returns the fields and values associated with this `ParsingState` as a
+        dictionary.
+        """
+        return dict([(f, getattr(self, f)) for f in self._fields])
 
 
 # ------------------------------------------------------------------------------
