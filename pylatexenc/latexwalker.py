@@ -848,17 +848,17 @@ class _PushPropOverride(object):
 
 class ParsingState(object):
     r"""
-    Stores some information about the current parsing context, such as whether
-    we are currently in a math mode block.
+    Stores some information about the current parsing state, such as whether we
+    are currently in a math mode block.
 
     One of the ideas of `pylatexenc` is to make the parsing of LaTeX code mostly
-    context-independent mark-up parsing (in contrast to a full TeX engine, whose
+    state-independent mark-up parsing (in contrast to a full TeX engine, whose
     state constantly changes and whose parsing behavior is altered dynamically
-    while parsing).  However a minimal context might come in handy sometimes.
-    Perhaps some macros or specials should behave differently in math mode than
-    in text mode.
+    while parsing).  However a minimal state of the context might come in handy
+    sometimes.  Perhaps some macros or specials should behave differently in
+    math mode than in text mode.
 
-    Stores some essential information that is associated with
+    This class also stores some essential information that is associated with
     :py:class:`LatexNode`\ 's and which provides a context to better understand
     the node structure.  For instance, we store the original parsed string, and
     each node refers to which part of the string they represent.
@@ -870,7 +870,8 @@ class ParsingState(object):
     .. py:attribute:: latex_context
 
        The latex context (with macros/environments specifications) that was used
-       when parsing the string `s`.
+       when parsing the string `s`.  This is a
+       :py:class:`pylatexenc.macrospec.LatexContextDb` object.
 
     .. py:attribute:: in_math_mode
 
@@ -987,6 +988,13 @@ class LatexWalker(object):
            This option is ignored starting from `pylatexenc 2`.  Instead, you
            should set the option `math_mode=` accordingly in
            :py:class:`pylatexenc.latex2text.LatexNodes2Text`.
+
+
+    .. py:attribute:: s
+    
+       The string that is being parsed.
+
+       Do NOT modify this attribute.
     """
 
     def __init__(self, s, latex_context=None, **kwargs):
@@ -1027,7 +1035,14 @@ class LatexWalker(object):
             if 'macro_dict' in kwargs:
                 raise TypeError("Cannot specify both `latex_context=` and `macro_dict=` arguments")
 
-        self.latex_context = latex_context
+
+        # We don't store the latex_context in an attribute, because we always
+        # access it via the current parsing_state
+
+        self.default_parsing_state = ParsingState(
+            s=self.s,
+            latex_context=latex_context,
+        )
 
 
         #
@@ -1048,19 +1063,14 @@ class LatexWalker(object):
             # any flags left which we haven't recognized
             logger.warning("LatexWalker(): Unknown flag(s) encountered: %r", kwargs.keys())
 
-        self.default_parsing_state = ParsingState(
-            s=self.s,
-            latex_context=self.latex_context,
-        )
-
         super(LatexWalker, self).__init__()
 
 
     def make_parsing_state(self, **kwargs):
         r"""
         Return a new parsing context object that corresponds to the current string
-        that we are parsing (`self.s`) and the current latex context
-        (`self.latex_context`).
+        that we are parsing (`s` provided to the constructor) and the current
+        latex context (`latex_context` provided to the constructor).
 
         If no arguments are provided, this returns the default parsing context.
 
@@ -1259,7 +1269,9 @@ class LatexWalker(object):
         if s.startswith('$', pos):
             return LatexToken(tok='mathmode_inline', arg='$', pos=pos, len=1, pre_space=space)
 
-        sspec = self.latex_context.test_for_specials(s, pos, parsing_state=parsing_state)
+        sspec = parsing_state.latex_context.test_for_specials(
+            s, pos, parsing_state=parsing_state
+        )
         if sspec is not None:
             return LatexToken(tok='specials', arg=sspec,
                               pos=pos, len=len(sspec.specials_chars), pre_space=space)
@@ -1599,7 +1611,7 @@ class LatexWalker(object):
 
         pos = firsttok.pos + firsttok.len
 
-        env_spec = self.latex_context.get_environment_spec(environmentname)
+        env_spec = parsing_state.latex_context.get_environment_spec(environmentname)
         if env_spec is None:
             env_spec = macrospec.EnvironmentSpec('')
 
@@ -1961,7 +1973,7 @@ class LatexWalker(object):
             if tok.tok == 'macro':
                 # read a macro. see if it has arguments.
                 macroname = tok.arg
-                mspec = self.latex_context.get_macro_spec(macroname)
+                mspec = parsing_state.latex_context.get_macro_spec(macroname)
                 if mspec is None:
                     mspec = macrospec.MacroSpec('')
 
