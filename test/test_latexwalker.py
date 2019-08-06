@@ -136,28 +136,30 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
 '''
         lw = LatexWalker(latextext, tolerant_parsing=True)
 
-        self.assertEqual(lw.get_latex_expression(pos=0),
-                         (LatexCharsNode(parsed_context=lw.parsed_context,
+        parsing_state = lw.make_parsing_state()
+
+        self.assertEqual(lw.get_latex_expression(pos=0, parsing_state=parsing_state),
+                         (LatexCharsNode(parsing_state=parsing_state,
                                          chars='T',
                                          pos=0, len=1),0,1,))
         p = latextext.find(r'\`')
-        self.assertEqual(lw.get_latex_expression(pos=p),
-                         (LatexMacroNode(parsed_context=lw.parsed_context,
+        self.assertEqual(lw.get_latex_expression(pos=p, parsing_state=parsing_state),
+                         (LatexMacroNode(parsing_state=parsing_state,
                                          macroname='`',
                                          nodeargd=None, pos=p, len=2),p,2,))
         p = latextext.find(r'{')
-        self.assertEqual(lw.get_latex_expression(pos=p),
-                         (LatexGroupNode(parsed_context=lw.parsed_context,
+        self.assertEqual(lw.get_latex_expression(pos=p, parsing_state=parsing_state),
+                         (LatexGroupNode(parsing_state=parsing_state,
                                          nodelist=[
-                                             LatexCharsNode(parsed_context=lw.parsed_context,
+                                             LatexCharsNode(parsing_state=parsing_state,
                                                             chars='bold text',
                                                             pos=p+1,len=9)
                                          ],
                                          pos=p, len=11),
                           p,11,))
         p = latextext.find(r'%')-2 # check: correctly skips comments also after space
-        self.assertEqual(lw.get_latex_expression(pos=p),
-                         (LatexMacroNode(parsed_context=lw.parsed_context,
+        self.assertEqual(lw.get_latex_expression(pos=p, parsing_state=parsing_state),
+                         (LatexMacroNode(parsing_state=parsing_state,
                                          macroname='item',
                                          nodeargd=None,
                                          pos=p+2+len('% here goes a comment\n'),
@@ -165,19 +167,23 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
                           p+2+len('% here goes a comment\n'),5,))
         # check correct behavior if directly on brace close
         p = latextext.find(r'}')
-        self.assertEqual(lw.get_latex_expression(pos=p, strict_braces=True),
-                         (LatexCharsNode(parsed_context=lw.parsed_context,
+        self.assertEqual(lw.get_latex_expression(pos=p, parsing_state=parsing_state,
+                                                 strict_braces=True),
+                         (LatexCharsNode(parsing_state=parsing_state,
                                          chars='', pos=p, len=0),p,0,))
         lw2 = LatexWalker(latextext, tolerant_parsing=False)
-        self.assertEqual(lw2.get_latex_expression(pos=p, strict_braces=False),
-                         (LatexCharsNode(parsed_context=lw2.parsed_context,
+        parsing_state2 = lw2.make_parsing_state()
+        self.assertEqual(lw2.get_latex_expression(pos=p, parsing_state=parsing_state2,
+                                                  strict_braces=False),
+                         (LatexCharsNode(parsing_state=parsing_state2,
                                          chars='', pos=p, len=0),p,0,))
         with self.assertRaises(LatexWalkerParseError):
-            dummy = lw2.get_latex_expression(pos=p, strict_braces=True)
+            dummy = lw2.get_latex_expression(pos=p, parsing_state=parsing_state2,
+                                             strict_braces=True)
         
         p = latextext.find(r'?`')
-        self.assertEqual(lw.get_latex_expression(pos=p),
-                         (LatexSpecialsNode(parsed_context=lw.parsed_context,
+        self.assertEqual(lw.get_latex_expression(pos=p, parsing_state=parsing_state),
+                         (LatexSpecialsNode(parsing_state=parsing_state,
                                             specials_chars='?`',
                                             nodeargd=None,
                                             pos=p, len=2),
@@ -196,16 +202,18 @@ Indeed thanks to \cite[Lemma 3]{Author}, we know that...
 '''
         lw = LatexWalker(latextext, tolerant_parsing=False)
 
+        parsing_state = lw.make_parsing_state()
+
         p = latextext.find(r'\textbf')+len(r'\textbf')
-        self.assertEqual(lw.get_latex_maybe_optional_arg(pos=p), None)
+        self.assertEqual(lw.get_latex_maybe_optional_arg(pos=p, parsing_state=parsing_state), None)
         p = latextext.find(r'\cite')+len(r'\cite')
-        self.assertEqual(lw.get_latex_maybe_optional_arg(pos=p),
+        self.assertEqual(lw.get_latex_maybe_optional_arg(pos=p, parsing_state=parsing_state),
                          (LatexGroupNode(
-                             parsed_context=lw.parsed_context,
+                             parsing_state=parsing_state,
                              delimiters=('[', ']'),
                              nodelist=[
                                  LatexCharsNode(
-                                     parsed_context=lw.parsed_context,
+                                     parsing_state=parsing_state,
                                      chars='Lemma 3',
                                      pos=p+1,
                                      len=len('Lemma 3'),
@@ -227,19 +235,20 @@ Indeed thanks to \cite[Lemma 3]{Author}, we know that...
 Also: {\itshape some italic text}.
 '''
         lw = LatexWalker(latextext, tolerant_parsing=False)
+        parsing_state = lw.make_parsing_state()
 
         p = latextext.find(r'Also: {')+len('Also:') # points on space after 'Also:'
         good_parsed_structure = \
             ( LatexGroupNode(
-                parsed_context=lw.parsed_context,
+                parsing_state=parsing_state,
                 delimiters=('{','}'),
                 nodelist=[
-                    LatexMacroNode(parsed_context=lw.parsed_context,
+                    LatexMacroNode(parsing_state=parsing_state,
                                    macroname='itshape',
                                    macro_post_space=' ',
                                    pos=p+2,
                                    len=len(r'\itshape ')),
-                    LatexCharsNode(parsed_context=lw.parsed_context,
+                    LatexCharsNode(parsing_state=parsing_state,
                                    chars='some italic text',
                                    pos=(p+16-5),
                                    len=32-16)
@@ -249,21 +258,21 @@ Also: {\itshape some italic text}.
               ),
               p+1, len(r'{\itshape some italic text}'), )
         self.assertEqual(
-            lw.get_latex_braced_group(pos=p, brace_type='{'),
+            lw.get_latex_braced_group(pos=p, brace_type='{', parsing_state=parsing_state),
             good_parsed_structure
         )
         self.assertEqual(
-            lw.get_latex_braced_group(pos=p+1, brace_type='{'),
+            lw.get_latex_braced_group(pos=p+1, brace_type='{', parsing_state=parsing_state),
             good_parsed_structure
         )
 
         p = latextext.find(r'[(i)]')
         self.assertEqual(
-            lw.get_latex_braced_group(pos=p, brace_type='['),
-            (LatexGroupNode(parsed_context=lw.parsed_context,
+            lw.get_latex_braced_group(pos=p, brace_type='[', parsing_state=parsing_state),
+            (LatexGroupNode(parsing_state=parsing_state,
                             delimiters=('[', ']'),
                             nodelist=[
-                                LatexCharsNode(parsed_context=lw.parsed_context,
+                                LatexCharsNode(parsing_state=parsing_state,
                                                chars='(i)',
                                                pos=p+1, len=3),
                             ],
@@ -282,37 +291,38 @@ Indeed thanks to \cite[Lemma 3]{Author}, we know that...
 Also: {\itshape some italic text}.
 '''
         lw = LatexWalker(latextext, tolerant_parsing=False)
+        parsing_state = lw.make_parsing_state()
 
         p = latextext.find(r'\begin{enumerate}')
         good_parsed_structure = \
             (LatexEnvironmentNode(
-                parsed_context=lw.parsed_context,
+                parsing_state=parsing_state,
                 environmentname='enumerate',
                 nodelist=[
-                    LatexCharsNode(parsed_context=lw.parsed_context,
+                    LatexCharsNode(parsing_state=parsing_state,
                                    chars='\n',
                                    pos=p+22, len=1),
-                    LatexMacroNode(parsed_context=lw.parsed_context,
+                    LatexMacroNode(parsing_state=parsing_state,
                                    macroname='item',
-                                   nodeargd=macrospec.ParsedMacroArgs([None]),
+                                   nodeargd=macrospec.ParsedMacroArgs(argspec='[', argnlist=[None]),
                                    macro_post_space=' ',
                                    pos=p+23, len=6),
-                    LatexCharsNode(parsed_context=lw.parsed_context,
+                    LatexCharsNode(parsing_state=parsing_state,
                                    chars='Hi there!  ',
                                    pos=p+23+6, len=17-6),
-                    LatexCommentNode(parsed_context=lw.parsed_context,
+                    LatexCommentNode(parsing_state=parsing_state,
                                      comment=' here goes a comment',
                                      comment_post_space='\n ',
                                      pos=p+23+17, len=38-17+2),
                     LatexMacroNode(
-                        parsed_context=lw.parsed_context,
+                        parsing_state=parsing_state,
                         macroname='item',
-                        nodeargd=macrospec.ParsedMacroArgs([
+                        nodeargd=macrospec.ParsedMacroArgs(argspec='[', argnlist=[
                             LatexGroupNode(
-                                parsed_context=lw.parsed_context,
+                                parsing_state=parsing_state,
                                 delimiters=('[', ']'),
                                 nodelist=[
-                                    LatexCharsNode(parsed_context=lw.parsed_context,
+                                    LatexCharsNode(parsing_state=parsing_state,
                                                    chars='a',
                                                    pos=p+23+39+7, len=1)
                                 ],
@@ -321,17 +331,17 @@ Also: {\itshape some italic text}.
                         pos=p+23+39+1,
                         len=9-1
                     ),
-                    LatexCharsNode(parsed_context=lw.parsed_context,
+                    LatexCharsNode(parsing_state=parsing_state,
                                    chars=' Hello!  @@@\n     ',
                                    pos=p+23+39+9,
                                    len=22+5-9)
                 ],
-                nodeargd=macrospec.ParsedMacroArgs([
+                nodeargd=macrospec.ParsedMacroArgs(argspec='[', argnlist=[
                     LatexGroupNode(
-                        parsed_context=lw.parsed_context,
+                        parsing_state=parsing_state,
                         delimiters=('[', ']'),
                         nodelist=[
-                            LatexCharsNode(parsed_context=lw.parsed_context,
+                            LatexCharsNode(parsing_state=parsing_state,
                                            chars='(i)',
                                            pos=p+18,len=21-18)
                         ],
@@ -341,16 +351,19 @@ Also: {\itshape some italic text}.
                 len=latextext.find(r'\end{enumerate}')+len(r'\end{enumerate}')-p
              ), p, latextext.find(r'\end{enumerate}')+len(r'\end{enumerate}')-p)
         self.assertEqual(
-            lw.get_latex_environment(pos=p, environmentname='enumerate'),
+            lw.get_latex_environment(pos=p, environmentname='enumerate',
+                                     parsing_state=parsing_state),
             good_parsed_structure
         )
         self.assertEqual(
-            lw.get_latex_environment(pos=p),
+            lw.get_latex_environment(pos=p,
+                                     parsing_state=parsing_state),
             good_parsed_structure
         )
 
         with self.assertRaises(LatexWalkerParseError):
-            dummy = lw.get_latex_environment(pos=p, environmentname='XYZNFKLD-WRONG')
+            dummy = lw.get_latex_environment(pos=p, environmentname='XYZNFKLD-WRONG',
+                                             parsing_state=parsing_state)
 
     def test_get_latex_nodes(self):
 
@@ -363,30 +376,31 @@ Indeed thanks to \cite[Lemma 3]{Author}, we know that...
 Also: {\itshape some italic text}.
 '''
         lw = LatexWalker(latextext, tolerant_parsing=False)
+        parsing_state = lw.make_parsing_state()
 
         #lw.get_latex_nodes(pos=0,stop_upon_closing_brace=None,stop_upon_end_environment=None,
         #                   stop_upon_closing_mathmode=None)
 
         p = latextext.find('Also: {')
         self.assertEqual(
-            lw.get_latex_nodes(pos=p),
+            lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
             ([
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='Also: ',
                                pos=p, len=6),
-                LatexGroupNode(parsed_context=lw.parsed_context,
+                LatexGroupNode(parsing_state=parsing_state,
                                delimiters=('{', '}'),
                                nodelist=[
-                                   LatexMacroNode(parsed_context=lw.parsed_context,
+                                   LatexMacroNode(parsing_state=parsing_state,
                                                   macroname='itshape',
                                                   macro_post_space=' ',
                                                   pos=p+7,len=16-7),
-                                   LatexCharsNode(parsed_context=lw.parsed_context,
+                                   LatexCharsNode(parsing_state=parsing_state,
                                                   chars='some italic text',
                                                   pos=p+16,len=32-16)
                                ],
                                pos=p+6,len=33-6),
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='.\n',
                                pos=p+33,len=2)
             ], p, len(latextext)-p)
@@ -394,12 +408,12 @@ Also: {\itshape some italic text}.
 
         p = latextext.find('Also: {')+len('Also: {') # points inside right after open brace
         self.assertEqual(
-            lw.get_latex_nodes(pos=p, stop_upon_closing_brace='}'),
+            lw.get_latex_nodes(pos=p, stop_upon_closing_brace='}', parsing_state=parsing_state),
             ([
-                LatexMacroNode(parsed_context=lw.parsed_context,
+                LatexMacroNode(parsing_state=parsing_state,
                                macroname='itshape', macro_post_space=' ',
                                pos=p,len=16-7),
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='some italic text',
                                pos=p+16-7,len=32-16),
              ], p, len(r'\itshape some italic text}')))
@@ -409,42 +423,43 @@ Also: {\itshape some italic text}.
         lineindeed = latextext[pindeed:latextext.find('\n', pindeed)]
         lw2 = LatexWalker(lineindeed, tolerant_parsing=False,
                           macro_dict={'cite': macrospec.std_macro('cite',False,4)})
+        parsing_state2 = lw2.make_parsing_state()
         self.assertEqual(
-            lw2.get_latex_nodes(pos=0),
+            lw2.get_latex_nodes(pos=0, parsing_state=parsing_state2),
             ([
-                LatexCharsNode(parsed_context=lw2.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state2,
                                chars='Indeed thanks to ',
                                pos=0,len=17),
                 LatexMacroNode(
-                    parsed_context=lw2.parsed_context,
+                    parsing_state=parsing_state2,
                     macroname='cite',
-                    nodeargd=macrospec.ParsedMacroArgs([
-                        LatexCharsNode(parsed_context=lw2.parsed_context,
+                    nodeargd=macrospec.ParsedMacroArgs(argspec='{{{{', argnlist=[
+                        LatexCharsNode(parsing_state=parsing_state2,
                                        chars='[',
                                        pos=22,len=1),
-                        LatexCharsNode(parsed_context=lw2.parsed_context,
+                        LatexCharsNode(parsing_state=parsing_state2,
                                        chars='L',
                                        pos=23,len=1),
-                        LatexCharsNode(parsed_context=lw2.parsed_context,
+                        LatexCharsNode(parsing_state=parsing_state2,
                                        chars='e',
                                        pos=24,len=1),
-                        LatexCharsNode(parsed_context=lw2.parsed_context,
+                        LatexCharsNode(parsing_state=parsing_state2,
                                        chars='m',
                                        pos=25,len=1),
                     ]),
                     pos=17,len=26-17),
-            LatexCharsNode(parsed_context=lw2.parsed_context,
+            LatexCharsNode(parsing_state=parsing_state2,
                            chars='ma 3]',
                            pos=26,len=31-26),
-            LatexGroupNode(parsed_context=lw2.parsed_context,
+            LatexGroupNode(parsing_state=parsing_state2,
                            delimiters=('{', '}'),
                            nodelist=[
-                               LatexCharsNode(parsed_context=lw2.parsed_context,
+                               LatexCharsNode(parsing_state=parsing_state2,
                                               chars='Author',
                                               pos=32,len=38-32),
                            ],
                            pos=31,len=39-31),
-            LatexCharsNode(parsed_context=lw2.parsed_context,
+            LatexCharsNode(parsing_state=parsing_state2,
                            chars=', we know that...',
                            pos=39,len=56-39),
             ], 0, len(lineindeed)))
@@ -461,16 +476,17 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
 """
 
         lw = LatexWalker(latextext, tolerant_parsing=False)
+        parsing_state = lw.make_parsing_state()
 
         p = latextext.find('$')
-        good_parsed_structure = [
-            LatexMacroNode(parsed_context=lw.parsed_context,
+        good_parsed_structure = lambda parsing_state: [
+            LatexMacroNode(parsing_state=parsing_state,
                            macroname=r'vec',
-                           nodeargd=macrospec.ParsedMacroArgs([
-                               LatexGroupNode(parsed_context=lw.parsed_context,
+                           nodeargd=macrospec.ParsedMacroArgs(argspec='{', argnlist=[
+                               LatexGroupNode(parsing_state=parsing_state,
                                               delimiters=('{', '}'),
                                               nodelist=[
-                                                  LatexCharsNode(parsed_context=lw.parsed_context,
+                                                  LatexCharsNode(parsing_state=parsing_state,
                                                                  chars='x',
                                                                  pos=1+40,len=1)
                                               ],
@@ -478,46 +494,56 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
                            ]),
                            macro_post_space='',
                            pos=1+35,len=42-35),
-            LatexCharsNode(parsed_context=lw.parsed_context,
+            LatexCharsNode(parsing_state=parsing_state,
                            chars=r' + ',
                            pos=1+42,len=45-42),
-            LatexMacroNode(parsed_context=lw.parsed_context,
+            LatexMacroNode(parsing_state=parsing_state,
                            macroname=r'hat',
-                           nodeargd=macrospec.ParsedMacroArgs([
-                               LatexCharsNode(parsed_context=lw.parsed_context,
+                           nodeargd=macrospec.ParsedMacroArgs(argspec='{', argnlist=[
+                               LatexCharsNode(parsing_state=parsing_state,
                                               chars='p',
                                               pos=1+50,len=1)]),
                            macro_post_space=' ',
                            pos=1+45,len=51-45),
         ]
+        parsing_state_math = lw.make_parsing_state(in_math_mode=True)
+        self.assertTrue(parsing_state_math.in_math_mode)
+        nodes, pos, len_ = lw.get_latex_nodes(pos=p+1, stop_upon_closing_mathmode='$',
+                                              parsing_state=parsing_state_math)
         self.assertEqual(
-            lw.get_latex_nodes(pos=p+1, stop_upon_closing_mathmode='$'),
-            ( good_parsed_structure ,
+            (nodes, pos, len_),
+            ( good_parsed_structure(parsing_state_math) ,
               p+1, len(r'\vec{x} + \hat p$') ) # len includes closing token
         )
         # check that first node is math mode node when parsing starting from & including first '$'
+        nodes = lw.get_latex_nodes(pos=p, parsing_state=parsing_state)[0]
+        parsing_state_inner = nodes[0].nodelist[0].parsing_state # inner state -- math mode -- get this
+        self.assertTrue(parsing_state_inner.in_math_mode)
         self.assertEqual(
-            lw.get_latex_nodes(pos=p)[0][0],
-            LatexMathNode(parsed_context=lw.parsed_context,
-                          displaytype='inline', nodelist=good_parsed_structure,
+            nodes[0],
+            LatexMathNode(parsing_state=parsing_state,
+                          displaytype='inline',
+                          nodelist=good_parsed_structure(parsing_state_inner),
                           pos=p, len=len(r'$\vec{x} + \hat p$'), delimiters=('$','$'))
         )
 
 
         p = latextext.find('$$')
         self.assertEqual(
-            lw.get_latex_nodes(pos=p+2, stop_upon_closing_mathmode='$$'),
-            ( [ LatexCharsNode(parsed_context=lw.parsed_context,
+            lw.get_latex_nodes(pos=p+2, stop_upon_closing_mathmode='$$', parsing_state=parsing_state),
+            ( [ LatexCharsNode(parsing_state=parsing_state,
                                chars='\n   ax + b = y\n',
                                pos=p+2,len=len('\n   ax + b = y\n')), ] ,
               p+2, len('\n   ax + b = y\n$$') ) # len includes closing token
         )
         # check that first node is math mode node when parsing including the math mode start
+        nodes = lw.get_latex_nodes(pos=p, parsing_state=parsing_state)[0]
+        parsing_state_inner = nodes[0].nodelist[0].parsing_state # inner "math mode" state
         self.assertEqual(
-            lw.get_latex_nodes(pos=p)[0][0],
-            LatexMathNode(parsed_context=lw.parsed_context,
+            nodes[0],
+            LatexMathNode(parsing_state=parsing_state,
                           displaytype='display',
-                          nodelist=[ LatexCharsNode(parsed_context=lw.parsed_context,
+                          nodelist=[ LatexCharsNode(parsing_state=parsing_state_inner,
                                                     chars='\n   ax + b = y\n',
                                                     pos=p+2,len=len('\n   ax + b = y\n')), ],
                           delimiters=('$$', '$$'),
@@ -526,26 +552,26 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
 
 
         p = latextext.find(r'\[')
-        good_parsed_structure = [
-            LatexCharsNode(parsed_context=lw.parsed_context,
+        good_parsed_structure = lambda parsing_state, ps2, ps3: [
+            LatexCharsNode(parsing_state=parsing_state,
                            chars=' cx^2+z=-d',
                            pos=p+2,len=12-2),
-            LatexMacroNode(parsed_context=lw.parsed_context,
+            LatexMacroNode(parsing_state=parsing_state,
                            macroname='quad',
                            pos=p+12,len=17-12),
-            LatexMacroNode(parsed_context=lw.parsed_context,
+            LatexMacroNode(parsing_state=parsing_state,
                            macroname='text',
-                           nodeargd=macrospec.ParsedMacroArgs([
+                           nodeargd=macrospec.ParsedMacroArgs(argspec='{', argnlist=[
                                LatexGroupNode(
-                                   parsed_context=lw.parsed_context,
+                                   parsing_state=ps2,
                                    delimiters=('{', '}'),
                                    nodelist=[
-                                       LatexCharsNode(parsed_context=lw.parsed_context,
+                                       LatexCharsNode(parsing_state=ps2,
                                                       chars='if ',
                                                       pos=p+23,len=26-23),
-                                       LatexMathNode(parsed_context=lw.parsed_context,
+                                       LatexMathNode(parsing_state=ps2,
                                                      displaytype='inline', nodelist=[
-                                                         LatexCharsNode(parsed_context=lw.parsed_context,
+                                                         LatexCharsNode(parsing_state=ps3,
                                                                         chars='x<0',
                                                                         pos=p+27,len=3)
                                                      ],
@@ -555,80 +581,126 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
                                    pos=p+22,len=32-22)
                            ]),
                            pos=p+17,len=32-17),
-            LatexCharsNode(parsed_context=lw.parsed_context,
+            LatexCharsNode(parsing_state=parsing_state,
                            chars=' ',
                            pos=p+32,len=1),
         ]
+        nodes, pos, len_ = lw.get_latex_nodes(pos=p+2, stop_upon_closing_mathmode=r'\]',
+                                              parsing_state=parsing_state_math)
+        parsing_state2 = nodes[2].nodeargd.argnlist[0].parsing_state # "inner text mode" state
+        parsing_state3 = nodes[2].nodeargd.argnlist[0].nodelist[1].nodelist[0].parsing_state
+        self.assertFalse(parsing_state2.in_math_mode)
+        self.assertTrue(parsing_state3.in_math_mode)
         self.assertEqual(
-            lw.get_latex_nodes(pos=p+2, stop_upon_closing_mathmode=r'\]'),
-            ( good_parsed_structure ,
+            (nodes, pos, len_),
+            ( good_parsed_structure(parsing_state_math, parsing_state2, parsing_state3) ,
               p+2, latextext.find(r'\]', p+2) - (p+2) + 2 ) # len includes closing token
         )
         # check that first node is math mode node when parsing including the math mode start
+        nodes = lw.get_latex_nodes(pos=p, parsing_state=parsing_state)[0]
+        parsing_state1 = nodes[0].nodelist[0].parsing_state
+        parsing_state2 = nodes[0].nodelist[2].nodeargd.argnlist[0].parsing_state
+        parsing_state3 = nodes[0].nodelist[2].nodeargd.argnlist[0].nodelist[1].nodelist[0].parsing_state
         self.assertEqual(
-            lw.get_latex_nodes(pos=p)[0][0],
-            LatexMathNode(parsed_context=lw.parsed_context,
-                          displaytype='display', nodelist=good_parsed_structure,
+            nodes[0],
+            LatexMathNode(parsing_state=parsing_state,
+                          displaytype='display',
+                          nodelist=good_parsed_structure(parsing_state1, parsing_state2,
+                                                         parsing_state3),
                           delimiters=(r'\[', r'\]'),
                           pos=p,len=latextext.find(r'\]', p+2) + 2 - p)
         )
 
         p = latextext.find(r'\(')
-        good_parsed_structure = [
+        good_parsed_structure = lambda ps1, ps2a, ps2b, ps3: [
             LatexMacroNode(
-                parsed_context=lw.parsed_context,
+                parsing_state=ps1,
                 macroname='mbox',
-                nodeargd=macrospec.ParsedMacroArgs([
-                    LatexGroupNode(parsed_context=lw.parsed_context,
+                nodeargd=macrospec.ParsedMacroArgs(argspec='{', argnlist=[
+                    LatexGroupNode(parsing_state=ps2a,
                                    delimiters=('{', '}'),
                                    nodelist=[
-                                       LatexCharsNode(parsed_context=lw.parsed_context,
+                                       LatexCharsNode(parsing_state=ps2a,
                                                       chars='Prob',
                                                       pos=p-29+37,len=41-37)
                                    ],
                                    pos=p-29+36,len=42-36),
                 ]),
                 pos=p-29+31,len=42-31),
-            LatexCharsNode(parsed_context=lw.parsed_context,
+            LatexCharsNode(parsing_state=ps1,
                            chars='(',
                            pos=p-29+42,len=1),
             LatexMacroNode(
-                parsed_context=lw.parsed_context,
+                parsing_state=ps1,
                 macroname='mbox',
-                nodeargd=macrospec.ParsedMacroArgs([
+                nodeargd=macrospec.ParsedMacroArgs(argspec='{', argnlist=[
                     LatexGroupNode(
-                        parsed_context=lw.parsed_context,
+                        parsing_state=ps2b,
                         delimiters=('{', '}'),
                         nodelist=[
-                            LatexCharsNode(parsed_context=lw.parsed_context,
+                            LatexCharsNode(parsing_state=ps2b,
                                            chars='some event if ',
                                            pos=p-29+49,len=63-49),
-                            LatexMathNode(parsed_context=lw.parsed_context,
-                                          displaytype='inline', nodelist=[
-                                              LatexCharsNode(parsed_context=lw.parsed_context,
+                            LatexMathNode(parsing_state=ps2b,
+                                          displaytype='inline',
+                                          nodelist=[
+                                              LatexCharsNode(parsing_state=ps3,
                                                              chars='x>0',
                                                              pos=p-29+65,len=3)
-                                          ], delimiters=(r'\(', r'\)'),
+                                          ],
+                                          delimiters=(r'\(', r'\)'),
                                           pos=p-29+63,len=70-63),
                         ],
                         pos=p-29+48,len=71-48)
                 ]),
                 pos=p-29+43,len=71-43),
-            LatexCharsNode(parsed_context=lw.parsed_context,
+            LatexCharsNode(parsing_state=ps1,
                            chars=')=1',
                            pos=p-29+71,len=3),
         ]
+        nodes, pos, len_ = lw.get_latex_nodes(pos=p+2, stop_upon_closing_mathmode=r'\)',
+                                              parsing_state=parsing_state_math)
+        ps2a = nodes[0].nodeargd.argnlist[0].parsing_state
+        self.assertFalse(ps2a.in_math_mode)
+        ps2b = nodes[2].nodeargd.argnlist[0].parsing_state
+        self.assertFalse(ps2b.in_math_mode)
+        ps3 = nodes[2].nodeargd.argnlist[0].nodelist[1].nodelist[0].parsing_state
+        self.assertTrue(ps3.in_math_mode)
         self.assertEqual(
-            lw.get_latex_nodes(pos=p+2, stop_upon_closing_mathmode=r'\)'),
-            ( good_parsed_structure ,
+            ( nodes, pos, len_ ),
+            ( good_parsed_structure(parsing_state_math, ps2a, ps2b, ps3),
+              p+2, latextext.rfind(r'\)') - (p+2) + 2 ) # len includes closing token
+        )
+        # artificially parse expression in text mode to see that \mbox{} copies
+        # the state object instead of creating a new one
+        nodes, pos, len_ = lw.get_latex_nodes(pos=p+2, stop_upon_closing_mathmode=r'\)',
+                                              parsing_state=parsing_state)
+        ps2a = nodes[0].nodeargd.argnlist[0].parsing_state
+        self.assertFalse(ps2a.in_math_mode)
+        ps2b = nodes[2].nodeargd.argnlist[0].parsing_state
+        self.assertFalse(ps2b.in_math_mode)
+        ps3 = nodes[2].nodeargd.argnlist[0].nodelist[1].nodelist[0].parsing_state
+        self.assertTrue(ps3.in_math_mode)
+        self.assertEqual(
+            ( nodes, pos, len_ ),
+            ( good_parsed_structure(parsing_state, ps2a, ps2b, ps3),
               p+2, latextext.rfind(r'\)') - (p+2) + 2 ) # len includes closing token
         )
         # check that first node is math mode node when parsing including the math mode start
+        nodes, _, _ = lw.get_latex_nodes(pos=p, parsing_state=parsing_state)
+        ps1 = nodes[0].nodelist[0].parsing_state
+        ps2a = nodes[0].nodelist[0].nodeargd.argnlist[0].parsing_state
+        self.assertFalse(ps2a.in_math_mode)
+        ps2b = nodes[0].nodelist[2].nodeargd.argnlist[0].parsing_state
+        self.assertFalse(ps2b.in_math_mode)
+        ps3 = nodes[0].nodelist[2].nodeargd.argnlist[0].nodelist[1].nodelist[0].parsing_state
+        self.assertTrue(ps3.in_math_mode)
         self.assertEqual(
-            lw.get_latex_nodes(pos=p)[0][0],
-            LatexMathNode(parsed_context=lw.parsed_context,
+            nodes[0],
+            LatexMathNode(parsing_state=parsing_state,
                           displaytype='inline',
-                          nodelist=good_parsed_structure, delimiters=(r'\(', r'\)'),
+                          nodelist=good_parsed_structure(ps1, ps2a, ps2b, ps3),
+                          delimiters=(r'\(', r'\)'),
                           pos=p, len=latextext.rfind(r'\)') + 2 - p)
         )
 
@@ -643,25 +715,26 @@ New paragraph here.
 % comment at end'''.lstrip()
 
         lw = LatexWalker(latextext, tolerant_parsing=True)
+        parsing_state = lw.make_parsing_state()
 
         self.assertEqual(
-            lw.get_latex_nodes(pos=0),
+            lw.get_latex_nodes(pos=0, parsing_state=parsing_state),
             ([
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='Hello ',
                                pos=0, len=6),
-                LatexCommentNode(parsed_context=lw.parsed_context,
+                LatexCommentNode(parsing_state=parsing_state,
                                  comment=' comment here',
                                  comment_post_space='\n  ',
                                  pos=6, len=20-6+1+2),
-                LatexCommentNode(parsed_context=lw.parsed_context,
+                LatexCommentNode(parsing_state=parsing_state,
                                  comment=' more comments ',
                                  comment_post_space='',
                                  pos=21+2, len=18-2),
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='\n\nNew paragraph here.\n',
                                pos=21+18, len=1+1+19+1),
-                LatexCommentNode(parsed_context=lw.parsed_context,
+                LatexCommentNode(parsing_state=parsing_state,
                                  comment=' comment at end',
                                  comment_post_space='',
                                  pos=21+18+2+20, len=16),
@@ -680,45 +753,46 @@ Also a \itshape% comment after a macro
 some italic text.""".lstrip()
         
         lw = LatexWalker(latextext, tolerant_parsing=True)
+        parsing_state = lw.make_parsing_state()
 
         self.assertEqual(
-            lw.get_latex_nodes(pos=0),
+            lw.get_latex_nodes(pos=0, parsing_state=parsing_state),
             ([
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='Line with ',
                                pos=0, len=10),
-                LatexCommentNode(parsed_context=lw.parsed_context,
+                LatexCommentNode(parsing_state=parsing_state,
                                  comment=' a comment here',
                                  comment_post_space='',
                                  pos=10, len=26-10),
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='\n\n',
                                pos=26, len=2),
-                LatexCommentNode(parsed_context=lw.parsed_context,
+                LatexCommentNode(parsing_state=parsing_state,
                                  comment=' line comment on its own',
                                  comment_post_space='\n',
                                  pos=27+1, len=25+1),
-                LatexCommentNode(parsed_context=lw.parsed_context,
+                LatexCommentNode(parsing_state=parsing_state,
                                  comment=' and a second line',
                                  comment_post_space='',
                                  pos=27+1+26, len=19),
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='\n\nAlso a ',
                                pos=27+1+26+19, len=2+7),
-                LatexMacroNode(parsed_context=lw.parsed_context,
+                LatexMacroNode(parsing_state=parsing_state,
                                macroname=r'itshape',
                                macro_post_space='',
                                nodeargd=macrospec.ParsedMacroArgs(argspec='',argnlist=[]),
                                pos=27+1+26+20+1+7, len=15-7),
-                LatexCommentNode(parsed_context=lw.parsed_context,
+                LatexCommentNode(parsing_state=parsing_state,
                                  comment=' comment after a macro',
                                  comment_post_space='\n',
                                  pos=27+1+26+20+1+15, len=39-15),
-                LatexCommentNode(parsed_context=lw.parsed_context,
+                LatexCommentNode(parsing_state=parsing_state,
                                  comment=' and also a second line',
                                  comment_post_space='\n',
                                  pos=27+1+26+20+1+39, len=25),
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='some italic text.',
                                pos=27+1+26+20+1+39+25, len=17),
 
@@ -738,55 +812,59 @@ Indeed thanks to \cite[Lemma 3]{Author}, we know that...
 Also: {\itshape some italic text}.
 '''
         lw = LatexWalker(latextext, tolerant_parsing=False)
+        parsing_state = lw.make_parsing_state()
 
         p = 0
         self.assertEqual(
-            lw.get_latex_nodes(pos=p, read_max_nodes=1),
+            lw.get_latex_nodes(pos=p, read_max_nodes=1, parsing_state=parsing_state),
             ([
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='Text and ',
                                pos=p, len=33-24),
             ], p, 33-24))
 
         p = latextext.find(r'ent and ') + 4 # points on second "and" on first line
+        nodes, pos, len_ = lw.get_latex_nodes(pos=p, read_max_nodes=5, parsing_state=parsing_state)
+        parsing_state_inner = nodes[3].nodelist[0].parsing_state # inner state -- math mode -- get this
+        self.assertTrue(parsing_state_inner.in_math_mode)
         self.assertEqual(
-            lw.get_latex_nodes(pos=p, read_max_nodes=5),
+            (nodes, pos, len_),
             ([
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='and ',
                                pos=p, len=4),
-                LatexMacroNode(parsed_context=lw.parsed_context,
+                LatexMacroNode(parsing_state=parsing_state,
                                macroname='textbf',
                                nodeargd=macrospec.ParsedMacroArgs(argspec='{', argnlist=[
-                                   LatexGroupNode(parsed_context=lw.parsed_context,
+                                   LatexGroupNode(parsing_state=parsing_state,
                                                   delimiters=('{', '}'),
                                                   nodelist=[
-                                                      LatexCharsNode(parsed_context=lw.parsed_context,
+                                                      LatexCharsNode(parsing_state=parsing_state,
                                                                      chars='bold text',
                                                                      pos=p+54-42, len=9)
                                                   ],
                                                   pos=p+53-42, len=11)
                                ]),
                                pos=p+46-42, len=64-46),
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars=' and ',
                                pos=p+64-42, len=69-64),
-                LatexMathNode(parsed_context=lw.parsed_context,
+                LatexMathNode(parsing_state=parsing_state,
                               displaytype='inline',
                               delimiters=('$', '$'),
                               nodelist=[
-                                  LatexMacroNode(parsed_context=lw.parsed_context,
+                                  LatexMacroNode(parsing_state=parsing_state_inner,
                                                  macroname='vec',
                                                  macro_post_space=' ',
                                                  nodeargd=macrospec.ParsedMacroArgs(argspec='{', argnlist=[
-                                                     LatexCharsNode(parsed_context=lw.parsed_context,
+                                                     LatexCharsNode(parsing_state=parsing_state_inner,
                                                                     chars='b',
                                                                     pos=p+75-42, len=1)
                                                  ]),
                                                  pos=p+70-42, len=76-70),
                               ],
                               pos=p+69-42, len=77-69),
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars=' more stuff for Fran',
                                pos=p+77-42, len=97-77),
             ], p, 97-42))
@@ -821,35 +899,37 @@ This is it."""
 
         lw = LatexWalker(latextext)
 
+        parsing_state = lw.make_parsing_state()
+
         p=0
         self.assertEqual(
-            lw.get_latex_nodes(pos=p),
+            lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
             ([
-                LatexCharsNode(parsed_context=lw.parsed_context, pos=0, len=20,
+                LatexCharsNode(parsing_state=parsing_state, pos=0, len=20,
                                chars='Use the environment '),
-                LatexMacroNode(parsed_context=lw.parsed_context, pos=20, len=40,
+                LatexMacroNode(parsing_state=parsing_state, pos=20, len=40,
                                macroname='verb',
                                macro_post_space='',
                                nodeargd=macrospec.ParsedVerbatimArgs(
                                    verbatim_chars_node=
-                                   LatexCharsNode(parsed_context=lw.parsed_context, pos=26, len=33,
+                                   LatexCharsNode(parsing_state=parsing_state, pos=26, len=33,
                                                   chars='\\begin{verbatim}...\\end{verbatim}'),
                                    verbatim_delimiters=('+', '+'),
                                )),
-                LatexCharsNode(parsed_context=lw.parsed_context, pos=60, len=4, chars=' to\n'),
+                LatexCharsNode(parsing_state=parsing_state, pos=60, len=4, chars=' to\n'),
                 LatexEnvironmentNode(
-                    parsed_context=lw.parsed_context, pos=64, len=91,
+                    parsing_state=parsing_state, pos=64, len=91,
                     environmentname='verbatim', nodelist=[],
                     nodeargd=macrospec.ParsedVerbatimArgs(
                         verbatim_chars_node=
                         LatexCharsNode(
-                            parsed_context=lw.parsed_context, pos=80, len=61,
+                            parsing_state=parsing_state, pos=80, len=61,
                             chars='\ntypeset \\verbatim text with \\LaTeX $ escapes \\(like this\\).\n'
                         ),
                         verbatim_delimiters=None,
                     )
                 ),
-                LatexCharsNode(parsed_context=lw.parsed_context, pos=155, len=12,
+                LatexCharsNode(parsing_state=parsing_state, pos=155, len=12,
                                chars='\nThis is it.')
             ],
             0,
@@ -867,36 +947,37 @@ This is it."""
 '''
 
         lw = LatexWalker(latextext, tolerant_parsing=False)
+        parsing_state = lw.make_parsing_state()
 
         p = 0
         self.assertEqual(
-            lw.get_latex_nodes(pos=p, read_max_nodes=3),
+            lw.get_latex_nodes(pos=p, read_max_nodes=3, parsing_state=parsing_state),
             ([
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='\n',
                                pos=0, len=1),
-                LatexMacroNode(parsed_context=lw.parsed_context,
+                LatexMacroNode(parsing_state=parsing_state,
                                macroname='documentclass',
                                nodeargd=macrospec.ParsedMacroArgs(argspec='[{', argnlist=[
-                                   LatexGroupNode(parsed_context=lw.parsed_context,
+                                   LatexGroupNode(parsing_state=parsing_state,
                                                   delimiters=('[', ']'),
                                                   nodelist=[
-                                                      LatexCharsNode(parsed_context=lw.parsed_context,
+                                                      LatexCharsNode(parsing_state=parsing_state,
                                                                      chars='stuff',
                                                                      pos=1+15,len=20-15),
                                                   ],
                                                   pos=1+14,len=21-14),
-                                   LatexGroupNode(parsed_context=lw.parsed_context,
+                                   LatexGroupNode(parsing_state=parsing_state,
                                                   delimiters=('{', '}'),
                                                   nodelist=[
-                                                      LatexCharsNode(parsed_context=lw.parsed_context,
+                                                      LatexCharsNode(parsing_state=parsing_state,
                                                                      chars='docclass',
                                                                      pos=1+22,len=30-22),
                                                   ],
                                                   pos=1+21,len=31-21)
                                ]),
                                pos=1+0,len=31),
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='\n\n',
                                pos=1+31, len=2),
             ], p, 34))

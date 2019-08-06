@@ -56,7 +56,7 @@ specs = [
             std_macro('hspace', False, 1),
             std_macro('vspace', False, 1),
 
-            std_macro('mbox', False, 1),
+            MacroSpec('mbox', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
 
             # (Note: single backslash) end of line with optional no-break ('*') and
             # additional vertical spacing, e.g. \\*[2mm]
@@ -85,12 +85,14 @@ specs = [
 
 
             std_macro('emph', False, 1),
-            std_macro('textit', False, 1),
-            std_macro('textbf', False, 1),
-            std_macro('textsc', False, 1),
-            std_macro('textsl', False, 1),
-            std_macro('text', False, 1),
-            std_macro('mathrm', False, 1),
+            MacroSpec('textrm', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textit', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textbf', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textsc', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textsl', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('text', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            std_macro('mathrm', False, 1), # only allowed in math mode anyway
+            std_macro('mathbb', False, 1), # only allowed in math mode anyway
 
             std_macro('label', False, 1),
             std_macro('ref', False, 1),

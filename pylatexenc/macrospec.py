@@ -179,6 +179,13 @@ class MacroStandardArgsParser(object):
         bracket on a new line after ``\\`` from being interpreted as the
         optional argument to ``\\``.
     
+      - `args_math_mode`: Either `None`, or a list of the same length as
+        `argspec`.  If a list is given, then each item must be `True`, `False`,
+        or `None`.  The corresponding argument (cf. `argspec`) is then
+        respectively parsed in math mode (`True`), in text mode (`False`), or
+        with the mode unchanged (`None`).  If `args_math_mode` is `None`, then
+        all arguments are parsed in the same mode as the current mode.
+
       - additional unrecognized keyword arguments are passed on to superclasses
         in case of multiple inheritance
 
@@ -190,12 +197,18 @@ class MacroStandardArgsParser(object):
 
     .. py:attribute:: optional_arg_no_space
 
-       See corresponding constructor argument.
+       See the corresponding constructor argument.
+
+    .. py:attribute:: args_math_mode
+
+       See the corresponding constructor argument.
     """
-    def __init__(self, argspec=None, optional_arg_no_space=False, **kwargs):
+    def __init__(self, argspec=None, optional_arg_no_space=False,
+                 args_math_mode=None, **kwargs):
         super(MacroStandardArgsParser, self).__init__(**kwargs)
         self.argspec = argspec if argspec else ''
         self.optional_arg_no_space = optional_arg_no_space
+        self.args_math_mode = args_math_mode
         # catch bugs, make sure that argspec is a string with only accepted chars
         if not isinstance(self.argspec, _basestring) or \
            not all(x in '*[{' for x in self.argspec):
@@ -204,7 +217,7 @@ class MacroStandardArgsParser(object):
                 .format(self.argspec)
             )
 
-    def parse_args(self, w, pos, parsing_context=None):
+    def parse_args(self, w, pos, parsing_state=None):
         r"""
         Parse the arguments encountered at position `pos` in the
         :py:class:`~pylatexenc.latexwalker.LatexWalker` instance `w`.
@@ -218,10 +231,10 @@ class MacroStandardArgsParser(object):
         `w.get_goken()`, `w.get_latex_expression()` etc., to parse and read
         arguments.
 
-        The argument `parsing_context` is the current parsing context in the
+        The argument `parsing_state` is the current parsing context in the
         :py:class:`~pylatexenc.latexwalker.LatexWalker` (e.g., are we currently
         in math mode?).  See doc for
-        :py:class:`~pylatexenc.latexwalker.ParsingContext`.
+        :py:class:`~pylatexenc.latexwalker.ParsingState`.
 
         This function should return a tuple `(argd, pos, len)` where:
 
@@ -240,17 +253,35 @@ class MacroStandardArgsParser(object):
 
         from . import latexwalker
 
-        if parsing_context is None:
-            parsing_context = latexwalker.ParsingContext()
+        if parsing_state is None:
+            parsing_state = w.make_parsing_state()
 
         argnlist = []
 
+        if self.args_math_mode is not None and \
+           len(self.args_math_mode) != len(self.argspec):
+            raise ValueError("Invalid args_math_mode={!r} for argspec={!r}!"
+                             .format(self.args_math_mode, self.argspec))
+
+        def get_inner_parsing_state(j):
+            if self.args_math_mode is None:
+                return parsing_state
+            amm = self.args_math_mode[j]
+            if amm is None or amm == parsing_state.in_math_mode:
+                return parsing_state
+            if amm == True:
+                return parsing_state.sub_context(in_math_mode=True)
+            return parsing_state.sub_context(in_math_mode=False)
+
         p = pos
 
-        for argt in self.argspec:
+        for j, argt in enumerate(self.argspec):
             if argt == '{':
-                (node, np, nl) = w.get_latex_expression(p, strict_braces=False,
-                                                        parsing_context=parsing_context)
+                (node, np, nl) = w.get_latex_expression(
+                    p,
+                    strict_braces=False,
+                    parsing_state=get_inner_parsing_state(j)
+                )
                 p = np + nl
                 argnlist.append(node)
 
@@ -261,8 +292,10 @@ class MacroStandardArgsParser(object):
                     argnlist.append(None)
                     continue
 
-                optarginfotuple = w.get_latex_maybe_optional_arg(p,
-                                                                 parsing_context=parsing_context)
+                optarginfotuple = w.get_latex_maybe_optional_arg(
+                    p,
+                    parsing_state=get_inner_parsing_state(j)
+                )
                 if optarginfotuple is None:
                     argnlist.append(None)
                     continue
@@ -276,7 +309,9 @@ class MacroStandardArgsParser(object):
                 if tok.tok == 'char' and tok.arg.startswith('*'):
                     # has star
                     argnlist.append(
-                        w.make_node(latexwalker.LatexCharsNode, chars='*', pos=tok.pos, len=1)
+                        w.make_node(latexwalker.LatexCharsNode,
+                                    parsing_state=get_inner_parsing_state(j),
+                                    chars='*', pos=tok.pos, len=1)
                     )
                     p = tok.pos + 1
                 else:
@@ -296,8 +331,9 @@ class MacroStandardArgsParser(object):
 
 
     def __repr__(self):
-        return '{}(argspec={!r}, optional_arg_no_space={!r})'.format(
-            self.__class__.__name__, self.argspec, self.optional_arg_no_space
+        return '{}(argspec={!r}, optional_arg_no_space={!r}, args_math_mode={!r})'.format(
+            self.__class__.__name__, self.argspec, self.optional_arg_no_space,
+            self.args_math_mode
         )
     
 
@@ -374,7 +410,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
         super(VerbatimArgsParser, self).__init__(argspec='{', **kwargs)
         self.verbatim_arg_type = verbatim_arg_type
 
-    def parse_args(self, w, pos, parsing_context=None):
+    def parse_args(self, w, pos, parsing_state=None):
 
         from . import latexwalker
 
@@ -393,7 +429,8 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             len_ = endverbpos-pos
 
             argd = ParsedVerbatimArgs(
-                verbatim_chars_node=w.make_node(latexwalker.LatexCharsNode, 
+                verbatim_chars_node=w.make_node(latexwalker.LatexCharsNode,
+                                                parsing_state=parsing_state,
                                                 chars=w.s[pos:pos+len_],
                                                 pos=pos,
                                                 len=len_)
@@ -425,6 +462,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
 
             argd = ParsedVerbatimArgs(
                 verbatim_chars_node=w.make_node(latexwalker.LatexCharsNode,
+                                                parsing_state=parsing_state,
                                                 chars=verbarg,
                                                 pos=beginpos,
                                                 len=endpos-beginpos),
@@ -959,7 +997,7 @@ class LatexContextDb(object):
                 return self.d[cat]['specials'][specials_chars]
         return self.unknown_specials_spec
 
-    def test_for_specials(self, s, pos, parsing_context=None):
+    def test_for_specials(self, s, pos, parsing_state=None):
         r"""
         Test the given position in the string for any LaTeX specials.  The lookup
         proceeds by searching for in all categories one by one and the first

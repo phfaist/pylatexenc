@@ -53,16 +53,17 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
     def test_marg_0(self):
         lw = latexwalker.LatexWalker(r'{ab}')
         s = MacroStandardArgsParser('{')
-        (argd, p, l) = s.parse_args(lw, 0)
+        parsing_state = lw.make_parsing_state()
+        (argd, p, l) = s.parse_args(lw, 0, parsing_state=parsing_state)
         self.assertPMAEqual(
             argd,
             ParsedMacroArgs(
                 argspec='{',
                 argnlist=[ LatexGroupNode(
-                    parsed_context=lw.parsed_context,
+                    parsing_state=parsing_state,
                     delimiters=('{','}'),
                     nodelist=[
-                        LatexCharsNode(parsed_context=lw.parsed_context,
+                        LatexCharsNode(parsing_state=parsing_state,
                                        chars='ab',
                                        pos=1,len=2)
                     ],
@@ -73,11 +74,12 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
     def test_marg_1(self):
         lw = latexwalker.LatexWalker(r'\cmd ab')
         s = MacroStandardArgsParser('{')
-        (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
+        parsing_state = lw.make_parsing_state()
+        (argd, p, l) = s.parse_args(lw, len(r'\cmd'), parsing_state=parsing_state)
         self.assertPMAEqual(
             argd,
             ParsedMacroArgs(argspec='{', argnlist=[
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='a',
                                pos=len(r'\cmd')+1,len=1)
             ])
@@ -86,15 +88,16 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
     def test_oarg_0(self):
         lw = latexwalker.LatexWalker(r'\cmd[ab] xyz')
         s = MacroStandardArgsParser('[')
-        (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
+        parsing_state = lw.make_parsing_state()
+        (argd, p, l) = s.parse_args(lw, len(r'\cmd'), parsing_state=parsing_state)
         self.assertPMAEqual(
             argd,
             ParsedMacroArgs(argspec='[', argnlist=[
                 LatexGroupNode(
-                    parsed_context=lw.parsed_context,
+                    parsing_state=parsing_state,
                     delimiters=('[', ']'),
                     nodelist=[
-                        LatexCharsNode(parsed_context=lw.parsed_context,
+                        LatexCharsNode(parsing_state=parsing_state,
                                        chars='ab',
                                        pos=5,len=2)
                     ],
@@ -123,11 +126,12 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
     def test_star_1(self):
         lw = latexwalker.LatexWalker(r'\cmd* xyz')
         s = MacroStandardArgsParser('*')
-        (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
+        parsing_state = lw.make_parsing_state()
+        (argd, p, l) = s.parse_args(lw, len(r'\cmd'), parsing_state=parsing_state)
         self.assertPMAEqual(
             argd,
             ParsedMacroArgs(argspec='*', argnlist=[
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='*',
                                pos=4,len=1)
             ])
@@ -136,11 +140,12 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
     def test_star_2(self):
         lw = latexwalker.LatexWalker(r'\cmd * xyz')
         s = MacroStandardArgsParser('*')
-        (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
+        parsing_state = lw.make_parsing_state()
+        (argd, p, l) = s.parse_args(lw, len(r'\cmd'), parsing_state=parsing_state)
         self.assertPMAEqual(
             argd,
             ParsedMacroArgs(argspec='*', argnlist=[
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='*',
                                pos=5,len=1)
             ])
@@ -149,24 +154,25 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
     def test_combined_0(self):
         lw = latexwalker.LatexWalker(r'\cmd{ab}c*')
         s = MacroStandardArgsParser('{*[{*')
-        (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
+        parsing_state = lw.make_parsing_state()
+        (argd, p, l) = s.parse_args(lw, len(r'\cmd'), parsing_state=parsing_state)
         self.assertPMAEqual(
             argd,
             ParsedMacroArgs(argspec='{*[{*', argnlist=[
-                LatexGroupNode(parsed_context=lw.parsed_context,
+                LatexGroupNode(parsing_state=parsing_state,
                                delimiters=('{', '}'),
                                nodelist=[
-                                   LatexCharsNode(parsed_context=lw.parsed_context,
+                                   LatexCharsNode(parsing_state=parsing_state,
                                                   chars='ab',
                                                   pos=5,len=2)
                                ],
                                pos=4,len=4),
                 None, 
                 None,
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='c',
                                pos=8,len=1),
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='*',
                                pos=9,len=1)
             ])
@@ -175,26 +181,27 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
     def test_combined_1(self):
         lw = latexwalker.LatexWalker(r'\cmd x[ab]c*')
         s = MacroStandardArgsParser('{*[{*')
-        (argd, p, l) = s.parse_args(lw, len(r'\cmd'))
+        parsing_state = lw.make_parsing_state()
+        (argd, p, l) = s.parse_args(lw, len(r'\cmd'), parsing_state=parsing_state)
         self.assertPMAEqual(
             argd,
             ParsedMacroArgs(argspec='{*[{*', argnlist=[
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='x',
                                pos=5,len=1),
                 None,
-                LatexGroupNode(parsed_context=lw.parsed_context,
+                LatexGroupNode(parsing_state=parsing_state,
                                delimiters=('[', ']'),
                                nodelist=[
-                                   LatexCharsNode(parsed_context=lw.parsed_context,
+                                   LatexCharsNode(parsing_state=parsing_state,
                                                   chars='ab',
                                                   pos=7,len=2)
                                ],
                                pos=6,len=4),
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='c',
                                pos=10,len=1),
-                LatexCharsNode(parsed_context=lw.parsed_context,
+                LatexCharsNode(parsing_state=parsing_state,
                                chars='*',
                                pos=11,len=1)
             ])
