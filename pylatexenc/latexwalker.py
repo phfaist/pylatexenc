@@ -541,7 +541,7 @@ class LatexNode(object):
     def __repr__(self):
         return (
             self.nodeType().__name__ + "(" +
-            "parsing_state=<"+str(id(self.parsing_state))+">,"+ # ### DEBUG ............ ###
+            "parsing_state=<parsing state {}>,".format(id(self.parsing_state)) +
             ", ".join([ "%s=%r"%(k,getattr(self,k))  for k in self._fields ]) +
             ")"
             )
@@ -648,6 +648,15 @@ class LatexMacroNode(LatexNode):
        in the situation where :py:meth:`LatexWalker.get_latex_expression()`
        encounters the macro when reading a single expression.
 
+       Arguments must be declared in the latex context passed to the
+       :py:class:`LatexWalker` constructor, using a suitable
+       :py:class:`pylatexenc.macrospec.MacroSpec` object.  Some known macros are
+       already declared in the default latex context.
+
+       .. versionadded:: 2.0
+
+          The `nodeargd` attribute was introduced in `pylatexenc 2`.
+
     .. py:attribute:: macro_post_space
 
        Any spaces that were encountered immediately after the macro.
@@ -715,7 +724,17 @@ class LatexEnvironmentNode(LatexNode):
     .. py:attribute:: nodeargd
 
        The :py:class:`pylatexenc.macrospec.ParsedMacroArgs` object that
-       represents the macro arguments.
+       represents the arguments passed to the environment.  These are arguments
+       that are present after the ``\begin{xxxxxx}`` command, as in
+       ``\begin{tabular}{ccc}`` or ``\begin{figure}[H]``.  Arguments must be
+       declared in the latex context passed to the :py:class:`LatexWalker`
+       constructor, using a suitable
+       :py:class:`pylatexenc.macrospec.EnvironmentSpec` object.  Some known
+       environments are already declared in the default latex context.
+
+       .. versionadded:: 2.0
+
+          The `nodeargd` attribute was introduced in `pylatexenc 2`.
 
     The following attributes are available, but they are obsolete since
     `pylatexenc 2.0`.
@@ -786,6 +805,11 @@ class LatexSpecialsNode(LatexNode):
        arguments, in the special situation where
        :py:meth:`LatexWalker.get_latex_expression()` encounters this specials.
 
+       Arguments must be declared in the latex context passed to the
+       :py:class:`LatexWalker` constructor, using a suitable
+       :py:class:`pylatexenc.macrospec.SpecialsSpec` object.  Some known latex
+       specials are already declared in the default latex context.
+
     .. versionadded:: 2.0
 
        Latex specials were introduced in `pylatexenc 2.0`.
@@ -824,6 +848,10 @@ class LatexMathNode(LatexNode):
 
        A 2-item tuple containing the begin and end delimiters used to delimit
        this math mode section.
+
+       .. versionadded:: 2.0
+
+          The `delimiters` attribute was introduced in `pylatexenc 2`.
 
     .. py:attribute:: nodelist
     
