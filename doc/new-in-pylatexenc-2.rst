@@ -232,3 +232,8 @@ the new API.
     all node types; also
     :py:attr:`pylatexenc.latexwalker.LatexGroupNode.delimiters` and
     :py:attr:`pylatexenc.latexwalker.LatexMathNode.delimiters`.
+
+- Be wary of instantiating :py:class:`pylatexenc.latexwalker.LatexNode`\ 's and
+  subclasses directly, because new fields might not be initialized properly.
+  Instead, you should consider using
+  :py:meth:`pylatexenc.latexwalker.LatexWalker.make_node()`.

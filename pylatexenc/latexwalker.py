@@ -942,9 +942,9 @@ class ParsingState(object):
 
     def sub_context(self, **kwargs):
         r"""
-        Return a new :py:class:`ParsingState` instance that is a copy of the
-        current parsing context, but where the given properties keys have been
-        set to the corresponding values (given as keyword arguments).
+        Return a new :py:class:`ParsingState` instance that is a copy of the current
+        parsing state, but where the given properties keys have been set to the
+        corresponding values (given as keyword arguments).
 
         This makes it easy to create a sub-context in a given parser.  For
         instance, if we enter math mode, we might write::
@@ -1125,14 +1125,14 @@ class LatexWalker(object):
 
     def make_parsing_state(self, **kwargs):
         r"""
-        Return a new parsing context object that corresponds to the current string
+        Return a new parsing state object that corresponds to the current string
         that we are parsing (`s` provided to the constructor) and the current
         latex context (`latex_context` provided to the constructor).
 
-        If no arguments are provided, this returns the default parsing context.
+        If no arguments are provided, this returns the default parsing state.
 
         If keyword arguments are provided, then they can override fields from
-        the default parsing context.  For instance, if we enter math mode, you
+        the default parsing state.  For instance, if we enter math mode, you
         might use::
         
           parsing_state_mathmode = \
@@ -1185,12 +1185,12 @@ class LatexWalker(object):
         default) they are considered as the token types 'begin_environment' and
         'end_environment'.
 
-        The parsing of the tokens might be influcenced by the `parsing_state`
-        (a :py:class:`ParsingState` instance).  Currently, the only influence
-        this has is that some latex specials are parsed differently if in math
-        mode.  See doc for :py:class:`ParsingState`.  If `parsing_state` is
-        `None`, the default parsing context returned by
-        :py:meth:`make_parsing_state()` is used.
+        The parsing of the tokens might be influcenced by the `parsing_state` (a
+        :py:class:`ParsingState` instance).  Currently, the only influence this
+        has is that some latex specials are parsed differently if in math mode.
+        See doc for :py:class:`ParsingState`.  If `parsing_state` is `None`, the
+        default parsing state returned by :py:meth:`make_parsing_state()` is
+        used.
 
         .. deprecated:: 2.0
 
@@ -1816,7 +1816,7 @@ class LatexWalker(object):
         # consistency check
         if stop_upon_closing_mathmode is not None and not parsing_state.in_math_mode:
             logger.warning(("Call to LatexWalker.get_latex_nodes(stop_upon_closing_mathmode={!r}) "
-                            "but parsing context has in_math_mode={!r}").format(
+                            "but parsing state has in_math_mode={!r}").format(
                                 stop_upon_closing_mathmode,
                                 parsing_state.in_math_mode,
                             ))
