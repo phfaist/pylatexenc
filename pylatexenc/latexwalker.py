@@ -258,8 +258,20 @@ def MacrosDef(macname, optarg, numargs):
        field names of the constructed object might have changed since
        `pylatexenc 1.x`, so you might have to adapt existing code if you were
        accessing individual fields of `MacrosDef` objects.
+
+       In the object returned by `MacrosDef()`, we provide the legacy attributes
+       `macname`, `optarg`, and `numargs`, so that existing code accessing those
+       properties can continue to work.
     """
-    return macrospec.std_macro(macname, optarg, numargs)
+    m = macrospec.std_macro(macname, optarg, numargs)
+    # make accessible legacy attributes
+    m.macname = m.macroname
+    m.optarg = optarg
+    m.numargs = numargs
+    # also, make the macro args parser ignore any leading '*'-s to emulate
+    # pylatexenc 1.x behavior
+    m.args_parser._like_pylatexenc1x_ignore_leading_star = True
+    return m
 
 
 default_macro_dict = _util.LazyDict(

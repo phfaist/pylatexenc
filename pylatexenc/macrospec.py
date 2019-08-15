@@ -113,10 +113,18 @@ class ParsedMacroArgs(object):
         self.argspec = argspec
 
         # for LatexMacroNode to provide some kind of compatibility with pylatexenc < 2
-        if self.argspec[0:1] == '[' and all(x == '{' for x in self.argspec[1:]):
-            self.legacy_nodeoptarg_nodeargs = ( argnlist[0], argnlist[1:] )
+        self.legacy_nodeoptarg_nodeargs = \
+            self._get_legacy_attribs(self.argspec, self.argnlist)
+
+    def _get_legacy_attribs(self, argspec, argnlist):
+        nskip = 0
+        while argspec.startswith('*'):
+            argspec = argspec[1:]
+            nskip += 1
+        if argspec[0:1] == '[' and all(x == '{' for x in argspec[1:]):
+            return ( argnlist[nskip], argnlist[nskip+1:] )
         else:
-            self.legacy_nodeoptarg_nodeargs = (None, self.argnlist)
+            return (None, argnlist)
 
         
     def to_json_object(self):
@@ -216,6 +224,10 @@ class MacroStandardArgsParser(object):
                 "argspec must be a string containing chars '*', '[', '{{' only: {!r}"
                 .format(self.argspec)
             )
+        # non-documented attribute that makes us ignore any leading '*'.  We use
+        # this to emulate pylatexenc 1.x behavior when using the MacrosDef()
+        # function explicitly
+        self._like_pylatexenc1x_ignore_leading_star = False
 
     def parse_args(self, w, pos, parsing_state=None):
         r"""
@@ -274,6 +286,12 @@ class MacroStandardArgsParser(object):
             return parsing_state.sub_context(in_math_mode=False)
 
         p = pos
+
+        if self._like_pylatexenc1x_ignore_leading_star:
+            # ignore any leading '*' character
+            tok = w.get_token(p)
+            if tok.tok == 'char' and tok.arg == '*':
+                p = tok.pos + tok.len
 
         for j, argt in enumerate(self.argspec):
             if argt == '{':

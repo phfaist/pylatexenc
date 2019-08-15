@@ -177,8 +177,10 @@ def EnvDef(envname, simplify_repl=None, discard=False):
        :py:class:`~pylatexenc.macrospec.EnvironmentTextSpec` instance.  In this
        way the earlier idiom ``EnvDef(...)`` still works in `pylatexenc 2`.
     """
-    return EnvironmentTextSpec(environmentname=envname, simplify_repl=simplify_repl,
-                               discard=discard)
+    e = EnvironmentTextSpec(environmentname=envname, simplify_repl=simplify_repl,
+                            discard=discard)
+    e.envname = e.environmentname
+    return e
 
 def MacroDef(macname, simplify_repl=None, discard=None):
     r"""
@@ -190,7 +192,9 @@ def MacroDef(macname, simplify_repl=None, discard=None):
        :py:class:`~pylatexenc.macrospec.MacroTextSpec` instance.  In this way
        the earlier idiom ``MacroDef(...)`` still works in `pylatexenc 2`.
     """
-    return MacroTextSpec(macroname=macname, simplify_repl=simplify_repl, discard=discard)
+    m = MacroTextSpec(macroname=macname, simplify_repl=simplify_repl, discard=discard)
+    m.macname = m.macroname
+    return m
 
 
 
