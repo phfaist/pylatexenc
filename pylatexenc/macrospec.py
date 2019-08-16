@@ -171,7 +171,7 @@ class MacroStandardArgsParser(object):
         delimited by braces.  The character '\*' denotes a possible star char at
         that position in the argument list, a corresponding
         ``latexwalker.LatexCharsNode('*')`` (or `None` if no star) will be
-        inserted in the argument node list.  For instance, the string '\*{[{'
+        inserted in the argument node list.  For instance, the string '\*{[[{'
         would be suitable to specify the signature of the '\\newcommand' macro.
 
         Currently, the argspec string may only contain the characters '\*', '{'
