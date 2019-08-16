@@ -98,7 +98,7 @@ the new API.
     >>> nodelist[1].nodeoptarg
     LatexGroupNode(nodelist=[LatexCharsNode(chars='yes')])
 
-  *This code still works in `pylatexenc 2.0`.* It's recommended to use however
+  *This code still works in pylatexenc 2.0.* It's however recommended to use
   the new interface, which is more useful and powerful (see doc of
   :py:mod:`pylatexenc.macrospec`).  The above example would now be written as::
 
@@ -121,14 +121,13 @@ the new API.
   classes :py:class:`pylatexenc.macrospec.EnvironmentSpec` and
   :py:class:`pylatexenc.macrospec.SpecialsSpec` were introduced.
   [:py:func:`pylatexenc.latexwalker.MacrosDef` is now a function that returns a
-  :py:class:`~pylatexenc.macrospec.MacroSpec`; but the field names of the
-  constructed class might have changed.]  The `pylatexenc.latex2text.MacroDef`
-  and `pylatexenc.latex2text.EnvDef` were rewritten and renamed
-  :py:class:`pylatexenc.latex2text.MacroTextSpec` and
+  :py:class:`~pylatexenc.macrospec.MacroSpec` instance.]  The
+  `pylatexenc.latex2text.MacroDef` and `pylatexenc.latex2text.EnvDef` were
+  rewritten and renamed :py:class:`pylatexenc.latex2text.MacroTextSpec` and
   :py:class:`pylatexenc.latex2text.EnvironmentTextSpec`, and the class
   :py:class:`pylatexenc.latex2text.SpecialsTextSpec` was introduced.  [The
-  earlier classes are now functions that return instances of the new classes;
-  but the field names of the constructed class might have changed.]
+  earlier class names now represent functions that return instances of the new
+  classes.]
 
   For :py:class:`~pylatexenc.latexwalker.LatexWalker`, macro, environment, and
   latex specials syntax specifications are provided as
