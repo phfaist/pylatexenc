@@ -12,7 +12,7 @@ if sys.version_info.major > 2:
 from pylatexenc.latexwalker import (
     LatexWalker, LatexToken, LatexCharsNode, LatexGroupNode, LatexCommentNode,
     LatexMacroNode, LatexSpecialsNode, LatexEnvironmentNode, LatexMathNode,
-    LatexWalkerParseError
+    LatexWalkerParseError, get_default_latex_context_db
 )
 
 from pylatexenc import macrospec
@@ -935,6 +935,176 @@ This is it."""
             0,
             167)
         )
+
+
+    def test_parsing_state_changes(self):
+
+        class MySimpleNewcommandArgsParser(macrospec.MacroStandardArgsParser):
+            def __init__(self):
+                super(MySimpleNewcommandArgsParser, self).__init__(
+                    argspec='*{[[{',
+                    )
+
+            def parse_args(self, w, pos, parsing_state=None, **kwargs):
+                (argd, npos, nlen) = super(MySimpleNewcommandArgsParser, self).parse_args(
+                    w=w, pos=pos, parsing_state=parsing_state, **kwargs
+                )
+                if argd.argnlist[1].isNodeType(LatexGroupNode):
+                    argd.argnlist[1] = argd.argnlist[1].nodelist[0] # {\command} -> \command
+                assert argd.argnlist[1].isNodeType(LatexMacroNode)
+                argd.argnlist[1].nodeargd = None # hmmm, we should really have a
+                                                 # custom parser here to read a
+                                                 # single token
+                newcmdname = argd.argnlist[1].macroname
+                numargs = int(argd.argnlist[2].nodelist[0].chars) if argd.argnlist[2] else 0
+                new_latex_context = parsing_state.latex_context.filter_context()
+                new_latex_context.add_context_category(
+                    'newcommand-{}'.format(newcmdname),
+                    macros=[
+                        macrospec.MacroSpec(newcmdname, '{'*numargs)
+                    ],
+                    prepend=True
+                )
+                new_parsing_state = parsing_state.sub_context(latex_context=new_latex_context)
+                return (argd, npos, nlen, dict(new_parsing_state=new_parsing_state))
+
+
+        latextext = r"""
+\newcommand\a{AAA}
+\newcommand{\b}[2]{BBB #1}
+
+Blah blah blah.
+
+Use macros: \a{} and \b{xxx}{yyy}.
+""".lstrip()
+
+        latex_context = get_default_latex_context_db()
+        latex_context.add_context_category('newcommand-category', prepend=True, macros=[
+            macrospec.MacroSpec('newcommand', args_parser=MySimpleNewcommandArgsParser())
+        ])
+
+        lw = LatexWalker(latextext, latex_context=latex_context)
+
+        parsing_state = lw.make_parsing_state()
+
+        p=0
+        nodes, npos, nlen = lw.get_latex_nodes(pos=p, parsing_state=parsing_state)
+
+        parsing_state_defa = nodes[1].parsing_state
+        parsing_state_defab = nodes[3].parsing_state
+
+        self.assertEqual((npos,nlen), (0,len(latextext)))
+        self.assertEqual(
+            nodes,
+            [
+                LatexMacroNode(parsing_state=parsing_state, pos=0, len=18,
+                               macroname='newcommand',
+                               nodeargd=macrospec.ParsedMacroArgs(
+                                   argspec='*{[[{',
+                                   argnlist=[
+                                       None,
+                                       LatexMacroNode(
+                                           parsing_state=parsing_state,
+                                           pos=11, len=2,
+                                           macroname='a',
+                                           nodeargd=None,
+                                       ),
+                                       None,
+                                       None,
+                                       LatexGroupNode(
+                                           parsing_state=parsing_state,
+                                           pos=13, len=5, delimiters=('{', '}'),
+                                           nodelist=[
+                                               LatexCharsNode(
+                                                   parsing_state=parsing_state,
+                                                   pos=14, len=3,
+                                                   chars='AAA'
+                                               )
+                                           ]
+                                       )
+                                   ]
+                               )),
+                LatexCharsNode(parsing_state=parsing_state_defa, pos=18, len=1, chars='\n'),
+                LatexMacroNode(parsing_state=parsing_state_defa, pos=19, len=26,
+                               macroname='newcommand',
+                               nodeargd=macrospec.ParsedMacroArgs(
+                                   argspec='*{[[{',
+                                   argnlist=[
+                                       None,
+                                       LatexMacroNode(
+                                           parsing_state=parsing_state_defa,
+                                           pos=19+12, len=2,
+                                           macroname='b',
+                                           nodeargd=None,
+                                       ),
+                                       LatexGroupNode(
+                                           parsing_state=parsing_state_defa,
+                                           pos=19+15, len=3, delimiters=('[', ']'),
+                                           nodelist=[
+                                               LatexCharsNode(
+                                                   parsing_state=parsing_state_defa,
+                                                   pos=19+16, len=1,
+                                                   chars='2'
+                                               )
+                                           ]
+                                       ),
+                                       None,
+                                       LatexGroupNode(
+                                           parsing_state=parsing_state_defa,
+                                           pos=19+18, len=8, delimiters=('{', '}'),
+                                           nodelist=[
+                                               LatexCharsNode(
+                                                   parsing_state=parsing_state_defa,
+                                                   pos=19+19, len=6,
+                                                   chars='BBB #1'
+                                               )
+                                           ]
+                                       )
+                                   ]
+                               )),
+                LatexCharsNode(parsing_state=parsing_state_defab, pos=19+26, len=1+1+16+1+12,
+                               chars=r"""
+
+Blah blah blah.
+
+Use macros: """,
+                               ),
+                LatexMacroNode(parsing_state=parsing_state_defab, pos=19+27+1+16+1+12, len=2,
+                               macroname='a',
+                               nodeargd=macrospec.ParsedMacroArgs()),
+                LatexGroupNode(parsing_state=parsing_state_defab, pos=19+27+1+16+1+12+2, len=2,
+                               delimiters=('{', '}'), nodelist=[]),
+                LatexCharsNode(parsing_state=parsing_state_defab, pos=19+27+1+16+1+16, len=5,
+                               chars=r""" and """),
+                LatexMacroNode(parsing_state=parsing_state_defab, pos=19+27+1+16+1+21, len=33-21,
+                               macroname='b',
+                               nodeargd=macrospec.ParsedMacroArgs(argspec='{{', argnlist=[
+                                   LatexGroupNode(
+                                       parsing_state=parsing_state_defab,
+                                       pos=19+27+1+16+1+23, len=5, delimiters=('{', '}'),
+                                       nodelist=[
+                                           LatexCharsNode(
+                                               parsing_state=parsing_state_defab,
+                                               pos=19+27+1+16+1+24, len=3,
+                                               chars='xxx'
+                                           )
+                                       ]),
+                                   LatexGroupNode(
+                                       parsing_state=parsing_state_defab,
+                                       pos=19+27+1+16+1+28, len=5, delimiters=('{', '}'),
+                                       nodelist=[
+                                           LatexCharsNode(
+                                               parsing_state=parsing_state_defab,
+                                               pos=19+27+1+16+1+29, len=3,
+                                               chars='yyy'
+                                           )
+                                       ]),
+                               ])),
+                LatexCharsNode(parsing_state=parsing_state_defab, pos=19+27+1+16+1+33, len=2,
+                               chars=".\n"),
+            ]
+        )
+
 
 
     def test_bug_000(self):

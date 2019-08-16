@@ -356,145 +356,6 @@ class MacroStandardArgsParser(object):
     
 
 
-class ParsedVerbatimArgs(ParsedMacroArgs):
-    r"""
-    Parsed representation of arguments to LaTeX verbatim constructs, such as
-    ``\begin{verbatim}...\end{verbatim}`` or ``\verb|...|``.
-
-    Instances of `ParsedVerbatimArgs` are returned by the args parser
-    :py:class:`VerbatimArgsParser`.
-
-    Arguments:
-
-      - `verbatim_chars_node` --- a properly initialized
-        :py:class:`pylatexenc.latexwalker.LatexCharsNode` that stores the
-        verbatim text provided.  It is used to initialize the base class
-        :py:class:`ParsedMacroArgs` to expose a single mandatory argument with
-        the given verbatim text.  The `verbatim_text` attribute is initialized
-        from this node, too.
-
-      - `verbatim_delimiters` --- a 2-item tuple of characters used to delimit
-        the verbatim arguemnt (in case of a ``\verb+...+`` macro) or `None`.
-
-    Attributes:
-
-    .. py:attribute:: verbatim_text
-
-       The verbatim text that was provided
-
-    .. py:attribute:: verbatim_delimiters
-
-       If the verbatim text was specified as an argument to ``\verb$...$``, then
-       this is set to a 2-item tuple that specifies the begin and end
-       delimiters.  Otherwise, the attribute is `None`.
-    """
-    def __init__(self, verbatim_chars_node, verbatim_delimiters=None,
-                 **kwargs):
-
-        # provide argspec/argnlist to the parent class so that any code that is
-        # not "verbatim environment-aware" sees this simply as the argument to
-        # an empty verbatim environment
-        super(ParsedVerbatimArgs, self).__init__(
-            argspec='{',
-            argnlist=[verbatim_chars_node],
-            **kwargs
-        )
-        
-        self.verbatim_text = verbatim_chars_node.chars
-        self.verbatim_delimiters = verbatim_delimiters
-
-    def __repr__(self):
-        return "{}(verbatim_text={!r}, verbatim_delimiters={!r})".format(
-            self.__class__.__name__, self.verbatim_text, self.verbatim_delimiters
-        )
-
-
-
-class VerbatimArgsParser(MacroStandardArgsParser):
-    r"""
-    Parses the arguments to various LaTeX "verbatim" constructs such as
-    ``\begin{verbatim}...\end{verbatim}`` environment or ``\verb+...+``.
-
-    This class also serves to illustrate how to write custom parsers for
-    complicated macro arguments.  See also :py:class:`MacroStandardArgsParser`.
-
-    Arguments:
-
-    .. py:attribute:: verbatim_arg_type
-
-      One of 'verbatim-environment' or 'verb-macro'.
-    """
-    def __init__(self, verbatim_arg_type, **kwargs):
-        super(VerbatimArgsParser, self).__init__(argspec='{', **kwargs)
-        self.verbatim_arg_type = verbatim_arg_type
-
-    def parse_args(self, w, pos, parsing_state=None):
-
-        from . import latexwalker
-
-        if self.verbatim_arg_type == 'verbatim-environment':
-            # simply scan the string until we find '\end{verbatim}'.  That's
-            # exactly how LaTeX processes it.
-            endverbpos = w.s.find(r'\end{verbatim}', pos)
-            if endverbpos == -1:
-                raise latexwalker.LatexWalkerParseError(
-                    s=w.s,
-                    pos=pos,
-                    msg=r"Cannot find matching \end{verbatim}"
-                )
-            # do NOT include the "\end{verbatim}", latexwalker will expect to
-            # see it:
-            len_ = endverbpos-pos
-
-            argd = ParsedVerbatimArgs(
-                verbatim_chars_node=w.make_node(latexwalker.LatexCharsNode,
-                                                parsing_state=parsing_state,
-                                                chars=w.s[pos:pos+len_],
-                                                pos=pos,
-                                                len=len_)
-            )
-            return (argd, pos, len_)
-
-        if self.verbatim_arg_type == 'verb-macro':
-            # read the next nonwhitespace char. This is the delimiter of the
-            # argument
-            while w.s[pos].isspace():
-                pos += 1
-                if pos >= len(w.s):
-                    raise latexwalker.LatexWalkerParseError(
-                        s=w.s,
-                        pos=pos,
-                        msg=r"Missing argument to \verb command"
-                    )
-            verbdelimchar = w.s[pos]
-            beginpos = pos+1
-            endpos = w.s.find(verbdelimchar, beginpos)
-            if endpos == -1:
-                raise latexwalker.LatexWalkerParseError(
-                    s=w.s,
-                    pos=pos,
-                    msg=r"End of stream reached while reading argument to \verb command"
-                )
-            
-            verbarg = w.s[beginpos:endpos]
-
-            argd = ParsedVerbatimArgs(
-                verbatim_chars_node=w.make_node(latexwalker.LatexCharsNode,
-                                                parsing_state=parsing_state,
-                                                chars=verbarg,
-                                                pos=beginpos,
-                                                len=endpos-beginpos),
-                verbatim_delimiters=(verbdelimchar, verbdelimchar),
-            )
-
-            return (argd, pos, endpos+1-pos) # include delimiters in pos/len
-
-
-    def __repr__(self):
-        return '{}(verbatim_arg_type={!r})'.format(
-            self.__class__.__name__, self.verbatim_arg_type
-        )
-
 
 # ------------------------------------------------------------------------------
 
@@ -557,6 +418,10 @@ class EnvironmentSpec(object):
        For standard LaTeX environment this is usually a
        :py:class:`MacroStandardArgsParser` instance.
 
+       If you specify a string, then for convenience this is interpreted as an
+       argspec argument for :py:class:`MacroStandardArgsParser` and such an
+       instance is automatically created.
+
     .. py:attribute:: is_math_mode
 
        A boolean that indicates whether or not the contents is to be interpreted
@@ -579,7 +444,10 @@ class EnvironmentSpec(object):
                  is_math_mode=False, **kwargs):
         super(EnvironmentSpec, self).__init__(**kwargs)
         self.environmentname = environmentname
-        self.args_parser = args_parser
+        if isinstance(args_parser, _basestring):
+            self.args_parser = MacroStandardArgsParser(args_parser)
+        else:
+            self.args_parser = args_parser
         self.is_math_mode = is_math_mode
 
     def parse_args(self, *args, **kwargs):
@@ -835,7 +703,6 @@ class LatexContextDb(object):
     specials".  Specifications for macros, environments, and other specials are
     stored as :py:class:`MacroSpec`, :py:class:`EnvironmentSpec`, and
     :py:class:`SpecialsSpec` instances, respectively.
-
     When used with :py:class:`pylatexenc.latex2text.LatexNodes2Text`, the
     specifications for macros, environments, and other specials are stored as
     :py:class:`pylatexenc.latex2text.MacroTextSpec` ,
@@ -847,10 +714,19 @@ class LatexContextDb(object):
     specifications must have an attribute `environmentname`, and specials
     specification must have an attribute `specials_chars`.
 
+    The `LatexContextDb` instance is meant to be (pseudo-)immutable.  Once
+    constructed and all the definitions added with
+    :py:meth:`add_context_category()`, one should refrain from modifying it
+    directly after providing it to, e.g., a
+    :py:class:`~pylatexenc.latexwalker.LatexWalker` object.  The reason is that
+    the latex walker keeps track of what the latex context was when parsing
+    nodes, and modifying the context will modify that stored information, too.
+    Instead of being tempted to modify the object, create a new one with
+    :py:meth:`filter_context()`.
+
     See :py:func:`pylatexenc.latexwalker.get_default_latex_context_db()` for the
     default latex context for `latexwalker` with a default collection of known
     latex macros and environments.
-
     See :py:func:`pylatexenc.latex2text.get_default_latex_context_db()` for the
     default latex context for `latex2text` with a set of text replacements for a
     collection of known macros and environments.
@@ -1167,4 +1043,6 @@ class LatexContextDb(object):
 
 
 
+# ------------------------------------------------------------------------------
 
+from ._macrospec_argparsers import ParsedVerbatimArgs, VerbatimArgsParser
