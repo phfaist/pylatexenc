@@ -679,7 +679,7 @@ uni2latex = {
 0x2013: r'\textendash',                          # 0x2013
 0x2014: r'\textemdash',
 0x2015: r'\textemdash',                          # HORIZONTAL BAR
-0x2016: r'\textbardbl',
+0x2016: r'\ensuremath{\Vert}',
 0x2018: r'\textquoteleft',
 0x2019: r'\textquoteright',
 0x201A: r'\quotesinglbase',                      # 0x201A

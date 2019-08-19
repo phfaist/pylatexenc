@@ -53,8 +53,8 @@ specs = [
 
             std_macro('DeclareMathOperator', '*{{'),
 
-            std_macro('hspace', False, 1),
-            std_macro('vspace', False, 1),
+            std_macro('hspace', '*{'),
+            std_macro('vspace', '*{'),
 
             MacroSpec('mbox', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
 

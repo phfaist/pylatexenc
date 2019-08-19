@@ -127,8 +127,6 @@ def main(argv=None):
     else:
         fill_text = None
 
-    print("*** args.fill_text=%r  --> fill_text=%r"%(args.fill_text, fill_text))
-
     lw = latexwalker.LatexWalker(latex,
                                  tolerant_parsing=args.tolerant_parsing,
                                  strict_braces=args.strict_braces)

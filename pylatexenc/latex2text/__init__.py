@@ -45,6 +45,7 @@ You may also use the command-line version of `latex2text`::
 from __future__ import print_function #, absolute_import
 
 import os
+import re
 import logging
 import sys
 import inspect
@@ -76,12 +77,19 @@ class MacroTextSpec(object):
 
     .. py:attribute:: simplify_repl
 
-       This is Either a string or a callable. The string may contain '%s'
-       replacements, in which the macro arguments will be substituted. The
-       callable should accept the corresponding
-       :py:class:`pylatexenc.latexwalker.LatexMacroNode` as an argument.  If the
-       callable expects a second argument named `l2tobj`, then the
-       `LatexNodes2Text` object is provided to that argument.
+       The replacement text of the macro invocation.  This is either a string or
+       a callable:
+
+         - If `simplify_repl` is a string, it may contain '%s' replacements, in
+           which the macro arguments will be substituted in the given order.
+           The string may instead contain '%(<n>)s' (where `<n>` is an integer)
+           to refer to the n-th argument (starting at '%(1)s').  You cannot mix
+           the two %-formatting styles.
+
+         - If `simplify_repl` is a callable, it should accept the corresponding
+           :py:class:`pylatexenc.latexwalker.LatexMacroNode` as an argument.  If
+           the callable expects a second argument named `l2tobj`, then the
+           `LatexNodes2Text` object is provided to that argument.
 
     .. py:attribute:: discard
     
@@ -111,13 +119,23 @@ class EnvironmentTextSpec(object):
 
     .. py:attribute:: simplify_repl
 
-       The replacement text of the environment.  This is either a callable or a
-       string.  If it is a callable, it must accept a single argument, the
-       :py:class:`pylatexenc.latexwalker.LatexEnvironmentNode` representing the
-       LaTeX environment.  If the callable expects a second argument named
-       `l2tobj`, then the `LatexNodes2Text` object is provided to that argument.
-       If it is a string, it may contain '%s' which will be replaced by the
-       environment contents converted to text.
+       The replacement text of the environment.  This is either a string or a
+       callable:
+
+         - If `simplify_repl` is a string, it may contain a single '%s'
+           replacements, in which the (processed) environment body will be substituted.
+
+           The `simplify_repl` string may instead contain '%(<n>)s' (where `<n>`
+           is an integer) to refer to the n-th argument after
+           ``\begin{environment}`` (starting at '%(1)s').  The body of the
+           environment has to be referred to with `%(body)s`.
+
+           You cannot mix the two %-formatting styles.
+
+         - If `simplify_repl` is a callable, it should accept the corresponding
+           :py:class:`pylatexenc.latexwalker.LatexEnvironmentNode` as an
+           argument.  If the callable expects a second argument named `l2tobj`,
+           then the `LatexNodes2Text` object is provided to that argument.
 
     .. py:attribute:: discard
     
@@ -147,14 +165,19 @@ class SpecialsTextSpec(object):
 
     .. py:attribute:: simplify_repl
 
-       The replacement text of the specials.  This is either a callable or a
-       string.  If it is a callable, it must accept a single argument, the
-       :py:class:`pylatexenc.latexwalker.LatexSpecialsNode` representing the
-       LaTeX environment.  If the callable expects a second argument named
-       `l2tobj`, then the `LatexNodes2Text` object is provided to that argument.
-       If it is a string, it may contain '%s' replacements, in which the macro
-       arguments will be substituted.
+       The replacement text for the given latex specials.  This is either a
+       string or a callable:
 
+         - If `simplify_repl` is a string, it may contain '%s' replacements, in
+           which the macro arguments will be substituted in the given order.
+           The string may instead contain '%(<n>)s' (where `<n>` is an integer)
+           to refer to the n-th argument (starting at '%(1)s').  You cannot mix
+           the two %-formatting styles.
+
+         - If `simplify_repl` is a callable, it should accept the corresponding
+           :py:class:`pylatexenc.latexwalker.LatexMacroNode` as an argument.  If
+           the callable expects a second argument named `l2tobj`, then the
+           `LatexNodes2Text` object is provided to that argument.
 
     .. versionadded:: 2.0
 
@@ -199,10 +222,6 @@ def MacroDef(macname, simplify_repl=None, discard=None):
 
 
 
-def _fmt_indented_block(contents, indent=' '*4):
-    return ("\n"+indent + contents.replace("\n", "\n"+indent) + "\n")
-    
-
 def fmt_equation_environment(envnode, l2tobj):
     r"""
     Can be used as callback for display equation environments.
@@ -217,7 +236,7 @@ def fmt_equation_environment(envnode, l2tobj):
     #
     #     contents = l2tobj.nodelist_to_text(envnode.nodelist).strip()
     #     # indent equation, separate by newlines
-    #     return _fmt_indented_block(contents)
+    #     return l2tobj._fmt_indented_block(contents)
 
 
 def fmt_input_macro(macronode, l2tobj):
@@ -236,7 +255,7 @@ def fmt_input_macro(macronode, l2tobj):
     return l2tobj._input_node_simplify_repl(macronode)
 
 
-def placeholder_node_formatter(placeholdertext):
+def placeholder_node_formatter(placeholdertext, block=True):
     r"""
     This function returns a callable that can be used in
     :py:class:`MacroTextSpec`, :py:class:`EnvironmentTextSpec`, or
@@ -244,14 +263,21 @@ def placeholder_node_formatter(placeholdertext):
     representation, providing as text replacement the simple placeholder text
     ``'< P L A C E H O L D E R   T E X T >'``.
 
+    If `block=True` (the default), the placeholder text is typeset in an
+    indented block on its own.  Otherwise, it is typeset inline.
+
     .. versionadded:: 2.0
 
        This function was introduced in `pylatexenc 2.0`.
     """
-    return lambda n, pht=placeholdertext: _do_fmt_placeholder_node(pht)
+    return  lambda n, l2tobj, pht=placeholdertext: \
+        _do_fmt_placeholder_node(pht, l2tobj, block=block)
     
-def _do_fmt_placeholder_node(placeholdertext):
-    return '< ' + " ".join(placeholdertext) + ' >'
+def _do_fmt_placeholder_node(placeholdertext, l2tobj, block=True):
+    txt = '< ' + " ".join(placeholdertext) + ' >'
+    if block:
+        return l2tobj._fmt_indented_block(txt, indent='    ')
+    return ' ' + txt + ' '
 
 def fmt_placeholder_node(node):
     r"""
@@ -771,11 +797,20 @@ class LatexNodes2Text(object):
                     # default behavior (see issue #11), so only do this if the
                     # corresponding `strict_latex_spaces=` flag is set.
                     s += prev_node.macro_post_space
-            s += self.node_to_text(node)
+
+            last_nl_pos = s.rfind('\n')
+            if last_nl_pos != -1:
+                textcol = len(s)-last_nl_pos-1
+            else:
+                textcol = len(s)
+
+            s += self.node_to_text(node, textcol=textcol)
+
             prev_node = node
+
         return s
 
-    def node_to_text(self, node, prev_node_hint=None):
+    def node_to_text(self, node, prev_node_hint=None, textcol=0):
         """
         Return the textual representation of the given `node`.
 
@@ -785,9 +820,12 @@ class LatexNodes2Text(object):
         """
         if node is None:
             return ""
+
+        # ### It doesn't look like we use prev_node_hint at all.  Eliminate at
+        # ### some point?
         
         if node.isNodeType(latexwalker.LatexCharsNode):
-            return self.chars_node_to_text(node)
+            return self.chars_node_to_text(node, textcol=textcol)
         
         if node.isNodeType(latexwalker.LatexCommentNode):
             return self.comment_node_to_text(node)
@@ -812,7 +850,7 @@ class LatexNodes2Text(object):
         # discard anything else.
         return ""
 
-    def chars_node_to_text(self, node):
+    def chars_node_to_text(self, node, textcol=0):
         r"""
         Return the textual representation of the given `node` representing a block
         of simple latex text with no special characters or macros.  The `node`
@@ -825,10 +863,31 @@ class LatexNodes2Text(object):
         # braced groups ("{one} {two}") or other such situations.
         content = node.chars
         if self.fill_text: # None or column width
-            content = textwrap.fill(content, self.fill_text)
+            content = self.do_fill_text(content, textcol=textcol)
         if not self.strict_latex_spaces['between-latex-constructs'] and len(content.strip()) == 0:
             return ""
         return content
+
+    def do_fill_text(self, text, textcol=0):
+        # keep trailing whitespace to have whitespace between macros in text as
+        # in "see \ref{...} and blah blah"
+        head_par = '\n\n' if ('\n\n' in re.search(r'^\s*', text).group()) else ''
+        trail_par = '\n\n' if ('\n\n' in re.search(r'\s*$', text).group()) else ''
+        def fill_chunk(x, textcol):
+            head_ws = ' ' if textcol>0 and x[0:1].isspace() else ''
+            trail_ws = ' ' if x[-1:].isspace() else ''
+            if textcol >= self.fill_text-4:
+                return '\n' + textwrap.fill(x, self.fill_text) + trail_ws
+            else:
+                return head_ws + \
+                    textwrap.fill(x, self.fill_text, initial_indent='X'*textcol)[textcol:] + \
+                    trail_ws
+        return head_par + "\n\n".join(
+            chunk
+            for chunk in (fill_chunk(x, textcol if j==0 else 0)
+                          for j, x in enumerate(re.compile(r'\n{2,}').split(text)))
+            if chunk.strip()
+        ) + trail_par
 
     def comment_node_to_text(self, node):
         r"""
@@ -887,9 +946,9 @@ class LatexNodes2Text(object):
                                                 what=r"macro '\%s'"%(macroname))
             if mac.discard:
                 return ""
-            a = node.nodeargs
-            if (node.nodeoptarg):
-                a.prepend(node.nodeoptarg)
+            a = []
+            if node.nodeargd and node.nodeargd.argnlist:
+                a = node.nodeargd.argnlist
             return "".join([self._groupnodecontents_to_text(n) for n in a])
 
         macrostr = get_macro_str_repl(node, macroname, mac)
@@ -935,7 +994,8 @@ class LatexNodes2Text(object):
                                                 what="specials '%s'"%(specials_chars))
             if spec.discard:
                 return ""
-            a = node.nodeargd.argnlist
+            if node.nodeargd and node.nodeargd.argnlist:
+                a = node.nodeargd.argnlist
             return "".join([self._groupnodecontents_to_text(n) for n in a])
 
         s = get_specials_str_repl(node, specials_chars, sspec)
@@ -954,7 +1014,7 @@ class LatexNodes2Text(object):
 
         if self.math_mode == 'verbatim':
             if node.isNodeType(latexwalker.LatexEnvironmentNode) or node.displaytype == 'display':
-                return _fmt_indented_block(node.latex_verbatim(), indent='')
+                return self._fmt_indented_block(node.latex_verbatim(), indent='')
             else:
                 return node.latex_verbatim()
 
@@ -969,7 +1029,7 @@ class LatexNodes2Text(object):
             else: # environment node
                 delims = r'\begin{%s}'%(node.environmentname), r'\end{%s}'%(node.environmentname)
             if node.isNodeType(latexwalker.LatexEnvironmentNode) or node.displaytype == 'display':
-                return delims[0] + _fmt_indented_block(content, indent='') + delims[1]
+                return delims[0] + self._fmt_indented_block(content, indent='') + delims[1]
             else:
                 return delims[0] + content + delims[1]
 
@@ -977,7 +1037,7 @@ class LatexNodes2Text(object):
             with _PushEquationContext(self):
                 content = self.nodelist_to_text(node.nodelist)
             if node.isNodeType(latexwalker.LatexEnvironmentNode) or node.displaytype == 'display':
-                return _fmt_indented_block(content)
+                return self._fmt_indented_block(content)
             else:
                 return content
 
@@ -1004,9 +1064,31 @@ class LatexNodes2Text(object):
             nodeargs = []
             if node.nodeargd and node.nodeargd.argnlist:
                 nodeargs = node.nodeargd.argnlist
+
+            has_percent_s = re.search('(^|[^%])(%%)*%s', simplify_repl)
+
+            if node.isNodeType(latexwalker.LatexEnvironmentNode):
+                if has_percent_s:
+                    x = (self.nodelist_to_latex(node.nodelist), )
+                else:
+                    x = dict(
+                        (str(1+j),val) for j, val in enumerate(
+                            self._groupnodecontents_to_text(nn) for nn in nodeargs
+                        )
+                    )
+                    x.update(body=self.nodelist_to_latex(node.nodelist))
+            elif has_percent_s:
+                x = tuple([self._groupnodecontents_to_text(nn)
+                           for nn in nodeargs])
+            else:
+                x = dict(
+                    (str(1+j),val) for j, val in enumerate(
+                        self._groupnodecontents_to_text(nn) for nn in nodeargs
+                    )
+                )
+
             try:
-                return simplify_repl % tuple([self._groupnodecontents_to_text(nn)
-                                              for nn in nodeargs])
+                return simplify_repl % x
             except (TypeError, ValueError):
                 logger.warning(
                     "WARNING: Error in configuration: {} failed its substitution!".format(what)
@@ -1014,6 +1096,12 @@ class LatexNodes2Text(object):
                 return simplify_repl # too bad, keep the percent signs as they are...
         return simplify_repl
 
+    def _fmt_indented_block(self, contents, indent=' '*4):
+        block = ("\n"+indent + contents.replace("\n", "\n"+indent) + "\n")
+        if self.fill_text:
+            block = '\n'+block+'\n' # additional newlines because neighboring text gets trimmed
+        return block
+    
 
     def _is_bare_macro_node(self, node):
         return (node is not None and
@@ -1022,6 +1110,8 @@ class LatexNodes2Text(object):
                 len(node.nodeargs) == 0)
 
     def _groupnodecontents_to_text(self, groupnode):
+        if groupnode is None:
+            return ''
         if not groupnode.isNodeType(latexwalker.LatexGroupNode):
             return self.node_to_text(groupnode)
         return self.nodelist_to_text(groupnode.nodelist)

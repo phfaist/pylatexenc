@@ -120,6 +120,10 @@ latex_base_specs = {
         # use second argument:
         ('texorpdfstring', lambda node, l2t: l2t.nodelist_to_text(node.nodeargs[1:2])),
 
+
+        ('hspace', ''),
+        ('vspace', '\n'),
+
         ('oe', u'\u0153'),
         ('OE', u'\u0152'),
         ('ae', u'\u00e6'),
@@ -187,7 +191,7 @@ latex_base_specs = {
         ('ast', u'\N{ASTERISK OPERATOR}'),
         ('circ', u'\N{RING OPERATOR}'),
         ('bullet', u'\N{BULLET OPERATOR}'),
-        ('sqrt', u'\N{SQUARE ROOT}(%s)'),
+        ('sqrt', u'\N{SQUARE ROOT}(%(2)s)'),
         ('propto', u'\N{PROPORTIONAL TO}'),
         ('infty', u'\N{INFINITY}'),
         ('parallel', u'\N{PARALLEL TO}'),
@@ -260,6 +264,23 @@ latex_base_specs = {
         ('arccos', 'arccos'),
         ('arcsin', 'arcsin'),
         ('arctan', 'arctan'),
+        ('cosh', 'cosh'),
+        ('sinh', 'sinh'),
+        ('tanh', 'tanh'),
+        ('arccosh', 'arccosh'),
+        ('arcsinh', 'arcsinh'),
+        ('arctanh', 'arctanh'),
+        
+        ('ln', 'ln'),
+        ('log', 'log'),
+
+        ('max', 'max'),
+        ('min', 'min'),
+        ('sup', 'sup'),
+        ('inf', 'inf'),
+        ('lim', 'lim'),
+        ('limsup', 'lim sup'),
+        ('liminf', 'lim inf'),
 
         ('prime', "'"),
         ('dag', u"\N{DAGGER}"),
@@ -282,6 +303,12 @@ latex_base_specs = {
 
         ('langle', u'\N{LEFT ANGLE BRACKET}'),
         ('rangle', u'\N{RIGHT ANGLE BRACKET}'),
+        ('lvert', u'|'),
+        ('rvert', u'|'),
+        ('vert', u'|'),
+        ('lVert', u'\u2016'),
+        ('rVert', u'\u2016'),
+        ('Vert', u'\u2016'),
         ('mid', u'|'),
         ('nmid', u'\N{DOES NOT DIVIDE}'),
 
