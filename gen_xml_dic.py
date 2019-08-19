@@ -1,5 +1,5 @@
 #
-# mini-script to generate the pylatexenc._uni2latexmap_xml dict mapping
+# mini-script to generate the pylatexenc.latexencode._uni2latexmap_xml dict mapping
 #
 import re
 import sys
@@ -43,7 +43,7 @@ for chxml in e.find('charlist').iter('character'):
     dnames[charord] = chxml.find('description').text
 
 # dump dictionary into module file
-outputfile = 'pylatexenc/_uni2latexmap_xml.py'
+outputfile = 'pylatexenc/latexencode/_uni2latexmap_xml.py'
 
 HEADER = """\
 # -*- coding: utf-8 -*-

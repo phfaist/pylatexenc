@@ -109,7 +109,7 @@ logger = logging.getLogger(__name__)
 
 
 from ._uni2latexmap import uni2latex as _uni2latex
-from . import _util
+from .. import _util
 
 
 def get_builtin_uni2latex_dict():

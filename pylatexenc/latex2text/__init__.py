@@ -57,9 +57,9 @@ else:
     getfullargspec = inspect.getargspec
 
 import pylatexenc
-from . import latexwalker
-from . import macrospec
-from . import _util
+from .. import latexwalker
+from .. import macrospec
+from .. import _util
 
 logger = logging.getLogger(__name__)
 
@@ -294,7 +294,7 @@ def get_default_latex_context_db():
     """
     db = macrospec.LatexContextDb()
     
-    from ._latex2text_defaultspecs import specs
+    from ._defaultspecs import specs
 
     for cat, catspecs in specs:
         db.add_context_category(cat,

@@ -27,7 +27,7 @@
 # Internal module. May change without notice.
 
 
-from .macrospec import std_macro, std_environment, std_specials, \
+from ..macrospec import std_macro, std_environment, std_specials, \
     MacroSpec, EnvironmentSpec, MacroStandardArgsParser, VerbatimArgsParser
 
 specs = [

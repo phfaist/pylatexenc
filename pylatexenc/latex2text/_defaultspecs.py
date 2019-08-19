@@ -37,7 +37,7 @@ else:
 
 
 
-from .latex2text import MacroTextSpec, EnvironmentTextSpec, SpecialsTextSpec, \
+from ..latex2text import MacroTextSpec, EnvironmentTextSpec, SpecialsTextSpec, \
     fmt_equation_environment, fmt_placeholder_node, placeholder_node_formatter, fmt_input_macro
 
 

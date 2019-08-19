@@ -96,8 +96,8 @@ import json
 import bisect
 
 import pylatexenc
-from . import macrospec
-from . import _util
+from .. import macrospec
+from .. import _util
 
 if sys.version_info.major > 2:
     # Py3
@@ -226,7 +226,7 @@ def get_default_latex_context_db():
     """
     db = macrospec.LatexContextDb()
     
-    from ._latexwalker_defaultspecs import specs
+    from ._defaultspecs import specs
 
     for cat, catspecs in specs:
         db.add_context_category(cat,
