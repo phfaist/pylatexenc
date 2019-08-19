@@ -122,13 +122,15 @@ class ParsedMacroArgs(object):
         
     def to_json_object(self):
         r"""
-        Return a representation of the current parsed arguments in an object that
-        our main JSON exporter
-        (:py:class:`pylatexenc.latexwalker.LatexNodesJSONEncoder`) can
-        understand and export to JSON.
+        Called when we export the node structure to JSON when running latexwalker in
+        command-line.
 
-        Called when we export the node structure to JSON (e.g., latexwalker in
-        command-line).
+        Return a representation of the current parsed arguments in an object,
+        typically a dictionary, that can easily be exported to JSON.  The object
+        may contain latex nodes and other parsed-argument objects, as we use a
+        custom JSON encoder that understands these types.
+
+        Subclasses may
         """
 
         return dict(

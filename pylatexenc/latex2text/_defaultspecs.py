@@ -107,7 +107,11 @@ latex_base_specs = {
         ('ref', '<ref>'),
         ('eqref', '(<ref>)'),
         ('url', '<%s>'),
-        ('item', lambda r, l2tobj: '\n  '+(l2tobj.nodelist_to_text([r.nodeoptarg]) if r.nodeoptarg else '*')),
+        ('item',
+         lambda r, l2tobj: '\n  '+(
+             l2tobj.nodelist_to_text([r.nodeoptarg]) if r.nodeoptarg else '* '
+         )
+        ) ,
         ('footnote', '[%s]'),
         ('href', lambda n, l2tobj:  \
          '{} <{}>'.format(l2tobj.nodelist_to_text([n.nodeargd.argnlist[1]]), 

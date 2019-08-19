@@ -34,9 +34,23 @@ try:
 except ImportError:
     from collections import MutableMapping
 
+import warnings
+import bisect
+
+
+# ------------------------------------------------------------------------------
+
+
+
+def pylatexenc_deprecated_ver(ver, msg, stacklevel=2):
+    warnings.warn(
+        "Deprecated (pylatexenc {}): {} ".format(ver, msg.strip()),
+        DeprecationWarning,
+        stacklevel=stacklevel+1
+    )
+
 
 def pylatexenc_deprecated_2(msg, stacklevel=2):
-    import warnings
     warnings.warn(
         ( "Deprecated (pylatexenc 2.0): {} "
           "[see https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-2/]" )
@@ -44,6 +58,13 @@ def pylatexenc_deprecated_2(msg, stacklevel=2):
         DeprecationWarning,
         stacklevel=stacklevel+1
     )
+
+
+
+# ------------------------------------------------------------------------------
+
+
+
 
 
 class LazyDict(MutableMapping):
@@ -92,3 +113,60 @@ class LazyDict(MutableMapping):
     def clear(self):
         self._ensure_instance()
         return self._full_dict.clear()
+
+
+
+
+
+# ------------------------------------------------------------------------------
+
+
+
+
+class LineNumbersCalculator(object):
+    r"""
+    Utility to calculate line numbers.
+    """
+    def __init__(self, s):
+        super(LineNumbersCalculator, self).__init__()
+
+        def find_all_new_lines(x):
+            # first line starts at the beginning of the string
+            yield 0
+            k = 0
+            while k < len(x):
+                k = x.find('\n', k)
+                if k == -1:
+                    return
+                k += 1
+                # s[k] is the character after the newline, i.e., the 0-th column
+                # of the new line
+                yield k
+
+        self._pos_new_lines = list(find_all_new_lines(s))
+
+        
+    def pos_to_lineno_colno(self, pos, as_dict=False):
+        r"""
+        Return the line and column number corresponding to the given `pos`.
+
+        Return a tuple `(lineno, colno)` giving line number and column number.
+        Line numbers start at 1 and column number start at zero, i.e., the
+        beginning of the document (`pos=0`) has line and column number `(1,0)`.
+        If `as_dict=True`, then a dictionary with keys 'lineno', 'colno' is
+        returned instead of a tuple.
+        """
+
+        # find line number in list
+
+        # line_no is the index of the last item in self._pos_new_lines that is <= pos.
+        line_no = bisect.bisect_right(self._pos_new_lines, pos)-1
+        assert line_no >= 0 and line_no < len(self._pos_new_lines)
+
+        col_no = pos - self._pos_new_lines[line_no]
+        # 1+... so that line and column numbers start at 1
+        if as_dict:
+            return {'lineno': 1 + line_no, 'colno': col_no}
+        return (1 + line_no, col_no)
+
+

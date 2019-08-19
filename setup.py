@@ -67,9 +67,9 @@ setup(
     packages = find_packages(),
     entry_points = {
         'console_scripts': [
-            'latexwalker=pylatexenc.latexwalker:main',
-            'latex2text=pylatexenc.latex2text:main',
-            'latexencode=pylatexenc.latexencode:main',
+            'latexwalker=pylatexenc.latexwalker.__main__:main',
+            'latex2text=pylatexenc.latex2text.__main__:main',
+            'latexencode=pylatexenc.latexencode.__main__:main',
         ],
     },
     install_requires = [],

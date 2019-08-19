@@ -48,6 +48,7 @@ import os
 import logging
 import sys
 import inspect
+import textwrap
 
 if sys.version_info.major >= 3:
     def unicode(string): return string
@@ -211,11 +212,12 @@ def fmt_equation_environment(envnode, l2tobj):
        This function was introduced in `pylatexenc 2.0`.
     """
 
-    with _PushEquationContext(l2tobj):
-
-        contents = l2tobj.nodelist_to_text(envnode.nodelist).strip()
-        # indent equation, separate by newlines
-        return _fmt_indented_block(contents)
+    return l2tobj.math_node_to_text(envnode)
+    # with _PushEquationContext(l2tobj):
+    #
+    #     contents = l2tobj.nodelist_to_text(envnode.nodelist).strip()
+    #     # indent equation, separate by newlines
+    #     return _fmt_indented_block(contents)
 
 
 def fmt_input_macro(macronode, l2tobj):
@@ -246,8 +248,11 @@ def placeholder_node_formatter(placeholdertext):
 
        This function was introduced in `pylatexenc 2.0`.
     """
-    return lambda pht=placeholdertext: '< ' + " ".join(pht) + ' >'
+    return lambda n, pht=placeholdertext: _do_fmt_placeholder_node(pht)
     
+def _do_fmt_placeholder_node(placeholdertext):
+    return '< ' + " ".join(placeholdertext) + ' >'
+
 def fmt_placeholder_node(node):
     r"""
     This function can be used as callable in :py:class:`MacroTextSpec`,
@@ -265,7 +270,7 @@ def fmt_placeholder_node(node):
     name = getattr(node, 'macroname',
                    getattr(node, 'environmentname'),
                    getattr(node, 'specials_chars', '<unknown>'))
-    return placeholder_node_formatter(name)
+    return _do_fmt_placeholder_node(name)
 
 
 
@@ -443,17 +448,22 @@ class LatexNodes2Text(object):
 
     Additional keyword arguments are flags which may influence the behavior:
 
-    - `math_mode='text'|'with-delimiters'|'verbatim'`: Specify how to treat
-      chunks of LaTeX code that correspond to math modes.  If 'text' (the
+    - `math_mode='text'|'with-delimiters'|'verbatim'|'remove'`: Specify how to
+      treat chunks of LaTeX code that correspond to math modes.  If 'text' (the
       default), then the math mode contents is incorporated as normal text.  If
       'with-delimiters', the content is incorporated as normal text but it is
       still included in the original math-mode delimiters, such as '$...$'.  If
       'verbatim', then the math mode chunk is kept verbatim, including the
-      delimiters.
+      delimiters.  The value 'remove' means to remove the math mode sections
+      entirely and not to produce any replacement text.
 
     - `keep_comments=True|False`: If set to `True`, then LaTeX comments are kept
       (including the percent-sign); otherwise they are discarded.  (By default
       this is `False`)
+
+    - `fill_text`: If set to `True` or to a positive integer, then the
+      whitespace of LaTeX char blocks is re-layed out to fill at the given
+      number of characters or 80 by default. .................
 
     - `strict_latex_spaces=True|False`: If set to `True`, then we follow closely
       LaTeX's handling of whitespace.  For instance, whitespace following a bare
@@ -496,6 +506,13 @@ class LatexNodes2Text(object):
 
        Added the `strict_latex_spaces`, `keep_braced_groups`, and
        `keep_braced_groups_minlen` flags
+
+    .. versionadded: 2.0
+
+       Added the `math_mode=` flag to replace the poorly designed
+       `keep_inline_math=` flag;
+    
+       Added the `fill_text=` flag.
 
     Additionally, the following arguments are accepted for backwards compatibility:
 
@@ -576,8 +593,9 @@ class LatexNodes2Text(object):
         else:
             self.math_mode = flags.pop('math_mode', 'text')
 
-        if self.math_mode not in ('text', 'with-delimiters', 'verbatim'):
-            raise ValueError("math_mode= option must be one of 'text', 'with-delimiters', 'verbatim'")
+        if self.math_mode not in ('text', 'with-delimiters', 'verbatim', 'remove'):
+            raise ValueError("math_mode= option must be one of 'text', 'with-delimiters', "
+                             "'verbatim', 'remove'")
 
         self.keep_comments = flags.pop('keep_comments', False)
 
@@ -586,6 +604,12 @@ class LatexNodes2Text(object):
 
         self.keep_braced_groups = flags.pop('keep_braced_groups', False)
         self.keep_braced_groups_minlen = flags.pop('keep_braced_groups_minlen', 2)
+
+        self.fill_text = flags.pop('fill_text', None)
+        if not self.fill_text: # None, 0, False, or false-ish
+            self.fill_text = None
+        if self.fill_text is True: # exactly boolean true, not an int
+            self.fill_text = 80
 
         if 'text_replacements' in flags:
             del flags['text_replacements']
@@ -640,6 +664,10 @@ class LatexNodes2Text(object):
         a subtree of the reference input directory (after canonicalizing the
         paths and resolving all symlinks).
 
+        If `set_tex_input_directory()` was not called, or if it was called with
+        a value of `None`, then no file system access is attempted an an empty
+        string is returned.
+
         You may override this method to obtain the input data in however way you
         see fit.  In that case, a call to `set_tex_input_directory()` may not be
         needed as that function simply sets properties which are used by the
@@ -649,6 +677,10 @@ class LatexNodes2Text(object):
         the ``\\input`` macro), and should return a string with the file
         contents (or generate a warning or raise an error).
         """
+
+        if self.tex_input_directory is None:
+            return ''
+
         fnfull = os.path.realpath(os.path.join(self.tex_input_directory, fn))
         if self.strict_input:
             # make sure that the input file is strictly within dirfull, and didn't escape with
@@ -688,6 +720,9 @@ class LatexNodes2Text(object):
             logger.warning(u"Expected exactly one argument for '\\input' ! Got = %r", n.nodeargs)
 
         inputtex = self.read_input_file(self.nodelist_to_text([n.nodeargs[0]]).strip())
+
+        if not inputtex:
+            return ''
 
         return self.nodelist_to_text(
             latexwalker.LatexWalker(inputtex, **self.latex_walker_init_args)
@@ -752,141 +787,233 @@ class LatexNodes2Text(object):
             return ""
         
         if node.isNodeType(latexwalker.LatexCharsNode):
-            # Unless in strict latex spaces mode, ignore nodes consisting only
-            # of empty chars, as this tends to produce too much space...  These
-            # have been inserted by LatexWalker() in some occasions to keep
-            # track of all relevant pre_space of tokens, such as between two
-            # braced groups ("{one} {two}") or other such situations.
-            if not self.strict_latex_spaces['between-latex-constructs'] and len(node.chars.strip()) == 0:
-                return ""
-            return node.chars
+            return self.chars_node_to_text(node)
         
         if node.isNodeType(latexwalker.LatexCommentNode):
-            if self.keep_comments:
-                if self.strict_latex_spaces['after-comment']:
-                    return '%' + node.comment + '\n'
-                else:
-                    # default spaces, i.e., keep what spaces were already there after the comment
-                    return '%' + node.comment + node.comment_post_space
-            else:
-                if self.strict_latex_spaces['after-comment']:
-                    return ""
-                else:
-                    # default spaces, i.e., keep what spaces were already there after the comment
-                    # This can be useful to preserve e.g. indentation of the next line
-                    return node.comment_post_space
+            return self.comment_node_to_text(node)
         
         if node.isNodeType(latexwalker.LatexGroupNode):
-            contents = self._groupnodecontents_to_text(node)
-            if self.keep_braced_groups and len(contents) >= self.keep_braced_groups_minlen:
-                return node.delimiters[0] + contents + node.delimiters[1]
-            return contents
-
-        def apply_simplify_repl(node, simplify_repl, nodelistargs, what):
-            if callable(simplify_repl):
-                if 'l2tobj' in getfullargspec(simplify_repl)[0]:
-                    # callable accepts an argument named 'l2tobj', provide pointer to self
-                    return simplify_repl(node, l2tobj=self)
-                return simplify_repl(node)
-            if '%' in simplify_repl:
-                try:
-                    return simplify_repl % tuple([self._groupnodecontents_to_text(nn)
-                                                  for nn in nodelistargs])
-                except (TypeError, ValueError):
-                    logger.warning(
-                        "WARNING: Error in configuration: {} failed its substitution!".format(what)
-                    )
-                    return simplify_repl # too bad, keep the percent signs as they are...
-            return simplify_repl
-            
+            return self.group_node_to_text(node)
         
         if node.isNodeType(latexwalker.LatexMacroNode):
-            # get macro behavior definition.
-            macroname = node.macroname
-            mac = self.latex_context.get_macro_spec(macroname)
-            if mac is None:
-                # default for unknown macros
-                mac = MacroTextSpec('', discard=True)
-
-            def get_macro_str_repl(node, macroname, mac):
-                if mac.simplify_repl:
-                    return apply_simplify_repl(node, mac.simplify_repl, node.nodeargs,
-                                               what="macro '%s'"%(macroname))
-                if mac.discard:
-                    return ""
-                a = node.nodeargs
-                if (node.nodeoptarg):
-                    a.prepend(node.nodeoptarg)
-                return "".join([self._groupnodecontents_to_text(n) for n in a])
-
-            macrostr = get_macro_str_repl(node, macroname, mac)
-            return macrostr
+            return self.macro_node_to_text(node)
         
         if node.isNodeType(latexwalker.LatexEnvironmentNode):
-            # get environment behavior definition.
-            environmentname = node.environmentname
-            envdef = self.latex_context.get_environment_spec(environmentname)
-            if envdef is None:
-                # default for unknown environments
-                envdef = EnvironmentTextSpec('', discard=False)
-
-            if envdef.simplify_repl:
-                return apply_simplify_repl(node, envdef.simplify_repl, node.nodelist,
-                                           what="environment '%s'"%(environmentname))
-            if envdef.discard:
-                return ""
-            return self.nodelist_to_text(node.nodelist)
+            return self.environment_node_to_text(node)
 
         if node.isNodeType(latexwalker.LatexSpecialsNode):
-            # get macro behavior definition.
-            specials_chars = node.specials_chars
-            sspec = self.latex_context.get_specials_spec(specials_chars)
-            if sspec is None:
-                # no corresponding spec, leave the special chars unchanged:
-                return specials_chars
-
-            def get_specials_str_repl(node, specials_chars, spec):
-                if spec.simplify_repl:
-                    argnlist = node.nodeargd.argnlist if node.nodeargd else []
-                    return apply_simplify_repl(node, spec.simplify_repl, argnlist,
-                                               what="specials '%s'"%(specials_chars))
-                if spec.discard:
-                    return ""
-                a = node.nodeargd.argnlist
-                return "".join([self._groupnodecontents_to_text(n) for n in a])
-
-            s = get_specials_str_repl(node, specials_chars, sspec)
-            return s
+            return self.specials_node_to_text(node)
 
         if node.isNodeType(latexwalker.LatexMathNode):
-            if self.math_mode == 'verbatim':
-                if node.displaytype == 'display':
-                    return _fmt_indented_block(node.latex_verbatim(), indent='')
-                else:
-                    return node.latex_verbatim()
-            elif self.math_mode == 'with-delimiters':
-                with _PushEquationContext(self):
-                    content = self.nodelist_to_text(node.nodelist)
-                if node.displaytype == 'display':
-                    return node.delimiters[0] + _fmt_indented_block(content, indent='') \
-                        + node.delimiters[1]
-                else:
-                    return node.delimiters[0] + content+ node.delimiters[1]
-            elif self.math_mode == 'text':
-                with _PushEquationContext(self):
-                    content = self.nodelist_to_text(node.nodelist)
-                if node.displaytype == 'display':
-                    return _fmt_indented_block(content)
-                else:
-                    return content
-            else:
-                raise RuntimeError("unknown math_mode={} !".format(self.math_mode))
-                
+            return self.math_node_to_text(node)
 
         logger.warning("LatexNodes2Text.node_to_text(): Unknown node: %r", node)
 
         # discard anything else.
         return ""
+
+    def chars_node_to_text(self, node):
+        r"""
+        Return the textual representation of the given `node` representing a block
+        of simple latex text with no special characters or macros.  The `node`
+        is :py:class:`~pylatexenc.latexwalker.LatexCharsNode`.
+        """
+        # Unless in strict latex spaces mode, ignore nodes consisting only
+        # of empty chars, as this tends to produce too much space...  These
+        # have been inserted by LatexWalker() in some occasions to keep
+        # track of all relevant pre_space of tokens, such as between two
+        # braced groups ("{one} {two}") or other such situations.
+        content = node.chars
+        if self.fill_text: # None or column width
+            content = textwrap.fill(content, self.fill_text)
+        if not self.strict_latex_spaces['between-latex-constructs'] and len(content.strip()) == 0:
+            return ""
+        return content
+
+    def comment_node_to_text(self, node):
+        r"""
+        Return the textual representation of the given `node` representing a latex
+        comment.  The `node` is
+        :py:class:`~pylatexenc.latexwalker.LatexCommentNode`.
+        """
+        if self.keep_comments:
+            if self.strict_latex_spaces['after-comment']:
+                nl = '\n'
+                if node.comment_post_space == '':
+                    # this happens if two newlines follow a comment---the
+                    # comment_post_space is empty, and the \n\n is reported as a
+                    # char node to notify that there is a new paragraph.
+                    nl = ''
+                return '%' + node.comment + nl
+            else:
+                # default spaces, i.e., keep what spaces were already there after the comment
+                return '%' + node.comment + node.comment_post_space
+        else:
+            if self.strict_latex_spaces['after-comment']:
+                return ""
+            else:
+                # default spaces, i.e., keep what spaces were already there after the comment
+                # This can be useful to preserve e.g. indentation of the next line
+                return node.comment_post_space
+
+
+    def group_node_to_text(self, node):
+        r"""
+        Return the textual representation of the given `node` representing a latex
+        group.  The `node` is
+        :py:class:`~pylatexenc.latexwalker.LatexGroupNode`.
+        """
+        contents = self._groupnodecontents_to_text(node)
+        if self.keep_braced_groups and len(contents) >= self.keep_braced_groups_minlen:
+            return node.delimiters[0] + contents + node.delimiters[1]
+        return contents
+
+    def macro_node_to_text(self, node):
+        r"""
+        Return the textual representation of the given `node` representing a latex
+        macro invocation.  The `node` is
+        :py:class:`~pylatexenc.latexwalker.LatexMacroNode`.
+        """
+        # get macro behavior definition.
+        macroname = node.macroname
+        mac = self.latex_context.get_macro_spec(macroname)
+        if mac is None:
+            # default for unknown macros
+            mac = MacroTextSpec('', discard=True)
+
+        def get_macro_str_repl(node, macroname, mac):
+            if mac.simplify_repl:
+                return self.apply_simplify_repl(node, mac.simplify_repl,
+                                                what=r"macro '\%s'"%(macroname))
+            if mac.discard:
+                return ""
+            a = node.nodeargs
+            if (node.nodeoptarg):
+                a.prepend(node.nodeoptarg)
+            return "".join([self._groupnodecontents_to_text(n) for n in a])
+
+        macrostr = get_macro_str_repl(node, macroname, mac)
+        return macrostr
+
+    def environment_node_to_text(self, node):
+        r"""
+        Return the textual representation of the given `node` representing a full
+        latex environment.  The `node` is
+        :py:class:`~pylatexenc.latexwalker.LatexEnvironmentNode`.
+        """
+        # get environment behavior definition.
+        environmentname = node.environmentname
+        envdef = self.latex_context.get_environment_spec(environmentname)
+        if envdef is None:
+            # default for unknown environments
+            envdef = EnvironmentTextSpec('', discard=False)
+
+        if envdef.simplify_repl:
+            return self.apply_simplify_repl(node, envdef.simplify_repl,
+                                            what="environment '%s'"%(environmentname))
+        if envdef.discard:
+            return ""
+
+        return self.nodelist_to_text(node.nodelist)
+
+    def specials_node_to_text(self, node):
+        r"""
+        Return the textual representation of the given `node` representing special a
+        latex character (or characters).  The `node` is
+        :py:class:`~pylatexenc.latexwalker.LatexSpecialsNode`.
+        """
+        # get the specials text spec
+        specials_chars = node.specials_chars
+        sspec = self.latex_context.get_specials_spec(specials_chars)
+        if sspec is None:
+            # no corresponding spec, leave the special chars unchanged:
+            return specials_chars
+
+        def get_specials_str_repl(node, specials_chars, spec):
+            if spec.simplify_repl:
+                return self.apply_simplify_repl(node, spec.simplify_repl,
+                                                what="specials '%s'"%(specials_chars))
+            if spec.discard:
+                return ""
+            a = node.nodeargd.argnlist
+            return "".join([self._groupnodecontents_to_text(n) for n in a])
+
+        s = get_specials_str_repl(node, specials_chars, sspec)
+        return s
+
+    def math_node_to_text(self, node):
+        r"""
+        Return the textual representation of the given `node` representing a block
+        of math mode latex.  The `node` is either a
+        :py:class:`~pylatexenc.latexwalker.LatexMathNode` or a
+        :py:class:`~pylatexenc.latexwalker.LatexEnvironmentNode`.
+
+        This method is responsible for honoring the `math_mode=...` option
+        provided to the constructor.
+        """
+
+        if self.math_mode == 'verbatim':
+            if node.isNodeType(latexwalker.LatexEnvironmentNode) or node.displaytype == 'display':
+                return _fmt_indented_block(node.latex_verbatim(), indent='')
+            else:
+                return node.latex_verbatim()
+
+        elif self.math_mode == 'remove':
+            return ''
+
+        elif self.math_mode == 'with-delimiters':
+            with _PushEquationContext(self):
+                content = self.nodelist_to_text(node.nodelist)
+            if node.isNodeType(latexwalker.LatexMathNode):
+                delims = node.delimiters
+            else: # environment node
+                delims = r'\begin{%s}'%(node.environmentname), r'\end{%s}'%(node.environmentname)
+            if node.isNodeType(latexwalker.LatexEnvironmentNode) or node.displaytype == 'display':
+                return delims[0] + _fmt_indented_block(content, indent='') + delims[1]
+            else:
+                return delims[0] + content + delims[1]
+
+        elif self.math_mode == 'text':
+            with _PushEquationContext(self):
+                content = self.nodelist_to_text(node.nodelist)
+            if node.isNodeType(latexwalker.LatexEnvironmentNode) or node.displaytype == 'display':
+                return _fmt_indented_block(content)
+            else:
+                return content
+
+        else:
+            raise RuntimeError("unknown math_mode={} !".format(self.math_mode))
+
+
+    def apply_simplify_repl(self, node, simplify_repl, what):
+        r"""
+        Utility to get the replacement text associated with a `node` for which we
+        have a `simplify_repl` object (given by e.g. a MacroTextSpec or
+        similar).
+
+        The argument `nodelistargs` is a list of nodes (or `None`) that
+        represent the macro/environment/specials arguments.  The argument `what`
+        is used in error messages.
+        """
+        if callable(simplify_repl):
+            if 'l2tobj' in getfullargspec(simplify_repl)[0]:
+                # callable accepts an argument named 'l2tobj', provide pointer to self
+                return simplify_repl(node, l2tobj=self)
+            return simplify_repl(node)
+        if '%' in simplify_repl:
+            nodeargs = []
+            if node.nodeargd and node.nodeargd.argnlist:
+                nodeargs = node.nodeargd.argnlist
+            try:
+                return simplify_repl % tuple([self._groupnodecontents_to_text(nn)
+                                              for nn in nodeargs])
+            except (TypeError, ValueError):
+                logger.warning(
+                    "WARNING: Error in configuration: {} failed its substitution!".format(what)
+                )
+                return simplify_repl # too bad, keep the percent signs as they are...
+        return simplify_repl
+
 
     def _is_bare_macro_node(self, node):
         return (node is not None and
@@ -977,6 +1104,12 @@ def latex2text(content, tolerant_parsing=False, keep_inline_math=False, keep_com
        Please use :py:class:`LatexNodes2Text` instead.
     """
 
+    _util.pylatexenc_deprecated_ver(
+        "1.0",
+        "The module-level function `pylatexenc.latex2text.latex2text()` is deprecated in "
+        "favor of the `pylatexenc.latex2text.LatexNodes2Text` class."
+    )
+
     (nodelist, tpos, tlen) = latexwalker.get_latex_nodes(content, keep_inline_math=keep_inline_math,
                                                          tolerant_parsing=tolerant_parsing)
 
@@ -992,129 +1125,13 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
        Please use :py:class:`LatexNodes2Text` instead.
     """
 
+    _util.pylatexenc_deprecated_ver(
+        "1.0",
+        "The module-level function `pylatexenc.latex2text.latexnodes2text()` is deprecated in "
+        "favor of the `pylatexenc.latex2text.LatexNodes2Text` class."
+    )
+
     return LatexNodes2Text(
         keep_inline_math=keep_inline_math,
         keep_comments=keep_comments
     ).nodelist_to_text(nodelist)
-
-
-
-
-def main(argv=None):
-    import fileinput
-    import argparse
-
-    if argv is None:
-        argv = sys.argv[1:]
-
-    parser = argparse.ArgumentParser()
-
-    group = parser.add_argument_group("LatexWalker options")
-
-    group.add_argument('--parser-keep-inline-math', action='store_const', const=True,
-                       dest='parser_keep_inline_math', default=None,
-                       help=argparse.SUPPRESS)
-    group.add_argument('--no-parser-keep-inline-math', action='store_const', const=False,
-                       dest='parser_keep_inline_math',
-                       help=argparse.SUPPRESS)
-
-    group.add_argument('--tolerant-parsing', action='store_const', const=True,
-                       dest='tolerant_parsing', default=True)
-    group.add_argument('--no-tolerant-parsing', action='store_const', const=False,
-                       dest='tolerant_parsing',
-                       help="Tolerate syntax errors when parsing, and attempt to continue (default yes)")
-
-    group.add_argument('--strict-braces', action='store_const', const=True,
-                       dest='strict_braces', default=False)
-    group.add_argument('--no-strict-braces', action='store_const', const=False,
-                       dest='strict_braces',
-                       help="Report errors for mismatching LaTeX braces (default no)")
-
-    group = parser.add_argument_group("LatexNodes2Text options")
-
-    group.add_argument('--text-keep-inline-math', action='store_const', const=True,
-                       dest='text_keep_inline_math', default=None,
-                       help=argparse.SUPPRESS)
-    group.add_argument('--no-text-keep-inline-math', action='store_const', const=False,
-                       dest='text_keep_inline_math',
-                       help=argparse.SUPPRESS)
-
-    group.add_argument('--math-mode', action='store', dest='math_mode',
-                       choices=['text', 'with-delimiters', 'verbatim'], default='text',
-                       help="How to handle chunks of math mode LaTeX code. 'text' = convert "
-                       "to text like the rest; 'with-delimiters' = same as 'text' but retain "
-                       "the original math mode delimiters; 'verbatim' = keep verbatim LaTeX code")
-
-    group.add_argument('--keep-comments', action='store_const', const=True,
-                       dest='keep_comments', default=False)
-    group.add_argument('--no-keep-comments', action='store_const', const=False,
-                       dest='keep_comments',
-                       help="Keep LaTeX comments in text output (default no)")
-
-    group.add_argument('--strict-latex-spaces',
-                       choices=['off', 'on']+list(_strict_latex_spaces_predef.keys()),
-                       dest='strict_latex_spaces', default='macros',
-                       help="How to handle whitespace. See documentation for the class "
-                       "LatexNodes2Text().")
-
-    group.add_argument('--keep-braced-groups', action='store_const', const=True,
-                       dest='keep_braced_groups', default=False)
-    group.add_argument('--no-keep-braced-groups', action='store_const', const=False,
-                       dest='keep_braced_groups',
-                       help="Keep LaTeX {braced groups} in text output (default no)")
-
-    group.add_argument('--keep-braced-groups-minlen', type=int, default=2,
-                       dest='keep_braced_groups_minlen',
-                       help="Only apply --keep-braced-groups to groups that contain at least"
-                       "this many characters")
-
-    parser.add_argument('files', metavar="FILE", nargs='*',
-                        help='Input files (if none specified, read from stdandard input)')
-
-    args = parser.parse_args(argv)
-
-    if args.parser_keep_inline_math is not None or args.text_keep_inline_math is not None:
-        logger.warning("Options --parser-keep-inline-math and --text-keep-inline-math are "
-                       "deprecated and no longer have any effect.  Please use "
-                       "--math-mode=... instead.")
-
-    latex = ''
-    for line in fileinput.input(files=args.files):
-        latex += line
-
-    lw = latexwalker.LatexWalker(latex,
-                                 tolerant_parsing=args.tolerant_parsing,
-                                 strict_braces=args.strict_braces)
-
-    (nodelist, pos, len_) = lw.get_latex_nodes()
-
-    ln2t = LatexNodes2Text(math_mode=args.math_mode,
-                           keep_comments=args.keep_comments,
-                           strict_latex_spaces=args.strict_latex_spaces,
-                           keep_braced_groups=args.keep_braced_groups,
-                           keep_braced_groups_minlen=args.keep_braced_groups_minlen)
-
-    print(ln2t.nodelist_to_text(nodelist) + "\n")
-
-
-
-def run_main():
-
-    try:
-
-        main()
-
-    except SystemExit:
-        raise
-    except: # lgtm [py/catch-base-exception]
-        import pdb
-        import traceback
-        traceback.print_exc()
-        pdb.post_mortem()
-
-
-
-
-if __name__ == '__main__':
-
-    run_main()

@@ -93,7 +93,6 @@ import re
 import sys
 import logging
 import json
-import bisect
 
 import pylatexenc
 from .. import macrospec
@@ -988,6 +987,8 @@ class ParsingState(object):
 
 # ------------------------------------------------------------------------------
 
+
+
 class LatexWalker(object):
     r"""
     A parser which walks through an input stream, parsing it as LaTeX markup.
@@ -1076,7 +1077,7 @@ class LatexWalker(object):
         self.s = s
 
         # will be determined lazily automatically by pos_to_lineno_colno(...)
-        self._pos_new_lines = None
+        self._line_no_calc = None
 
         self.debug_nodes = False
 
@@ -1400,38 +1401,16 @@ class LatexWalker(object):
         fast.
 
         Return a tuple `(lineno, colno)` giving line number and column number.
-        Both start at 1, i.e., the beginning of the document (`pos=0`) has line
-        and column number `(1,1)`.  If `as_dict=True`, then a dictionary with
-        keys 'lineno', 'colno' is returned instead of a tuple.
+        Line numbers start at 1 and column numbers start at zero, i.e., the
+        beginning of the document (`pos=0`) has line and column number `(1,0)`.
+        If `as_dict=True`, then a dictionary with keys 'lineno', 'colno' is
+        returned instead of a tuple.
         """
 
-        if self._pos_new_lines is None:
-            # determine line number information
-            def find_all_new_lines(x):
-                # first line starts at the beginning of the string
-                yield 0
-                k = 0
-                while k < len(x):
-                    k = x.find('\n', k)
-                    if k == -1:
-                        return
-                    k += 1
-                    # s[k] is the character after the newline, i.e., the 0-th column
-                    # of the new line
-                    yield k
+        if self._line_no_calc is None:
+            self._line_no_calc = _util.LineNumbersCalculator(self.s)
 
-            self._pos_new_lines = list(find_all_new_lines(self.s))
-
-        # find line number in list
-
-        line_no = bisect.bisect_left(self._pos_new_lines, pos)
-        if line_no >= len(self._pos_new_lines):
-            line_no = len(self._pos_new_lines)-1
-        col_no = pos - self._pos_new_lines[line_no]
-        # 1+... so that line and column numbers start at 1
-        if as_dict:
-            return dict(lineno=1 + line_no, colno=1 + col_no)
-        return (1 + line_no, 1 + col_no)
+        return self._line_no_calc.pos_to_lineno_colno(pos, as_dict=as_dict)
 
 
     def get_latex_expression(self, pos, strict_braces=None, parsing_state=None):
@@ -2352,9 +2331,8 @@ def nodelist_to_latex(nodelist):
 
     # Here, we don't use latex_verbatim() and continue to provide (an updated
     # version of) the old code, because we want to be compatible with code that
-    # used this function without necessarily setting parsing_state on nodes.
-
-    #return "".join(n.latex_verbatim() for n in nodelist)
+    # used this function on custom instantiated nodes without setting the
+    # parsing_state.
 
     def add_args(nodeargd):
         if nodeargd is None or nodeargd.argspec is None or nodeargd.argnlist is None:
@@ -2490,117 +2468,38 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
             disp_node(nn, indent=indent+4, context=context, skip_group=skip)
 
 
-class LatexNodesJSONEncoder(json.JSONEncoder):
-    """
-    A :py:class:`json.JSONEncoder` that can encode :py:class:`LatexNode` objects
-    (and subclasses).
-    """
-    def default(self, obj):
-        if isinstance(obj, LatexNode):
-            # Prepare a dictionary with the correct keys and values.
-            n = obj
-            d = {
-                'nodetype': n.__class__.__name__,
-            }
-            #redundant_fields = getattr(n, '_redundant_fields', n._fields)
-            for fld in n._fields:
-                d[fld] = n.__dict__[fld]
-            return d
-
-        if isinstance(obj, macrospec.ParsedMacroArgs):
-            return obj.to_json_object()
-
-        # else:
-        return super(LatexNodesJSONEncoder, self).default(obj)
 
 
+def make_json_encoder(latexwalker, use_line_numbers=True):
 
-def main(argv=None):
-    import fileinput
-    import argparse
+    class LatexNodesJSONEncoder(json.JSONEncoder):
+        # not official API for now
+        """
+        A :py:class:`json.JSONEncoder` that can encode :py:class:`LatexNode` objects
+        (and subclasses).
+        """
 
-    if argv is None:
-        argv = sys.argv[1:]
+        def __init__(self, *args, **kwargs):
+            super(LatexNodesJSONEncoder, self).__init__(*args, **kwargs)
 
-    parser = argparse.ArgumentParser()
+        def default(self, obj):
+            if isinstance(obj, LatexNode):
+                # Prepare a dictionary with the correct keys and values.
+                n = obj
+                d = {
+                    'nodetype': n.__class__.__name__,
+                }
+                #redundant_fields = getattr(n, '_redundant_fields', n._fields)
+                for fld in n._fields:
+                    d[fld] = n.__dict__[fld]
+                d.update(latexwalker.pos_to_lineno_colno(n.pos, as_dict=True))
+                return d
 
-    parser.add_argument('--output-format', metavar="FORMAT", dest="output_format",
-                        choices=["human", "json"], default='human',
-                        help='Requested output format for the node tree')
-    parser.add_argument('--json-indent', metavar="NUMSPACES", dest="json_indent",
-                        type=int, default=2,
-                        help='Indentation in JSON output (specify number of spaces per indentation level)')
-    parser.add_argument('--json-compact', dest="json_indent", default=2,
-                        action='store_const', const=None,
-                        help='Output compact JSON')
+            if isinstance(obj, macrospec.ParsedMacroArgs):
+                return obj.to_json_object()
 
-    parser.add_argument('--keep-inline-math', action='store_const', const=True,
-                        dest='keep_inline_math', default=True,
-                        help=argparse.SUPPRESS)
-    parser.add_argument('--no-keep-inline-math', action='store_const', const=False,
-                        dest='keep_inline_math',
-                        help=argparse.SUPPRESS)
+            # else:
+            return super(LatexNodesJSONEncoder, self).default(obj)
 
-    parser.add_argument('--tolerant-parsing', action='store_const', const=True,
-                        dest='tolerant_parsing', default=True)
-    parser.add_argument('--no-tolerant-parsing', action='store_const', const=False,
-                        dest='tolerant_parsing',
-                        help="Tolerate syntax errors when parsing, and attempt to continue (default yes)")
-
-    parser.add_argument('--strict-braces', action='store_const', const=True,
-                        dest='strict_braces', default=False)
-    parser.add_argument('--no-strict-braces', action='store_const', const=False,
-                        dest='strict_braces',
-                        help="Report errors for mismatching LaTeX braces (default no)")
-
-    parser.add_argument('files', metavar="FILE", nargs='*',
-                        help='Input files (if none specified, read from stdandard input)')
-
-    args = parser.parse_args(argv)
-
-    latex = ''
-    for line in fileinput.input(files=args.files):
-        latex += line
     
-    latexwalker = LatexWalker(latex,
-                              tolerant_parsing=args.tolerant_parsing,
-                              strict_braces=args.strict_braces)
-
-    (nodelist, pos, len_) = latexwalker.get_latex_nodes()
-
-    if args.output_format == 'human':
-        print('\n--- NODES ---\n')
-        for n in nodelist:
-            disp_node(n)
-        print('\n-------------\n')
-        return
-
-    if args.output_format == 'json':
-        json.dump({ 'nodelist': nodelist, },
-                  sys.stdout,
-                  cls=LatexNodesJSONEncoder,
-                  indent=args.json_indent)
-        sys.stdout.write("\n")
-        return
-    
-    raise ValueError("Invalid output format: "+args.output_format)
-
-
-def run_main():
-
-    try:
-
-        main()
-
-    except SystemExit:
-        raise
-    except: # lgtm [py/catch-base-exception]
-        import pdb
-        import traceback
-        traceback.print_exc()
-        pdb.post_mortem()
-
-
-if __name__ == '__main__':
-
-    run_main()
+    return LatexNodesJSONEncoder
