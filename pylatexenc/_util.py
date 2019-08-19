@@ -24,7 +24,8 @@
 #
 
 
-# internal module. API may change at any time without notice.
+# Internal module. Internal API may move, disappear or otherwise change at any
+# time and without notice.
 
 
 try:
@@ -33,6 +34,16 @@ try:
 except ImportError:
     from collections import MutableMapping
 
+
+def pylatexenc_deprecated_2(msg, stacklevel=2):
+    import warnings
+    warnings.warn(
+        ( "Deprecated (pylatexenc 2.0): {} "
+          "[see https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-2/]" )
+        .format(msg.strip()),
+        DeprecationWarning,
+        stacklevel=stacklevel+1
+    )
 
 
 class LazyDict(MutableMapping):

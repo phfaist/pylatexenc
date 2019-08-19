@@ -91,7 +91,6 @@ import logging
 import sys
 import functools
 import itertools
-#import warnings
 
 if sys.version_info.major > 2:
     unicode = str # need to support unicode() w/ no arguments
@@ -734,10 +733,10 @@ def _get_deprecated_utf82latex():
     # Don't issue a deprecation warning, because utf8tolatex() uses the
     # `utf82latex` dict even if it isn't modified by the user.
     #
-    # warnings.warn("Deprecated (pylatexenc 2.0): "
-    #               "The module-level dictionary `pylatexenc.latexencode.utf82latex` is deprecated "
-    #               "and might be removed in a future version of `pylatexenc` (see docs).",
-    #               DeprecationWarning)
+    #     _util.pylatexenc_deprecated_2(
+    #         "The module-level dictionary `pylatexenc.latexencode.utf82latex` is deprecated "
+    #         "and might be removed in a future version of `pylatexenc`.",
+    #     )
 
     # return a copy of the dict so that the user can modify the module-level
     # `utf82latex` dict without influencing the behavior of the new
@@ -772,7 +771,7 @@ utf82latex = _util.LazyDict(generate_dict_fn=_get_deprecated_utf82latex)
 
       Modifying the `utf82latex` module-level dictionary is not recommended.
       Doing so will alter the behavior of the `utf8tolatex()` function also for
-      other independent modules that also use `pylatexenc`!
+      all other modules that also use `pylatexenc`!
 """
 
 

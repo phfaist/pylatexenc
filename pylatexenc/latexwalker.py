@@ -94,7 +94,6 @@ import sys
 import logging
 import json
 import bisect
-import warnings
 
 import pylatexenc
 from . import macrospec
@@ -263,6 +262,12 @@ def MacrosDef(macname, optarg, numargs):
        `macname`, `optarg`, and `numargs`, so that existing code accessing those
        properties can continue to work.
     """
+    _util.pylatexenc_deprecated_2(
+        "`pylatexenc.latexwalker.MacrosDef` is now obsolete. "
+        "It should still work in most use cases, but new code should use "
+        "`pylatexenc.macrospec.MacroSpec` instead."
+    )
+
     m = macrospec.std_macro(macname, optarg, numargs)
     # make accessible legacy attributes
     m.macname = m.macroname
@@ -1078,11 +1083,11 @@ class LatexWalker(object):
         if latex_context is None:
             if 'macro_dict' in kwargs:
                 # LEGACY -- build a latex context using the given macro_dict
-                warnings.warn("Deprecated (pylatexenc 2.0): "
-                              "The `macro_dict=...` option in LatexWalker() is obsolete since "
-                              "pylatexenc 2.  It'll still work, but please consider using instead "
-                              "the more versatile option `latex_context=...`.",
-                              DeprecationWarning)
+                _util.pylatexenc_deprecated_2(
+                    "The `macro_dict=...` option in LatexWalker() is obsolete since "
+                    "pylatexenc 2.  It'll still work, but please consider using instead "
+                    "the more versatile option `latex_context=...`."
+                )
 
                 macro_dict = kwargs.pop('macro_dict', None)
 
@@ -1121,11 +1126,11 @@ class LatexWalker(object):
         self.strict_braces = kwargs.pop('strict_braces', False)
 
         if 'keep_inline_math' in kwargs:
-            warnings.warn("Deprecated (pylatexenc 2.0): "
-                          "The keep_inline_math=... option in LatexWalker() has no effect "
-                          "in pylatexenc 2.  Please consider using the more versatile option "
-                          "math_mode=... in LatexNodes2Text() instead.",
-                          DeprecationWarning)
+            _util.pylatexenc_deprecated_2(
+                "The keep_inline_math=... option in LatexWalker() has no effect "
+                "in pylatexenc 2.  Please consider using the more versatile option "
+                "math_mode=... in LatexNodes2Text() instead."
+            )
             del kwargs['keep_inline_math']
 
         if kwargs:

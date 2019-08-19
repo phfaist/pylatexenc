@@ -48,7 +48,6 @@ import os
 import logging
 import sys
 import inspect
-import warnings
 
 if sys.version_info.major >= 3:
     def unicode(string): return string
@@ -541,12 +540,10 @@ class LatexNodes2Text(object):
         if latex_context is None:
             if 'macro_dict' in flags or 'env_dict' in flags:
                 # LEGACY -- build a latex context using the given macro_dict
-                warnings.warn(
-                    "Deprecated (pylatexenc 2.0): "
+                _util.pylatexenc_deprecated_2(
                     "The `macro_dict=...` and `env_dict=...` options in LatexNodes2Text() are "
                     "obsolete since pylatexenc 2.  They will still work, but please consider "
-                    "using instead the more versatile option `latex_context=...`.",
-                    DeprecationWarning
+                    "using instead the more versatile option `latex_context=...`."
                 )
                 
                 macro_dict = flags.pop('macro_dict', [])
@@ -571,10 +568,10 @@ class LatexNodes2Text(object):
             if 'math_mode' in flags:
                 raise TypeError("Cannot specify both math_mode= and keep_inline_math= "
                                 "for LatexNodes2Text()")
-            warnings.warn("Deprecated (pylatexenc 2.0): "
-                          "The keep_inline_math=... option in LatexNodes2Text() has been superseded by "
-                          "the math_mode=... option.",
-                          DeprecationWarning)
+            _util.pylatexenc_deprecated_2(
+                "The keep_inline_math=... option in LatexNodes2Text() has been replaced by "
+                "the math_mode=... option."
+            )
             self.math_mode = 'verbatim' if flags.pop('keep_inline_math') else 'text'
         else:
             self.math_mode = flags.pop('math_mode', 'text')
@@ -592,12 +589,12 @@ class LatexNodes2Text(object):
 
         if 'text_replacements' in flags:
             del flags['text_replacements']
-            warnings.warn("Deprecated (pylatexenc 2.0): "
-                          "The text_replacements= argument is ignored since pylatexenc 2. "
-                          "To keep existing code working, add a call to "
-                          "`LatexNodes2Text.apply_text_replacements()`. "
-                          "New code should use instead \"latex specials\"; see doc for more info.",
-                          DeprecationWarning)
+            _util.pylatexenc_deprecated_2(
+                "The text_replacements= argument is ignored since pylatexenc 2. "
+                "To keep existing code working, add a call to "
+                "`LatexNodes2Text.apply_text_replacements()`. "
+                "New code should use \"latex specials\" instead."
+            )
 
         if flags:
             # any flags left which we haven't recognized
