@@ -489,7 +489,8 @@ class LatexNodes2Text(object):
 
     - `fill_text`: If set to `True` or to a positive integer, then the
       whitespace of LaTeX char blocks is re-layed out to fill at the given
-      number of characters or 80 by default. .................
+      number of characters or 80 by default.  The fill is by far not perfect,
+      but the resulting text might be slightly more readable.
 
     - `strict_latex_spaces=True|False`: If set to `True`, then we follow closely
       LaTeX's handling of whitespace.  For instance, whitespace following a bare
@@ -508,11 +509,12 @@ class LatexNodes2Text(object):
       spacing only outside of equation contexts.
 
       Finally, the argument `strict_latex_spaces` may also be set to a
-      dictionary with keys 'between-macro-and-chars', 'after-comment', and
-      'between-latex-constructs', 'in-equations', with individual values either
-      `True` or `False`, dictating whitespace behavior in specific cases (`True`
-      indicates strict latex behavior).  The value for 'in-equations' may even
-      be another dictionary with the same keys to override values in equations.
+      dictionary with keys 'between-macro-and-chars', 'after-comment',
+      'between-latex-constructs', and 'in-equations', with individual values
+      either `True` or `False`, dictating whitespace behavior in specific cases
+      (`True` indicates strict latex behavior).  The value for 'in-equations'
+      may even be another dictionary with the same keys to override values in
+      equations.
 
       In the future, the default value of this setting might change, e.g., to
       'macros'.

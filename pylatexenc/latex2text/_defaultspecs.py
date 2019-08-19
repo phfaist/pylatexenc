@@ -105,6 +105,9 @@ latex_base_specs = {
         ('includegraphics', placeholder_node_formatter('graphics')),
 
         ('ref', '<ref>'),
+        ('autoref', '<ref>'),
+        ('cref', '<ref>'),
+        ('Cref', '<Ref>'),
         ('eqref', '(<ref>)'),
         ('url', '<%s>'),
         ('item',

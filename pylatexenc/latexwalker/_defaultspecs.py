@@ -96,6 +96,9 @@ specs = [
 
             std_macro('label', False, 1),
             std_macro('ref', False, 1),
+            std_macro('autoref', False, 1),
+            std_macro('cref', False, 1),
+            std_macro('Cref', False, 1),
             std_macro('eqref', False, 1),
             std_macro('url', False, 1),
             std_macro('hypersetup', False, 1),
