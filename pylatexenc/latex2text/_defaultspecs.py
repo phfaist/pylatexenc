@@ -90,12 +90,20 @@ latex_base_specs = {
         # NOTE: macro will only be assigned arguments if they are explicitly defined as
         #       accepting arguments in latexwalker.py.
         MacroTextSpec('emph', discard=False),
-        MacroTextSpec('textbf', discard=False),
+        MacroTextSpec('textrm', discard=False),
         MacroTextSpec('textit', discard=False),
-        MacroTextSpec('textsl', discard=False),
+        MacroTextSpec('textbf', discard=False),
         MacroTextSpec('textsc', discard=False),
+        MacroTextSpec('textsl', discard=False),
         MacroTextSpec('text', discard=False),
+
         MacroTextSpec('mathrm', discard=False),
+        MacroTextSpec('mathbb', discard=False),
+        MacroTextSpec('mathbf', discard=False),
+        MacroTextSpec('mathsf', discard=False),
+        MacroTextSpec('mathscr', discard=False),
+        MacroTextSpec('mathfrak', discard=False),
+
 
         MacroTextSpec('input', simplify_repl=fmt_input_macro),
         MacroTextSpec('include', simplify_repl=fmt_input_macro),

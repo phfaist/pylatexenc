@@ -274,6 +274,8 @@ def placeholder_node_formatter(placeholdertext, block=True):
         _do_fmt_placeholder_node(pht, l2tobj, block=block)
     
 def _do_fmt_placeholder_node(placeholdertext, l2tobj, block=True):
+    # spaces added so that database indexing doesn't index the word "array" or
+    # "pmatrix"
     txt = '< ' + " ".join(placeholdertext) + ' >'
     if block:
         return l2tobj._fmt_indented_block(txt, indent='    ')
@@ -291,11 +293,14 @@ def fmt_placeholder_node(node, l2tobj):
 
        This function was introduced in `pylatexenc 2.0`.
     """
-    # spaces added so that database indexing doesn't index the word "array" or
-    # "pmatrix"
-    name = getattr(node, 'macroname',
-                   getattr(node, 'environmentname'),
-                   getattr(node, 'specials_chars', '<unknown>'))
+
+    for att in ('macroname', 'environmentname', 'specials_chars'):
+        if hasattr(node, att):
+            name = getattr(node, att)
+            break
+    else:
+        name = '<unknown>'
+
     return _do_fmt_placeholder_node(name, l2tobj)
 
 
