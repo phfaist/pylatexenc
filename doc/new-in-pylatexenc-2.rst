@@ -26,10 +26,20 @@ Brief list of new features
 
 - Improvements to the :py:mod:`~pylatexenc.latex2text`:
 
+  - New feature: chunks of text can be filled at a given column width for a more
+    aesthetic result.  This can be enabled with the flag
+    `fill_text=True|<column-width>` in
+    :py:class:`~pylatexenc.latex2text.LatexNodes2Text`\ 's constructor.
+
+  - The default handling of white space was changed.  The flag
+    `strict_latex_spaces=` now takes the value 'macros' as default, which is
+    more reasonable in most cases;
+
   - Renamed macro specification classes `MacroDef` → `MacroTextSpec` etc.,
     include support for "latex specials";
 
-  - New flag `math_mode=` specifying how to convert math mode to text;
+  - New flag `math_mode=` specifying how to convert math mode to text, extends
+    and replaces `keep_inline_math=`;
 
   - Adapted for the updated `latexwalker` API.
 

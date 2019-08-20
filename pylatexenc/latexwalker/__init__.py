@@ -87,7 +87,7 @@ environments (the "latex context") that are specified using
 module :py:mod:`pylatexenc.macrospec` for more information.
 '''
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import re
 import sys
@@ -1471,6 +1471,10 @@ class LatexWalker(object):
             if tok.tok == 'brace_open':
                 return self.get_latex_braced_group(tok.pos, parsing_state=parsing_state)
             if tok.tok == 'brace_close':
+                # don't worry, stray closing braces are still reported (in
+                # get_latex_nodes()) if tolerant_parsing=False even if
+                # strict_braces=False.  That's because we leave the brace in the
+                # input and it will be picked up when we read the next token.
                 if self.strict_braces and not self.tolerant_parsing:
                     raise LatexWalkerParseError(
                         "Expected expression, got closing brace '{}'".format(tok.arg),

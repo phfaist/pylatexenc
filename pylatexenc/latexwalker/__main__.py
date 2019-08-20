@@ -65,11 +65,15 @@ def main(argv=None):
                         help="Tolerate syntax errors when parsing, and attempt "
                         "to continue (default yes)")
 
+    # I'm not sure this flag is useful and if it should be exposed at all.
+    # Accept it, but make it hidden.
     parser.add_argument('--strict-braces', action='store_const', const=True,
-                        dest='strict_braces', default=False)
+                        dest='strict_braces', default=False,
+                        help=argparse.SUPPRESS)
     parser.add_argument('--no-strict-braces', action='store_const', const=False,
                         dest='strict_braces',
-                        help="Report errors for mismatching LaTeX braces (default no)")
+                        #help="Report errors for mismatching LaTeX braces (default no)"
+                        help=argparse.SUPPRESS)
 
     parser.add_argument('files', metavar="FILE", nargs='*',
                         help='Input files (if none specified, read from stdandard input)')

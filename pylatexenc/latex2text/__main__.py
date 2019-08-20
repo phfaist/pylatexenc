@@ -54,11 +54,15 @@ def main(argv=None):
                        dest='tolerant_parsing',
                        help="Tolerate syntax errors when parsing, and attempt to continue (default yes)")
 
-    group.add_argument('--strict-braces', action='store_const', const=True,
-                       dest='strict_braces', default=False)
-    group.add_argument('--no-strict-braces', action='store_const', const=False,
-                       dest='strict_braces',
-                       help="Report errors for mismatching LaTeX braces (default no)")
+    # I'm not sure this flag is useful and if it should be exposed at all.
+    # Accept it, but make it hidden.
+    parser.add_argument('--strict-braces', action='store_const', const=True,
+                        dest='strict_braces', default=False,
+                        help=argparse.SUPPRESS)
+    parser.add_argument('--no-strict-braces', action='store_const', const=False,
+                        dest='strict_braces',
+                        #help="Report errors for mismatching LaTeX braces (default no)"
+                        help=argparse.SUPPRESS)
 
     group = parser.add_argument_group("LatexNodes2Text options")
 
@@ -88,8 +92,21 @@ def main(argv=None):
                        dest='keep_comments',
                        help="Keep LaTeX comments in text output (default no)")
 
-    group.add_argument('--strict-latex-spaces',
-                       choices=['off', 'on']+list(_strict_latex_spaces_predef.keys()),
+    class ListWithHiddenItems(list):
+        def __init__(self, thelist, hiddenitems):
+            super(ListWithHiddenItems, self).__init__(thelist)
+            self.hiddenitems = hiddenitems
+        def __contains__(self, value):
+            return super(ListWithHiddenItems, self).__contains__(value) \
+                or value in self.hiddenitems
+
+    strict_latex_spaces_choices = ListWithHiddenItems(
+        # the list
+        ['off', 'on']+list(k for k in _strict_latex_spaces_predef.keys() if k != 'default'),
+        # hidden items: Value is accepted, but not shown in list of choices
+        ['default']
+    )
+    group.add_argument('--strict-latex-spaces', choices=strict_latex_spaces_choices,
                        dest='strict_latex_spaces', default='macros',
                        help="How to handle whitespace. See documentation for the class "
                        "LatexNodes2Text().")
@@ -102,7 +119,7 @@ def main(argv=None):
 
     group.add_argument('--keep-braced-groups-minlen', type=int, default=2,
                        dest='keep_braced_groups_minlen',
-                       help="Only apply --keep-braced-groups to groups that contain at least"
+                       help="Only apply --keep-braced-groups to groups that contain at least "
                        "this many characters")
 
     parser.add_argument('files', metavar="FILE", nargs='*',
