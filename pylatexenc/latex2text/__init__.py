@@ -870,27 +870,6 @@ class LatexNodes2Text(object):
             return ""
         return content
 
-    def do_fill_text(self, text, textcol=0):
-        # keep trailing whitespace to have whitespace between macros in text as
-        # in "see \ref{...} and blah blah"
-        head_par = '\n\n' if ('\n\n' in re.search(r'^\s*', text).group()) else ''
-        trail_par = '\n\n' if ('\n\n' in re.search(r'\s*$', text).group()) else ''
-        def fill_chunk(x, textcol):
-            head_ws = ' ' if textcol>0 and x[0:1].isspace() else ''
-            trail_ws = ' ' if x[-1:].isspace() else ''
-            if textcol >= self.fill_text-4:
-                return '\n' + textwrap.fill(x, self.fill_text) + trail_ws
-            else:
-                return head_ws + \
-                    textwrap.fill(x, self.fill_text, initial_indent='X'*textcol)[textcol:] + \
-                    trail_ws
-        return head_par + "\n\n".join(
-            chunk
-            for chunk in (fill_chunk(x, textcol if j==0 else 0)
-                          for j, x in enumerate(re.compile(r'\n{2,}').split(text)))
-            if chunk.strip()
-        ) + trail_par
-
     def comment_node_to_text(self, node):
         r"""
         Return the textual representation of the given `node` representing a latex
@@ -1025,7 +1004,7 @@ class LatexNodes2Text(object):
 
         elif self.math_mode == 'with-delimiters':
             with _PushEquationContext(self):
-                content = self.nodelist_to_text(node.nodelist)
+                content = self.nodelist_to_text(node.nodelist).strip()
             if node.isNodeType(latexwalker.LatexMathNode):
                 delims = node.delimiters
             else: # environment node
@@ -1037,7 +1016,7 @@ class LatexNodes2Text(object):
 
         elif self.math_mode == 'text':
             with _PushEquationContext(self):
-                content = self.nodelist_to_text(node.nodelist)
+                content = self.nodelist_to_text(node.nodelist).strip()
             if node.isNodeType(latexwalker.LatexEnvironmentNode) or node.displaytype == 'display':
                 return self._fmt_indented_block(content)
             else:
@@ -1046,6 +1025,34 @@ class LatexNodes2Text(object):
         else:
             raise RuntimeError("unknown math_mode={} !".format(self.math_mode))
 
+
+    def do_fill_text(self, text, textcol=0):
+        # keep trailing whitespace to have whitespace between macros in text as
+        # in "see \ref{...} and blah blah"
+        head_ws = re.search(r'^\s*', text).group()
+        head_par = '\n\n' if ('\n\n' in head_ws) else ''
+        #head_nl = '\n' if (not head_par and '\n' in head_ws) else ''
+        trail_ws = re.search(r'\s*$', text).group()
+        trail_par = '\n\n' if ('\n\n' in trail_ws) else ''
+        #trail_nl = '\n' if (not trail_par and '\n' in trail_ws) else ''
+        text = text.strip()
+        def fill_chunk(x, textcol):
+            #head_ws = ' ' if textcol>0 and x[0:1].isspace() else ''
+            #trail_ws = ' ' if x[-1:].isspace() else ''
+            head_ws, trail_ws = '', ''
+            x = x.strip()
+            if textcol >= self.fill_text-4:
+                return '\n' + textwrap.fill(x, self.fill_text) + trail_ws
+            else:
+                return head_ws + \
+                    textwrap.fill(x, self.fill_text, initial_indent='X'*textcol)[textcol:] + \
+                    trail_ws
+        return head_par + (' ' if textcol>0 and head_ws and not head_par else '') + "\n\n".join(
+            chunk
+            for chunk in (fill_chunk(x, textcol if j==0 else 0)
+                          for j, x in enumerate(re.compile(r'\n{2,}').split(text)))
+            if chunk.strip()
+        ) + (' ' if trail_ws and not trail_par else '') + trail_par
 
     def apply_simplify_repl(self, node, simplify_repl, what):
         r"""
@@ -1118,6 +1125,15 @@ class LatexNodes2Text(object):
             return self.node_to_text(groupnode)
         return self.nodelist_to_text(groupnode.nodelist)
 
+    def node_arg_to_text(self, node, k):
+        r"""
+        Return the textual representation of the `k`\ -th argument of the given
+        `node`.  This might be useful for substitution lambdas in macro and
+        environment specs.
+        """
+        if node.nodeargd and node.nodeargd.argnlist:
+            return self._groupnodecontents_to_text(node.nodeargd.argnlist[k])
+        return ''
 
     def apply_text_replacements(self, s, text_replacements):
         r"""

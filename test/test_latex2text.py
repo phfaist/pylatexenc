@@ -46,9 +46,9 @@ where i is the “imaginary unit.”
         self.assertEqualUpToWhitespace(
             LatexNodes2Text(math_mode='with-delimiters').nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
             u'''hi there! This is an equation:
-
+\\begin{equation}
     x + y i = 0
-
+\\end{equation}
 where $i$ is the “imaginary unit.”
 '''
         )

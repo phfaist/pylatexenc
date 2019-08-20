@@ -698,7 +698,7 @@
 0x2013 [EN DASH]                                             |{\textendash}|
 0x2014 [EM DASH]                                             |{\textemdash}|
 0x2015 [HORIZONTAL BAR]                                      |{\textemdash}|
-0x2016 [DOUBLE VERTICAL LINE]                                |{\textbardbl}|
+0x2016 [DOUBLE VERTICAL LINE]                                |{\ensuremath{\Vert}}|
 0x2018 [LEFT SINGLE QUOTATION MARK]                          |{\textquoteleft}|
 0x2019 [RIGHT SINGLE QUOTATION MARK]                         |{\textquoteright}|
 0x201A [SINGLE LOW-9 QUOTATION MARK]                         |{\quotesinglbase}|

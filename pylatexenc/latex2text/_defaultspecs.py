@@ -120,8 +120,31 @@ latex_base_specs = {
          '{} <{}>'.format(l2tobj.nodelist_to_text([n.nodeargd.argnlist[1]]), 
                           l2tobj.nodelist_to_text([n.nodeargd.argnlist[0]]))),
 
+        ('cite', '<cit.>'),
+        ('citet', '<cit.>'),
+        ('citep', '<cit.>'),
+
         # use second argument:
         ('texorpdfstring', lambda node, l2t: l2t.nodelist_to_text(node.nodeargs[1:2])),
+
+
+        ('part',
+         lambda n, l2tobj: u'\n\nPART: {}\n'.format(l2tobj.node_arg_to_text(n, 2).upper())),
+        ('chapter',
+         lambda n, l2tobj: u'\n\nCHAPTER: {}\n'.format(l2tobj.node_arg_to_text(n, 2).upper())),
+        ('section',
+         lambda n, l2tobj: u'\n\n\N{SECTION SIGN} {}\n'.format(l2tobj.node_arg_to_text(n, 2).upper())),
+        ('subsection',
+         lambda n, l2tobj: u'\n\n \N{SECTION SIGN}.\N{SECTION SIGN} {}\n'.format(
+             l2tobj.node_arg_to_text(n, 2))),
+        ('subsubsection',
+         lambda n, l2tobj: u'\n\n  \N{SECTION SIGN}.\N{SECTION SIGN}.\N{SECTION SIGN} {}\n'.format(
+             l2tobj.node_arg_to_text(n, 2))),
+        ('paragraph',
+         lambda n, l2tobj: u'\n\n  {}\n'.format(l2tobj.node_arg_to_text(n, 2))),
+        ('subparagraph',
+         lambda n, l2tobj: u'\n\n    {}\n'.format(
+             l2tobj.node_arg_to_text(n, 2))),
 
 
         ('hspace', ''),
