@@ -279,7 +279,7 @@ def _do_fmt_placeholder_node(placeholdertext, l2tobj, block=True):
         return l2tobj._fmt_indented_block(txt, indent='    ')
     return ' ' + txt + ' '
 
-def fmt_placeholder_node(node):
+def fmt_placeholder_node(node, l2tobj):
     r"""
     This function can be used as callable in :py:class:`MacroTextSpec`,
     :py:class:`EnvironmentTextSpec`, or :py:class:`SpecialsTextSpec` for latex
@@ -296,7 +296,7 @@ def fmt_placeholder_node(node):
     name = getattr(node, 'macroname',
                    getattr(node, 'environmentname'),
                    getattr(node, 'specials_chars', '<unknown>'))
-    return _do_fmt_placeholder_node(name)
+    return _do_fmt_placeholder_node(name, l2tobj)
 
 
 

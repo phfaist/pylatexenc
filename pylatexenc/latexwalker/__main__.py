@@ -29,15 +29,12 @@ import argparse
 import json
 
 
-from .. import macrospec
-from ..latexwalker import LatexWalker, LatexNode, disp_node, make_json_encoder
+from ..latexwalker import LatexWalker, disp_node, make_json_encoder
 
 
 
 
 def main(argv=None):
-    import fileinput
-    import argparse
 
     if argv is None:
         argv = sys.argv[1:]
