@@ -42,7 +42,7 @@ setup(
     # metadata for upload to PyPI
     author = "Philippe Faist",
     author_email = "philippe.faist@bluewin.ch",
-    description = "Simple LaTeX parser providing heuristic latex-to-unicode and unicode-to-latex conversion",
+    description = "Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion",
     long_description = read("README.rst"),
     license = "MIT",
     keywords = "latex text unicode encode parse expression",

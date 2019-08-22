@@ -195,8 +195,9 @@ class UnicodeToLatexConversionRule:
     
       - `RULE_DICT`: If `rule_type` is `RULE_DICT`, then `rule` should be a
         dictionary whose keys are integers representing unicode code points
-        (e.g., `0x210F`), and whose values are corresponding replacement
-        strings.  See :py:func:`get_builtin_uni2latex_dict()` for an example.
+        (e.g., `0x210F`), and whose values are corresponding replacement strings
+        (e.g., ``r'\hbar'``).  See :py:func:`get_builtin_uni2latex_dict()` for
+        an example.
 
       - `RULE_REGEX`: If `rule_type` is `RULE_REGEX`, then `rule` should be an
         iterable of tuple pairs `(compiled_regular_expression,
@@ -212,17 +213,19 @@ class UnicodeToLatexConversionRule:
            The replacement string is parsed like the second argument to
            `re.sub()` and backslashes have a special meaning because they can
            refer to captured sub-expressions.  For a literal backslash, use two
-           backslashes in raw strings, four backslashes in normal strings.
+           backslashes ``\\`` in raw strings, four backslashes in normal
+           strings.
 
         Example::
 
           regex_conversion_rule = UnicodeToLatexConversionRule(
               rule_type=RULE_REGEX,
               rule=[
-                  # protect acronyms of capital letters with braces ABC -> {ABC}
+                  # protect acronyms of capital letters with braces,
+                  # e.g.: ABC -> {ABC}
                   (re.compile(r'[A-Z]{2,}'), r'{\1}'),
-                  # can specify several rules. For instance, convert ... -> \ldots
-                  (re.compile(r'...'), r'\\ldots'),
+                  # Additional rules, e.g., "..." -> "\ldots"
+                  (re.compile(r'...'), r'\\ldots'), # note double \\
               ]
           )
 
@@ -342,24 +345,13 @@ class UnicodeToLatexEncoder(object):
          conversion_rules = [
              # our custom rules
              UnicodeToLatexConversionRule(RULE_REGEX, [
+                 # double \\ needed, see UnicodeToLatexConversionRule
                  ( re.compile(r'...'), r'\\ldots' ),
                  ( re.compile(r'î'), r'\\^i' ),
              ]),
-             # all the default rules
+             # plus all the default rules
              'defaults'
          ]
-         u = UnicodeToLatexEncoder(conversion_rules=conversion_rules)
-         #
-         # which is equivalent to:
-         #
-         conversion_rules = [
-             # our custom rules
-             UnicodeToLatexConversionRule(RULE_REGEX, [
-                 ( re.compile(r'...'), r'\\ldots' ),
-                 ( re.compile(r'î'), r'\\^i' ),
-               ]),
-             # all the default rules
-             ] + get_builtin_conversion_rules('defaults')
          u = UnicodeToLatexEncoder(conversion_rules=conversion_rules)
 
     .. py:attribute:: replacement_latex_protection
