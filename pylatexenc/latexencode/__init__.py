@@ -483,7 +483,7 @@ class UnicodeToLatexEncoder(object):
 
         #
         # now "pre-compile" some stuff so that calls to unicode_to_latex() can
-        # execute fast
+        # hopefully execute faster
         #
 
         # "pre-compile" rules and check rule types:
@@ -601,9 +601,6 @@ class UnicodeToLatexEncoder(object):
         for regex, repl in ruleregexes:
             m = regex.match(s, p.pos)
             if m is not None:
-                # is there a better way than to re-match with sub() and still
-                # accept the wide range of possibilities for repl incl, \1, \2,
-                # etc.?
                 if callable(repl):
                     replstr = repl(m)
                 else:
@@ -686,9 +683,9 @@ def unicode_to_latex(s, non_ascii_only=False, replacement_latex_protection='brac
     without creating a new instance upon each call.
 
     The parameters `non_ascii_only`, `replacement_latex_protection`,
-    `unknown_char_policy`, and `unknown_char_warning` are directly passed on to the
-    :py:class:`UnicodeToLatexEncoder` constructor.  See the class doc for
-    :py:class:`UnicodeToLatexEncoder` for more information about their effect.
+    `unknown_char_policy`, and `unknown_char_warning` are directly passed on to
+    the :py:class:`UnicodeToLatexEncoder` constructor.  See the class doc for
+    :py:class:`UnicodeToLatexEncoder` for more information about what they do.
 
     You may only use arguments to this function that are python hashable (like
     `True`, `False`, or simple strings) to help us keep a cache of previously
@@ -862,73 +859,3 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
 
 
 
-
-# ------------------------------------------------------------------------------
-
-
-
-def main(argv=None):
-    import fileinput
-    import argparse
-
-    if argv is None:
-        argv = sys.argv[1:]
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('files', metavar="FILE", nargs='*',
-                        help='Input files (if none specified, read from stdandard input)')
-
-    parser.add_argument('--non-ascii-only', action='store_const', const=True,
-                        dest='non_ascii_only', default=False)
-    parser.add_argument('--no-non-ascii-only', action='store_const', const=False,
-                        dest='non_ascii_only',
-                        help="If set, only non-ascii characters are encoded into LaTeX sequences, "
-                        "and not characters like '$' that might have a special LaTeX meaning.")
-
-    parser.add_argument('--replacement-latex-protection',
-                        choices=('braces', 'braces-all', 'braces-almost-all', 'braces-after-macro',
-                                 'none'),
-                        dest='replacement_latex_protection', default='braces',
-                        help=r"How to protect replacement latex code from producing invalid latex code "
-                        r"when concatenated in a longer string.  One of 'braces', 'braces-all', "
-                        r"'braces-almost-all', 'braces-after-macro', 'none'.  Example: using "
-                        r"choice 'braces' we avoid the invalid replacement 'a→b' -> 'a\tob' "
-                        r"with instead 'a{\to}b'.")
-
-    parser.add_argument('--unknown-char-policy',
-                        choices=('keep', 'replace', 'ignore', 'fail'),
-                        dest='unknown_char_policy', default='keep',
-                        help="How to deal with nonascii characters with no known latex code equivalent.")
-
-    args = parser.parse_args(argv)
-
-    latex = ''
-    for line in fileinput.input(files=args.files):
-        latex += line
-
-    print(unicode_to_latex(latex,
-                           non_ascii_only=args.non_ascii_only,
-                           replacement_latex_protection=args.replacement_latex_protection,
-                           unknown_char_policy=args.unknown_char_policy))
-
-
-def run_main():
-    try:
-
-        logging.basicConfig(level=logging.DEBUG)
-
-        main()
-
-    except SystemExit:
-        raise
-    except: # lgtm [py/catch-base-exception]
-        import pdb
-        import traceback
-        traceback.print_exc()
-        pdb.post_mortem()
-
-
-if __name__ == '__main__':
-
-    # run_main()  ## DEBUG
-    main()
