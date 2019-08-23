@@ -108,7 +108,6 @@ logger = logging.getLogger(__name__)
 
 
 
-from ._uni2latexmap import uni2latex as _uni2latex
 from .. import _util
 
 
@@ -129,6 +128,7 @@ def get_builtin_uni2latex_dict():
 
        This function was introduced in `pylatexenc 2.0`.
     """
+    from ._uni2latexmap import uni2latex as _uni2latex
     return _MappingProxyType(_uni2latex)
 
 
@@ -734,6 +734,7 @@ def _get_deprecated_utf82latex():
     # `utf2tolatex()` to influence the behavior of another module's use of
     # `unicode_to_latex()`.  If both modules use `utf8tolatex()`, we can't avoid
     # this influence.)
+    from ._uni2latexmap import uni2latex as _uni2latex
     return _uni2latex.copy()
 
 
