@@ -23,4 +23,4 @@
 #
 
 
-version_str = "2.0"
+version_str = "2.0.post1"
