@@ -8,8 +8,7 @@ Welcome to pylatexenc's documentation!
 
 [pylatexenc version: |version|]
 
-This package provides simple and heuristic conversion of LaTeX to unicode and
-vice versa.
+A simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion.
 
 Quick example::
 

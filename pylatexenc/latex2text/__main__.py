@@ -26,10 +26,12 @@
 import sys
 import fileinput
 import argparse
+import logging
 
 
 from .. import latexwalker
 from ..latex2text import LatexNodes2Text, _strict_latex_spaces_predef
+from ..version import version_str
 
 
 def main(argv=None):
@@ -37,7 +39,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='latex2text', add_help=False)
 
     group = parser.add_argument_group("LatexWalker options")
 
@@ -83,8 +85,8 @@ def main(argv=None):
 
     group.add_argument('--fill-text', dest='fill_text', action='store', nargs='?',
                        default=-1,
-                       help="Wrap text to the given width, or 80 columns if no argument "
-                       "is specified" )
+                       help="Attempt to wrap text to the given width, or 80 columns if option is "
+                       "specified with no argument")
 
     group.add_argument('--keep-comments', action='store_const', const=True,
                        dest='keep_comments', default=False)
@@ -122,10 +124,28 @@ def main(argv=None):
                        help="Only apply --keep-braced-groups to groups that contain at least "
                        "this many characters")
 
+    group = parser.add_argument_group("General options")
+
+    group.add_argument('-q', '--quiet', dest='logging_level', action='store_const',
+                       const=logging.ERROR, default=logging.INFO,
+                       help="Suppress warning messages")
+    group.add_argument('-v', '--verbose', dest='logging_level', action='store_const',
+                       const=logging.DEBUG,
+                       help="Verbose output")
+    group.add_argument('--version', action='version',
+                       version='pylatexenc {}'.format(version_str),
+                       help="Show version information and exit")
+    group.add_argument('--help', action='help',
+                       help="Show this help information and exit")
+
+
     parser.add_argument('files', metavar="FILE", nargs='*',
                         help='Input files (if none specified, read from stdandard input)')
 
     args = parser.parse_args(argv)
+
+    logging.basicConfig()
+    logging.getLogger().setLevel(args.logging_level)
 
     if args.parser_keep_inline_math is not None or args.text_keep_inline_math is not None:
         logger.warning("Options --parser-keep-inline-math and --text-keep-inline-math are "
@@ -178,4 +198,5 @@ def run_main():
 
 if __name__ == '__main__':
 
-    run_main()
+    main()
+    #run_main() # debug
