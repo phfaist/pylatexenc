@@ -31,6 +31,7 @@ import logging
 
 
 from ..latexencode import unicode_to_latex
+from ..version import version_str
 
 
 
@@ -39,7 +40,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='latexencode', add_help=False)
     parser.add_argument('files', metavar="FILE", nargs='*',
                         help='Input files (if none specified, read from stdandard input)')
 
@@ -47,8 +48,9 @@ def main(argv=None):
                         dest='non_ascii_only', default=False)
     parser.add_argument('--no-non-ascii-only', action='store_const', const=False,
                         dest='non_ascii_only',
-                        help="If set, only non-ascii characters are encoded into LaTeX sequences, "
-                        "and not characters like '$' that might have a special LaTeX meaning.")
+                        help="The option --non-ascii-only specifies that only non-ascii characters "
+                        "are to be encoded into LaTeX sequences, and not characters like '$' "
+                        "even though they might have a special LaTeX meaning.")
 
     parser.add_argument('--replacement-latex-protection',
                         choices=('braces', 'braces-all', 'braces-almost-all', 'braces-after-macro',
@@ -68,9 +70,15 @@ def main(argv=None):
     parser.add_argument('-q', '--quiet', dest='logging_level', action='store_const',
                         const=logging.ERROR, default=logging.INFO,
                         help="Suppress warning messages")
+    parser.add_argument('--version', action='version',
+                        version='pylatexenc {}'.format(version_str),
+                        help="Show version information and exit")
+    parser.add_argument('--help', action='help',
+                        help="Show this help information and exit")
 
     args = parser.parse_args(argv)
 
+    logging.basicConfig()
     logging.getLogger().setLevel(args.logging_level)
 
     latex = ''
@@ -89,8 +97,6 @@ def main(argv=None):
 
 def run_main():
     try:
-
-        logging.basicConfig(level=logging.DEBUG)
 
         main()
 

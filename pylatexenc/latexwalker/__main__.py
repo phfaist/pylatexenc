@@ -27,10 +27,11 @@ import sys
 import fileinput
 import argparse
 import json
+import logging
 
 
 from ..latexwalker import LatexWalker, disp_node, make_json_encoder
-
+from ..version import version_str
 
 
 
@@ -39,7 +40,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='latexwalker', add_help=False)
 
     parser.add_argument('--output-format', metavar="FORMAT", dest="output_format",
                         choices=["human", "json"], default='human',
@@ -75,10 +76,25 @@ def main(argv=None):
                         #help="Report errors for mismatching LaTeX braces (default no)"
                         help=argparse.SUPPRESS)
 
+    parser.add_argument('-q', '--quiet', dest='logging_level', action='store_const',
+                        const=logging.ERROR, default=logging.INFO,
+                        help="Suppress warning messages")
+    parser.add_argument('-v', '--verbose', dest='logging_level', action='store_const',
+                        const=logging.DEBUG,
+                        help="Verbose output")
+    parser.add_argument('--version', action='version',
+                        version='pylatexenc {}'.format(version_str),
+                        help="Show version information and exit")
+    parser.add_argument('--help', action='help',
+                        help="Show this help information and exit")
+
     parser.add_argument('files', metavar="FILE", nargs='*',
                         help='Input files (if none specified, read from stdandard input)')
 
     args = parser.parse_args(argv)
+
+    logging.basicConfig()
+    logging.getLogger().setLevel(args.logging_level)
 
     latex = ''
     for line in fileinput.input(files=args.files):
@@ -127,4 +143,5 @@ def run_main():
 
 if __name__ == '__main__':
 
-    run_main()
+    #run_main() # debug
+    main()
