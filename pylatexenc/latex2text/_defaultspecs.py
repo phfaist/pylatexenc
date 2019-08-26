@@ -39,8 +39,6 @@ else:
 
 from ..latex2text import MacroTextSpec, EnvironmentTextSpec, SpecialsTextSpec, \
     fmt_equation_environment, fmt_placeholder_node, placeholder_node_formatter, fmt_input_macro
-from ..latexwalker import LatexCharsNode
-
 
 
 
@@ -476,9 +474,11 @@ unicode_accents_list = (
     )
 
 def make_accented_char(node, combining, l2tobj):
-    nodearg = node.nodeargs[0] if len(node.nodeargs) else LatexCharsNode(chars=' ')
-
-    c = l2tobj.nodelist_to_text([nodearg]).strip()
+    if len(node.nodeargs):
+        nodearg = node.nodeargs[0]
+        c = l2tobj.nodelist_to_text([nodearg]).strip()
+    else:
+        c = ' '
 
     def getaccented(ch, combining):
         ch = unicode(ch)

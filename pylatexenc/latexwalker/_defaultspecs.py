@@ -132,6 +132,8 @@ specs = [
 
             MacroSpec('ensuremath', args_parser=MacroStandardArgsParser('{', args_math_mode=[True])),
 
+            std_macro("not", False, 1),
+
             std_macro("vec", False, 1),
             std_macro("dot", False, 1),
             std_macro("hat", False, 1),

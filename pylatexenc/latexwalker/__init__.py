@@ -2387,6 +2387,10 @@ def nodelist_to_latex(nodelist):
             latex += r'\end{%s}' %(n.envname)
             continue
         
+        if n.isNodeType(LatexMathNode):
+            latex += n.delimiters[0] + nodelist_to_latex(n.nodelist) + n.delimiters[1]
+            continue
+        
         latex += "<[UNKNOWN LATEX NODE: \'%s\']>"%(n.nodeType().__name__)
 
     return latex

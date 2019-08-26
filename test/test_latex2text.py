@@ -8,6 +8,7 @@ import unittest
 import re
 import os
 import os.path
+import unicodedata
 import logging
 
 from pylatexenc.latexwalker import LatexWalker
@@ -67,13 +68,21 @@ where $i$ is the “imaginary unit.”
             LatexNodes2Text().nodelist_to_text(LatexWalker(r"Fr\'en{\'{e}}tique").get_latex_nodes()[0]),
             '''Fr\N{LATIN SMALL LETTER E WITH ACUTE}n\N{LATIN SMALL LETTER E WITH ACUTE}tique'''
         )
+        self.assertEqual(
+            LatexNodes2Text(math_mode='with-delimiters')
+            .nodelist_to_text(LatexWalker(r"$1 \not= 2$").get_latex_nodes()[0]),
+            '''$1 {} 2$'''.format(unicodedata.normalize('NFC', "=\N{COMBINING LONG SOLIDUS OVERLAY}"))
+        )
         
 
     def test_keep_braced_groups(self):
         self.assertEqual(
             LatexNodes2Text(keep_braced_groups=True)
-            .nodelist_to_text(LatexWalker(r"\textit{Voil\`a du texte}. Il est \'{e}crit {en fran{\c{c}}ais}")
-                              .get_latex_nodes()[0]),
+            .nodelist_to_text(
+                LatexWalker(
+                    r"\textit{Voil\`a du texte}. Il est \'{e}crit {en fran{\c{c}}ais}"
+                ).get_latex_nodes()[0]
+            ),
             '''Voil\N{LATIN SMALL LETTER A WITH GRAVE} du texte. Il est \N{LATIN SMALL LETTER E WITH ACUTE}crit {en fran\N{LATIN SMALL LETTER C WITH CEDILLA}ais}'''
         )
 
