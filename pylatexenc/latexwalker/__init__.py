@@ -1673,7 +1673,13 @@ class LatexWalker(object):
             env_spec = macrospec.EnvironmentSpec('')
 
         # self = latex walker instance
-        argsresult = env_spec.parse_args(w=self, pos=pos, parsing_state=parsing_state)
+        try:
+            argsresult = env_spec.parse_args(w=self, pos=pos, parsing_state=parsing_state)
+        except (LatexWalkerEndOfStream, LatexWalkerParseError) as e:
+            raise self._get_exc_for_parseerror_or_eof(
+                e, firsttok, "arguments of environment \"\\begin{{{}}}\"".format(environmentname)
+            )
+
         if len(argsresult) == 4:
             (argd, apos, alen, adic) = argsresult
         else:
@@ -1709,9 +1715,29 @@ class LatexWalker(object):
                                   len=npos+nlen-startpos)
 
 
+    def _get_exc_for_parseerror_or_eof(self, e, tok, what):
+        """
+        (INTERNAL.) Use in an exception handler that captures both
+        `LatexWalkerEndOfStream` and `LatexWalkerParseError`.  Returns what
+        exception you should raise if you got one of these while parsing, e.g.,
+        macro arguments.
+        """
+        if not self.tolerant_parsing and isinstance(e, LatexWalkerEndOfStream):
+            e = LatexWalkerParseError(
+                s=self.s,
+                pos=tok.pos,
+                msg="Missing {}".format(what),
+                **self.pos_to_lineno_colno(tok.pos, as_dict=True)
+            )
+        e.open_contexts.append(
+            _maketuple('{}'.format(what), tok.pos,
+                       *self.pos_to_lineno_colno(tok.pos))
+        )
+        return e
     
 
-    def get_latex_nodes(self, pos=0, stop_upon_closing_brace=None, stop_upon_end_environment=None,
+    def get_latex_nodes(self, pos=0, stop_upon_closing_brace=None,
+                        stop_upon_end_environment=None,
                         stop_upon_closing_mathmode=None, read_max_nodes=None,
                         parsing_state=None):
         r"""
@@ -1887,7 +1913,8 @@ class LatexWalker(object):
                 spacestrnode = self.make_node(LatexCharsNode,
                                               parsing_state=p.parsing_state,
                                               chars=tok.pre_space,
-                                              pos=tok.pos-len(tok.pre_space), len=len(tok.pre_space))
+                                              pos=tok.pos-len(tok.pre_space),
+                                              len=len(tok.pre_space))
                 nodelist.append(spacestrnode)
                 if read_max_nodes and len(nodelist) >= read_max_nodes:
                     return True
@@ -2046,13 +2073,12 @@ class LatexWalker(object):
 
                 try:
                     margsresult = \
-                        mspec.parse_args(w=self, pos=tok.pos + tok.len, parsing_state=p.parsing_state)
-                except LatexWalkerParseError as e:
-                    e.open_contexts.append(
-                        _maketuple('arguments of macro "{}"'.format(macroname), tok.pos,
-                                   *self.pos_to_lineno_colno(tok.pos))
+                        mspec.parse_args(w=self, pos=tok.pos + tok.len,
+                                         parsing_state=p.parsing_state)
+                except (LatexWalkerEndOfStream, LatexWalkerParseError) as e:
+                    raise self._get_exc_for_parseerror_or_eof(
+                        e, tok, "arguments of macro \"{}\"".format(macroname)
                     )
-                    raise
 
                 if len(margsresult) == 4:
                     (nodeargd, mapos, malen, mdic) = margsresult
@@ -2096,12 +2122,10 @@ class LatexWalker(object):
 
                 try:
                     res = sspec.parse_args(w=self, pos=p.pos, parsing_state=p.parsing_state)
-                except LatexWalkerParseError as e:
-                    e.open_contexts.append(
-                        _maketuple('arguments of specials "{}"'.format(sspec.specials_chars),
-                                   tok.pos, *self.pos_to_lineno_colno(tok.pos))
+                except (LatexWalkerEndOfStream, LatexWalkerParseError) as e:
+                    raise self._get_exc_for_parseerror_or_eof(
+                        e, tok, "arguments of specials \"{}\"".format(sspec.specials_chars)
                     )
-                    raise
 
                 if res is not None:
                     # specials expects arguments, read them
