@@ -27,6 +27,7 @@
 # Internal module. May change without notice.
 
 import unicodedata
+import datetime
 import sys
 
 if sys.version_info.major >= 3:
@@ -48,6 +49,16 @@ def _format_uebung(n, l2t):
     if optarg is not None:
         s += '[{}]\n'.format(l2t.nodelist_to_text([optarg]))
     return s
+
+def _format_maketitle(title, author, date):
+    s = title + '\n'
+    s += '    ' + author + '\n'
+    s += '    ' + date + '\n'
+    s += '='*max(len(title), 4+len(author), 4+len(date)) + '\n\n'
+    return s
+
+def _latex_today():
+    return '{dt:%B} {dt.day}, {dt.year}'.format(dt=datetime.datetime.now())
 
 
 # construct the specs structure, more than the just the following definition
@@ -108,6 +119,16 @@ latex_base_specs = {
         MacroTextSpec('include', simplify_repl=fmt_input_macro),
 
     ] + [ MacroTextSpec(x, simplify_repl=y) for x, y in (
+
+        ('title', lambda n, l2tobj: setattr(l2tobj, '_doc_title', l2tobj.nodelist_to_text(n.nodeargd.argnlist[0:1]))),
+        ('author', lambda n, l2tobj: setattr(l2tobj, '_doc_author', l2tobj.nodelist_to_text(n.nodeargd.argnlist[0:1]))),
+        ('date', lambda n, l2tobj: setattr(l2tobj, '_doc_date', l2tobj.nodelist_to_text(n.nodeargd.argnlist[0:1]))),
+        ('maketitle', lambda n, l2tobj: _format_maketitle(getattr(l2tobj, '_doc_title', '[NO \title GIVEN]'),
+                                                          getattr(l2tobj, '_doc_author', '[NO \author GIVEN]'),
+                                                          getattr(l2tobj, '_doc_date', _latex_today()))),
+
+        ('today', _latex_today()),
+
 
         ('includegraphics', placeholder_node_formatter('graphics')),
 

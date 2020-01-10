@@ -1105,8 +1105,11 @@ class LatexNodes2Text(object):
         if callable(simplify_repl):
             if 'l2tobj' in getfullargspec(simplify_repl)[0]:
                 # callable accepts an argument named 'l2tobj', provide pointer to self
-                return simplify_repl(node, l2tobj=self)
-            return simplify_repl(node)
+                r = simplify_repl(node, l2tobj=self)
+            else:
+                r = simplify_repl(node)
+            return r if r else '' # don't return None
+
         if '%' in simplify_repl:
             nodeargs = []
             if node.nodeargd and node.nodeargd.argnlist:
