@@ -1107,6 +1107,65 @@ Use macros: """,
 
 
 
+
+    def test_error_dangling_missing_args_0(self):
+        latextext = r'''Test \textbf'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        parsing_state = lw.make_parsing_state()
+
+        with self.assertRaises(LatexWalkerParseError):
+            lw.get_latex_nodes(parsing_state=parsing_state)
+
+    def test_error_dangling_missing_args_1(self):
+        latextext = r'''Test \begin{tabular}''' # missing tabular arguments
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        parsing_state = lw.make_parsing_state()
+
+        with self.assertRaises(LatexWalkerParseError):
+            lw.get_latex_nodes(parsing_state=parsing_state)
+
+    def test_error_dangling_missing_args_2(self):
+        latextext = r'''Test _''' # missing underscore arguments
+
+        latex_context = get_default_latex_context_db()
+        latex_context.add_context_category('custom-category', prepend=True, specials=[
+            macrospec.SpecialsSpec('_', args_parser=macrospec.MacroStandardArgsParser('{'))
+        ])
+
+        lw = LatexWalker(latextext, latex_context=latex_context, tolerant_parsing=False)
+        parsing_state = lw.make_parsing_state()
+
+        with self.assertRaises(LatexWalkerParseError):
+            lw.get_latex_nodes(parsing_state=parsing_state)
+
+
+#     ### What should be the correct behavior when macro args
+#     ### are missing in tolerant parsing mode??
+#     def test_error_dangling_missing_args_0b(self):
+#         latextext = r'''
+# Test \textbf'''.lstrip()
+#
+#         lw = LatexWalker(latextext, tolerant_parsing=True)
+#         parsing_state = lw.make_parsing_state()
+#
+#         p = 0
+#         self.assertEqual(
+#             lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
+#             ([
+#                 LatexCharsNode(parsing_state=parsing_state,
+#                                chars='Test ',
+#                                pos=p, len=5),
+#                 LatexMacroNode(parsing_state=parsing_state,
+#                                macroname='textbf',
+#                                nodeargd=macrospec.ParsedMacroArgs(),
+#                                pos=p+5, len=12-5)
+#             ])
+#         )
+
+
+
     def test_bug_000(self):
         latextext = r'''
 \documentclass[stuff]{docclass}
