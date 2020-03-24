@@ -26,8 +26,9 @@ you to alter how this function behaves.
 
 You can also run ``latexencode`` in command-line to convert plain unicode text
 (from the standard input or from files given on the command line) into LaTeX
-code, written on to the standard output.
-
+code, written on to the standard output. The Vim plug-in 
+`vim-latexencode <https://github.com/Konfekt/vim-latexencode>`_
+provides a corresponding command to operate on a given range.
 
 Parsing LaTeX code & converting to plain text (unicode)
 -------------------------------------------------------
