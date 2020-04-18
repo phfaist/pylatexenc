@@ -58,7 +58,8 @@ License
 
 See LICENSE.txt (MIT License).
 
-NOTE: See copyright notice and license information for file ``unicode.xml``
-provided in ``unicode.xml.LICENSE``.  (The file ``unicode.xml`` was downloaded
-from https://www.w3.org/2003/entities/2007xml/unicode.xml as linked from
+NOTE: See copyright notice and license information for file
+``tools/unicode.xml`` provided in ``tools/unicode.xml.LICENSE``.  (The file
+``tools/unicode.xml`` was downloaded from
+https://www.w3.org/2003/entities/2007xml/unicode.xml as linked from
 https://www.w3.org/TR/xml-entity-names/#source.)

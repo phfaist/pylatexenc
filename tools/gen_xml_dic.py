@@ -42,8 +42,8 @@ for chxml in e.find('charlist').iter('character'):
     d[charord] = latexval
     dnames[charord] = chxml.find('description').text
 
-# dump dictionary into module file
-outputfile = 'pylatexenc/latexencode/_uni2latexmap_xml.py'
+# dump dictionary into new module file in current working directory
+outputfile = '_uni2latexmap_xml.py'
 
 HEADER = """\
 # -*- coding: utf-8 -*-
@@ -67,7 +67,7 @@ print("Successfully generated file %s"%(outputfile))
 
 
 # Now see which characters we don't have in our default set of symbols
-from pylatexenc._uni2latexmap import uni2latex as uni2latex_defaults
+from pylatexenc.latexencode._uni2latexmap import uni2latex as uni2latex_defaults
 
 missing_keys = set(d.keys()).difference(set(uni2latex_defaults.keys()))
 if missing_keys:

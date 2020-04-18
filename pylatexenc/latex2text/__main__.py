@@ -41,6 +41,20 @@ def main(argv=None):
 
     parser = argparse.ArgumentParser(prog='latex2text', add_help=False)
 
+    codegroup = parser.add_argument_group("Input options")
+
+    codegroup.add_argument('--code', '-c', action='store', default=None, metavar="LATEX_CODE",
+                           help="Convert the given LATEX_CODE to unicode text instead of reading "
+                           "from FILE or standard input.  You cannot specify FILEs if you use this "
+                           "option, and any standard input is ignored.")
+
+
+    codegroup.add_argument('files', metavar="FILE", nargs='*',
+                           help="Input files to read LaTeX code from. If no FILE(s) is/are specified, "
+                           "LaTeX code is read from standard input unless --code is specified")
+
+
+
     group = parser.add_argument_group("LatexWalker options")
 
     group.add_argument('--parser-keep-inline-math', action='store_const', const=True,
@@ -138,14 +152,12 @@ def main(argv=None):
     group.add_argument('--help', action='help',
                        help="Show this help information and exit")
 
-
-    parser.add_argument('files', metavar="FILE", nargs='*',
-                        help='Input files (if none specified, read from stdandard input)')
-
     args = parser.parse_args(argv)
 
     logging.basicConfig()
     logging.getLogger().setLevel(args.logging_level)
+    logger = logging.getLogger(__name__)
+
 
     if args.parser_keep_inline_math is not None or args.text_keep_inline_math is not None:
         logger.warning("Options --parser-keep-inline-math and --text-keep-inline-math are "
@@ -153,8 +165,15 @@ def main(argv=None):
                        "--math-mode=... instead.")
 
     latex = ''
-    for line in fileinput.input(files=args.files):
-        latex += line
+    if args.code:
+        if args.files:
+            logger.error("Cannot specify both FILEs and --code option. "
+                         "Use --help option for more information.")
+            sys.exit(1)
+        latex = args.code
+    else:
+        for line in fileinput.input(files=args.files):
+            latex += line
 
     if args.fill_text != -1:
         if args.fill_text is not None and len(args.fill_text):
@@ -177,7 +196,7 @@ def main(argv=None):
                            keep_braced_groups_minlen=args.keep_braced_groups_minlen,
                            fill_text=fill_text)
 
-    print(ln2t.nodelist_to_text(nodelist) + "\n")
+    print(ln2t.nodelist_to_text(nodelist))
 
 
 

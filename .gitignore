@@ -6,3 +6,5 @@ build
 doc/_build
 .cache
 .DS_Store
+tools/error.log
+tools/output.log
