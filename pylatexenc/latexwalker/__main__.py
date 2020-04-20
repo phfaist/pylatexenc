@@ -88,6 +88,12 @@ def main(argv=None):
     parser.add_argument('--help', action='help',
                         help="Show this help information and exit")
 
+
+    parser.add_argument('--code', '-c', action='store', default=None, metavar="LATEX_CODE",
+                        help="Convert the given LATEX_CODE to unicode text instead of reading "
+                        "from FILE or standard input.  You cannot specify FILEs if you use this "
+                        "option, and any standard input is ignored.")
+
     parser.add_argument('files', metavar="FILE", nargs='*',
                         help='Input files (if none specified, read from stdandard input)')
 
@@ -95,10 +101,18 @@ def main(argv=None):
 
     logging.basicConfig()
     logging.getLogger().setLevel(args.logging_level)
+    logger = logging.getLogger(__name__)
 
     latex = ''
-    for line in fileinput.input(files=args.files):
-        latex += line
+    if args.code:
+        if args.files:
+            logger.error("Cannot specify both FILEs and --code option. "
+                         "Use --help option for more information.")
+            sys.exit(1)
+        latex = args.code
+    else:
+        for line in fileinput.input(files=args.files):
+            latex += line
     
     latexwalker = LatexWalker(latex,
                               tolerant_parsing=args.tolerant_parsing,
