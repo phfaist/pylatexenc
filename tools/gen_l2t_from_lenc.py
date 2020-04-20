@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-from pylatexenc import macrospec, latexwalker, latex2text, latexencode
+from pylatexenc import latexwalker, latex2text, latexencode #, macrospec
 
 l2t_default_context = latex2text.get_default_latex_context_db()
 
