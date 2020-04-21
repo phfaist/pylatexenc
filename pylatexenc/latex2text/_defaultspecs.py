@@ -131,8 +131,8 @@ latex_base_specs = {
         ('date', lambda n, l2tobj: \
          setattr(l2tobj, '_doc_date', l2tobj.nodelist_to_text(n.nodeargd.argnlist[0:1]))),
         ('maketitle', lambda n, l2tobj: \
-         _format_maketitle(getattr(l2tobj, '_doc_title', '[NO \title GIVEN]'),
-                           getattr(l2tobj, '_doc_author', '[NO \author GIVEN]'),
+         _format_maketitle(getattr(l2tobj, '_doc_title', r'[NO \title GIVEN]'),
+                           getattr(l2tobj, '_doc_author', r'[NO \author GIVEN]'),
                            getattr(l2tobj, '_doc_date', _latex_today()))),
 
         ('today', _latex_today()),
