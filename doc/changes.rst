@@ -2,6 +2,32 @@
 Changes
 ============
 
+
+pylatexenc 2.3
+==============
+
+- Minor bug fixes in `latex2text`
+
+
+pylatexenc 2.2
+==============
+
+Version 2.2 brings a few minor bug fixes and improvements over version 2.1:
+
+- `pylatexenc.latex2text` supports more LaTeX symbols
+
+- `latex2text` and `latexwalker` command-line utilities accept a new `-c` option
+  where you can directly specify LaTeX code
+
+- minor bug fixes
+
+
+pylatexenc 2.1
+==============
+
+Version 2.1 brings a few minor bug fixes to version 2.0.
+
+
 pylatexenc 2.0
 ==============
 
