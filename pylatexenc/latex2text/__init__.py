@@ -1098,9 +1098,7 @@ class LatexNodes2Text(object):
         have a `simplify_repl` object (given by e.g. a MacroTextSpec or
         similar).
 
-        The argument `nodelistargs` is a list of nodes (or `None`) that
-        represent the macro/environment/specials arguments.  The argument `what`
-        is used in error messages.
+        The argument `what` is used in error messages.
         """
         if callable(simplify_repl):
             if 'l2tobj' in getfullargspec(simplify_repl)[0]:
@@ -1119,14 +1117,14 @@ class LatexNodes2Text(object):
 
             if node.isNodeType(latexwalker.LatexEnvironmentNode):
                 if has_percent_s:
-                    x = (self.nodelist_to_latex(node.nodelist), )
+                    x = (self.nodelist_to_text(node.nodelist), )
                 else:
                     x = dict(
                         (str(1+j),val) for j, val in enumerate(
                             self._groupnodecontents_to_text(nn) for nn in nodeargs
                         )
                     )
-                    x.update(body=self.nodelist_to_latex(node.nodelist))
+                    x.update(body=self.nodelist_to_text(node.nodelist))
             elif has_percent_s:
                 x = tuple([self._groupnodecontents_to_text(nn)
                            for nn in nodeargs])
