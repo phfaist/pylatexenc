@@ -151,7 +151,7 @@ latex_base_specs = {
              l2tobj.nodelist_to_text([r.nodeoptarg]) if r.nodeoptarg else '* '
          )
         ) ,
-        ('footnote', '[%s]'),
+        ('footnote', '[%(2)s]'), # \footnote[optional mark]{footnote text}
         ('href', lambda n, l2tobj:  \
          '{} <{}>'.format(l2tobj.nodelist_to_text([n.nodeargd.argnlist[1]]), 
                           l2tobj.nodelist_to_text([n.nodeargd.argnlist[0]]))),
