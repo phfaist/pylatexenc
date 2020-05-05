@@ -23,4 +23,20 @@
 #
 
 
-version_str = "2.2"
+#
+# Self-note: Don't forget to
+#
+#   1) bump version number here and update change log (doc/changes.rst)
+#
+#   2) git commit any remaining changes
+#
+#   3) " git tag vX.X -am '<message>' "
+#
+#   4) " git push --tags "
+#
+#   5) on github.com, fill in release details with a summary of changes etc.
+#   
+#   6) upload package to PyPI (twine upload dist/pylatexenc-X.X.tar.gz -r realpypi)
+#
+
+version_str = "2.3"
