@@ -197,6 +197,13 @@ class LatexWalkerEndOfStream(LatexWalkerError):
         self.final_space = final_space
 
 
+class LatexWalkerInvalidEnv(LatexWalkerError):
+    """
+    Reached an invalid environment 'begin' or 'end' macro.
+    """
+    def __init__(self, final_space=''):
+        super(LatexWalkerInvalidEnv, self).__init__()
+        self.final_space = final_space
 
 
 
@@ -1281,12 +1288,8 @@ class LatexWalker(object):
                 # \begin{environment} or \end{environment}
                 envmatch = re.match(r'^\s*\{([\w*]+)\}', s[pos+i:])
                 if envmatch is None:
-                    raise LatexWalkerParseError(
-                        s=s,
-                        pos=pos,
-                        msg=r"Bad \{} macro: expected {{<environment-name>}}".format(macro),
-                        **self.pos_to_lineno_colno(pos, as_dict=True)
-                    )
+                    logger.warning(r"Bad \{} macro: expected {{<environment-name>}}".format(macro))
+                    raise LatexWalkerInvalidEnv(final_space=space)
 
                 return LatexToken(
                     tok=('begin_environment' if macro == 'begin' else 'end_environment'),
@@ -2169,6 +2172,8 @@ class LatexWalker(object):
         while True:
             try:
                 r_endnow = do_read(nodelist, p)
+            except LatexWalkerInvalidEnv as e:
+                r_endnow = e
             except LatexWalkerParseError as e:
                 if self.tolerant_parsing:
                     logger.debug("Ignoring parse error (tolerant parsing mode): %s", e)
