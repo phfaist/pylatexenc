@@ -1211,6 +1211,53 @@ Use macros: """,
                                pos=1+31, len=2),
             ], p, 34))
 
+    def test_invalid_environment_macros_0(self):
+        latextext = r'''\begin \item stuff\end{itemize}'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        parsing_state = lw.make_parsing_state()
+
+        with self.assertRaises(LatexWalkerParseError):
+            lw.get_latex_nodes(parsing_state=parsing_state)
+
+    def test_invalid_environment_macros_1(self):
+        latextext = r'''\begin{itemize} \item stuff\end'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        parsing_state = lw.make_parsing_state()
+
+        with self.assertRaises(LatexWalkerParseError):
+            lw.get_latex_nodes(parsing_state=parsing_state)
+
+    def test_invalid_environment_macros_2(self):
+        latextext = r'''
+\begin
+  \item stuff
+\end
+'''.strip()
+
+        lw = LatexWalker(latextext, tolerant_parsing=True)
+        parsing_state = lw.make_parsing_state()
+
+        p = 0
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
+            ([
+                LatexCharsNode(parsing_state=parsing_state,
+                               chars='\\begin\n  ',
+                               pos=0, len=9),
+                LatexMacroNode(parsing_state=parsing_state,
+                               macroname='item',
+                               nodeargd=macrospec.ParsedMacroArgs(argspec='[', argnlist=[ None ]),
+                               macro_post_space=' ',
+                               pos=7+2,len=8-2),
+                LatexCharsNode(parsing_state=parsing_state,
+                               chars='stuff\n\\end',
+                               pos=7+8, len=13+1-8+4),
+            ], p, 7+14+4))
+
+
+
 
 
 
