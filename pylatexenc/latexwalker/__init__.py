@@ -1957,6 +1957,11 @@ class LatexWalker(object):
             try:
                 tok = self.get_token(p.pos, include_brace_chars=include_brace_chars,
                                      parsing_state=p.parsing_state)
+            except LatexWalkerParseError as e:
+                # get_token() should not raise parse errors in tolerant_parsing
+                # mode, because this can lead to infinite loops (#37)
+                assert(not self.tolerant_parsing)
+                raise # exception will be handled in outer loop
             except LatexWalkerEndOfStream as e:
                 if self.tolerant_parsing:
                     return e
