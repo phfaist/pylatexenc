@@ -1211,6 +1211,20 @@ Use macros: """,
                                pos=1+31, len=2),
             ], p, 34))
 
+    def test_invalid_env_macros(self):
+        latextext = r'''
+            \begin
+            \item {1.} Example text 1
+            \item {2.} Example text 2
+            \item {3.} Example text 3
+            \item {4.} Example text 4
+            \end
+        '''
+
+        walker = LatexWalker(latextext)
+        nodes = walker.get_latex_nodes()[0]
+        self.assertEqual(nodes, [])
+
 
 
 
