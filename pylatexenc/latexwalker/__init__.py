@@ -355,16 +355,16 @@ class LatexToken(object):
         
         The `arg` field contains the characters themselves.
 
-      - 'macro': a macro invokation, but not ``\begin`` or ``\end``
+      - 'macro': a macro invocation, but not ``\begin`` or ``\end``
         
         The `arg` field contains the name of the macro, without the leading
         backslash.
 
-      - 'begin_environment': an invokation of ``\begin{environment}``.
+      - 'begin_environment': an invocation of ``\begin{environment}``.
         
         The `arg` field contains the name of the environment inside the braces.
 
-      - 'end_environment': an invokation of ``\end{environment}``.
+      - 'end_environment': an invocation of ``\end{environment}``.
         
         The `arg` field contains the name of the environment inside the braces.
 
@@ -1859,7 +1859,7 @@ class LatexWalker(object):
            There are a few important differences between
            ``get_latex_nodes(read_max_nodes=1)`` and ``get_latex_expression()``:
            The former reads a logical node of the LaTeX document, which can be a
-           sequence of characters, a macro invokation with arguments, or an
+           sequence of characters, a macro invocation with arguments, or an
            entire environment, but the latter reads a single LaTeX "token" in
            the same way as LaTeX parses macro arguments.
 
