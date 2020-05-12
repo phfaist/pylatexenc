@@ -3,6 +3,13 @@ Changes
 ============
 
 
+pylatexenc 2.4
+==============
+
+- Bug fixes in how `latex2text` attempts to recover from parse errors in
+  tolerant mode
+
+
 pylatexenc 2.3
 ==============
 
