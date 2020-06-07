@@ -57,6 +57,7 @@ if sys.version_info.major >= 3:
     getfullargspec = inspect.getfullargspec
 else:
     getfullargspec = inspect.getargspec
+    chr = unichr
 
 import pylatexenc
 from .. import latexwalker
@@ -302,6 +303,110 @@ def fmt_placeholder_node(node, l2tobj):
         name = '<unknown>'
 
     return _do_fmt_placeholder_node(name, l2tobj)
+
+
+
+
+
+#
+# see reference: https://unicode.org/charts/PDF/U1D400.pdf
+#
+
+_fmt_math_style_offsets = {
+    'bold': (0x1D400, 0x1D41A),
+    'italic': (0x1D434, 0x1D44E),
+    'bold-italic': (0x1D468, 0x1D482),
+    'script': (0x1D49C, 0x1D4B6),
+    'bold-script': (0x1D4D0, 0x1D4EA),
+    'fraktur': (0x1D504, 0x1D51E),
+    'doublestruck': (0x1D538, 0x1D552),
+    'bold-fraktur': (0x1D56C, 0x1D586),
+    'sans': (0x1D5A0, 0x1D5BA),
+    'sans-bold': (0x1D5D4, 0x1D5EE),
+    'sans-italic': (0x1D608, 0x1D622),
+    'sans-bold-italic': (0x1D63C, 0x1D656),
+    'monospace': (0x1D670, 0x1D68A),
+}
+# account for "holes" in code point chart because some symbols have already
+# been allocated earlier code points (see reference linked above)
+_fmt_math_style_exceptions = {
+    'italic': {
+        ord('h'): chr(0x210E), # PLANK CONSTANT
+    },
+    'script': {
+        ord('B'): chr(0x212C),
+        ord('E'): chr(0x2130),
+        ord('F'): chr(0x2131),
+        ord('H'): chr(0x210B),
+        ord('I'): chr(0x2110),
+        ord('L'): chr(0x2112),
+        ord('M'): chr(0x2133),
+        ord('R'): chr(0x211B),
+        ord('e'): chr(0x212F),
+        ord('g'): chr(0x210A),
+        ord('o'): chr(0x2134),
+    },
+    'fraktur': {
+        ord('C'): chr(0x212D),
+        ord('H'): chr(0x210C),
+        ord('I'): chr(0x2111),
+        ord('R'): chr(0x211C),
+        ord('Z'): chr(0x2128),
+    },
+    'doublestruck': {
+        ord('C'): chr(0x2102),
+        ord('H'): chr(0x210D),
+        ord('N'): chr(0x2115),
+        ord('P'): chr(0x2119),
+        ord('Q'): chr(0x211A),
+        ord('R'): chr(0x211D),
+        ord('Z'): chr(0x2124),
+    },
+}
+
+_oA, _oZ, _oa, _oz = ord('A'), ord('Z'), ord('a'), ord('z')
+
+def _fmt_math_style_char(c, style):
+    oc = ord(c)
+    z = _fmt_math_style_exceptions.get(style, {}).get(oc, None)
+    if z is not None:
+        return z
+
+    offset_up, offset_lo = _fmt_math_style_offsets.get(style, (_oA, _oa,))
+
+    if oc >= _oA and oc <= _oZ:
+        return chr(offset_up + oc - _oA)
+    if oc >= _oa and oc <= _oz:
+        return chr(offset_lo + oc - _oa)
+
+    # don't know how to handle this char
+    return c
+
+if sys.maxunicode < 0x10FFFF:
+    # narrow python build, disable math alphabets.
+    _fmt_math_style_char = lambda c, style: c
+
+
+
+def fmt_math_text_style(text, style):
+    r"""
+    Return the text with letters replaced by unicode characters so that the
+    style `style` is applied.  (We use the math alphanumeric symbols, see
+    `https://unicode.org/charts/PDF/U1D400.pdf`_.
+
+    The `style` must be one of 'bold', 'italic', 'bold-italic', 'script',
+    'bold-script', 'fraktur', 'doublestruck', 'bold-fraktur', 'sans',
+    'sans-bold', 'sans-italic', 'sans-bold-italic', or 'monospace'.
+
+    The character `c` is essentially expected to be an ascii letter, and any
+    other character will be returned unchanged.  (Possible exceptions might be
+    implemented in the future, for instance to implement the double-struck
+    one/identity operator ``\mathbbm{1}``.)
+    """
+    return "".join( (_fmt_math_style_char(c, style=style) for c in text) )
+
+
+
 
 
 
@@ -1101,12 +1206,25 @@ class LatexNodes2Text(object):
         The argument `what` is used in error messages.
         """
         if callable(simplify_repl):
-            if 'l2tobj' in getfullargspec(simplify_repl)[0]:
+            kwargs = {}
+            fn_args = getfullargspec(simplify_repl)[0]
+            if 'l2tobj' in fn_args:
                 # callable accepts an argument named 'l2tobj', provide pointer to self
-                r = simplify_repl(node, l2tobj=self)
-            else:
-                r = simplify_repl(node)
-            return r if r else '' # don't return None
+                kwargs['l2tobj'] = self
+            if node.isNodeType(latexwalker.LatexEnvironmentNode) and \
+               'environmentname' in fn_args:
+                kwargs['environmentname'] = node.environmentname
+            if node.isNodeType(latexwalker.LatexMacroNode) and \
+               'macroname' in fn_args:
+                kwargs['macroname'] = node.macroname
+            if node.isNodeType(latexwalker.LatexSpecialsNode) and \
+               'specials_chars' in fn_args:
+                kwargs['specials_chars'] = node.specials_chars
+
+            r = simplify_repl(node, **kwargs)
+            if r:
+                return r
+            return '' # don't return None
 
         if '%' in simplify_repl:
             nodeargs = []
@@ -1139,7 +1257,8 @@ class LatexNodes2Text(object):
                 return simplify_repl % x
             except (TypeError, ValueError):
                 logger.warning(
-                    "WARNING: Error in configuration: {} failed its substitution!".format(what)
+                    "WARNING: Error in configuration: {} failed its substitution!"
+                    .format(what)
                 )
                 return simplify_repl # too bad, keep the percent signs as they are...
         return simplify_repl
@@ -1147,7 +1266,8 @@ class LatexNodes2Text(object):
     def _fmt_indented_block(self, contents, indent=' '*4):
         block = ("\n"+indent + contents.replace("\n", "\n"+indent) + "\n")
         if self.fill_text:
-            block = '\n'+block+'\n' # additional newlines because neighboring text gets trimmed
+            # additional newlines because neighboring text gets trimmed
+            block = '\n'+block+'\n'
         return block
     
 
@@ -1220,6 +1340,9 @@ class LatexNodes2Text(object):
         return s
 
 
+
+
+
 class _PushEquationContext(latexwalker._PushPropOverride):
     def __init__(self, l2t):
 
@@ -1243,7 +1366,8 @@ class _PushEquationContext(latexwalker._PushPropOverride):
 
 
 
-def latex2text(content, tolerant_parsing=False, keep_inline_math=False, keep_comments=False):
+def latex2text(content, tolerant_parsing=False, keep_inline_math=False,
+               keep_comments=False):
     """
     Heuristic conversion of LaTeX content `content` to unicode text.
 
@@ -1253,14 +1377,18 @@ def latex2text(content, tolerant_parsing=False, keep_inline_math=False, keep_com
 
     _util.pylatexenc_deprecated_ver(
         "1.0",
-        "The module-level function `pylatexenc.latex2text.latex2text()` is deprecated in "
-        "favor of the `pylatexenc.latex2text.LatexNodes2Text` class."
+        "The module-level function `pylatexenc.latex2text.latex2text()` is deprecated "
+        "in favor of the `pylatexenc.latex2text.LatexNodes2Text` class."
     )
 
-    (nodelist, tpos, tlen) = latexwalker.get_latex_nodes(content, keep_inline_math=keep_inline_math,
-                                                         tolerant_parsing=tolerant_parsing)
+    (nodelist, tpos, tlen) = latexwalker.get_latex_nodes(
+        content,
+        keep_inline_math=keep_inline_math,
+        tolerant_parsing=tolerant_parsing)
 
-    return latexnodes2text(nodelist, keep_inline_math=keep_inline_math, keep_comments=keep_comments)
+    return latexnodes2text(nodelist,
+                           keep_inline_math=keep_inline_math,
+                           keep_comments=keep_comments)
 
 
 def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
@@ -1274,8 +1402,8 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
 
     _util.pylatexenc_deprecated_ver(
         "1.0",
-        "The module-level function `pylatexenc.latex2text.latexnodes2text()` is deprecated in "
-        "favor of the `pylatexenc.latex2text.LatexNodes2Text` class."
+        "The module-level function `pylatexenc.latex2text.latexnodes2text()` is "
+        "deprecated in favor of the `pylatexenc.latex2text.LatexNodes2Text` class."
     )
 
     return LatexNodes2Text(

@@ -99,7 +99,10 @@ specs = [
             std_macro('mathrm', False, 1), # only allowed in math mode anyway
             std_macro('mathbb', False, 1), # only allowed in math mode anyway
             std_macro('mathbf', False, 1),
+            std_macro('mathit', False, 1),
             std_macro('mathsf', False, 1),
+            std_macro('mathtt', False, 1),
+            std_macro('mathcal', False, 1),
             std_macro('mathscr', False, 1),
             std_macro('mathfrak', False, 1),
 

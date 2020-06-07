@@ -24,6 +24,8 @@
 #
 
 
+from __future__ import print_function, unicode_literals #, absolute_import
+
 # Internal module. May change without notice.
 
 import unicodedata
@@ -39,8 +41,8 @@ else:
 
 
 from ..latex2text import MacroTextSpec, EnvironmentTextSpec, SpecialsTextSpec, \
-    fmt_equation_environment, fmt_placeholder_node, placeholder_node_formatter, fmt_input_macro
-
+    fmt_equation_environment, fmt_placeholder_node, placeholder_node_formatter, \
+    fmt_input_macro, fmt_math_text_style
 
 
 def _format_uebung(n, l2t):
@@ -59,6 +61,15 @@ def _format_maketitle(title, author, date):
 
 def _latex_today():
     return '{dt:%B} {dt.day}, {dt.year}'.format(dt=datetime.datetime.now())
+
+
+def _mathxx_formatter(style):
+    def formatter(node, l2tobj, style=style):
+        arg_text = l2tobj.node_arg_to_text(node, 0)
+        return fmt_math_text_style(arg_text, style)
+
+    return formatter
+
 
 
 # construct the specs structure, more than the just the following definition
@@ -101,8 +112,10 @@ latex_base_specs = {
     ],
 
     'macros': [
-        # NOTE: macro will only be assigned arguments if they are explicitly defined as
-        #       accepting arguments in latexwalker.py.
+        # NOTE: macro will only be assigned arguments if they are explicitly
+        #       defined as accepting arguments in the `LatexWalker` (see
+        #       `macrospec` module).
+
         MacroTextSpec('emph', discard=False),
         MacroTextSpec('textrm', discard=False),
         MacroTextSpec('textit', discard=False),
@@ -112,11 +125,14 @@ latex_base_specs = {
         MacroTextSpec('text', discard=False),
 
         MacroTextSpec('mathrm', discard=False),
-        MacroTextSpec('mathbb', discard=False),
-        MacroTextSpec('mathbf', discard=False),
-        MacroTextSpec('mathsf', discard=False),
-        MacroTextSpec('mathscr', discard=False),
-        MacroTextSpec('mathfrak', discard=False),
+        MacroTextSpec('mathbf', simplify_repl=_mathxx_formatter('bold')),
+        MacroTextSpec('mathit', simplify_repl=_mathxx_formatter('italic')),
+        MacroTextSpec('mathsf', simplify_repl=_mathxx_formatter('sans')),
+        MacroTextSpec('mathbb', simplify_repl=_mathxx_formatter('doublestruck')),
+        MacroTextSpec('mathtt', simplify_repl=_mathxx_formatter('monospace')),
+        MacroTextSpec('mathcal', simplify_repl=_mathxx_formatter('script')),
+        MacroTextSpec('mathscr', simplify_repl=_mathxx_formatter('script')),
+        MacroTextSpec('mathfrak', simplify_repl=_mathxx_formatter('fraktur')),
 
 
         MacroTextSpec('input', simplify_repl=fmt_input_macro),
@@ -211,8 +227,8 @@ latex_base_specs = {
 
         ("\\", '\n'),
 
-        ("textquoteleft", "\N{LEFT SINGLE QUOTATION MARK}"),
-        ("textquoteright", "\N{RIGHT SINGLE QUOTATION MARK}"),
+        ("textquoteleft", u"\N{LEFT SINGLE QUOTATION MARK}"),
+        ("textquoteright", u"\N{RIGHT SINGLE QUOTATION MARK}"),
         ("textquotedblright", u"\N{RIGHT DOUBLE QUOTATION MARK}"),
         ("textquotedblleft", u"\N{LEFT DOUBLE QUOTATION MARK}"),
         ("textendash", u"\N{EN DASH}"),
