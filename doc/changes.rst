@@ -3,12 +3,17 @@ Changes
 ============
 
 
+pylatexenc 2.5
+==============
+
+- `latex2text`: Add support for ``\mathbb{}``, ``\mathbf{}`` and some friends
+  (issue `#40 <https://github.com/phfaist/pylatexenc/issues/40>`_)
+
 pylatexenc 2.4
 ==============
 
 - Bug fixes in how `latex2text` attempts to recover from parse errors in
   tolerant mode
-
 
 pylatexenc 2.3
 ==============

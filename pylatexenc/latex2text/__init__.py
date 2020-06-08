@@ -81,16 +81,23 @@ class MacroTextSpec(object):
        The replacement text of the macro invocation.  This is either a string or
        a callable:
 
-         - If `simplify_repl` is a string, it may contain '%s' replacements, in
-           which the macro arguments will be substituted in the given order.
-           The string may instead contain '%(<n>)s' (where `<n>` is an integer)
-           to refer to the n-th argument (starting at '%(1)s').  You cannot mix
-           the two %-formatting styles.
+         - If `simplify_repl` is a string, this string is used as the text
+           representation of this macro node.
+
+           The string may contain a '%s' replacement placeholder, in which the
+           macro arguments will be substituted in the given order.
+           Alternatively, the string may contain '%(<n>)s' (where `<n>` is an
+           integer) to refer to the n-th argument (starting at '%(1)s').  You
+           cannot mix the two %-formatting styles.
 
          - If `simplify_repl` is a callable, it should accept the corresponding
-           :py:class:`pylatexenc.latexwalker.LatexMacroNode` as an argument.  If
-           the callable expects a second argument named `l2tobj`, then the
-           `LatexNodes2Text` object is provided to that argument.
+           :py:class:`pylatexenc.latexwalker.LatexMacroNode` as an argument.
+
+           The callable will be inspected to see what other arguments it
+           accepts.  If it accepts an argument named `l2tobj`, the
+           :py:class:`LatexNodes2Text` instance is provided to that argument.
+           If it accepts an argument named `macroname`, the name of the macro is
+           provided to that argument.
 
     .. py:attribute:: discard
     
@@ -123,11 +130,14 @@ class EnvironmentTextSpec(object):
        The replacement text of the environment.  This is either a string or a
        callable:
 
-         - If `simplify_repl` is a string, it may contain a single '%s'
-           replacements, in which the (processed) environment body will be substituted.
+         - If `simplify_repl` is a string, this string is used as the text
+           representation of this environment node.
 
-           The `simplify_repl` string may instead contain '%(<n>)s' (where `<n>`
-           is an integer) to refer to the n-th argument after
+           The string may contain a single '%s' replacement placeholder, in
+           which the (processed) environment body will be substituted.
+
+           Alternatively, the `simplify_repl` string may contain '%(<n>)s'
+           (where `<n>` is an integer) to refer to the n-th argument after
            ``\begin{environment}`` (starting at '%(1)s').  The body of the
            environment has to be referred to with `%(body)s`.
 
@@ -135,8 +145,13 @@ class EnvironmentTextSpec(object):
 
          - If `simplify_repl` is a callable, it should accept the corresponding
            :py:class:`pylatexenc.latexwalker.LatexEnvironmentNode` as an
-           argument.  If the callable expects a second argument named `l2tobj`,
-           then the `LatexNodes2Text` object is provided to that argument.
+           argument.
+
+           The callable will be inspected to see what other arguments it
+           accepts.  If it accepts an argument named `l2tobj`, the
+           :py:class:`LatexNodes2Text` instance is provided to that argument.
+           If it accepts an argument named `environmentname`, the name of the
+           environment is provided to that argument.
 
     .. py:attribute:: discard
     
@@ -169,16 +184,23 @@ class SpecialsTextSpec(object):
        The replacement text for the given latex specials.  This is either a
        string or a callable:
 
-         - If `simplify_repl` is a string, it may contain '%s' replacements, in
-           which the macro arguments will be substituted in the given order.
-           The string may instead contain '%(<n>)s' (where `<n>` is an integer)
-           to refer to the n-th argument (starting at '%(1)s').  You cannot mix
-           the two %-formatting styles.
+         - If `simplify_repl` is a string, this string is used as the text
+           representation of this specials node.
+
+           The string may contain a '%s' replacement placeholder, in which the
+           macro arguments will be substituted in the given order.
+           Alternatively, the string may contain '%(<n>)s' (where `<n>` is an
+           integer) to refer to the n-th argument (starting at '%(1)s').  You
+           cannot mix the two %-formatting styles.
 
          - If `simplify_repl` is a callable, it should accept the corresponding
-           :py:class:`pylatexenc.latexwalker.LatexMacroNode` as an argument.  If
-           the callable expects a second argument named `l2tobj`, then the
-           `LatexNodes2Text` object is provided to that argument.
+           :py:class:`pylatexenc.latexwalker.LatexSpecialsNode` as an argument.
+
+           The callable will be inspected to see what other arguments it
+           accepts.  If it accepts an argument named `l2tobj`, the
+           :py:class:`LatexNodes2Text` instance is provided to that argument.
+           If it accepts an argument named `specials_chars`, the characters that
+           were parsed this "latex specials" node are provided to that argument.
 
     .. versionadded:: 2.0
 
@@ -222,6 +244,14 @@ def MacroDef(macname, simplify_repl=None, discard=None):
 
 
 
+#
+# NOTE: while internally documented (but not in the public docs), these fmt_***
+# functions should be considered internal API and should not be relied upon for
+# the moment in production code.  I intend to change some things in how common
+# rendering procedures (for equations, for non-textual content that probably
+# requires a placeholder, etc.) by extending the latex context database object
+# directly.
+#
 
 def fmt_equation_environment(envnode, l2tobj):
     r"""
@@ -391,8 +421,8 @@ if sys.maxunicode < 0x10FFFF:
 def fmt_math_text_style(text, style):
     r"""
     Return the text with letters replaced by unicode characters so that the
-    style `style` is applied.  (We use the math alphanumeric symbols, see
-    `https://unicode.org/charts/PDF/U1D400.pdf`_.
+    style `style` is applied.  (We use the unicode math alphanumeric symbols,
+    see `https://unicode.org/charts/PDF/U1D400.pdf`_.)
 
     The `style` must be one of 'bold', 'italic', 'bold-italic', 'script',
     'bold-script', 'fraktur', 'doublestruck', 'bold-fraktur', 'sans',
