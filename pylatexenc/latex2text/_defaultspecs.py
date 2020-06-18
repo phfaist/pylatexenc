@@ -78,22 +78,48 @@ def _mathxx_formatter(style):
 # ==============================================================================
 
 
-latex_base_specs = {
-    
-    'environments': [
 
+_latex_specs_placeholders = {
+    'environments': [
         EnvironmentTextSpec('equation', simplify_repl=fmt_equation_environment),
+        # note {equation*} is actually defined by amsmath
+        EnvironmentTextSpec('equation*', simplify_repl=fmt_equation_environment),
         EnvironmentTextSpec('eqnarray', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('eqnarray*', simplify_repl=fmt_equation_environment),
+
         EnvironmentTextSpec('align', simplify_repl=fmt_equation_environment),
         EnvironmentTextSpec('multline', simplify_repl=fmt_equation_environment),
         EnvironmentTextSpec('gather', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('align*', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('multline*', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('gather*', simplify_repl=fmt_equation_environment),
+
+        # breqn math
         EnvironmentTextSpec('dmath', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('dmath*', simplify_repl=fmt_equation_environment),
 
         EnvironmentTextSpec('array', simplify_repl=fmt_placeholder_node),
         EnvironmentTextSpec('pmatrix', simplify_repl=fmt_placeholder_node),
         EnvironmentTextSpec('bmatrix', simplify_repl=fmt_placeholder_node),
         EnvironmentTextSpec('smallmatrix', simplify_repl=fmt_placeholder_node),
+    ],
+    'specials': [
+    ],
+    'macros': [
+    ] + [ MacroTextSpec(x, simplify_repl=y) for x, y in (
 
+        ('includegraphics', placeholder_node_formatter('graphics')),
+
+        ('ref', '<ref>'),
+        ('autoref', '<ref>'),
+        ('cref', '<ref>'),
+        ('Cref', '<Ref>'),
+        ('eqref', '(<ref>)'),
+    )],
+}
+
+_latex_specs_approximations = {
+    'environments': [
         EnvironmentTextSpec('center', simplify_repl='\n%s\n'),
         EnvironmentTextSpec('flushleft', simplify_repl='\n%s\n'),
         EnvironmentTextSpec('flushright', simplify_repl='\n%s\n'),
@@ -105,12 +131,10 @@ latex_base_specs = {
         EnvironmentTextSpec('subequations', discard=False),
         EnvironmentTextSpec('figure', discard=False),
         EnvironmentTextSpec('table', discard=False),
-
     ],
     'specials': [
         SpecialsTextSpec('&', '   '), # ignore tabular alignments, just add a little space
     ],
-
     'macros': [
         # NOTE: macro will only be assigned arguments if they are explicitly
         #       defined as accepting arguments in the `LatexWalker` (see
@@ -123,20 +147,6 @@ latex_base_specs = {
         MacroTextSpec('textsc', discard=False),
         MacroTextSpec('textsl', discard=False),
         MacroTextSpec('text', discard=False),
-
-        MacroTextSpec('mathrm', discard=False),
-        MacroTextSpec('mathbf', simplify_repl=_mathxx_formatter('bold')),
-        MacroTextSpec('mathit', simplify_repl=_mathxx_formatter('italic')),
-        MacroTextSpec('mathsf', simplify_repl=_mathxx_formatter('sans')),
-        MacroTextSpec('mathbb', simplify_repl=_mathxx_formatter('doublestruck')),
-        MacroTextSpec('mathtt', simplify_repl=_mathxx_formatter('monospace')),
-        MacroTextSpec('mathcal', simplify_repl=_mathxx_formatter('script')),
-        MacroTextSpec('mathscr', simplify_repl=_mathxx_formatter('script')),
-        MacroTextSpec('mathfrak', simplify_repl=_mathxx_formatter('fraktur')),
-
-
-        MacroTextSpec('input', simplify_repl=fmt_input_macro),
-        MacroTextSpec('include', simplify_repl=fmt_input_macro),
 
     ] + [ MacroTextSpec(x, simplify_repl=y) for x, y in (
 
@@ -151,16 +161,6 @@ latex_base_specs = {
                            getattr(l2tobj, '_doc_author', r'[NO \author GIVEN]'),
                            getattr(l2tobj, '_doc_date', _latex_today()))),
 
-        ('today', _latex_today()),
-
-
-        ('includegraphics', placeholder_node_formatter('graphics')),
-
-        ('ref', '<ref>'),
-        ('autoref', '<ref>'),
-        ('cref', '<ref>'),
-        ('Cref', '<Ref>'),
-        ('eqref', '(<ref>)'),
         ('url', '<%s>'),
         ('item',
          lambda r, l2tobj: '\n  '+(
@@ -176,16 +176,15 @@ latex_base_specs = {
         ('citet', '<cit.>'),
         ('citep', '<cit.>'),
 
-        # use second argument:
-        ('texorpdfstring', lambda node, l2t: l2t.nodelist_to_text(node.nodeargs[1:2])),
-
-
         ('part',
-         lambda n, l2tobj: u'\n\nPART: {}\n'.format(l2tobj.node_arg_to_text(n, 2).upper())),
+         lambda n, l2tobj: u'\n\nPART: {}\n'.format(
+             l2tobj.node_arg_to_text(n, 2).upper())),
         ('chapter',
-         lambda n, l2tobj: u'\n\nCHAPTER: {}\n'.format(l2tobj.node_arg_to_text(n, 2).upper())),
+         lambda n, l2tobj: u'\n\nCHAPTER: {}\n'.format(
+             l2tobj.node_arg_to_text(n, 2).upper())),
         ('section',
-         lambda n, l2tobj: u'\n\n\N{SECTION SIGN} {}\n'.format(l2tobj.node_arg_to_text(n, 2).upper())),
+         lambda n, l2tobj: u'\n\n\N{SECTION SIGN} {}\n'.format(
+             l2tobj.node_arg_to_text(n, 2).upper())),
         ('subsection',
          lambda n, l2tobj: u'\n\n \N{SECTION SIGN}.\N{SECTION SIGN} {}\n'.format(
              l2tobj.node_arg_to_text(n, 2))),
@@ -198,9 +197,48 @@ latex_base_specs = {
          lambda n, l2tobj: u'\n\n    {}\n'.format(
              l2tobj.node_arg_to_text(n, 2))),
 
-
         ('hspace', ''),
         ('vspace', '\n'),
+
+        # \\ is treated as an "approximation" because a good text renderer would
+        # have to actually note that this is a end-of-line marker which is not
+        # to be confused with other newlines in the paragraph (which can be
+        # reflowed)
+        ("\\", '\n'),
+
+        ('frac', '%s/%s'),
+        ('nicefrac', '%s/%s'),
+        ('textfrac', '%s/%s'),
+    )],
+}
+
+_latex_specs_base = {
+    
+    'environments': [
+    ],
+    'specials': [
+    ],
+
+    'macros': [
+        MacroTextSpec('mathrm', discard=False),
+        MacroTextSpec('mathbf', simplify_repl=_mathxx_formatter('bold')),
+        MacroTextSpec('mathit', simplify_repl=_mathxx_formatter('italic')),
+        MacroTextSpec('mathsf', simplify_repl=_mathxx_formatter('sans')),
+        MacroTextSpec('mathbb', simplify_repl=_mathxx_formatter('doublestruck')),
+        MacroTextSpec('mathtt', simplify_repl=_mathxx_formatter('monospace')),
+        MacroTextSpec('mathcal', simplify_repl=_mathxx_formatter('script')),
+        MacroTextSpec('mathscr', simplify_repl=_mathxx_formatter('script')),
+        MacroTextSpec('mathfrak', simplify_repl=_mathxx_formatter('fraktur')),
+
+        MacroTextSpec('input', simplify_repl=fmt_input_macro),
+        MacroTextSpec('include', simplify_repl=fmt_input_macro),
+
+    ] + [ MacroTextSpec(x, simplify_repl=y) for x, y in (
+
+        ('today', _latex_today()),
+
+        # use second argument:
+        ('texorpdfstring', lambda node, l2t: l2t.nodelist_to_text(node.nodeargs[1:2])),
 
         ('oe', u'\u0153'),
         ('OE', u'\u0152'),
@@ -224,8 +262,6 @@ latex_base_specs = {
         ("%", lambda arg: "%" ), # careful: % is formatting substitution symbol...
         ("#", "#" ),
         ("_", "_" ),
-
-        ("\\", '\n'),
 
         ("textquoteleft", u"\N{LEFT SINGLE QUOTATION MARK}"),
         ("textquoteright", u"\N{RIGHT SINGLE QUOTATION MARK}"),
@@ -289,8 +325,8 @@ latex_base_specs = {
         ('approx', u'\N{ALMOST EQUAL TO}'),
         ('neq', u'\N{NOT EQUAL TO}'),
         ('equiv', u'\N{IDENTICAL TO}'),
-        ('le', u'\N{LESS-THAN OR EQUAL TO}'),#
-        ('ge', u'\N{GREATER-THAN OR EQUAL TO}'),#
+        ('le', u'\N{LESS-THAN OR EQUAL TO}'),
+        ('ge', u'\N{GREATER-THAN OR EQUAL TO}'),
         ('leq', u'\N{LESS-THAN OR EQUAL TO}'),
         ('geq', u'\N{GREATER-THAN OR EQUAL TO}'),
         ('leqslant', u'\N{LESS-THAN OR SLANTED EQUAL TO}'),
@@ -333,10 +369,6 @@ latex_base_specs = {
         ('bigotimes', u'\N{CIRCLED TIMES}'),
         ('bigoplus', u'\N{CIRCLED PLUS}'),
 
-        ('frac', '%s/%s'),
-        ('nicefrac', '%s/%s'),
-        ('textfrac', '%s/%s'),
-
         ('cos', 'cos'),
         ('sin', 'sin'),
         ('tan', 'tan'),
@@ -375,19 +407,27 @@ latex_base_specs = {
         ('quad', u"  "),
         ('qquad', u"    "),
 
-        ('ldots', u"..."),
-        ('cdots', u"..."),
-        ('ddots', u"..."),
-        ('dots', u"..."),
+        ('ldots', u"\N{HORIZONTAL ELLIPSIS}"),
+        ('cdots', u"\N{MIDLINE HORIZONTAL ELLIPSIS}"),
+        ('ddots', u"\N{DOWN RIGHT DIAGONAL ELLIPSIS}"),
+        ('iddots', u"\N{UP RIGHT DIAGONAL ELLIPSIS}"),
+        ('vdots', u"\N{VERTICAL ELLIPSIS}"),
+
+        ('dots', u"\N{HORIZONTAL ELLIPSIS}"),
+        ('dotsc', u"\N{HORIZONTAL ELLIPSIS}"),
+        ('dotsb', u"\N{HORIZONTAL ELLIPSIS}"),
+        ('dotsm', u"\N{HORIZONTAL ELLIPSIS}"),
+        ('dotsi', u"\N{HORIZONTAL ELLIPSIS}"),
+        ('dotso', u"\N{HORIZONTAL ELLIPSIS}"),
 
         ('langle', u'\N{MATHEMATICAL LEFT ANGLE BRACKET}'),
         ('rangle', u'\N{MATHEMATICAL RIGHT ANGLE BRACKET}'),
         ('lvert', u'|'),
         ('rvert', u'|'),
         ('vert', u'|'),
-        ('lVert', u'\u2016'),
-        ('rVert', u'\u2016'),
-        ('Vert', u'\u2016'),
+        ('lVert', u'\N{DOUBLE VERTICAL LINE}'),
+        ('rVert', u'\N{DOUBLE VERTICAL LINE}'),
+        ('Vert', u'\N{DOUBLE VERTICAL LINE}'),
         ('mid', u'|'),
         ('nmid', u'\N{DOES NOT DIVIDE}'),
 
@@ -402,10 +442,6 @@ latex_base_specs = {
         ('leftarrow', u'\N{LEFTWARDS ARROW}'),
         ('longrightarrow', u'\N{LONG RIGHTWARDS ARROW}'),
         ('longleftarrow', u'\N{LONG LEFTWARDS ARROW}'),
-
-        # we use these conventions as Identity operator (\mathbbm{1})
-        ('id', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
-        ('Ident', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
     )]
 }
 
@@ -1319,7 +1355,17 @@ specs = [
     #
     # CATEGORY: latex-base
     #
-    ('latex-base', latex_base_specs),
+    ('latex-base', _latex_specs_base),
+
+    #
+    # CATEGORY: latex-approximations
+    #
+    ('latex-approximations', _latex_specs_approximations),
+
+    #
+    # CATEGORY: latex-placeholders
+    #
+    ('latex-placeholders', _latex_specs_placeholders),
 
     #
     # CATEGORY: nonascii-specials
@@ -1361,6 +1407,19 @@ specs = [
         ],
         'environments': [],
         'specials': []
+    }),
+
+    #
+    # CATEGORY: nonstandard-qit
+    #
+    ('nonstandard-qit', {
+        'environments': [],
+        'specials': [],
+        'macros': [
+            # we use these conventions as Identity operator (\mathbbm{1})
+            ('id', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
+            ('Ident', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
+        ]
     }),
 
 ]

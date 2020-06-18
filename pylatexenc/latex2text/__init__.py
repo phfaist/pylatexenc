@@ -251,8 +251,8 @@ def MacroDef(macname, simplify_repl=None, discard=None):
 # functions should be considered internal API and should not be relied upon for
 # the moment in production code.  I intend to change some things in how common
 # rendering procedures (for equations, for non-textual content that probably
-# requires a placeholder, etc.) by extending the latex context database object
-# directly.
+# requires a placeholder, etc.) by some other means such as by extending the
+# latex context database object directly.
 #
 
 def fmt_equation_environment(envnode, l2tobj):
