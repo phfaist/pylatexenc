@@ -289,12 +289,12 @@ latex_base_specs = {
         ('approx', u'\N{ALMOST EQUAL TO}'),
         ('neq', u'\N{NOT EQUAL TO}'),
         ('equiv', u'\N{IDENTICAL TO}'),
-        ('ge', u'>'),#
-        ('le', u'<'),#
+        ('le', u'\N{LESS-THAN OR EQUAL TO}'),#
+        ('ge', u'\N{GREATER-THAN OR EQUAL TO}'),#
         ('leq', u'\N{LESS-THAN OR EQUAL TO}'),
         ('geq', u'\N{GREATER-THAN OR EQUAL TO}'),
-        ('leqslant', u'\N{LESS-THAN OR EQUAL TO}'),
-        ('geqslant', u'\N{GREATER-THAN OR EQUAL TO}'),
+        ('leqslant', u'\N{LESS-THAN OR SLANTED EQUAL TO}'),
+        ('geqslant', u'\N{GREATER-THAN OR SLANTED EQUAL TO}'),
         ('leqq', u'\N{LESS-THAN OVER EQUAL TO}'),
         ('geqq', u'\N{GREATER-THAN OVER EQUAL TO}'),
         ('lneqq', u'\N{LESS-THAN BUT NOT EQUAL TO}'),
