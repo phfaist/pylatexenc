@@ -84,11 +84,11 @@ class MacroTextSpec(object):
          - If `simplify_repl` is a string, this string is used as the text
            representation of this macro node.
 
-           The string may contain a '%s' replacement placeholder, in which the
-           macro arguments will be substituted in the given order.
-           Alternatively, the string may contain '%(<n>)s' (where `<n>` is an
-           integer) to refer to the n-th argument (starting at '%(1)s').  You
-           cannot mix the two %-formatting styles.
+           The string may contain a single '%s' replacement placeholder which
+           will be replaced by the concatenated textual representation of all
+           macro arguments.  Alternatively, the string may contain '%(<n>)s'
+           (where `<n>` is an integer) to refer to the n-th argument (starting
+           at '%(1)s').  You cannot mix the two %-formatting styles.
 
          - If `simplify_repl` is a callable, it should accept the corresponding
            :py:class:`pylatexenc.latexwalker.LatexMacroNode` as an argument.
@@ -187,8 +187,10 @@ class SpecialsTextSpec(object):
          - If `simplify_repl` is a string, this string is used as the text
            representation of this specials node.
 
-           The string may contain a '%s' replacement placeholder, in which the
-           macro arguments will be substituted in the given order.
+           The string may contain a single '%s' replacement placeholder which
+           will be replaced by the concatenated textual representation of all
+           macro arguments.
+
            Alternatively, the string may contain '%(<n>)s' (where `<n>` is an
            integer) to refer to the n-th argument (starting at '%(1)s').  You
            cannot mix the two %-formatting styles.
