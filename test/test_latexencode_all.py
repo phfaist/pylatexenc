@@ -28,10 +28,10 @@ from pylatexenc.latexencode import UnicodeToLatexEncoder
 
 
 
-class TestLatexEncode(unittest.TestCase):
+class TestLatexEncodeAll(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
-        super(TestLatexEncode, self).__init__(*args, **kwargs)
+        super(TestLatexEncodeAll, self).__init__(*args, **kwargs)
 
     # def test_pythonunicoderange(self):
     #     self.assertGreater(sys.maxunicode, 0xFFFF+1,
@@ -77,7 +77,7 @@ class TestLatexEncode(unittest.TestCase):
 
         # only check up to the supported unicode range
         if sys.maxunicode < 0x10FFFF:
-            logger.warning("Only checking up to unicode U+%X, you python build doesn't support higher",
+            logger.warning("Only checking up to unicode U+%X, your python build doesn't support higher",
                            sys.maxunicode)
             afiltered = [ aline for aline in a
                           if int(aline[:aline.find(' ')], 0) < sys.maxunicode ]

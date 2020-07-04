@@ -22,7 +22,7 @@ class TestLatexNodes2Text(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestLatexNodes2Text, self).__init__(*args, **kwargs)
         self.maxDiff = None
-    
+
     def test_basic(self):
 
         self.assertEqual(
@@ -60,7 +60,7 @@ where $i$ is the “imaginary unit.”
             LatexNodes2Text().nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
             LatexNodes2Text().latex_to_text(latex)
         )
-        
+
     def test_accents(self):
         self.assertEqual(
             LatexNodes2Text().nodelist_to_text(LatexWalker(r"Fran\c cais").get_latex_nodes()[0]),
@@ -75,7 +75,7 @@ where $i$ is the “imaginary unit.”
             .nodelist_to_text(LatexWalker(r"$1 \not= 2$").get_latex_nodes()[0]),
             '''$1 {} 2$'''.format(unicodedata.normalize('NFC', "=\N{COMBINING LONG SOLIDUS OVERLAY}"))
         )
-        
+
 
     def test_keep_braced_groups(self):
         self.assertEqual(
@@ -172,14 +172,14 @@ the end.''',
 
         do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ = x + i y
-line with comment 
+line with comment
 	  indented line.
 
     ζ = a + i b
 
 the end.''',
                 strict_latex_spaces=False, keep_comments=False)
-        
+
         do_test(testlatex, r'''ABŁÅ xyz:
 inline math αβγ = x + i y
 line with comment % comment here
@@ -191,14 +191,14 @@ the end.''',
                 strict_latex_spaces='based-on-source', keep_comments=True)
         do_test(testlatex, r'''ABŁÅ xyz:
 inline math αβγ = x + i y
-line with comment 
+line with comment
 	  indented line.
 
     ζ = a + i b
 
 the end.''',
                 strict_latex_spaces='based-on-source', keep_comments=False)
-        
+
         do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ = x + i y
 line with comment % comment here
@@ -211,14 +211,14 @@ the end.''',
 
         do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ = x + i y
-line with comment 
+line with comment
 	  indented line.
 
     ζ = a + i b
 
 the end.''',
                 strict_latex_spaces='macros', keep_comments=False)
-        
+
         do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ = x + i y
 line with comment % comment here
@@ -256,7 +256,7 @@ line with comment indented line.
 
 the end.''',
                 strict_latex_spaces=True, keep_comments=False)
-        
+
 
     def test_spaces_basedonsource(self):
 
@@ -309,7 +309,7 @@ the end.''',
 
 
     def test_spacing_specials(self):
-        
+
         self.assertEqualUpToWhitespace(
             LatexNodes2Text().latex_to_text(
                 r"""``Hello,'' \emph{she} said."""
@@ -444,13 +444,12 @@ If $\alpha=1$ and \(\beta=2\), then
 or, equivalently,
 $$ \alpha = \frac1{\beta}\ .$$
 """
-        
+
         l2t = LatexNodes2Text(math_mode='verbatim')
         self.assertEqualUpToWhitespace(
             l2t.latex_to_text(latex),
             latex # math stays verbatim
         )
-
 
 
     #
@@ -510,7 +509,7 @@ A car once was very fast.
 
 Another car came by.  And then some space:
 
-   
+
 
 Note the few space tokens in the otherwise empty line above.
 """
@@ -568,11 +567,11 @@ above. """
         )
 
     def test_repl_placeholders(self):
-        
+
         # environments that are currently replaced by a dummy placeholder
 
         for env in ('array', 'pmatrix', 'bmatrix', 'smallmatrix'):
-            
+
             self.assertEqualUpToWhitespace(
                 LatexNodes2Text().latex_to_text(
                     r"\begin{%(env)s}stuff stuff\end{%(env)s}"%{'env':env}
@@ -590,7 +589,7 @@ above. """
     def test_repl_eqn(self):
 
         for env in ('equation', 'eqnarray', 'align', 'multline', 'gather', 'dmath'):
-            
+
             self.assertEqualUpToWhitespace(
                 LatexNodes2Text(strict_latex_spaces='except-in-equations').latex_to_text(
                     r"\begin{%(env)s} e \approx 2.718 \end{%(env)s}"%{'env':env}
@@ -692,4 +691,3 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     unittest.main()
 #
-

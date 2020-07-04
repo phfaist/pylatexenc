@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 #
 # The MIT License (MIT)
-# 
+#
 # Copyright (c) 2018 Philippe Faist
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -31,7 +31,7 @@ searching.
 The main class is :py:class:`LatexNodes2Text`.  For a quick start, try::
 
     from pylatexenc.latex2text import LatexNodes2Text
-    
+
     latex = "... LaTeX code ..."
     text = LatexNodes2Text().latex_to_text(latex)
 
@@ -100,7 +100,7 @@ class MacroTextSpec(object):
            provided to that argument.
 
     .. py:attribute:: discard
-    
+
        If set to `True`, then the macro call is discarded, i.e., it is converted
        to an empty string.
 
@@ -154,7 +154,7 @@ class EnvironmentTextSpec(object):
            environment is provided to that argument.
 
     .. py:attribute:: discard
-    
+
        If set to `True`, then the full environment is discarded, i.e., it is
        converted to an empty string.
 
@@ -176,7 +176,7 @@ class SpecialsTextSpec(object):
     A specification of how to obtain a textual representation of latex specials.
 
     .. py:attribute:: specials_chars
-    
+
        The sequence of special LaTeX characters
 
     .. py:attribute:: simplify_repl
@@ -305,7 +305,7 @@ def placeholder_node_formatter(placeholdertext, block=True):
     """
     return  lambda n, l2tobj, pht=placeholdertext: \
         _do_fmt_placeholder_node(pht, l2tobj, block=block)
-    
+
 def _do_fmt_placeholder_node(placeholdertext, l2tobj, block=True):
     # spaces added so that database indexing doesn't index the word "array" or
     # "pmatrix"
@@ -461,12 +461,12 @@ def get_default_latex_context_db():
     :py:meth:`pylatexenc.macrospec.LatexContextDb.filter_context()`.
 
     .. versionadded:: 2.0
- 
+
        The :py:class:`pylatexenc.macrospec.LatexContextDb` class as well as this
        method, were all introduced in `pylatexenc 2.0`.
     """
     db = macrospec.LatexContextDb()
-    
+
     from ._defaultspecs import specs
 
     for cat, catspecs in specs:
@@ -474,9 +474,9 @@ def get_default_latex_context_db():
                                 macros=catspecs['macros'],
                                 environments=catspecs['environments'],
                                 specials=catspecs['specials'])
-    
+
     return db
-    
+
 
 
 
@@ -730,7 +730,7 @@ class LatexNodes2Text(object):
 
        Added the `math_mode=` flag to replace the poorly designed
        `keep_inline_math=` flag;
-    
+
        Added the `fill_text=` flag.
 
     Additionally, the following arguments are accepted for backwards compatibility:
@@ -740,7 +740,7 @@ class LatexNodes2Text(object):
       `False`, this is the same as `math_mode='text'`.
 
       .. deprecated:: 2.0
-    
+
          The `keep_inline_math=` option is deprecated because it had a weird
          behavior and was poorly implemented, especially given that a similarly
          named option in :py:class:`LatexWalker` had a different effect.  See
@@ -781,7 +781,7 @@ class LatexNodes2Text(object):
                     "obsolete since pylatexenc 2.  They will still work, but please consider "
                     "using instead the more versatile option `latex_context=...`."
                 )
-                
+
                 macro_dict = flags.pop('macro_dict', [])
                 env_dict = flags.pop('env_dict', [])
 
@@ -843,7 +843,7 @@ class LatexNodes2Text(object):
             # any flags left which we haven't recognized
             logger.warning("LatexNodes2Text(): Unknown flag(s) encountered: %r",
                            list(flags.keys()))
-        
+
 
     def set_tex_input_directory(self, tex_input_directory, latex_walker_init_args=None,
                                 strict_input=True):
@@ -921,7 +921,7 @@ class LatexNodes2Text(object):
         if not os.path.isfile(fnfull):
             logger.warning(u"Error, file doesn't exist: '%s'", fn)
             return ''
-        
+
         logger.debug("Reading input file %r", fnfull)
 
         try:
@@ -936,7 +936,7 @@ class LatexNodes2Text(object):
         #
         # recurse into files upon '\input{}'
         #
-        
+
         if len(n.nodeargs) != 1:
             logger.warning(u"Expected exactly one argument for '\\input' ! Got = %r",
                            n.nodeargs)
@@ -1023,19 +1023,19 @@ class LatexNodes2Text(object):
 
         # ### It doesn't look like we use prev_node_hint at all.  Eliminate at
         # ### some point?
-        
+
         if node.isNodeType(latexwalker.LatexCharsNode):
             return self.chars_node_to_text(node, textcol=textcol)
-        
+
         if node.isNodeType(latexwalker.LatexCommentNode):
             return self.comment_node_to_text(node)
-        
+
         if node.isNodeType(latexwalker.LatexGroupNode):
             return self.group_node_to_text(node)
-        
+
         if node.isNodeType(latexwalker.LatexMacroNode):
             return self.macro_node_to_text(node)
-        
+
         if node.isNodeType(latexwalker.LatexEnvironmentNode):
             return self.environment_node_to_text(node)
 
@@ -1294,7 +1294,12 @@ class LatexNodes2Text(object):
                 return r
             return '' # don't return None
 
-        if '%' in simplify_repl:
+        if '%' in simplify_repl and len(simplify_repl) != 1:
+            # if simplify_repl contains a '%' sign then we will look for %-based
+            # formatting placeholder(s), except if simplify_repl is the string
+            # '%' itself (checked above with "len(simplify_repl)!=1") in which
+            # case it is a literal replacement percent symbol.
+
             nodeargs = []
             if node.nodeargd and node.nodeargd.argnlist:
                 nodeargs = node.nodeargd.argnlist
@@ -1337,12 +1342,12 @@ class LatexNodes2Text(object):
             # additional newlines because neighboring text gets trimmed
             block = '\n'+block+'\n'
         return block
-    
+
 
     def _is_bare_macro_node(self, node):
         return (node is not None and
-                node.isNodeType(latexwalker.LatexMacroNode) and 
-                node.nodeoptarg is None and 
+                node.isNodeType(latexwalker.LatexMacroNode) and
+                node.nodeoptarg is None and
                 len(node.nodeargs) == 0)
 
     def _groupnodecontents_to_text(self, groupnode):
@@ -1369,20 +1374,20 @@ class LatexNodes2Text(object):
 
         If you used custom `text_replacements=` in `pylatexenc 1.x` then you
         will have to change::
-  
+
           # pylatexenc 1.x with text_replacements
           text_replacements = ...
           l2t = LatexNodes2Text(..., text_replacements=text_replacements)
           text = l2t.nodelist_to_text(...)
-  
+
         to::
-  
+
           # pylatexenc 2 text_replacements compatibility code
           text_replacements = ...
           l2t = LatexNodes2Text(...)
           temp = l2t.nodelist_to_text(...)
           text = l2t.apply_text_replacements(temp, text_replacements)
-  
+
         as a quick fix.  It is recommended however to treat text replacements
         instead as "latex specials".  (Otherwise the brutal text replacements
         might act on text generated from macros and environments and give
@@ -1397,7 +1402,7 @@ class LatexNodes2Text(object):
            not recommended for new code.  You should use "latex specials"
            instead for characters that have special LaTeX meaning.
         """
-        
+
         # perform suitable replacements
         for pattern, replacement in text_replacements:
             if hasattr(pattern, 'sub'):
