@@ -679,6 +679,10 @@ The Title
         )
 
 
+    #
+    # test utilities
+    #
+
     def assertEqualUpToWhitespace(self, a, b):
         a2 = re.sub(r'\s+', ' ', a).strip()
         b2 = re.sub(r'\s+', ' ', b).strip()
