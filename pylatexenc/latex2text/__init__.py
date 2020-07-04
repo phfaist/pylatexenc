@@ -667,8 +667,13 @@ class LatexNodes2Text(object):
           that are present in the source file in several situations where LaTeX
           would remove them, including after macros.  This is meant to be
           hopefully slightly more aesthetic.  However, this option might
-          inadvertently break up words: For instance, ``"Sk\l odowska"`` would
-          be replaced by ``"Skł odowska"``.
+          inadvertently break up words: For instance::
+
+              Sk\l odowska
+
+          would be replaced by::
+
+             Skł odowska
 
         - The value 'macros' is the same as specifying
           `strict_latex_spaces=False`, and it is the default.  It will make
@@ -685,7 +690,8 @@ class LatexNodes2Text(object):
       either `True` or `False`, dictating whitespace behavior in specific cases
       (`True` indicates strict latex behavior).  The value for 'in-equations'
       may even be another dictionary with the same keys to override values in
-      equations.
+      equations.  A value of `False` for 'in-equation' has the same meaning as
+      'macros'.
 
       .. versionchanged:: 2.0
 
@@ -697,7 +703,7 @@ class LatexNodes2Text(object):
          The value 'default' is also accepted, but it is no longer the default!
          It is an alias for 'based-on-source'
 
-      .. changed:: 2.6
+      .. versionchanged:: 2.6
 
          In `pylatexenc` versions 2.0–2.5, contrary to the documentation, the
          default value of `strict_latex_spaces` was actually still
