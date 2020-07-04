@@ -3,6 +3,17 @@ Changes
 ============
 
 
+pylatexenc 2.6
+==============
+
+- In `latex2text`:
+
+  + Bug fix: default behavior of the `strict_latex_spaces` option in the
+    :py:class:`pylatexenc.latex2text.LatexNodes2Text()` constructor.
+
+  + reorganized latex symbol categories.
+
+
 pylatexenc 2.5
 ==============
 
