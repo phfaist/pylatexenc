@@ -1396,6 +1396,8 @@ specs = [
     #
     # CATEGORY: latex-ethuebung
     #
+    # expect these to be removed in a future version.  These definitions should
+    # be manually included in the applications where they are relevant.
     ('latex-ethuebung', {
         'macros': [
             MacroTextSpec('exercise', simplify_repl=_format_uebung),
@@ -1412,13 +1414,15 @@ specs = [
     #
     # CATEGORY: nonstandard-qit
     #
+    # expect these to be removed in a future version.  These definitions should
+    # be manually included in the applications where they are relevant.
     ('nonstandard-qit', {
         'environments': [],
         'specials': [],
         'macros': [
             # we use these conventions as Identity operator (\mathbbm{1})
-            ('id', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
-            ('Ident', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
+            MacroTextSpec('id', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
+            MacroTextSpec('Ident', u'\N{MATHEMATICAL DOUBLE-STRUCK CAPITAL I}'),
         ]
     }),
 
@@ -1438,10 +1442,10 @@ def _greekletters(letterlist):
             smallname = "GREEK LUNATE EPSILON SYMBOL"
         if ucharname == 'PHI':
             smallname = "GREEK PHI SYMBOL"
-        latex_base_specs['macros'].append(
+        _latex_specs_base['macros'].append(
             MacroTextSpec(l, unicodedata.lookup(smallname))
         )
-        latex_base_specs['macros'].append(
+        _latex_specs_base['macros'].append(
             MacroTextSpec(l[0].upper()+l[1:], unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
             )
 _greekletters(
@@ -1449,7 +1453,7 @@ _greekletters(
      'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma', 'tau', 'upsilon', 'phi',
      'chi', 'psi', 'omega')
 )
-latex_base_specs['macros'] += [
+_latex_specs_base['macros'] += [
     MacroTextSpec('varepsilon', u'\N{GREEK SMALL LETTER EPSILON}'),
     MacroTextSpec('vartheta', u'\N{GREEK THETA SYMBOL}'),
     MacroTextSpec('varpi', u'\N{GREEK PI SYMBOL}'),
@@ -1514,7 +1518,7 @@ def make_accented_char(node, combining, l2tobj):
 
 for u in unicode_accents_list:
     (mname, mcombining) = u
-    latex_base_specs['macros'].append(
+    _latex_specs_base['macros'].append(
         MacroTextSpec(mname, lambda x, l2tobj, c=mcombining: make_accented_char(x, c, l2tobj))
     )
 

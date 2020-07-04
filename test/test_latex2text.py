@@ -172,7 +172,7 @@ the end.''',
 
         do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ = x + i y
-line with comment
+line with comment 
 	  indented line.
 
     ζ = a + i b
@@ -191,7 +191,7 @@ the end.''',
                 strict_latex_spaces='based-on-source', keep_comments=True)
         do_test(testlatex, r'''ABŁÅ xyz:
 inline math αβγ = x + i y
-line with comment
+line with comment 
 	  indented line.
 
     ζ = a + i b
@@ -211,7 +211,7 @@ the end.''',
 
         do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ = x + i y
-line with comment
+line with comment 
 	  indented line.
 
     ζ = a + i b
