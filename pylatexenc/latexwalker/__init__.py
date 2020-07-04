@@ -2568,12 +2568,12 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
     if n is None:
         title = '<None>'
     elif n.isNodeType(LatexCharsNode):
-        title = repr(n.chars) #.strip())
+        title = repr(n.chars)
     elif n.isNodeType(LatexMacroNode):
         title = '\\'+n.macroname
         add_args()
     elif n.isNodeType(LatexSpecialsNode):
-        title = n.specials_chars
+        title = n.specials_chars + ' (specials)'
         add_args()
     elif n.isNodeType(LatexCommentNode):
         title = '%' + n.comment.strip()

@@ -10,6 +10,7 @@ import re
 import os
 import os.path
 import unicodedata
+import datetime
 import logging
 
 from pylatexenc.latexwalker import LatexWalker
@@ -98,6 +99,9 @@ where $i$ is the “imaginary unit.”
             '''{A}{XYZ}{ABCD}'''
         )
 
+    #
+    # Handling of spaces
+    #
 
     def test_spaces_strictlatex(self):
 
@@ -140,7 +144,8 @@ where $i$ is the “imaginary unit.”
 
         def do_test(tex, uni, strict_latex_spaces=None, keep_comments=None, **kwargs):
             self.assertEqual(
-                LatexNodes2Text(strict_latex_spaces=strict_latex_spaces, keep_comments=keep_comments,
+                LatexNodes2Text(strict_latex_spaces=strict_latex_spaces,
+                                keep_comments=keep_comments,
                                 **kwargs)
                 .latex_to_text(tex, **kwargs),
                 uni
@@ -155,7 +160,7 @@ line with comment % comment here
 \end{equation}
 the end.'''
 
-        do_test(testlatex, r'''ABŁÅ xyz:
+        do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ = x + i y
 line with comment % comment here
 	  indented line.
@@ -164,7 +169,8 @@ line with comment % comment here
 
 the end.''',
                 strict_latex_spaces=False, keep_comments=True)
-        do_test(testlatex, r'''ABŁÅ xyz:
+
+        do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ = x + i y
 line with comment 
 	  indented line.
@@ -202,6 +208,7 @@ line with comment % comment here
 
 the end.''',
                 strict_latex_spaces='macros', keep_comments=True)
+
         do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ = x + i y
 line with comment 
@@ -221,6 +228,7 @@ indented line.
 
 the end.''',
                 strict_latex_spaces='except-in-equations', keep_comments=True)
+
         do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ = x + i y
 line with comment indented line.
@@ -239,6 +247,7 @@ indented line.
 
 the end.''',
                 strict_latex_spaces=True, keep_comments=True)
+
         do_test(testlatex, r'''A B ŁÅxyz:
 inline math αβγ= x + i y
 line with comment indented line.
@@ -249,14 +258,17 @@ the end.''',
                 strict_latex_spaces=True, keep_comments=False)
         
 
+    def test_spaces_basedonsource(self):
 
-    def test_spaces_default(self):
-
-        # from https://github.com/phfaist/pylatexenc/issues/11 --- ensure previous behavior
+        # from https://github.com/phfaist/pylatexenc/issues/11 --- earlier
+        # behavior is called 'based-on-source' in pylatexenc 2.x
 
         def do_test(tex, uni):
-            self.assertEqual(LatexNodes2Text().latex_to_text(tex), uni,
-                             msg="For TeX=r'{}'".format(tex))
+            self.assertEqual(
+                LatexNodes2Text(strict_latex_spaces='based-on-source').latex_to_text(tex),
+                uni,
+                msg="For TeX=r'{}'".format(tex)
+            )
 
         do_test(r'\"{o} \"{o} \"{o}', 'ööö')
         do_test(r'\"{o} \"{o} {\"o}', 'ööö')
@@ -293,6 +305,17 @@ the end.''',
         do_test(r'{\L} {\L} u', 'ŁŁ u')
         do_test(r'{\L} u u', 'Ł u u')
         do_test(r'u u u', 'u u u')
+
+
+
+    def test_spacing_specials(self):
+        
+        self.assertEqualUpToWhitespace(
+            LatexNodes2Text().latex_to_text(
+                r"""``Hello,'' \emph{she} said."""
+            ),
+            r"""“Hello,” she said."""
+        )
 
 
 
@@ -426,6 +449,191 @@ $$ \alpha = \frac1{\beta}\ .$$
         self.assertEqualUpToWhitespace(
             l2t.latex_to_text(latex),
             latex # math stays verbatim
+        )
+
+
+
+    #
+    # test text filling etc.
+    #
+
+    def test_text_filling(self):
+
+        self.assertEqual(
+            LatexNodes2Text(fill_text=20, strict_latex_spaces=True).latex_to_text(
+                r"""
+Hello world.  This   is
+some weirdly formatted \textbf{text} which
+will appear much    better after running latex2text."""
+            ),
+r"""Hello world.  This
+is some weirdly
+formatted text which
+will appear much
+better after running
+latex2text."""
+        )
+
+    def test_text_filling_InitEndPar(self):
+
+        self.assertEqual(
+            LatexNodes2Text(fill_text=True, strict_latex_spaces=True).latex_to_text(
+                r"""
+
+  Hello \emph{world}.  % comment
+more text.
+
+"""
+            ),
+            "\n\nHello world. more text.\n\n"
+        )
+
+
+        self.assertEqual(
+            LatexNodes2Text(fill_text=True, strict_latex_spaces=True).latex_to_text(
+                r"""
+  Hello \emph{world}.  % comment
+more text.
+
+"""
+            ),
+            "Hello world. more text.\n\n"
+        )
+
+
+    def test_empty_pars(self):
+
+        self.assertEqual(
+            LatexNodes2Text(fill_text=10, strict_latex_spaces=True).latex_to_text(
+                r"""
+A car once was very fast.
+
+Another car came by.  And then some space:
+
+   
+
+Note the few space tokens in the otherwise empty line above.
+"""
+            ),
+r"""A car once
+was very
+fast.
+
+Another
+car came
+by.  And
+then some
+space:
+
+Note the
+few space
+tokens in
+the
+otherwise
+empty line
+above. """
+        )
+
+
+
+
+    #
+    # test replacement strings
+    #
+
+
+    def test_repl_item(self):
+
+        # exact replacement text may change in the future (e.g. within
+        # {enumerate} environments)
+
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(
+                r"""
+\begin{itemize}
+\item First item
+\item[b] The item ``B''
+\item Last item
+\end{itemize}
+""".strip()
+            ),
+            r"""
+
+  * First item
+
+  b The item “B”
+
+  * Last item
+"""
+        )
+
+    def test_repl_placeholders(self):
+        
+        # environments that are currently replaced by a dummy placeholder
+
+        for env in ('array', 'pmatrix', 'bmatrix', 'smallmatrix'):
+            
+            self.assertEqualUpToWhitespace(
+                LatexNodes2Text().latex_to_text(
+                    r"\begin{%(env)s}stuff stuff\end{%(env)s}"%{'env':env}
+                ),
+                "< " + " ".join(env) + " >" # substituted by placeholder (for now)
+            )
+
+        self.assertEqualUpToWhitespace(
+            LatexNodes2Text().latex_to_text(
+                r"\includegraphics[width=3in]{fig/some_graphics.png}"
+            ),
+            "< g r a p h i c s >"
+        )
+
+    def test_repl_eqn(self):
+
+        for env in ('equation', 'eqnarray', 'align', 'multline', 'gather', 'dmath'):
+            
+            self.assertEqualUpToWhitespace(
+                LatexNodes2Text(strict_latex_spaces='except-in-equations').latex_to_text(
+                    r"\begin{%(env)s} e \approx 2.718 \end{%(env)s}"%{'env':env}
+                ),
+                u"e ≈ 2.718"
+            )
+
+    def test_repl_doc_title(self):
+
+        # test that \title/\author/\date work and produce something reasonable
+        # (exact output might change in the future)
+
+        self.assertEqualUpToWhitespace(
+                LatexNodes2Text().latex_to_text(
+                    r"""
+\title{The Title}
+\author{The Author(s)}
+\date{July 4, 2020}
+\maketitle
+"""
+                ),
+            r"""
+The Title
+    The Author(s)
+    July 4, 2020
+=================
+"""
+        )
+        # missing all \title, \author, \date
+        today = '{dt:%B} {dt.day}, {dt.year}'.format(dt=datetime.datetime.now())
+        eqhrule = '=' * max(4+len(r'[NO \author GIVEN]'), 4+len(today))
+        self.assertEqualUpToWhitespace(
+                LatexNodes2Text().latex_to_text(
+                    r"""
+\maketitle
+"""
+                ),
+            r"""
+[NO \title GIVEN]
+    [NO \author GIVEN]
+    %(today)s
+%(eqhrule)s
+""" % { 'today': today, 'eqhrule': eqhrule }
         )
 
 

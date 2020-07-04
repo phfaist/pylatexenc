@@ -555,18 +555,15 @@ _strict_latex_spaces_predef = {
         'between-macro-and-chars': True,
         'between-latex-constructs': True,
         'after-comment': False,
-        'in-equations': False,
+        'in-equations': 'based-on-source',
     },
     'except-in-equations': {
         'between-macro-and-chars': True,
         'between-latex-constructs': True,
         'after-comment': True,
-        'in-equations': False,
+        'in-equations': 'based-on-source',
     },
 }
-# compatibility with pylatexenc 1.x, but it is no longer the default!!
-_strict_latex_spaces_predef['default'] = _strict_latex_spaces_predef['based-on-source']
-
 
 
 def _parse_strict_latex_spaces_dict(strict_latex_spaces):
@@ -578,6 +575,11 @@ def _parse_strict_latex_spaces_dict(strict_latex_spaces):
     }
     if strict_latex_spaces is None:
         return d
+    elif strict_latex_spaces is False:
+        # "False" == the actual default for non-strict latex spaces == "macros"
+        return _strict_latex_spaces_predef['macros']
+    elif strict_latex_spaces is True:
+        return dict([(k, True) for k in d.keys()])
     elif isinstance(strict_latex_spaces, dict):
         d.update(strict_latex_spaces)
         return d
@@ -591,19 +593,20 @@ def _parse_strict_latex_spaces_dict(strict_latex_spaces):
                              .format(strict_latex_spaces))
 
         if strict_latex_spaces == 'default': # deprecated -- report this
+            # compatibility with pylatexenc 1.x, but it is no longer the default!!
             _util.pylatexenc_deprecated_2(
-                "The value 'default' for `strict_latex_spaces=` in LatexNodes2Text() is deprecated. "
-                "The actual default changed to 'macros', and for backwards compatibility the "
-                "obsolete value 'default' still refers to the earlier default which is now called "
-                "'based-on-source'.",
+                "The value 'default' for `strict_latex_spaces=` in LatexNodes2Text() "
+                "is deprecated. The actual default changed to 'macros', and for "
+                "backwards compatibility the obsolete value 'default' still refers to "
+                "the earlier default which is now called 'based-on-source'.",
                 stacklevel=4
             )
+            strict_latex_spaces = 'based-on-source'
 
         return _strict_latex_spaces_predef[strict_latex_spaces]
     else:
-        for k in d.keys():
-            d[k] = bool(strict_latex_spaces)
-        return d
+        raise ValueError("Invalid value for strict_latex_spaces: {!r}"
+                         .format(strict_latex_spaces))
 
 
 class LatexNodes2Text(object):
@@ -650,10 +653,10 @@ class LatexNodes2Text(object):
 
     - `strict_latex_spaces=True|False`: If set to `True`, then we follow closely
       LaTeX's handling of whitespace.  For instance, whitespace following a bare
-      macro (i.e. w/o any delimiting characters like '{') is consumed/removed.
-      If set to `False` (the default), then some liberties are taken with
-      respect to whitespace [hopefully making the result slightly more
-      aesthetic, but this behavior is mostly there for historical reasons].
+      macro (i.e. without any delimiting characters like '{') is
+      consumed/removed.  If set to `False` (the default), then some liberties
+      are taken with respect to whitespace [hopefully making the result slightly
+      more aesthetic, but this behavior is mostly there for historical reasons].
 
       You may also use one of the presets
       `strict_latex_spaces='based-on-source'|'macros'|'except-in-equations'`,
@@ -664,8 +667,8 @@ class LatexNodes2Text(object):
           that are present in the source file in several situations where LaTeX
           would remove them, including after macros.  This is meant to be
           hopefully slightly more aesthetic.  However, this option might
-          inadvertently break up words: For instance, "Sk\l odowska" would be
-          replaced by "Skł odowska".
+          inadvertently break up words: For instance, ``"Sk\l odowska"`` would
+          be replaced by ``"Skł odowska"``.
 
         - The value 'macros' is the same as specifying
           `strict_latex_spaces=False`, and it is the default.  It will make
@@ -693,6 +696,13 @@ class LatexNodes2Text(object):
 
          The value 'default' is also accepted, but it is no longer the default!
          It is an alias for 'based-on-source'
+
+      .. changed:: 2.6
+
+         In `pylatexenc` versions 2.0–2.5, contrary to the documentation, the
+         default value of `strict_latex_spaces` was actually still
+         'based-on-source'.  This bug was fixed in version 2.6, so that now, the
+         default setting is actually 'macros'.
 
     - `keep_braced_groups=True|False`: If set to `True`, then braces delimiting
       a TeX group ``{Like this}`` will be kept in the output, with the contents
@@ -825,7 +835,8 @@ class LatexNodes2Text(object):
 
         if flags:
             # any flags left which we haven't recognized
-            logger.warning("LatexNodes2Text(): Unknown flag(s) encountered: %r", list(flags.keys()))
+            logger.warning("LatexNodes2Text(): Unknown flag(s) encountered: %r",
+                           list(flags.keys()))
         
 
     def set_tex_input_directory(self, tex_input_directory, latex_walker_init_args=None,
@@ -886,12 +897,13 @@ class LatexNodes2Text(object):
 
         fnfull = os.path.realpath(os.path.join(self.tex_input_directory, fn))
         if self.strict_input:
-            # make sure that the input file is strictly within dirfull, and didn't escape with
-            # '../..' tricks or via symlinks.
+            # make sure that the input file is strictly within dirfull, and
+            # didn't escape with '../..' tricks or via symlinks.
             dirfull = os.path.realpath(self.tex_input_directory)
             if not fnfull.startswith(dirfull):
                 logger.warning(
-                    "Can't access path '%s' leading outside of mandated directory [strict input mode]",
+                    "Can't access path '%s' leading outside of mandated directory "
+                    "[strict input mode]",
                     fn
                 )
                 return ''
@@ -920,7 +932,8 @@ class LatexNodes2Text(object):
         #
         
         if len(n.nodeargs) != 1:
-            logger.warning(u"Expected exactly one argument for '\\input' ! Got = %r", n.nodeargs)
+            logger.warning(u"Expected exactly one argument for '\\input' ! Got = %r",
+                           n.nodeargs)
 
         inputtex = self.read_input_file(self.nodelist_to_text([n.nodeargs[0]]).strip())
 
@@ -946,7 +959,9 @@ class LatexNodes2Text(object):
         The `parse_flags` are keyword arguments to provide to the
         :py:class:`pylatexenc.latexwalker.LatexWalker` constructor.
         """
-        return self.nodelist_to_text(latexwalker.LatexWalker(latex, **parse_flags).get_latex_nodes()[0])
+        return self.nodelist_to_text(
+            latexwalker.LatexWalker(latex, **parse_flags).get_latex_nodes()[0]
+        )
 
 
     def nodelist_to_text(self, nodelist):
@@ -956,15 +971,17 @@ class LatexNodes2Text(object):
         :py:meth:`pylatexenc.latexwalker.LatexWalker.get_latex_nodes()`.
 
         This function basically applies `node_to_text()` to each node and
-        concatenates the results into one string.  (But not quite actually,
-        since we take some care as to where we add whitespace according to the
-        class options.)
+        concatenates the results into one string.  (This is not quite actually
+        the case, since we take some care as to where we add whitespace
+        according to the class options.)
         """
 
         s = ''
         prev_node = None
         for node in nodelist:
-            if self._is_bare_macro_node(prev_node) and node.isNodeType(latexwalker.LatexCharsNode):
+            if self._is_bare_macro_node(prev_node) and \
+               node.isNodeType(latexwalker.LatexCharsNode):
+
                 if not self.strict_latex_spaces['between-macro-and-chars']:
                     # after a macro with absolutely no arguments, include
                     # post_space in output by default if there are other chars
@@ -1041,7 +1058,8 @@ class LatexNodes2Text(object):
         content = node.chars
         if self.fill_text: # None or column width
             content = self.do_fill_text(content, textcol=textcol)
-        if not self.strict_latex_spaces['between-latex-constructs'] and len(content.strip()) == 0:
+        if not self.strict_latex_spaces['between-latex-constructs'] \
+           and len(content.strip()) == 0:
             return ""
         return content
 
@@ -1061,14 +1079,16 @@ class LatexNodes2Text(object):
                     nl = ''
                 return '%' + node.comment + nl
             else:
-                # default spaces, i.e., keep what spaces were already there after the comment
+                # default spaces, i.e., keep what spaces were already there
+                # after the comment
                 return '%' + node.comment + node.comment_post_space
         else:
             if self.strict_latex_spaces['after-comment']:
                 return ""
             else:
-                # default spaces, i.e., keep what spaces were already there after the comment
-                # This can be useful to preserve e.g. indentation of the next line
+                # default spaces, i.e., keep what spaces were already there
+                # after the comment.  This can be useful to preserve
+                # e.g. indentation of the next line
                 return node.comment_post_space
 
 
@@ -1211,6 +1231,7 @@ class LatexNodes2Text(object):
         trail_par = '\n\n' if ('\n\n' in trail_ws) else ''
         #trail_nl = '\n' if (not trail_par and '\n' in trail_ws) else ''
         text = text.strip()
+
         def fill_chunk(x, textcol):
             #head_ws = ' ' if textcol>0 and x[0:1].isspace() else ''
             #trail_ws = ' ' if x[-1:].isspace() else ''
@@ -1222,12 +1243,21 @@ class LatexNodes2Text(object):
                 return head_ws + \
                     textwrap.fill(x, self.fill_text, initial_indent='X'*textcol)[textcol:] + \
                     trail_ws
-        return head_par + (' ' if textcol>0 and head_ws and not head_par else '') + "\n\n".join(
-            chunk
-            for chunk in (fill_chunk(x, textcol if j==0 else 0)
-                          for j, x in enumerate(re.compile(r'\n{2,}').split(text)))
-            if chunk.strip()
-        ) + (' ' if trail_ws and not trail_par else '') + trail_par
+
+        rawchunks = re.compile(r'\n{2,}').split(text)
+
+        chunks = [
+            thechunk
+            for (j, thechunk) in (
+                    ( j, fill_chunk(x, textcol if j==0 else 0) )
+                    for j, x in enumerate(rawchunks)
+            )
+            if thechunk.strip()
+        ]
+
+        return head_par + (' ' if textcol>0 and head_ws and not head_par else '') + \
+            "\n\n".join(chunks) + \
+            (' ' if trail_ws and not trail_par else '') + trail_par
 
     def apply_simplify_repl(self, node, simplify_repl, what):
         r"""
