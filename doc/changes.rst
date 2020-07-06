@@ -9,9 +9,12 @@ pylatexenc 2.6
 - In `latex2text`:
 
   + Bug fix: default behavior of the `strict_latex_spaces` option in the
-    :py:class:`pylatexenc.latex2text.LatexNodes2Text()` constructor.
+    :py:class:`pylatexenc.latex2text.LatexNodes2Text()` constructor
 
-  + reorganized latex symbol categories.
+  + fix ``\le``, ``\ge``, ``\leqslant``, ``\geqslant`` (issue `#41
+    <https://github.com/phfaist/pylatexenc/issues/41>`_)
+
+  + reorganized the default latex symbol categories
 
 
 pylatexenc 2.5
