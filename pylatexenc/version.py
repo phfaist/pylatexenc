@@ -26,6 +26,15 @@
 #
 # Self-note: Don't forget to
 #
+#   0) First some checks:
+#
+#       - tests pass: https://travis-ci.org/github/phfaist/pylatexenc
+#
+#       - LGTM looks good: https://lgtm.com/projects/g/phfaist/pylatexenc/
+#
+#       - python package creation works: (python setup.py sdist, pip install
+#         dist/pylatexenc-xxx.tar.gz)
+#
 #   1) bump version number here and update change log (doc/changes.rst)
 #
 #   2) git commit any remaining changes
