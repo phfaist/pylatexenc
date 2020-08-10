@@ -972,15 +972,23 @@ class ParsingState(object):
     .. versionadded:: 2.7
 
        The attribute `math_mode_delimiter` was introduced in version 2.7.
+
+    .. versionadded:: 2.7
+
+       All arguments must now be specified as keyword arguments as of version
+       2.7.
     """
-    def __init__(self, s=None, latex_context=None, in_math_mode=False,
-                 math_mode_delimiter=None):
+    def __init__(self, **fields):
         super(ParsingState, self).__init__()
-        self.s = s
-        self.latex_context = latex_context
-        self.in_math_mode = in_math_mode
-        self.math_mode_delimiter = math_mode_delimiter
+        self.s = None
+        self.latex_context = None
+        self.in_math_mode = False
+        self.math_mode_delimiter = None
         self._fields = ('s', 'latex_context', 'in_math_mode', 'math_mode_delimiter', )
+
+        do_sanitize = fields.pop('_do_sanitize', True)
+
+        self._set_fields(fields, do_sanitize=do_sanitize)
 
     def sub_context(self, **kwargs):
         r"""
@@ -996,11 +1004,10 @@ class ParsingState(object):
         If no arguments are provided, this returns a copy of the present parsing
         context object.
         """
-        p = self.__class__(**self.get_fields())
-        for k, v in kwargs.items():
-            if k not in self._fields:
-                raise ValueError("Invalid field for ParsingState: {}={!r}".format(k, v))
-            setattr(p, k, v)
+        p = self.__class__(_do_sanitize=False, **self.get_fields())
+
+        p._set_fields(kwargs)
+
         return p
 
     def get_fields(self):
@@ -1009,6 +1016,38 @@ class ParsingState(object):
         dictionary.
         """
         return dict([(f, getattr(self, f)) for f in self._fields])
+
+
+    def _set_fields(self, kwargs, do_sanitize=True):
+
+        for k, v in kwargs.items():
+            if k not in self._fields:
+                raise ValueError("Invalid field for ParsingState: {}={!r}".format(k, v))
+            setattr(self, k, v)
+
+        if do_sanitize:
+            # Do some sanitization.  If we set in_math_mode=False, then we should
+            # clear any math_mode_delimiter.
+            self._sanitize(given_fields=kwargs)
+
+    def _sanitize(self, given_fields):
+        """
+        Sanitize the parsing state.  E.g., clear any `math_mode_delimiter` if
+        `in_math_mode` is false.
+
+        The argument `given_fields` is what fields the user required to set;
+        this is used to generate warnings if incompatible field configurations
+        were explicitly required to be set.
+        """
+        if not self.in_math_mode and self.math_mode_delimiter:
+            self.math_mode_delimiter = None
+            if 'math_mode_delimiter' in given_fields:
+                logger.warning(
+                    "ParsingState: You set math_mode_delimiter=%r but "
+                    "in_math_mode is False", self.math_mode_delimiter
+                )
+
+
 
 
 # ------------------------------------------------------------------------------
