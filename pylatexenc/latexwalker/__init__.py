@@ -948,7 +948,7 @@ class ParsingState(object):
        This can be inline or display, and can be caused by an equation
        environment.
 
-    .. py:attribute: math_mode_delimiter
+    .. py:attribute:: math_mode_delimiter
 
        Information about the kind of math mode we are currently in, if
        `in_math_mode` is `True`.  This is a string which can be set to aid the
