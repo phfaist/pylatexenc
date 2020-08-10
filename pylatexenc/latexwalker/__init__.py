@@ -953,17 +953,17 @@ class ParsingState(object):
        Information about the kind of math mode we are currently in, if
        `in_math_mode` is `True`.  This is a string which can be set to aid the
        parser.  The parser sets this field to the math mode delimiter that
-       initiated the math mode (e.g., one of `'$'`, `'$$'`, `r'\('`, `r'\)'`).
-       For user-initiated math modes (e.g. by a custom environment definition),
-       you can set this string to any custom value EXCEPT any of the core math
-       mode delimiters.
+       initiated the math mode (e.g., one of ``'$'``, ``'$$'``, ``r'\('``,
+       ``r'\)'``).  For user-initiated math modes (e.g. by a custom environment
+       definition), you can set this string to any custom value EXCEPT any of
+       the core math mode delimiters.
 
        .. note:: You should NOT set e.g. `math_mode_delimiter='$'` if the actual
-                 opening delimiter was not a `$` sign.  This is because the
+                 opening delimiter was not a ``$`` sign.  This is because the
                  tokenizer/parser relies on the value of this attribute to
-                 disambiguate `...$$...` into either a display math mode
+                 disambiguate ``...$$...`` into either a display math mode
                  delimiter or two inline math mode delimiters (if already in
-                 inline math mode initiated by `$`).
+                 inline math mode initiated by ``$``).
 
     .. versionadded:: 2.0
  
