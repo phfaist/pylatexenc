@@ -948,16 +948,39 @@ class ParsingState(object):
        This can be inline or display, and can be caused by an equation
        environment.
 
+    .. py:attribute: math_mode_delimiter
+
+       Information about the kind of math mode we are currently in, if
+       `in_math_mode` is `True`.  This is a string which can be set to aid the
+       parser.  The parser sets this field to the math mode delimiter that
+       initiated the math mode (e.g., one of `'$'`, `'$$'`, `r'\('`, `r'\)'`).
+       For user-initiated math modes (e.g. by a custom environment definition),
+       you can set this string to any custom value EXCEPT any of the core math
+       mode delimiters.
+
+       .. note:: You should NOT set e.g. `math_mode_delimiter='$'` if the actual
+                 opening delimiter was not a `$` sign.  This is because the
+                 tokenizer/parser relies on the value of this attribute to
+                 disambiguate `...$$...` into either a display math mode
+                 delimiter or two inline math mode delimiters (if already in
+                 inline math mode initiated by `$`).
+
     .. versionadded:: 2.0
  
        This class was introduced in version 2.0.
+
+    .. versionadded:: 2.7
+
+       The attribute `math_mode_delimiter` was introduced in version 2.7.
     """
-    def __init__(self, s=None, latex_context=None, in_math_mode=False):
+    def __init__(self, s=None, latex_context=None, in_math_mode=False,
+                 math_mode_delimiter=None):
         super(ParsingState, self).__init__()
         self.s = s
         self.latex_context = latex_context
         self.in_math_mode = in_math_mode
-        self._fields = ('s', 'latex_context', 'in_math_mode', )
+        self.math_mode_delimiter = math_mode_delimiter
+        self._fields = ('s', 'latex_context', 'in_math_mode', 'math_mode_delimiter', )
 
     def sub_context(self, **kwargs):
         r"""
@@ -1380,9 +1403,14 @@ class LatexWalker(object):
         if s[pos] in closebracechars:
             return LatexToken(tok='brace_close', arg=s[pos], pos=pos, len=1, pre_space=space)
 
-        # check for math-mode dollar signs.  Using python syntax "string.startswith(pattern, pos)"
+        # check for math-mode dollar signs.  Using python syntax
+        # "string.startswith(pattern, pos)"
         if s.startswith('$$', pos):
-            return LatexToken(tok='mathmode_display', arg='$$', pos=pos, len=2, pre_space=space)
+            # if we are in an open '$'-delimited math mode, we need to parse $$
+            # as two single $'s (issue #43)
+            if not (parsing_state.in_math_mode and parsing_state.math_mode_delimiter == '$'):
+                return LatexToken(tok='mathmode_display', arg='$$',
+                                  pos=pos, len=2, pre_space=space)
         if s.startswith('$', pos):
             return LatexToken(tok='mathmode_inline', arg='$', pos=pos, len=1, pre_space=space)
 
@@ -1739,7 +1767,10 @@ class LatexWalker(object):
         parsing_state_inner = adic.get('inner_parsing_state', parsing_state)
         #parsing_state_inner = parsing_state
         if env_spec.is_math_mode:
-            parsing_state_inner = parsing_state.sub_context(in_math_mode=True)
+            parsing_state_inner = parsing_state.sub_context(
+                in_math_mode=True,
+                math_mode_delimiter='{'+environmentname+'}',
+            )
 
         (nodelist, npos, nlen) = self.get_latex_nodes(pos,
                                                       stop_upon_end_environment=environmentname,
@@ -1911,11 +1942,13 @@ class LatexWalker(object):
 
         # consistency check
         if stop_upon_closing_mathmode is not None and not parsing_state.in_math_mode:
-            logger.warning(("Call to LatexWalker.get_latex_nodes(stop_upon_closing_mathmode={!r}) "
-                            "but parsing state has in_math_mode={!r}").format(
-                                stop_upon_closing_mathmode,
-                                parsing_state.in_math_mode,
-                            ))
+            logger.warning(
+                ("Call to LatexWalker.get_latex_nodes(stop_upon_closing_mathmode={!r}) "
+                 "but parsing state has in_math_mode={!r}").format(
+                     stop_upon_closing_mathmode,
+                     parsing_state.in_math_mode,
+                 )
+            )
 
         #
         # Man, I really need to rewrite this function properly. This is some
@@ -2080,10 +2113,14 @@ class LatexWalker(object):
 
                 # we have encountered a new math inline, parse the math expression
 
-                corresponding_closing_mathmode = {r'\(': r'\)', r'\[': r'\]'}.get(tok.arg, tok.arg)
+                corresponding_closing_mathmode = \
+                    {r'\(': r'\)', r'\[': r'\]'}.get(tok.arg, tok.arg)
                 displaytype = 'inline' if tok.arg in [r'\(', '$'] else 'display'
 
-                parsing_state_inner = p.parsing_state.sub_context(in_math_mode=True)
+                parsing_state_inner = p.parsing_state.sub_context(
+                    in_math_mode=True,
+                    math_mode_delimiter=tok.arg
+                )
 
                 try:
                     (mathinline_nodelist, mpos, mlen) = self.get_latex_nodes(
@@ -2097,12 +2134,14 @@ class LatexWalker(object):
                     raise
                 p.pos = mpos + mlen
 
-                nodelist.append(self.make_node(LatexMathNode,
-                                               parsing_state=p.parsing_state,
-                                               displaytype=displaytype,
-                                               nodelist=mathinline_nodelist,
-                                               delimiters=(tok.arg, corresponding_closing_mathmode),
-                                               pos=tok.pos, len=mpos+mlen-tok.pos))
+                nodelist.append(self.make_node(
+                    LatexMathNode,
+                    parsing_state=p.parsing_state,
+                    displaytype=displaytype,
+                    nodelist=mathinline_nodelist,
+                    delimiters=(tok.arg, corresponding_closing_mathmode),
+                    pos=tok.pos, len=mpos+mlen-tok.pos
+                ))
                 if read_max_nodes and len(nodelist) >= read_max_nodes:
                     return True
                 return
@@ -2278,7 +2317,8 @@ class LatexWalker(object):
                 else:
                     raise
             except LatexWalkerEndOfStream as e:
-                if stop_upon_closing_brace or stop_upon_end_environment or stop_upon_closing_mathmode:
+                if stop_upon_closing_brace or stop_upon_end_environment \
+                   or stop_upon_closing_mathmode:
                     # unexpected eof
                     if not self.tolerant_parsing:
                         if stop_upon_closing_brace:

@@ -123,6 +123,59 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
         self.assertEqual(lw.get_token(pos=p),
                          LatexToken(tok='mathmode_display', arg=r'\]', pos=p, len=2, pre_space=''))
 
+    def test_get_token_mathmodes_dollardollar(self):
+        
+        # pos counter:  |0        |10       |20       |30     |38
+        latextext = r"""x$\dagger$$\dagger$$$A=B\mbox{$b=a$}$$"""
+
+        lw = LatexWalker(latextext)
+
+        ps = lw.make_parsing_state()
+
+        def sub_math_ps(delim):
+            return ps.sub_context(in_math_mode=True, math_mode_delimiter=delim)
+
+        p = 1
+        self.assertEqual(
+            lw.get_token(pos=p, parsing_state=ps),
+            LatexToken(tok='mathmode_inline', arg='$', pos=p, len=1, pre_space='')
+        )
+        p = 9
+        self.assertEqual(
+            lw.get_token(pos=p, parsing_state=sub_math_ps('$')),
+            LatexToken(tok='mathmode_inline', arg='$', pos=p, len=1, pre_space='')
+        )
+        p = 10
+        self.assertEqual(
+            lw.get_token(pos=p),
+            LatexToken(tok='mathmode_inline', arg='$', pos=p, len=1, pre_space='')
+        )
+        p = 18
+        self.assertEqual(
+            lw.get_token(pos=p, parsing_state=sub_math_ps('$')),
+            LatexToken(tok='mathmode_inline', arg='$', pos=p, len=1, pre_space='')
+        )
+        p = 19
+        self.assertEqual(
+            lw.get_token(pos=p),
+            LatexToken(tok='mathmode_display', arg='$$', pos=p, len=2, pre_space='')
+        )
+        p = 30
+        self.assertEqual(
+            lw.get_token(pos=p),
+            LatexToken(tok='mathmode_inline', arg='$', pos=p, len=1, pre_space='')
+        )
+        p = 34
+        self.assertEqual(
+            lw.get_token(pos=p, parsing_state=sub_math_ps('$')),
+            LatexToken(tok='mathmode_inline', arg='$', pos=p, len=1, pre_space='')
+        )
+        p = 36
+        self.assertEqual(
+            lw.get_token(pos=p, parsing_state=sub_math_ps('$$')),
+            LatexToken(tok='mathmode_display', arg='$$', pos=p, len=2, pre_space='')
+        )
+        
 
 
     def test_get_latex_expression(self):
@@ -703,6 +756,57 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
                           delimiters=(r'\(', r'\)'),
                           pos=p, len=latextext.rfind(r'\)') + 2 - p)
         )
+
+
+
+    def test_get_latex_nodes_mathmodes_dollardollar(self):
+
+        # pos counter:  |0        |10       |20       |30     |38
+        latextext = r"""x$\dagger$$\dagger$""" #$$A=B\mbox{$b=a$}$$"""
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        parsing_state = lw.make_parsing_state()
+
+        nodes = lw.get_latex_nodes(parsing_state=parsing_state)[0]
+        ps1 = nodes[1].nodelist[0].parsing_state
+        ps2 = nodes[2].nodelist[0].parsing_state
+
+        self.assertEqual(
+            nodes,
+            [
+                LatexCharsNode(parsing_state=parsing_state,
+                               chars=r'x',
+                               pos=0,
+                               len=1),
+                LatexMathNode(parsing_state=parsing_state,
+                              displaytype='inline',
+                              delimiters=(r'$', r'$'),
+                              nodelist=[
+                                  LatexMacroNode(
+                                      parsing_state=ps1,
+                                      macroname='dagger',
+                                      nodeargd=macrospec.ParsedMacroArgs(),
+                                      pos=2,
+                                      len=9-2,
+                                  ),
+                              ],
+                              pos=1,
+                              len=10-1),
+                LatexMathNode(parsing_state=parsing_state,
+                              displaytype='inline',
+                              delimiters=(r'$', r'$'),
+                              nodelist=[
+                                  LatexMacroNode(
+                                      parsing_state=ps2,
+                                      macroname='dagger',
+                                      nodeargd=macrospec.ParsedMacroArgs(),
+                                      pos=11,
+                                      len=18-11,
+                                  ),
+                              ],
+                              pos=10,
+                              len=19-10),
+            ])
 
 
     def test_get_latex_nodes_comments(self):
