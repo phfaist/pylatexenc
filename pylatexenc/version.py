@@ -24,9 +24,9 @@
 
 
 #
-# Self-note: Don't forget to
+# Self-note: Checklist
 #
-#   0) First some checks:
+#   1) First some checks:
 #
 #       - tests pass: https://travis-ci.org/github/phfaist/pylatexenc
 #
@@ -35,17 +35,19 @@
 #       - python package creation works: (python setup.py sdist, pip install
 #         dist/pylatexenc-xxx.tar.gz)
 #
-#   1) bump version number here and update change log (doc/changes.rst)
+#   2) update change log (doc/changes.rst)
 #
-#   2) git commit any remaining changes
+#   3) bump version number here
 #
-#   3) " git tag vX.X -am '<message>' "
+#   4) git commit any remaining changes
 #
-#   4) " git push --tags "
+#   5) " git tag vX.X -am '<message>' "
 #
-#   5) on github.com, fill in release details with a summary of changes etc.
+#   6) " git push --tags "
+#
+#   7) on github.com, fill in release details with a summary of changes etc.
 #   
-#   6) upload package to PyPI (twine upload dist/pylatexenc-X.X.tar.gz -r realpypi)
+#   8) upload package to PyPI (twine upload dist/pylatexenc-X.X.tar.gz -r realpypi)
 #
 
-version_str = "2.6"
+version_str = "2.7"

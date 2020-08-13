@@ -3,6 +3,13 @@ Changes
 ============
 
 
+pylatexenc 2.7
+==============
+
+- Bug fix: the parser now disambiguates ``$$`` as either a display math
+  delimiter or two inline math delimiters as in ``$a$$b$`` (issue `#43
+  <https://github.com/phfaist/pylatexenc/issues/43>`_)
+
 pylatexenc 2.6
 ==============
 

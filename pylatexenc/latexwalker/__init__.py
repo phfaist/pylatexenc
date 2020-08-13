@@ -953,17 +953,17 @@ class ParsingState(object):
        Information about the kind of math mode we are currently in, if
        `in_math_mode` is `True`.  This is a string which can be set to aid the
        parser.  The parser sets this field to the math mode delimiter that
-       initiated the math mode (e.g., one of ``'$'``, ``'$$'``, ``r'\('``,
-       ``r'\)'``).  For user-initiated math modes (e.g. by a custom environment
-       definition), you can set this string to any custom value EXCEPT any of
-       the core math mode delimiters.
+       initiated the math mode (one of ``'$'``, ``'$$'``, ``r'\('``, ``r'\)'``).
+       For user-initiated math modes (e.g. by a custom environment definition),
+       you can set this string to any custom value EXCEPT any of the core math
+       mode delimiters listed above.
 
-       .. note:: You should NOT set e.g. `math_mode_delimiter='$'` if the actual
-                 opening delimiter was not a ``$`` sign.  This is because the
-                 tokenizer/parser relies on the value of this attribute to
-                 disambiguate ``...$$...`` into either a display math mode
-                 delimiter or two inline math mode delimiters (if already in
-                 inline math mode initiated by ``$``).
+       .. note:: The tokenizer/parser relies on the value of the
+                 `math_mode_delimiter` attribute to disambiguate two consecutive
+                 dollar signs ``...$$...`` into either a display math mode
+                 delimiter or two inline math mode delimiters (as in
+                 ``$a$$b$``).  You should only set `math_mode_delimiter='$'` if
+                 you know what you're doing.
 
     .. versionadded:: 2.0
  
@@ -973,12 +973,12 @@ class ParsingState(object):
 
        The attribute `math_mode_delimiter` was introduced in version 2.7.
 
-    .. versionadded:: 2.7
+    .. versionchanged:: 2.7
 
        All arguments must now be specified as keyword arguments as of version
        2.7.
     """
-    def __init__(self, **fields):
+    def __init__(self, **kwargs):
         super(ParsingState, self).__init__()
         self.s = None
         self.latex_context = None
@@ -986,9 +986,9 @@ class ParsingState(object):
         self.math_mode_delimiter = None
         self._fields = ('s', 'latex_context', 'in_math_mode', 'math_mode_delimiter', )
 
-        do_sanitize = fields.pop('_do_sanitize', True)
+        do_sanitize = kwargs.pop('_do_sanitize', True)
 
-        self._set_fields(fields, do_sanitize=do_sanitize)
+        self._set_fields(kwargs, do_sanitize=do_sanitize)
 
     def sub_context(self, **kwargs):
         r"""
@@ -1033,7 +1033,7 @@ class ParsingState(object):
     def _sanitize(self, given_fields):
         """
         Sanitize the parsing state.  E.g., clear any `math_mode_delimiter` if
-        `in_math_mode` is false.
+        `in_math_mode` is `False`.
 
         The argument `given_fields` is what fields the user required to set;
         this is used to generate warnings if incompatible field configurations
