@@ -28,6 +28,9 @@
 #
 #   1) First some checks:
 #
+#       - Set below in this file ' version_str = "X.Xb" ' (beta version for next
+#         release) for the following tests.
+#
 #       - tests pass: https://travis-ci.org/github/phfaist/pylatexenc
 #
 #       - LGTM looks good: https://lgtm.com/projects/g/phfaist/pylatexenc/
@@ -43,9 +46,11 @@
 #
 #   5) " git tag vX.X -am '<message>' "
 #
-#   6) " git push --tags "
+#   6) " git push && git push --tags "
 #
 #   7) on github.com, fill in release details with a summary of changes etc.
+#
+#   8) create the source package for PyPI (" python3 setup.py sdist ")
 #   
 #   8) upload package to PyPI (twine upload dist/pylatexenc-X.X.tar.gz -r realpypi)
 #
