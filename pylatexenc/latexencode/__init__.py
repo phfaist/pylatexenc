@@ -639,7 +639,7 @@ class UnicodeToLatexEncoder(object):
         return '{' + repl + '}'
     def _apply_protection_braces_after_macro(self, repl):
         k = repl.rfind('\\')
-        if k > 0 and repl[k+1:].isalpha():
+        if k >= 0 and repl[k+1:].isalpha():
             # has dangling named macro, apply protection.
             return repl + '{}'
         return repl

@@ -49,6 +49,11 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
         input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
         self.assertEqual(u.unicode_to_latex(input),
                          "''\\`A votre sant\\'e!'' s'exclama le ma\\^\\i{}tre de maison \\`a 100\\%.")
+    def test_basic_2a(self):
+        # Issue #44
+        u = UnicodeToLatexEncoder(replacement_latex_protection='braces-after-macro')
+        input = "Jabłoński, François, ⟨.⟩, ~"
+        self.assertEqual(u.unicode_to_latex(input), "Jab\\l{}o\\'nski, Fran\\c{c}ois, \\ensuremath{\\langle}.\\ensuremath{\\rangle}, \\textasciitilde{}")
 
     def test_basic_2b(self):
         u = UnicodeToLatexEncoder(replacement_latex_protection='none')
