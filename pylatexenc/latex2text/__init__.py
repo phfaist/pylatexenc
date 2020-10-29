@@ -337,8 +337,66 @@ def fmt_placeholder_node(node, l2tobj):
     return _do_fmt_placeholder_node(name, l2tobj)
 
 
+def fmt_matrix_environment_node(node, l2tobj):
+    r"""
+    This function can be used as a callable in :py:class:`EnvironmentTextSpec`
+    for matrix-like environments like ``\begin{bmatrix}...\end{bmatrix}``.
 
+    The contents is parsed by separating columns with ``&``'s and rows with
+    ``\\``'s, and is rendered in the form ``[  a11  a12  ;  a21  a22  ]``.
 
+    .. versionadded:: 2.8
+
+       This function was introduced in `pylatexenc 2.8`.
+    """
+
+    class StateType:
+        def __init__(self):
+            self.matrix_rows = []
+            self.buffer_this_column = []
+            self.buffer_nodes = []
+
+        def add_content(self, node):
+            self.buffer_nodes.append(node)
+
+        def new_column(self):
+            if self.buffer_nodes:
+                self.buffer_this_column.append(
+                    l2tobj.nodelist_to_text(self.buffer_nodes) .strip()
+                )
+            self.buffer_nodes = []
+
+        def new_row(self):
+            self.new_column()
+            self.matrix_rows.append( self.buffer_this_column )
+            self.buffer_this_column = []
+            
+    state = StateType()
+
+    # iterate the nodelist and find column and row separators
+    for n in node.nodelist:
+        if n.isNodeType(latexwalker.LatexSpecialsNode) and n.specials_chars == '&':
+            # column separator
+            state.new_column()
+            continue
+        if n.isNodeType(latexwalker.LatexMacroNode) and n.macroname == "\\":
+            # row separator
+            state.new_row()
+            continue
+        state.add_content(n)
+
+    state.new_row() # finish the last row
+
+    # now format the contents as array --
+    max_char_width = max( ( len(x)  for row in state.matrix_rows  for x in row ) )
+    matrix_contents = "; ".join( (
+        " ".join( (
+            x.rjust(max_char_width, ' ')
+            for x in row
+        ) )
+        for row in state.matrix_rows
+    ) )
+    return "[ " + matrix_contents + " ]"
 
 #
 # see reference: https://unicode.org/charts/PDF/U1D400.pdf

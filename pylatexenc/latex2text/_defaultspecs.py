@@ -42,7 +42,7 @@ else:
 
 from ..latex2text import MacroTextSpec, EnvironmentTextSpec, SpecialsTextSpec, \
     fmt_equation_environment, fmt_placeholder_node, placeholder_node_formatter, \
-    fmt_input_macro, fmt_math_text_style
+    fmt_matrix_environment_node, fmt_input_macro, fmt_math_text_style
 
 
 def _format_uebung(n, l2t):
@@ -98,10 +98,13 @@ _latex_specs_placeholders = {
         EnvironmentTextSpec('dmath', simplify_repl=fmt_equation_environment),
         EnvironmentTextSpec('dmath*', simplify_repl=fmt_equation_environment),
 
-        EnvironmentTextSpec('array', simplify_repl=fmt_placeholder_node),
-        EnvironmentTextSpec('pmatrix', simplify_repl=fmt_placeholder_node),
-        EnvironmentTextSpec('bmatrix', simplify_repl=fmt_placeholder_node),
-        EnvironmentTextSpec('smallmatrix', simplify_repl=fmt_placeholder_node),
+#  --- as of pylatexenc 2.8, these are now approximated ---
+#        EnvironmentTextSpec('array', simplify_repl=fmt_placeholder_node),
+#        EnvironmentTextSpec('pmatrix', simplify_repl=fmt_placeholder_node),
+#        EnvironmentTextSpec('bmatrix', simplify_repl=fmt_placeholder_node),
+#        EnvironmentTextSpec('smallmatrix', simplify_repl=fmt_placeholder_node),
+#        EnvironmentTextSpec('psmallmatrix', simplify_repl=fmt_placeholder_node),
+#        EnvironmentTextSpec('bsmallmatrix', simplify_repl=fmt_placeholder_node),
     ],
     'specials': [
     ],
@@ -131,6 +134,13 @@ _latex_specs_approximations = {
         EnvironmentTextSpec('subequations', discard=False),
         EnvironmentTextSpec('figure', discard=False),
         EnvironmentTextSpec('table', discard=False),
+
+        EnvironmentTextSpec('array', simplify_repl=fmt_matrix_environment_node),
+        EnvironmentTextSpec('pmatrix', simplify_repl=fmt_matrix_environment_node),
+        EnvironmentTextSpec('bmatrix', simplify_repl=fmt_matrix_environment_node),
+        EnvironmentTextSpec('smallmatrix', simplify_repl=fmt_matrix_environment_node),
+        EnvironmentTextSpec('psmallmatrix', simplify_repl=fmt_matrix_environment_node),
+        EnvironmentTextSpec('bsmallmatrix', simplify_repl=fmt_matrix_environment_node),
     ],
     'specials': [
         SpecialsTextSpec('&', '   '), # ignore tabular alignments, just add a little space

@@ -570,14 +570,14 @@ above. """
 
         # environments that are currently replaced by a dummy placeholder
 
-        for env in ('array', 'pmatrix', 'bmatrix', 'smallmatrix'):
-
-            self.assertEqualUpToWhitespace(
-                LatexNodes2Text().latex_to_text(
-                    r"\begin{%(env)s}stuff stuff\end{%(env)s}"%{'env':env}
-                ),
-                "< " + " ".join(env) + " >" # substituted by placeholder (for now)
-            )
+        # --- these environments are now approximated as of pylatexenc 2.8 ---
+        #for env in ('array', 'pmatrix', 'bmatrix', 'smallmatrix'):
+        #    self.assertEqualUpToWhitespace(
+        #        LatexNodes2Text().latex_to_text(
+        #            r"\begin{%(env)s}stuff stuff\end{%(env)s}"%{'env':env}
+        #        ),
+        #        "< " + " ".join(env) + " >" # substituted by placeholder (for now)
+        #    )
 
         self.assertEqualUpToWhitespace(
             LatexNodes2Text().latex_to_text(
@@ -597,6 +597,18 @@ above. """
                     r"\begin{%(env)s} e \approx 2.718 \end{%(env)s}"%{'env':env}
                 ),
                 u"e ≈ 2.718"
+            )
+
+    def test_repl_matrix_environment(self):
+
+        for env, arg in (('array', '{lll}'), ('pmatrix', ''), ('bmatrix', ''),
+                          ('smallmatrix', '')):
+            self.assertEqualUpToWhitespace(
+                LatexNodes2Text().latex_to_text(
+                    r"\begin{%(env)s}%(arg)s1 &   2 & abcdef\\ 3 & 4\end{%(env)s}"
+                    %{'env':env,'arg':arg}
+                ),
+                "[      1      2 abcdef;      3      4 ]"
             )
 
     def test_repl_doc_title(self):
