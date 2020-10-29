@@ -180,9 +180,8 @@ the new API.
 
 - The `keep_inline_math=` option was deprecated for both in
   :py:class:`~pylatexenc.latexwalker.LatexWalker` and
-  :py:class:`~pylatexenc.latex2text.LatexNodes2Text`  (see `Issue #14
-  <https://github.com/phfaist/pylatexenc/issues/14>`_).  Instead, you
-  should set the option `math_mode=`  in
+  :py:class:`~pylatexenc.latex2text.LatexNodes2Text` (see issue :issue:`14`).
+  Instead, you should set the option `math_mode=` in
   :py:class:`~pylatexenc.latex2text.LatexNodes2Text`.
 
   The design choice was made in `pylatexenc 2.0` to have

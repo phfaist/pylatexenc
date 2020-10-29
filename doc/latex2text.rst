@@ -29,7 +29,7 @@ the parser using the :py:mod:`~pylatexenc.macrospec` module, and second, at the
 level of `latex2text`, to specify what the replacement strings are for the
 different LaTeX constructs.
 
-The following example is a simple illustrative template that implements the
+The following template is a simple illustrative example that implements the
 following definitions:
 
   - A new macro ``\putinquotes[`][']{text}`` that puts its mandatory argument

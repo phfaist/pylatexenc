@@ -802,7 +802,7 @@ class LatexNodes2Text(object):
          The `keep_inline_math=` option is deprecated because it had a weird
          behavior and was poorly implemented, especially given that a similarly
          named option in :py:class:`LatexWalker` had a different effect.  See
-         `Issue #14 <https://github.com/phfaist/pylatexenc/issues/14>`_.
+         issue :issue:`14`.
 
     - `text_replacements` this argument is ignored starting from `pylatexenc 2`.
 
