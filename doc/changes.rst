@@ -3,12 +3,19 @@ Changes
 ============
 
 
+pylatexenc 2.8
+==============
+
+- Basic support for array and matrix environments.  Matrices are represented
+  inline, in the form ``[ a b; c d ]``.
+
+- Bugfix (issue :issue:`44`)
+
 pylatexenc 2.7
 ==============
 
 - Bug fix: the parser now disambiguates ``$$`` as either a display math
-  delimiter or two inline math delimiters as in ``$a$$b$`` (issue `#43
-  <https://github.com/phfaist/pylatexenc/issues/43>`_)
+  delimiter or two inline math delimiters as in ``$a$$b$`` (issue :issue:`43`)
 
 pylatexenc 2.6
 ==============
@@ -18,8 +25,7 @@ pylatexenc 2.6
   + Bug fix: default behavior of the `strict_latex_spaces` option in the
     :py:class:`pylatexenc.latex2text.LatexNodes2Text()` constructor
 
-  + fix ``\le``, ``\ge``, ``\leqslant``, ``\geqslant`` (issue `#41
-    <https://github.com/phfaist/pylatexenc/issues/41>`_)
+  + fix ``\le``, ``\ge``, ``\leqslant``, ``\geqslant`` (issue :issue:`41`)
 
   + reorganized the default latex symbol categories
 
@@ -28,7 +34,7 @@ pylatexenc 2.5
 ==============
 
 - `latex2text`: Add support for ``\mathbb{}``, ``\mathbf{}`` and some friends
-  (issue `#40 <https://github.com/phfaist/pylatexenc/issues/40>`_)
+  (issue :issue:`40`)
 
 pylatexenc 2.4
 ==============
