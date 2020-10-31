@@ -24,10 +24,13 @@ then converted to unicode text by the
 :py:class:`~pylatexenc.latex2text.LatexNodes2Text` object.
 
 You can define new macros, environments, or specials, or override existing
-definitions.  The definitions need to be provided twice: First, at the level of
-the parser using the :py:mod:`~pylatexenc.macrospec` module, and second, at the
-level of `latex2text`, to specify what the replacement strings are for the
-different LaTeX constructs.
+definitions.  The definitions need to be provided twice.  First, at the level of
+the parser using the :py:mod:`~pylatexenc.macrospec` module; the parser needs to
+know the argument structure of your macros, environments, and specials, along
+with which characters to recognize as "specials".  Second, at the level of
+`latex2text`, you need to specify what the replacement strings are for the
+different LaTeX constructs after they have been parsed into the latex node tree
+by the parser.
 
 The following template is a simple illustrative example that implements the
 following definitions:
@@ -43,7 +46,7 @@ following definitions:
     the example.
 
   - The usual LaTeX quote symbols `````, ``````, ``'``, and ``''`` for unicode
-    quotes.  (See also issue #39)
+    quotes.  (See also issue :issue:`39`)
 
 Here is the code (see also docs for :py:class:`pylatexenc.macrospec.MacroSpec`,
 :py:class:`pylatexenc.macrospec.EnvironmentSpec`,
