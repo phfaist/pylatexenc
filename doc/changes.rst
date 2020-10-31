@@ -6,10 +6,10 @@ Changes
 pylatexenc 2.8
 ==============
 
-- Basic support for array and matrix environments.  Matrices are represented
-  inline, in the form ``[ a b; c d ]``.
+- `latex2text` module: Basic support for array and matrix environments.
+  Matrices are represented inline, in the form ``[ a b; c d ]``.
 
-- Bugfix (issue :issue:`44`)
+- `latexencode` bugfix (issue :issue:`44`)
 
 pylatexenc 2.7
 ==============
