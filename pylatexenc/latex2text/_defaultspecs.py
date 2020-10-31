@@ -40,9 +40,12 @@ else:
 
 
 
-from ..latex2text import MacroTextSpec, EnvironmentTextSpec, SpecialsTextSpec, \
-    fmt_equation_environment, fmt_placeholder_node, placeholder_node_formatter, \
+from ..latex2text import (
+    MacroTextSpec, EnvironmentTextSpec, SpecialsTextSpec,
+    fmt_equation_environment, #fmt_placeholder_node,
+    placeholder_node_formatter,
     fmt_matrix_environment_node, fmt_input_macro, fmt_math_text_style
+)
 
 
 def _format_uebung(n, l2t):
