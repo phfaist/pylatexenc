@@ -44,7 +44,7 @@ def main(argv=None):
 
     parser.add_argument('--output-format', metavar="FORMAT", dest="output_format",
                         choices=["human", "json"], default='human',
-                        help='Requested output format for the node tree')
+                        help='Requested output format for the node tree ("human" or "json")')
     parser.add_argument('--json-indent', metavar="NUMSPACES", dest="json_indent",
                         type=int, default=2,
                         help='Indentation in JSON output (specify number of spaces '

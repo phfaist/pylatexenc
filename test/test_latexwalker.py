@@ -30,7 +30,8 @@ class TestLatexWalker(unittest.TestCase):
         
     def test_get_token(self):
         
-        latextext = r'''Text \`accent and \textbf{bold text} and $\vec b$ vector \& also Fran\c cois
+        latextext = \
+            r'''Text \`accent and \textbf{bold text} and $\vec b$ vector \& also Fran\c cois
 \begin{enumerate}[(i)]
 \item Hi there!  % here goes a comment
 \item[a] Hello!  @@@
@@ -1362,6 +1363,30 @@ Use macros: """,
 
 
 
+    def test_bug_issueno49(self):
+        # see issue #49
+
+        doc_content = r"""\emph{A}
+\emph{B}"""
+
+        lw = LatexWalker(
+            doc_content,
+            tolerant_parsing=False,
+        )
+
+        pos = 0
+        (nodelist, npos, nlen) = lw.get_latex_nodes(pos, read_max_nodes=1)
+        self.assertEqual(len(nodelist), 1)
+        node = nodelist[0]
+        self.assertEqual(npos, node.pos)
+        self.assertEqual(nlen, node.len)
+
+        pos = doc_content.find('\n')
+        (nodelist, npos, nlen) = lw.get_latex_nodes(pos, read_max_nodes=1)
+        self.assertEqual(len(nodelist), 1)
+        node = nodelist[0]
+        self.assertEqual(npos, node.pos)
+        self.assertEqual(nlen, node.len)
 
 
 

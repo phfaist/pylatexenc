@@ -2076,6 +2076,8 @@ class LatexWalker(object):
                                               len=len(tok.pre_space))
                 nodelist.append(spacestrnode)
                 if read_max_nodes and len(nodelist) >= read_max_nodes:
+                    # adjust p.pos for return value of get_latex_nodes()
+                    p.pos = tok.pos
                     return True
 
             # and see what the token is.
