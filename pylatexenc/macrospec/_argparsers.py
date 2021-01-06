@@ -300,7 +300,7 @@ class MacroStandardArgsParser(object):
 
             elif argt == '[':
 
-                if self.optional_arg_no_space and w.s[p].isspace():
+                if self.optional_arg_no_space and p < len(w.s) and w.s[p].isspace():
                     # don't try to read optional arg, we don't allow space
                     argnlist.append(None)
                     continue

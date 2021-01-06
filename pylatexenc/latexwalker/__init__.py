@@ -1848,11 +1848,11 @@ class LatexWalker(object):
         you got one of these while parsing, e.g., macro arguments.
         """
 
-        if not self.tolerant_parsing and isinstance(e, LatexWalkerEndOfStream):
+        if isinstance(e, LatexWalkerEndOfStream):
             e = LatexWalkerParseError(
                 s=self.s,
                 pos=tok.pos,
-                msg="Missing {}".format(what),
+                msg="End of input while parsing {}".format(what),
                 **self.pos_to_lineno_colno(tok.pos, as_dict=True)
             )
 
@@ -1931,7 +1931,7 @@ class LatexWalker(object):
            The former reads a logical node of the LaTeX document, which can be a
            sequence of characters, a macro invocation with arguments, or an
            entire environment, but the latter reads a single LaTeX "token" in
-           the same way as LaTeX parses macro arguments.
+           a similar way to how LaTeX parses macro arguments.
 
            For instance, if a macro is encountered, then
            ``get_latex_nodes(read_max_nodes=1)`` will read and parse its
@@ -2029,15 +2029,15 @@ class LatexWalker(object):
             try:
                 tok = self.get_token(p.pos, include_brace_chars=include_brace_chars,
                                      parsing_state=p.parsing_state)
+            except LatexWalkerEndOfStream as e:
+                if self.tolerant_parsing:
+                    return e
+                raise # re-raise
             except LatexWalkerParseError as e:
                 # get_token() should not raise parse errors in tolerant_parsing
                 # mode, because this can lead to infinite loops (#37)
                 assert(not self.tolerant_parsing)
                 raise # exception will be handled in outer loop
-            except LatexWalkerEndOfStream as e:
-                if self.tolerant_parsing:
-                    return e
-                raise # re-raise
 
             p.pos = tok.pos + tok.len
 
@@ -2206,6 +2206,8 @@ class LatexWalker(object):
                         brace_type=tok.arg,
                         parsing_state=p.parsing_state
                     )
+                # except LatexWalkerEndOfStream as e:
+                #     # shouldn't happen.
                 except LatexWalkerParseError as e:
                     e.open_contexts.append( _maketuple('open brace', tok.pos,
                                                        *self.pos_to_lineno_colno(tok.pos)) )
@@ -2350,37 +2352,55 @@ class LatexWalker(object):
 
         while True:
             try:
+                # might return boolean or Exception object
                 r_endnow = do_read(nodelist, p)
+            except LatexWalkerEndOfStream as e:
+                if stop_upon_closing_brace or stop_upon_end_environment \
+                   or stop_upon_closing_mathmode:
+                    # unexpected eof
+                    if stop_upon_closing_brace:
+                        expecting = "'"+stop_upon_closing_brace+"'"
+                    elif stop_upon_end_environment:
+                        expecting = r"\end{"+stop_upon_end_environment+"}"
+                    elif stop_upon_closing_mathmode:
+                        expecting = "'"+stop_upon_closing_mathmode+"'"
+                    e = LatexWalkerParseError(
+                        s=self.s,
+                        pos=p.pos,
+                        msg="Unexpected end of stream, was looking for {}"
+                            .format(expecting),
+                        **self.pos_to_lineno_colno(len(self.s), as_dict=True)
+                    )
+                    if self.tolerant_parsing:
+                        self._report_ignore_parse_error(e)
+                        r_endnow = True
+                    else:
+                        raise e
+                else:
+                    r_endnow = e
             except LatexWalkerParseError as e:
                 if self.tolerant_parsing:
                     self._report_ignore_parse_error(e)
                     r_endnow = False
                 else:
                     raise
-            except LatexWalkerEndOfStream as e:
-                if stop_upon_closing_brace or stop_upon_end_environment \
-                   or stop_upon_closing_mathmode:
-                    # unexpected eof
-                    if not self.tolerant_parsing:
-                        if stop_upon_closing_brace:
-                            expecting = "'"+stop_upon_closing_brace+"'"
-                        elif stop_upon_end_environment:
-                            expecting = r"\end{"+stop_upon_end_environment+"}"
-                        elif stop_upon_closing_mathmode:
-                            expecting = "'"+stop_upon_closing_mathmode+"'"
-                        raise LatexWalkerError("Unexpected end of stream, was looking for {}"
-                                               .format(expecting))
-                    else:
-                        r_endnow = False
-                else:
-                    r_endnow = e
 
             if r_endnow:
+
                 # add last chars and last space
+
                 if isinstance(r_endnow, LatexWalkerEndOfStream):
                     p.push_lastchars(pos=p.pos,
                                      chars=r_endnow.final_space)
                     p.pos += len(r_endnow.final_space)
+                    e = LatexWalkerParseError(
+                        s=self.s,
+                        pos=p.pos,
+                        msg="Unexpected end of stream",
+                        **self.pos_to_lineno_colno(len(self.s), as_dict=True)
+                    )
+                    self._report_ignore_parse_error(e)
+
                 if p.lastchars:
                     charspos, chars = p.flush_lastchars()
                     strnode = self.make_node(LatexCharsNode,
@@ -2390,10 +2410,8 @@ class LatexWalker(object):
                     nodelist.append(strnode)
                 return (nodelist, origpos, p.pos - origpos)
 
-        raise LatexWalkerError(                # lgtm [py/unreachable-statement]
-            "CONGRATULATIONS !! "
-            "You are the first human to telepathically break an infinite loop !!!!!!!"
-        )
+        # code never reaches here
+
 
 
 
