@@ -382,7 +382,7 @@ uni2latex = {
 0x03B6: r'\ensuremath{\zeta}',
 0x03B7: r'\ensuremath{\eta}',
 0x03B8: r'\ensuremath{\theta}',
-0x03B9: r'\ensuremath{\i}',
+0x03B9: r'\ensuremath{\iota}',
 0x03BA: r'\ensuremath{\kappa}',
 0x03BB: r'\ensuremath{\lambda}',
 0x03BC: r'\ensuremath{\mu}',
@@ -400,12 +400,13 @@ uni2latex = {
 0x03C8: r'\ensuremath{\psi}',
 0x03C9: r'\ensuremath{\omega}',
 
-0x03D1: r'\ensuremath{\vartheta}',               # Greek Theta Symbol
+0x03D1: r'\ensuremath{\vartheta}',                # GREEK THETA SYMBOL [ϑ]
 0x03D2: r'\Upsilon',                              # GREEK UPSILON WITH HOOK SYMBOL [ϒ]
-0x03D5: r'\ensuremath{\phi}',                    # Greek Phi Symbol
-0x03D6: r'\ensuremath{\varpi}',                  # Greek Pi Symbol
+0x03D5: r'\ensuremath{\phi}',                     # GREEK PHI SYMBOL [ϕ]
+0x03D6: r'\ensuremath{\varpi}',                   # GREEK PI SYMBOL [ϖ]
 0x03F0: r'\ensuremath{\varkappa}',                # GREEK KAPPA SYMBOL [ϰ]
-0x03F1: r'\ensuremath{\varrho}',                 # Greek rho symbol
+0x03F1: r'\ensuremath{\varrho}',                  # GREEK RHO SYMBOL [ϱ]
+0x03F5: r'\ensuremath{\epsilon}',                 # GREEK LUNATE EPSILON SYMBOL [ϵ]
 0x03F6: r'\ensuremath{\backepsilon}',             # GREEK REVERSED LUNATE EPSILON SYMBOL [϶]
 
 
