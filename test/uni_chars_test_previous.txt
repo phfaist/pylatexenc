@@ -387,7 +387,7 @@
 0x03B6 [GREEK SMALL LETTER ZETA]                             |{\ensuremath{\zeta}}|
 0x03B7 [GREEK SMALL LETTER ETA]                              |{\ensuremath{\eta}}|
 0x03B8 [GREEK SMALL LETTER THETA]                            |{\ensuremath{\theta}}|
-0x03B9 [GREEK SMALL LETTER IOTA]                             |{\ensuremath{\i}}|
+0x03B9 [GREEK SMALL LETTER IOTA]                             |{\ensuremath{\iota}}|
 0x03BA [GREEK SMALL LETTER KAPPA]                            |{\ensuremath{\kappa}}|
 0x03BB [GREEK SMALL LETTER LAMDA]                            |{\ensuremath{\lambda}}|
 0x03BC [GREEK SMALL LETTER MU]                               |{\ensuremath{\mu}}|
@@ -415,6 +415,7 @@
 0x03D6 [GREEK PI SYMBOL]                                     |{\ensuremath{\varpi}}|
 0x03F0 [GREEK KAPPA SYMBOL]                                  |{\ensuremath{\varkappa}}|
 0x03F1 [GREEK RHO SYMBOL]                                    |{\ensuremath{\varrho}}|
+0x03F5 [GREEK LUNATE EPSILON SYMBOL]                         |{\ensuremath{\epsilon}}|
 0x03F6 [GREEK REVERSED LUNATE EPSILON SYMBOL]                |{\ensuremath{\backepsilon}}|
 0x0400 [CYRILLIC CAPITAL LETTER IE WITH GRAVE]               |{\`\CYRE}|
 0x0401 [CYRILLIC CAPITAL LETTER IO]                          |{\CYRYO}|
@@ -669,7 +670,7 @@
 0x1F7B [GREEK SMALL LETTER UPSILON WITH OXIA]                |{\ensuremath{\acute\upsilon}}|
 0x1F7D [GREEK SMALL LETTER OMEGA WITH OXIA]                  |{\ensuremath{\acute\omega}}|
 0x1FBB [GREEK CAPITAL LETTER ALPHA WITH OXIA]                |{\'{}A}|
-0x1FBE [GREEK PROSGEGRAMMENI]                                |{\ensuremath{\i}}|
+0x1FBE [GREEK PROSGEGRAMMENI]                                |{\ensuremath{\iota}}|
 0x1FC9 [GREEK CAPITAL LETTER EPSILON WITH OXIA]              |{\'{}E}|
 0x1FCB [GREEK CAPITAL LETTER ETA WITH OXIA]                  |{\'{}H}|
 0x1FD3 [GREEK SMALL LETTER IOTA WITH DIALYTIKA AND OXIA]     |{\acute{\ddot{\iota}}}|
