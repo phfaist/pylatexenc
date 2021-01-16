@@ -48,11 +48,11 @@ from ..latex2text import (
 )
 
 
-def _format_uebung(n, l2t):
-    s = '\n' + l2t.nodelist_to_text([n.nodeargs[0]]) + '\n'
+def _format_uebung(n, l2tobj):
+    s = '\n' + l2tobj.nodelist_to_text([n.nodeargs[0]]) + '\n'
     optarg = n.nodeargs[1]
     if optarg is not None:
-        s += '[{}]\n'.format(l2t.nodelist_to_text([optarg]))
+        s += '[{}]\n'.format(l2tobj.nodelist_to_text([optarg]))
     return s
 
 def _format_maketitle(title, author, date):
@@ -251,7 +251,7 @@ _latex_specs_base = {
         ('today', _latex_today()),
 
         # use second argument:
-        ('texorpdfstring', lambda node, l2t: l2t.nodelist_to_text(node.nodeargs[1:2])),
+        ('texorpdfstring', lambda node, l2tobj: l2tobj.nodelist_to_text(node.nodeargs[1:2])),
 
         ('oe', u'\u0153'),
         ('OE', u'\u0152'),
@@ -1510,7 +1510,7 @@ unicode_accents_list = (
     )
 
 def make_accented_char(node, combining, l2tobj):
-    if len(node.nodeargs):
+    if node.nodeargs and len(node.nodeargs):
         nodearg = node.nodeargs[0]
         c = l2tobj.nodelist_to_text([nodearg]).strip()
     else:
