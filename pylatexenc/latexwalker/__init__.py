@@ -2367,7 +2367,7 @@ class LatexWalker(object):
                     e = LatexWalkerParseError(
                         s=self.s,
                         pos=p.pos,
-                        msg="Unexpected end of stream, was looking for {}"
+                        msg="Unexpected end of stream, was expecting {}"
                             .format(expecting),
                         **self.pos_to_lineno_colno(len(self.s), as_dict=True)
                     )
@@ -2388,18 +2388,10 @@ class LatexWalker(object):
             if r_endnow:
 
                 # add last chars and last space
-
                 if isinstance(r_endnow, LatexWalkerEndOfStream):
                     p.push_lastchars(pos=p.pos,
                                      chars=r_endnow.final_space)
                     p.pos += len(r_endnow.final_space)
-                    e = LatexWalkerParseError(
-                        s=self.s,
-                        pos=p.pos,
-                        msg="Unexpected end of stream",
-                        **self.pos_to_lineno_colno(len(self.s), as_dict=True)
-                    )
-                    self._report_ignore_parse_error(e)
 
                 if p.lastchars:
                     charspos, chars = p.flush_lastchars()
