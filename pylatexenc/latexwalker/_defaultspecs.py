@@ -93,8 +93,12 @@ specs = [
             MacroSpec('textrm', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
             MacroSpec('textit', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
             MacroSpec('textbf', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textmd', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
             MacroSpec('textsc', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textsf', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
             MacroSpec('textsl', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('texttt', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textup', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
             MacroSpec('text', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
             std_macro('mathrm', False, 1), # only allowed in math mode anyway
             std_macro('mathbb', False, 1), # only allowed in math mode anyway
