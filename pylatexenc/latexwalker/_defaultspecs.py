@@ -90,6 +90,7 @@ specs = [
 
 
             std_macro('emph', False, 1),
+            std_macro('underline', False, 1),
             MacroSpec('textrm', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
             MacroSpec('textit', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
             MacroSpec('textbf', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
