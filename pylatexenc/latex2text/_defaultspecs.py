@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 #
 # The MIT License (MIT)
-# 
+#
 # Copyright (c) 2019 Philippe Faist
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -182,7 +182,7 @@ _latex_specs_approximations = {
         ) ,
         ('footnote', '[%(2)s]'), # \footnote[optional mark]{footnote text}
         ('href', lambda n, l2tobj:  \
-         '{} <{}>'.format(l2tobj.nodelist_to_text([n.nodeargd.argnlist[1]]), 
+         '{} <{}>'.format(l2tobj.nodelist_to_text([n.nodeargd.argnlist[1]]),
                           l2tobj.nodelist_to_text([n.nodeargd.argnlist[0]]))),
 
         ('cite', '<cit.>'),
@@ -226,7 +226,7 @@ _latex_specs_approximations = {
 }
 
 _latex_specs_base = {
-    
+
     'environments': [
     ],
     'specials': [
@@ -394,7 +394,7 @@ _latex_specs_base = {
         ('arccosh', 'arccosh'),
         ('arcsinh', 'arcsinh'),
         ('arctanh', 'arctanh'),
-        
+
         ('ln', 'ln'),
         ('log', 'log'),
 
@@ -1461,6 +1461,14 @@ def _greekletters(letterlist):
         _latex_specs_base['macros'].append(
             MacroTextSpec(l[0].upper()+l[1:], unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
             )
+        # up-greek version (from packages such as upgreek or newtxmath)
+        _latex_specs_base['macros'].append(
+            MacroTextSpec(f"up{l}", unicodedata.lookup(smallname))
+        )
+        _latex_specs_base['macros'].append(
+            MacroTextSpec(f"Up{l}", unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
+            )
+
 _greekletters(
     ('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota', 'kappa',
      'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma', 'tau', 'upsilon', 'phi',
@@ -1473,6 +1481,13 @@ _latex_specs_base['macros'] += [
     MacroTextSpec('varrho', u'\N{GREEK RHO SYMBOL}'),
     MacroTextSpec('varsigma', u'\N{GREEK SMALL LETTER FINAL SIGMA}'),
     MacroTextSpec('varphi', u'\N{GREEK SMALL LETTER PHI}'),
+    # up-greek version
+    MacroTextSpec('upvarepsilon', u'\N{GREEK SMALL LETTER EPSILON}'),
+    MacroTextSpec('upvartheta', u'\N{GREEK THETA SYMBOL}'),
+    MacroTextSpec('upvarpi', u'\N{GREEK PI SYMBOL}'),
+    MacroTextSpec('upvarrho', u'\N{GREEK RHO SYMBOL}'),
+    MacroTextSpec('upvarsigma', u'\N{GREEK SMALL LETTER FINAL SIGMA}'),
+    MacroTextSpec('upvarphi', u'\N{GREEK SMALL LETTER PHI}'),
     ]
 
 
@@ -1536,4 +1551,3 @@ for u in unicode_accents_list:
     )
 
 # specs structure now complete
-
