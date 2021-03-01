@@ -397,6 +397,7 @@ _latex_specs_base = {
         
         ('ln', 'ln'),
         ('log', 'log'),
+        ('exp', 'exp'),
 
         ('max', 'max'),
         ('min', 'min'),
