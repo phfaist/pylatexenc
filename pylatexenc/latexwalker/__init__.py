@@ -1407,6 +1407,13 @@ class LatexWalker(object):
                 while pos+i<len(s) and s[pos+i].isspace():
                     post_space += s[pos+i]
                     i += 1
+                    if post_space.endswith('\n\n'):
+                        # if two \n's are encountered this signals a new
+                        # paragraph, so do not include them as part of the
+                        # macro's post_space.
+                        post_space = post_space[:-2]
+                        i -= 2
+                        break
 
             return LatexToken(tok='macro', arg=macro, pos=pos, len=i,
                               pre_space=space, post_space=post_space)

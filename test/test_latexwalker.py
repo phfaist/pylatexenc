@@ -36,6 +36,9 @@ class TestLatexWalker(unittest.TestCase):
 \item Hi there!  % here goes a comment
 \item[a] Hello!  @@@
      \end{enumerate}
+\mymacro
+
+New paragraph
 '''
         lw = LatexWalker(latextext)
         
@@ -89,6 +92,12 @@ class TestLatexWalker(unittest.TestCase):
         p = latextext.find(r']')
         self.assertEqual(lw.get_token(pos=p, brackets_are_chars=True),
                          LatexToken(tok='char', arg=']', pos=p, len=1, pre_space=''))
+        p = latextext.find(r'\mymacro')
+        self.assertEqual(lw.get_token(pos=p),
+                         # no post_space because of paragraph
+                         LatexToken(tok='macro', arg='mymacro', pos=p, len=8,
+                                    pre_space='', post_space=''))
+
 
     def test_get_token_mathmodes(self):
         
