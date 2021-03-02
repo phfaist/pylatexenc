@@ -3,6 +3,11 @@ Changes
 ============
 
 
+pylatexenc 2.9
+==============
+
+- Bug fixes (......)
+
 pylatexenc 2.8
 ==============
 

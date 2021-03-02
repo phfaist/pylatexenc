@@ -1,7 +1,7 @@
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2019 Philippe Faist
+# Copyright (c) 2021 Philippe Faist
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -55,4 +55,4 @@
 #   8) upload package to PyPI (twine upload dist/pylatexenc-X.X.tar.gz -r realpypi)
 #
 
-version_str = "2.8"
+version_str = "2.9b"
