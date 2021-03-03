@@ -6,7 +6,8 @@ Changes
 pylatexenc 2.9
 ==============
 
-- Bug fixes (......)
+- Bug fixes (including issues :issue:`49`, :issue:`51`, :pr:`52`, :pr:`53`,
+  :pr:`54`)
 
 pylatexenc 2.8
 ==============
