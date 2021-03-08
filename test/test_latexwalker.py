@@ -1399,6 +1399,39 @@ Use macros: """,
 
 
 
+
+    def test_bug_issueno57(self):
+        # see issue #57
+
+        walker_context = get_default_latex_context_db()
+        walker_context.add_context_category(
+            'mymacros',
+            macros=[
+                macrospec.std_macro('foo', '[{['),
+            ],
+            prepend=True
+        )
+
+        doc_content = r"""\foo{test}"""
+
+        lw = LatexWalker(
+            doc_content,
+            latex_context=walker_context,
+            tolerant_parsing=False,
+        )
+
+        pos = 0
+        # shouldn't raise exception
+        (nodelist, npos, nlen) = lw.get_latex_nodes(pos, read_max_nodes=1)
+        self.assertEqual(len(nodelist), 1)
+        node = nodelist[0]
+        self.assertTrue(node.macroname == 'foo')
+        self.assertTrue(node.nodeargd)
+        self.assertEqual(len(node.nodeargd.argnlist), 3)
+
+
+
+
 # more test data
 
 def get_test_latex_data_with_possible_inconsistencies():

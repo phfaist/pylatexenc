@@ -1653,8 +1653,15 @@ class LatexWalker(object):
         if parsing_state is None:
             parsing_state = self.make_parsing_state() # get default parsing state
 
-        tok = self.get_token(pos, include_brace_chars=[('[', ']')], environments=False,
-                             parsing_state=parsing_state)
+        try:
+            tok = self.get_token(pos, include_brace_chars=[('[', ']')], environments=False,
+                                 parsing_state=parsing_state)
+        except LatexWalkerEndOfStream:
+            # we're at end of stream, simply report no optional arg and let
+            # parents re-detect end of stream when they call again get_token().
+            # Added exception handler to fix issue #57
+            return None
+
         if tok.tok == 'brace_open' and tok.arg == '[':
             return self.get_latex_braced_group(pos, brace_type='[',
                                                parsing_state=parsing_state)
