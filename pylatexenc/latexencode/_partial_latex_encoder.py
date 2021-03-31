@@ -66,7 +66,9 @@ class PartialLatexToLatexEncoder(UnicodeToLatexEncoder):
 
     .. versionadded: 2.10
     """
-    def __init__(self, *, keep_latex_chars=r'\${}^_', conversion_rules=None,
+    def __init__(self,
+                 # keyword arguments:
+                 keep_latex_chars=r'\${}^_', conversion_rules=None,
                  **kwargs):
 
         base_conversion_rules = conversion_rules
