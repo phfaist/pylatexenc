@@ -346,7 +346,8 @@ class LatexToken(object):
 
     The `post_space` is only used for 'macro' and 'comment' tokens, and it
     stores any spaces encountered after a macro, or the newline with any
-    following spaces that terminates a LaTeX comment.
+    following spaces that terminates a LaTeX comment.  When we encounter two
+    consecutive newlines these are not included in `post_space`.
 
     The `tok` field may be one of:
 
@@ -1162,9 +1163,11 @@ class LatexWalker(object):
                 latex_context = default_latex_context.filter_context(
                     keep_which=['environments'], # no specials
                 )
-                latex_context.add_context_category('custom',
-                                                   macro_dict.values(),
-                                                   default_latex_context.iter_environment_specs())
+                latex_context.add_context_category(
+                    'custom',
+                    macro_dict.values(),
+                    default_latex_context.iter_environment_specs()
+                )
 
             else:
                 # default -- use default
@@ -1173,7 +1176,9 @@ class LatexWalker(object):
         else:
             # make sure the user didn't also provide a macro_dict= argument
             if 'macro_dict' in kwargs:
-                raise TypeError("Cannot specify both `latex_context=` and `macro_dict=` arguments")
+                raise TypeError(
+                    "Cannot specify both `latex_context=` and `macro_dict=` arguments"
+                )
 
 
         # We don't store the latex_context in an attribute, because we always
@@ -1350,7 +1355,8 @@ class LatexWalker(object):
             space += s[pos]
             pos += 1
             if space.endswith('\n\n'):  # two \n's indicate new paragraph.
-                return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2, pre_space=space[:-2])
+                return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2,
+                                  pre_space=space[:-2])
 
         if pos >= len(s):
             raise LatexWalkerEndOfStream(final_space=space)

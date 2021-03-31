@@ -10,7 +10,9 @@ if sys.version_info.major > 2:
     def unicode(string): return string
     basestring = str
 
-from pylatexenc.latexencode import UnicodeToLatexEncoder, utf8tolatex
+from pylatexenc.latexencode import (
+    UnicodeToLatexEncoder, utf8tolatex
+)
 from pylatexenc import latexencode 
 
 
@@ -221,6 +223,55 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
             result.chunks,
             ['A', ' ', r'\'e', ' ', r'\textrightarrow', ' ', r'\ensuremath{\alpha}']
         )
+
+
+class TestPartialLatexEncode(unittest.TestCase, ProvideAssertCmds):
+
+    def test_simple_cases(self):
+
+        self.assertEqual(
+            latexencode.PartialLatexToLatexEncoder()
+            .unicode_to_latex(
+                r"Check ~ \that{macros are fully & 100% \textbf{pr{\'e}s\`ervées}}."
+            )
+            ,
+            r"Check {\textasciitilde} \that{macros are fully \& 100\% \textbf{pr{\'e}s\`erv\'ees}}."
+        )
+
+        self.assertEqual(
+            latexencode.PartialLatexToLatexEncoder()
+            .unicode_to_latex(
+                r"{JILA} {SrI} optical lattice clock with uncertainty of $2.0 \times 10^{-18}$"
+            )
+            ,
+            r"{JILA} {SrI} optical lattice clock with uncertainty of $2.0 \times 10^{-18}$"
+        )
+
+
+    def test_custom_conversion_rules(self):
+
+        u = latexencode.PartialLatexToLatexEncoder(
+            conversion_rules=[
+                latexencode.UnicodeToLatexConversionRule(
+                    latexencode.RULE_REGEX,
+                    [
+                        # this rule should never kick in because braces are
+                        # preserved as keep_latex_chars
+                        (re.compile(r'([{}])'), r'BRACE<\1>'),
+                        # other replacement rules
+                        (re.compile(r'\b([A-Z]{2,}\w*)\b'), r'{\1}'),
+                    ]
+                ),
+                'defaults',
+            ]
+        )
+        input = r"Title with {Some} ABC àcr\^onyms LIKe this."
+        self.assertEqual(
+            u.unicode_to_latex(input),
+            r"Title with {Some} {ABC} \`acr\^onyms {LIKe} this."
+        )
+
+
 
 
 

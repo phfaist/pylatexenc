@@ -125,10 +125,27 @@ class UnicodeToLatexConversionRule:
        A specification of the rule itself.  The `rule` attribute is an object
        that depends on what `rule_type` is set to.  See below.
 
+    .. py:attribute:: replacement_latex_protection
+
+       If non-`None`, then the setting here will override any
+       `replacement_latex_protection` set on
+       :py:class:`UnicodeToLatexConversionRule` objects.  By default the value
+       is `None`, and you can set a replacement_latex_protection globally for
+       all rules on the :py:class:`UnicodeToLatexEncoder` object.
+
+       The use of this attribute is mainly in case you have a fancy rule in
+       which you already guarantee that whatever you output is valid LaTeX even
+       if concatenated with the remainder of the string; in this case you can
+       set `replacement_latex_protection='none'` to avoid unnecessary or
+       unwanted braces around the generated code.
+
+
     Constructor syntax::
     
         UnicodeToLatexConversionRule(RULE_XXX, <...>)
         UnicodeToLatexConversionRule(rule_type=RULE_XXX, rule=<...>)
+
+        UnicodeToLatexConversionRule(..., replacement_latex_protection='none')
 
     Note that you can get some built-in rules via the
     :py:func:`get_builtin_conversion_rules()` function::
@@ -204,14 +221,23 @@ class UnicodeToLatexConversionRule:
     .. versionadded:: 2.0
 
        This class was introduced in `pylatexenc 2.0`.
+
+    .. versionadded:: 2.10
+
+       The `replacement_latex_protection` attribute was introduced in
+       `pylatexenc 2.10`.
     """
-    def __init__(self, rule_type, rule=None):
+    def __init__(self, rule_type, rule=None,
+                 # keyword-only, please:
+                 replacement_latex_protection=None):
         self.rule_type = rule_type
         self.rule = rule
+        self.replacement_latex_protection = replacement_latex_protection
 
     def __repr__(self):
-        return "{}(rule_type={!r}, rule=<{}>)".format(
-            self.__class__.__name__, self.rule_type, type(self.rule).__name__
+        return "{}(rule_type={!r}, rule=<{}>, replacement_latex_protection={})".format(
+            self.__class__.__name__, self.rule_type, type(self.rule).__name__,
+            repr(self.replacement_latex_protection)
         )
 
 
@@ -335,8 +361,9 @@ class UnicodeToLatexEncoder(object):
            code ends with a string-named macro, then a pair of empty braces is
            added at the end of the replacement text to protect the macro.
 
-         - `none`:  No protection is applied, even in "unsafe" cases.  This is
-           not recommended, as this will likely result in invalid LaTeX code.
+         - 'none': No protection is applied, even in "unsafe" cases.  This is
+           not recommended, as this will likely result in invalid LaTeX
+           code. (Note this is the string 'none', not Python's built-in `None`.)
 
     .. py:attribute:: unknown_char_policy
 
@@ -439,29 +466,29 @@ class UnicodeToLatexEncoder(object):
         for rule in expanded_conversion_rules:
             if rule.rule_type == RULE_DICT:
                 self._compiled_rules.append(
-                    functools.partial(self._apply_rule_dict, rule.rule)
+                    functools.partial(self._apply_rule_dict, rule.rule, rule)
                 )
             elif rule.rule_type == RULE_REGEX:
                 self._compiled_rules.append(
-                    functools.partial(self._apply_rule_regex, rule.rule)
+                    functools.partial(self._apply_rule_regex, rule.rule, rule)
                 )
             elif rule.rule_type == RULE_CALLABLE:
                 thecallable = rule.rule
                 if 'u2lobj' in getfullargspec(thecallable)[0]:
                     thecallable = functools.partial(rule.rule, u2lobj=self)
                 self._compiled_rules.append(
-                    functools.partial(self._apply_rule_callable, thecallable)
+                    functools.partial(self._apply_rule_callable, thecallable, rule)
                 )
             else:
                 raise TypeError("Invalid rule type: {}".format(rule.rule_type))
         
         # bad char policy:
         if isinstance(self.unknown_char_policy, basestring):
-            selfmethname = '_do_unknown_char_'+self.unknown_char_policy
-            if not hasattr(self, selfmethname):
-                raise ValueError("Invalid bad-char policy: {}"
-                                 .format(self.unknown_char_policy))
-            self._do_unknown_char = getattr(self, selfmethname)
+            self._do_unknown_char = self._get_method_fn(
+                'do_unknown_char',
+                self.unknown_char_policy,
+                what='unknown_char_policy'
+            )
         elif callable(self.unknown_char_policy):
             fn = self.unknown_char_policy
             if 'u2lobj' in getfullargspec(fn)[0]:
@@ -483,13 +510,17 @@ class UnicodeToLatexEncoder(object):
             self._maybe_skip_ascii = lambda s, p: False
 
         # set a method to protect replacement latex code, if necessary:
-        selfmethname = '_apply_protection_'+self.replacement_latex_protection.replace('-', '_')
-        if not hasattr(self, selfmethname):
-            raise ValueError("Invalid replacement_latex_protection: {}".format(
-                self.replacement_latex_protection
-            ))
-        self._apply_protection = getattr(self, selfmethname)
+        self._apply_protection = self._get_method_fn(
+            'apply_protection',
+            self.replacement_latex_protection,
+            what='replacement_latex_protection'
+        )
 
+    def _get_method_fn(self, base, name, what):
+        selfmethname = '_' + base + '_' + name.replace('-', '_')
+        if not hasattr(self, selfmethname):
+            raise ValueError("Invalid {}: {}".format(what, name))
+        return getattr(self, selfmethname)
 
     def unicode_to_latex(self, s):
         """
@@ -539,13 +570,13 @@ class UnicodeToLatexEncoder(object):
         return False
 
 
-    def _apply_rule_dict(self, ruledict, s, p):
+    def _apply_rule_dict(self, ruledict, rule, s, p):
         o = ord(s[p.pos])
         if o in ruledict:
-            self._apply_replacement(p, ruledict[o], 1)
+            self._apply_replacement(p, ruledict[o], 1, rule)
             return True
         return None
-    def _apply_rule_regex(self, ruleregexes, s, p):
+    def _apply_rule_regex(self, ruleregexes, rule, s, p):
         for regex, repl in ruleregexes:
             m = regex.match(s, p.pos)
             if m is not None:
@@ -553,20 +584,31 @@ class UnicodeToLatexEncoder(object):
                     replstr = repl(m)
                 else:
                     replstr = m.expand(repl)
-                self._apply_replacement(p, replstr, m.end() - m.start())
+                self._apply_replacement(p, replstr, m.end() - m.start(), rule)
                 return True
         return None
-    def _apply_rule_callable(self, rulecallable, s, p):
+    def _apply_rule_callable(self, rulecallable, rule, s, p):
         res = rulecallable(s, p.pos)
         if res is None:
             return None
         (consumed, repl) = res
-        self._apply_replacement(p, repl, consumed)
+        self._apply_replacement(p, repl, consumed, rule)
         return True
 
-    def _apply_replacement(self, p, repl, numchars):
-        # check for possible replacement latex protection, like braces:
-        repl = self._apply_protection(repl)
+    def _apply_replacement(self, p, repl, numchars, ruleobj):
+        # check for possible replacement latex protection, like braces.
+
+        protect_fn = self._apply_protection
+
+        # maybe the rule object has overridden the replacement_latex_protection to use.
+        if ruleobj.replacement_latex_protection is not None:
+            protect_fn = self._get_method_fn(
+                'apply_protection',
+                ruleobj.replacement_latex_protection,
+                what='replacement_latex_protection'
+            )
+
+        repl = protect_fn(repl)
         p.latex += repl
         p.pos += numchars
 

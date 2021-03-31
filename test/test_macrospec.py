@@ -209,6 +209,85 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
 
 
 
+    def test_custom_argparser_absorb_all_detected_args(self):
+
+        class AbsorbAllDetectedPossibleMacroArgumentsParser(MacroStandardArgsParser):
+            def parse_args(self, w, pos, parsing_state=None):
+                argspec = ''
+                argnlist = []
+
+                origpos = pos
+
+                while True:
+                    # inspect the following token at the given position (skips
+                    # spaces if necessary)
+                    try:
+                        tok = w.get_token(pos)
+                    except latexwalker.LatexWalkerEndOfStream:
+                        break
+                    if tok.tok == 'char' and tok.arg.startswith('*'):
+                        argspec += '*'
+                        argnlist.append(
+                            w.make_node(latexwalker.LatexCharsNode,
+                                        parsing_state=parsing_state,
+                                        chars='*', pos=tok.pos, len=1)
+                        )
+                        pos = tok.pos + 1
+                    elif tok.tok == 'char' and tok.arg.startswith('['):
+                        (node, np, nl) = w.get_latex_maybe_optional_arg(
+                            pos,
+                            parsing_state=parsing_state
+                        )
+                        pos = np + nl
+                        argspec += '['
+                        argnlist.append(node)
+                    elif tok.tok == 'brace_open':
+                        (node, np, nl) = w.get_latex_expression(
+                            pos,
+                            strict_braces=False,
+                            parsing_state=parsing_state,
+                        )
+                        pos = np + nl
+                        argspec += '{'
+                        argnlist.append(node)
+                    else:
+                        # something else -- we're guessing that it's not a macro
+                        # argument
+                        break
+
+                parsed = ParsedMacroArgs(
+                    argspec=argspec,
+                    argnlist=argnlist,
+                )
+
+                return (parsed, origpos, pos-origpos)
+
+        from pylatexenc.latex2text import LatexNodes2Text
+
+        lw_db = latexwalker.get_default_latex_context_db()
+        lw_db.set_unknown_macro_spec(
+            MacroSpec("", AbsorbAllDetectedPossibleMacroArgumentsParser())
+        )
+        res = LatexNodes2Text().latex_to_text(r"""
+\documentclass{article}
+\usepackage{times}
+\definecolor{gray}
+\RequirePackage{fixltx2e}
+""", latex_context=lw_db)
+
+        self.assertEqual( res.strip(), "" )
+
+        res = LatexNodes2Text().latex_to_text(
+            r"""
+\unknownsymbol [A, B] + \anotherunknownsymbol {\textstyle \frac{1}{2}} = 0""",
+            latex_context=lw_db)
+
+        self.assertEqual( res,
+                          r"""
+ +  = 0""")
+
+
+
 class Test_std_macro(unittest.TestCase):
 
     def test_idiom_0(self):

@@ -128,9 +128,9 @@ from ._unicode_to_latex_encoder import (
 
 # ------------------------------------------------
 
-# from ._partial_latex_encoder import (
-#     PartialLatexToLatexEncoder,
-# )
+from ._partial_latex_encoder import (
+    PartialLatexToLatexEncoder,
+)
 
 
 
