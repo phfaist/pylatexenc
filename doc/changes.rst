@@ -3,6 +3,20 @@ Changes
 ============
 
 
+pylatexenc 2.10
+===============
+
+- Added :py:class:`pylatexenc.latexencode.PartialLatexToLatexEncoder` which can
+  help to avoid double-escaping some existing LaTeX expressions in the string
+  that we want to LaTeX-encode.
+
+- The :py:class:`pylatexenc.latexencode.UnicodeToTextConversionRule` now has a
+  :py:attr:`~pylatexenc.latexencode.UnicodeToTextConversionRule.replacement_text_protection`
+  field which can be used to override the default `replacement_text_protection`
+  set on a :py:class:`pylatexenc.latexencode.UnicodeToTextEncoder` object.
+
+- Bug fix (:issue:`57`)
+
 pylatexenc 2.9
 ==============
 
