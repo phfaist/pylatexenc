@@ -25,7 +25,7 @@
 
 from __future__ import print_function, absolute_import, unicode_literals
 
-import sys
+#import sys
 import logging
 
 logger = logging.getLogger(__name__)
