@@ -13,7 +13,8 @@ pylatexenc 2.10
 - The :py:class:`pylatexenc.latexencode.UnicodeToTextConversionRule` now has a
   :py:attr:`~pylatexenc.latexencode.UnicodeToTextConversionRule.replacement_text_protection`
   field which can be used to override the default `replacement_text_protection`
-  set on a :py:class:`pylatexenc.latexencode.UnicodeToTextEncoder` object.
+  set on a :py:class:`pylatexenc.latexencode.UnicodeToTextEncoder` object.  Also
+  the `replacement_text_protection` fields accept an arbitrary callable object.
 
 - added some known macro definitions for :py:mod:`~pylatexenc.latexwalker` and
   :py:mod:`~pylatexenc.latex2text`, such as ``\definecolor`` and ``\textcolor``.

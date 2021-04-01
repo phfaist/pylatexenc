@@ -133,6 +133,11 @@ class UnicodeToLatexConversionRule:
        set `replacement_latex_protection='none'` to avoid unnecessary or
        unwanted braces around the generated code.
 
+       .. versionadded:: 2.10
+
+          The `replacement_latex_protection` attribute was introduced in
+          `pylatexenc 2.10`.
+
 
     Constructor syntax::
     
@@ -215,11 +220,6 @@ class UnicodeToLatexConversionRule:
     .. versionadded:: 2.0
 
        This class was introduced in `pylatexenc 2.0`.
-
-    .. versionadded:: 2.10
-
-       The `replacement_latex_protection` attribute was introduced in
-       `pylatexenc 2.10`.
     """
     def __init__(self, rule_type, rule=None,
                  # keyword-only, please:
@@ -328,12 +328,12 @@ class UnicodeToLatexEncoder(object):
        interpreted differently if concatenated to arbitrary strings before and
        after.
 
-       Currently only one situation is recognized: if the replacement string
-       ends with a latex macro invocation with a non-symbol macro name,
-       e.g. ``\textemdash`` or ``\^\i``.  Indeed, if we naively replace these
-       texts in an arbitrary string (like ``maître``), we might get an invalid
-       macro invocation (like ``ma\^\itre`` which causes un known macro name
-       ``\itre``).
+       Currently in the default scheme only one situation is recognized: if the
+       replacement string ends with a latex macro invocation with a non-symbol
+       macro name, e.g. ``\textemdash`` or ``\^\i``.  Indeed, if we naively
+       replace these texts in an arbitrary string (like ``maître``), we might
+       get an invalid macro invocation (like ``ma\^\itre`` which causes un known
+       macro name ``\itre``).
 
        Possible protection schemes are:
 
@@ -358,6 +358,16 @@ class UnicodeToLatexEncoder(object):
          - 'none': No protection is applied, even in "unsafe" cases.  This is
            not recommended, as this will likely result in invalid LaTeX
            code. (Note this is the string 'none', not Python's built-in `None`.)
+
+         - any callable object: The callable should take a single argument, the
+           replacement latex string associated with a piece of the input (maybe
+           a special character) that has been encoded; it should return the
+           actual string to append to the output string.
+
+         .. versionadded:: 2.10 
+
+            You can specify a callable object to `replacement_latex_protection`
+            since `pylatexenc 2.10`.
 
     .. py:attribute:: unknown_char_policy
 
@@ -504,10 +514,8 @@ class UnicodeToLatexEncoder(object):
             self._maybe_skip_ascii = lambda s, p: False
 
         # set a method to protect replacement latex code, if necessary:
-        self._apply_protection = self._get_method_fn(
-            'apply_protection',
-            self.replacement_latex_protection,
-            what='replacement_latex_protection'
+        self._apply_protection = self._get_replacement_latex_fn(
+            self.replacement_latex_protection
         )
 
     def _get_method_fn(self, base, name, what):
@@ -515,6 +523,15 @@ class UnicodeToLatexEncoder(object):
         if not hasattr(self, selfmethname):
             raise ValueError("Invalid {}: {}".format(what, name))
         return getattr(self, selfmethname)
+
+    def _get_replacement_latex_fn(self, replacement_latex_protection):
+        if callable(replacement_latex_protection):
+            return replacement_latex_protection
+        return self._get_method_fn(
+            'apply_protection',
+            replacement_latex_protection,
+            what='replacement_latex_protection'
+        )
 
     def unicode_to_latex(self, s):
         """
@@ -596,10 +613,8 @@ class UnicodeToLatexEncoder(object):
 
         # maybe the rule object has overridden the replacement_latex_protection to use.
         if ruleobj.replacement_latex_protection is not None:
-            protect_fn = self._get_method_fn(
-                'apply_protection',
-                ruleobj.replacement_latex_protection,
-                what='replacement_latex_protection'
+            protect_fn = self._get_replacement_latex_fn(
+                ruleobj.replacement_latex_protection
             )
 
         repl = protect_fn(repl)

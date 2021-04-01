@@ -74,6 +74,13 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
         self.assertEqual(u.unicode_to_latex(ascii_chars_convert),
                          " '' \\# \\$ \\% \\& {\\textbackslash} \\_ \\{ \\} {\\textasciitilde} ")
 
+    def test_basic_callable_replacement_latex_protection(self):
+        u = UnicodeToLatexEncoder(replacement_latex_protection=lambda s: '{***{'+s+'}***}')
+        input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
+        self.assertEqual(u.unicode_to_latex(input),
+                         "{***{''}***}{***{\\`A}***} votre sant{***{\\'e}***}!{***{''}***} s'exclama le ma{***{\\^\\i}***}tre de maison {***{\\`a}***} 100{***{\\%}***}.")
+
+
     def test_basic_3(self):
         test_unknown_chars = "A unicode character: \N{THAI CHARACTER THO THONG}"
         # generates warnings -- that's good
