@@ -15,7 +15,10 @@ pylatexenc 2.10
   field which can be used to override the default `replacement_text_protection`
   set on a :py:class:`pylatexenc.latexencode.UnicodeToTextEncoder` object.
 
-- Bug fix (:issue:`57`)
+- added some known macro definitions for :py:mod:`~pylatexenc.latexwalker` and
+  :py:mod:`~pylatexenc.latex2text`, such as ``\definecolor`` and ``\textcolor``.
+
+- Bug fixes (including :issue:`57`)
 
 pylatexenc 2.9
 ==============

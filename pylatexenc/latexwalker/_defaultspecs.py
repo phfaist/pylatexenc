@@ -39,6 +39,7 @@ specs = [
 
             std_macro('documentclass', True, 1),
             std_macro('usepackage', True, 1),
+            std_macro('RequirePackage', True, 1),
             std_macro('selectlanguage', True, 1),
             std_macro('setlength', True, 2),
             std_macro('addlength', True, 2),
@@ -56,7 +57,8 @@ specs = [
             std_macro('hspace', '*{'),
             std_macro('vspace', '*{'),
 
-            MacroSpec('mbox', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('mbox',
+                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
 
             # \title, \author, \date
             MacroSpec('title', '{'),
@@ -67,9 +69,12 @@ specs = [
             # additional vertical spacing, e.g. \\*[2mm]
             #
             # Special for this command: don't allow an optional spacing argument
-            # to be on a new line.  This emulates the behavior in AMS
-            # environments.
-            MacroSpec('\\', args_parser=MacroStandardArgsParser('*[', optional_arg_no_space=True)),
+            # [2mm] to be separated by spaces from the rest of the macro.  This
+            # emulates the behavior in AMS environments, and avoids some errors;
+            # e.g. in "\begin{align} A=0 \\ [C,D]=0 \end{align}" the "[C,D]"
+            # does not get captured as an optional macro argument.
+            MacroSpec('\\',
+                      args_parser=MacroStandardArgsParser('*[', optional_arg_no_space=True)),
 
             std_macro('item', True, 0),
 
@@ -91,16 +96,26 @@ specs = [
 
             std_macro('emph', False, 1),
             std_macro('underline', False, 1),
-            MacroSpec('textrm', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textit', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textbf', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textmd', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textsc', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textsf', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textsl', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('texttt', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textup', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('text', args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textrm',
+                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textit',
+                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textbf',
+                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textmd',
+                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textsc',
+                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textsf',
+                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textsl',
+                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('texttt',
+                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textup',
+                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('text',
+                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
             std_macro('mathrm', False, 1), # only allowed in math mode anyway
             std_macro('mathbb', False, 1), # only allowed in math mode anyway
             std_macro('mathbf', False, 1),
@@ -110,7 +125,6 @@ specs = [
             std_macro('mathcal', False, 1),
             std_macro('mathscr', False, 1),
             std_macro('mathfrak', False, 1),
-
 
             std_macro('label', False, 1),
             std_macro('ref', False, 1),
@@ -143,7 +157,8 @@ specs = [
             std_macro("u", False, 1),
             std_macro("v", False, 1),
 
-            MacroSpec('ensuremath', args_parser=MacroStandardArgsParser('{', args_math_mode=[True])),
+            MacroSpec('ensuremath',
+                      args_parser=MacroStandardArgsParser('{', args_math_mode=[True])),
 
             std_macro("not", False, 1),
 
@@ -169,6 +184,19 @@ specs = [
             std_macro('ketbra', False, 2),
 
             std_macro('texorpdfstring', False, 2),
+
+            # xcolor commands
+            MacroSpec('definecolor', '[{{{'),
+            MacroSpec('providecolor', '[{{{'),
+            MacroSpec('colorlet', '[{[{'),
+            MacroSpec('color', '[{'),
+            MacroSpec('textcolor', '[{{'),
+            MacroSpec('pagecolor', '[{'),
+            MacroSpec('nopagecolor', ''),
+            MacroSpec('colorbox', '[{{'),
+            MacroSpec('fcolorbox', '[{[{{'),
+            MacroSpec('boxframe', '{{{'),
+            MacroSpec('rowcolors', '*[{{{'),
         ],
         'environments': [
             # NOTE: Starred variants (as in \begin{equation*}) are not specified as

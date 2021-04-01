@@ -265,11 +265,6 @@ def fmt_equation_environment(envnode, l2tobj):
     """
 
     return l2tobj.math_node_to_text(envnode)
-    # with _PushEquationContext(l2tobj):
-    #
-    #     contents = l2tobj.nodelist_to_text(envnode.nodelist).strip()
-    #     # indent equation, separate by newlines
-    #     return l2tobj._fmt_indented_block(contents)
 
 
 def fmt_input_macro(macronode, l2tobj):
@@ -1253,7 +1248,8 @@ class LatexNodes2Text(object):
         """
 
         if self.math_mode == 'verbatim':
-            if node.isNodeType(latexwalker.LatexEnvironmentNode) or node.displaytype == 'display':
+            if node.isNodeType(latexwalker.LatexEnvironmentNode) \
+               or node.displaytype == 'display':
                 return self._fmt_indented_block(node.latex_verbatim(), indent='')
             else:
                 return node.latex_verbatim()
@@ -1267,8 +1263,10 @@ class LatexNodes2Text(object):
             if node.isNodeType(latexwalker.LatexMathNode):
                 delims = node.delimiters
             else: # environment node
-                delims = r'\begin{%s}'%(node.environmentname), r'\end{%s}'%(node.environmentname)
-            if node.isNodeType(latexwalker.LatexEnvironmentNode) or node.displaytype == 'display':
+                delims = (r'\begin{%s}'%(node.environmentname),
+                          r'\end{%s}'%(node.environmentname),)
+            if node.isNodeType(latexwalker.LatexEnvironmentNode) \
+               or node.displaytype == 'display':
                 return delims[0] + self._fmt_indented_block(content, indent='') + delims[1]
             else:
                 return delims[0] + content + delims[1]
@@ -1276,7 +1274,8 @@ class LatexNodes2Text(object):
         elif self.math_mode == 'text':
             with _PushEquationContext(self):
                 content = self.nodelist_to_text(node.nodelist).strip()
-            if node.isNodeType(latexwalker.LatexEnvironmentNode) or node.displaytype == 'display':
+            if node.isNodeType(latexwalker.LatexEnvironmentNode) \
+               or node.displaytype == 'display':
                 return self._fmt_indented_block(content)
             else:
                 return content

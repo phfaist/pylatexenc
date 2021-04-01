@@ -84,23 +84,6 @@ def _mathxx_formatter(style):
 
 _latex_specs_placeholders = {
     'environments': [
-        EnvironmentTextSpec('equation', simplify_repl=fmt_equation_environment),
-        # note {equation*} is actually defined by amsmath
-        EnvironmentTextSpec('equation*', simplify_repl=fmt_equation_environment),
-        EnvironmentTextSpec('eqnarray', simplify_repl=fmt_equation_environment),
-        EnvironmentTextSpec('eqnarray*', simplify_repl=fmt_equation_environment),
-
-        EnvironmentTextSpec('align', simplify_repl=fmt_equation_environment),
-        EnvironmentTextSpec('multline', simplify_repl=fmt_equation_environment),
-        EnvironmentTextSpec('gather', simplify_repl=fmt_equation_environment),
-        EnvironmentTextSpec('align*', simplify_repl=fmt_equation_environment),
-        EnvironmentTextSpec('multline*', simplify_repl=fmt_equation_environment),
-        EnvironmentTextSpec('gather*', simplify_repl=fmt_equation_environment),
-
-        # breqn math
-        EnvironmentTextSpec('dmath', simplify_repl=fmt_equation_environment),
-        EnvironmentTextSpec('dmath*', simplify_repl=fmt_equation_environment),
-
 #  --- as of pylatexenc 2.8, these are now approximated ---
 #        EnvironmentTextSpec('array', simplify_repl=fmt_placeholder_node),
 #        EnvironmentTextSpec('pmatrix', simplify_repl=fmt_placeholder_node),
@@ -121,6 +104,10 @@ _latex_specs_placeholders = {
         ('cref', '<ref>'),
         ('Cref', '<Ref>'),
         ('eqref', '(<ref>)'),
+
+        ('cite', '<cit.>'),
+        ('citet', '<cit.>'),
+        ('citep', '<cit.>'),
     )],
 }
 
@@ -144,6 +131,28 @@ _latex_specs_approximations = {
         EnvironmentTextSpec('smallmatrix', simplify_repl=fmt_matrix_environment_node),
         EnvironmentTextSpec('psmallmatrix', simplify_repl=fmt_matrix_environment_node),
         EnvironmentTextSpec('bsmallmatrix', simplify_repl=fmt_matrix_environment_node),
+
+        #
+        # math environments used to be categorized as 'placeholders' in
+        # pylatexenc <= 2.9, but I think it's more accurate to have them in
+        # 'approximations'.
+        #
+        EnvironmentTextSpec('equation', simplify_repl=fmt_equation_environment),
+        # note {equation*} is actually defined by amsmath
+        EnvironmentTextSpec('equation*', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('eqnarray', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('eqnarray*', simplify_repl=fmt_equation_environment),
+        #
+        EnvironmentTextSpec('align', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('multline', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('gather', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('align*', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('multline*', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('gather*', simplify_repl=fmt_equation_environment),
+        #
+        # breqn math
+        EnvironmentTextSpec('dmath', simplify_repl=fmt_equation_environment),
+        EnvironmentTextSpec('dmath*', simplify_repl=fmt_equation_environment),
     ],
     'specials': [
         SpecialsTextSpec('&', '   '), # ignore tabular alignments, just add a little space
@@ -160,6 +169,10 @@ _latex_specs_approximations = {
         MacroTextSpec('textsc', discard=False),
         MacroTextSpec('textsl', discard=False),
         MacroTextSpec('text', discard=False),
+
+        MacroTextSpec('textcolor', simplify_repl='%(3)s'),
+        MacroTextSpec('colorbox', simplify_repl='%(3)s'),
+        MacroTextSpec('fcolorbox', simplify_repl='%(5)s'),
 
     ] + [ MacroTextSpec(x, simplify_repl=y) for x, y in (
 
@@ -185,10 +198,6 @@ _latex_specs_approximations = {
          '{} <{}>'.format(l2tobj.nodelist_to_text([n.nodeargd.argnlist[1]]), 
                           l2tobj.nodelist_to_text([n.nodeargd.argnlist[0]]))),
 
-        ('cite', '<cit.>'),
-        ('citet', '<cit.>'),
-        ('citep', '<cit.>'),
-
         ('part',
          lambda n, l2tobj: u'\n\nPART: {}\n'.format(
              l2tobj.node_arg_to_text(n, 2).upper())),
@@ -202,8 +211,9 @@ _latex_specs_approximations = {
          lambda n, l2tobj: u'\n\n \N{SECTION SIGN}.\N{SECTION SIGN} {}\n'.format(
              l2tobj.node_arg_to_text(n, 2))),
         ('subsubsection',
-         lambda n, l2tobj: u'\n\n  \N{SECTION SIGN}.\N{SECTION SIGN}.\N{SECTION SIGN} {}\n'.format(
-             l2tobj.node_arg_to_text(n, 2))),
+         lambda n, l2tobj: \
+             u'\n\n  \N{SECTION SIGN}.\N{SECTION SIGN}.\N{SECTION SIGN} {}\n'.format(
+                 l2tobj.node_arg_to_text(n, 2))),
         ('paragraph',
          lambda n, l2tobj: u'\n\n  {}\n'.format(l2tobj.node_arg_to_text(n, 2))),
         ('subparagraph',
@@ -447,8 +457,10 @@ _latex_specs_base = {
 
         ('ket', u'|%s\N{MATHEMATICAL RIGHT ANGLE BRACKET}'),
         ('bra', u'\N{MATHEMATICAL LEFT ANGLE BRACKET}%s|'),
-        ('braket', u'\N{MATHEMATICAL LEFT ANGLE BRACKET}%s|%s\N{MATHEMATICAL RIGHT ANGLE BRACKET}'),
-        ('ketbra', u'|%s\N{MATHEMATICAL RIGHT ANGLE BRACKET}\N{MATHEMATICAL LEFT ANGLE BRACKET}%s|'),
+        ('braket',
+         u'\N{MATHEMATICAL LEFT ANGLE BRACKET}%s|%s\N{MATHEMATICAL RIGHT ANGLE BRACKET}'),
+        ('ketbra',
+         u'|%s\N{MATHEMATICAL RIGHT ANGLE BRACKET}\N{MATHEMATICAL LEFT ANGLE BRACKET}%s|'),
         ('uparrow', u'\N{UPWARDS ARROW}'),
         ('downarrow', u'\N{DOWNWARDS ARROW}'),
         ('rightarrow', u'\N{RIGHTWARDS ARROW}'),
