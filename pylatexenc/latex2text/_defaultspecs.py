@@ -170,10 +170,6 @@ _latex_specs_approximations = {
         MacroTextSpec('textsl', discard=False),
         MacroTextSpec('text', discard=False),
 
-        MacroTextSpec('textcolor', simplify_repl='%(3)s'),
-        MacroTextSpec('colorbox', simplify_repl='%(3)s'),
-        MacroTextSpec('fcolorbox', simplify_repl='%(5)s'),
-
     ] + [ MacroTextSpec(x, simplify_repl=y) for x, y in (
 
         ('title', lambda n, l2tobj: \
@@ -220,6 +216,10 @@ _latex_specs_approximations = {
          lambda n, l2tobj: u'\n\n    {}\n'.format(
              l2tobj.node_arg_to_text(n, 2))),
 
+        ('textcolor', '%(3)s'),
+        ('colorbox', '%(3)s'),
+        ('fcolorbox', '%(5)s'),
+
         ('hspace', ''),
         ('vspace', '\n'),
 
@@ -232,6 +232,29 @@ _latex_specs_approximations = {
         ('frac', '%s/%s'),
         ('nicefrac', '%s/%s'),
         ('textfrac', '%s/%s'),
+
+        ('overline', '%s'),
+        ('underline', '%s'),
+        ('widehat', '%s'),
+        ('widetilde', '%s'),
+        ('wideparen', '%s'),
+        ('overleftarrow', '%s'),
+        ('overrightarrow', '%s'),
+        ('overleftrightarrow', '%s'),
+        ('underleftarrow', '%s'),
+        ('underrightarrow', '%s'),
+        ('underleftrightarrow', '%s'),
+        ('overbrace', '%s'),
+        ('underbrace', '%s'),
+        ('overgroup', '%s'),
+        ('undergroup', '%s'),
+        ('overbracket', '%s'),
+        ('underbracket', '%s'),
+        ('overlinesegment', '%s'),
+        ('underlinesegment', '%s'),
+        ('overleftharpoon', '%s'),
+        ('overrightharpoon', '%s'),
+
     )],
 }
 

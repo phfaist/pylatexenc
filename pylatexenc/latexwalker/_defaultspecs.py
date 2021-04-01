@@ -95,7 +95,6 @@ specs = [
 
 
             std_macro('emph', False, 1),
-            std_macro('underline', False, 1),
             MacroSpec('textrm',
                       args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
             MacroSpec('textit',
@@ -177,6 +176,31 @@ specs = [
             std_macro('nicefrac', False, 2),
 
             std_macro('sqrt', True, 1),
+
+            MacroSpec('overline', '{'),
+            MacroSpec('underline', '{'),
+            MacroSpec('widehat', '{'),
+            MacroSpec('widetilde', '{'),
+            MacroSpec('wideparen', '{'),
+            MacroSpec('overleftarrow', '{'),
+            MacroSpec('overrightarrow', '{'),
+            MacroSpec('overleftrightarrow', '{'),
+            MacroSpec('underleftarrow', '{'),
+            MacroSpec('underrightarrow', '{'),
+            MacroSpec('underleftrightarrow', '{'),
+            MacroSpec('overbrace', '{'),
+            MacroSpec('underbrace', '{'),
+            MacroSpec('overgroup', '{'),
+            MacroSpec('undergroup', '{'),
+            MacroSpec('overbracket', '{'),
+            MacroSpec('underbracket', '{'),
+            MacroSpec('overlinesegment', '{'),
+            MacroSpec('underlinesegment', '{'),
+            MacroSpec('overleftharpoon', '{'),
+            MacroSpec('overrightharpoon', '{'),
+
+            MacroSpec('xleftarrow', '[{'),
+            MacroSpec('xrightarrow', '[{'),
 
             std_macro('ket', False, 1),
             std_macro('bra', False, 1),
