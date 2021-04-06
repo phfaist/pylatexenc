@@ -55,4 +55,4 @@
 #   8) upload package to PyPI (twine upload dist/pylatexenc-X.X.tar.gz -r realpypi)
 #
 
-version_str = "2.10b"
+version_str = "2.10"
