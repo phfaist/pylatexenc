@@ -202,7 +202,6 @@ uni2latex = {
 0x0121: r'\.{g}',
 0x0122: r'\c{G}',
 0x0123: r'\c{g}',
-0x01E7: r'\v{g}',                                # character ǧ
 0x0124: r'\^{H}',
 0x0125: r'\^{h}',
 0x0126: r'\={H}',
@@ -295,9 +294,10 @@ uni2latex = {
 0x017D: r'\v{Z}',
 0x017E: r'\v{z}',
 0x0192: r'\textflorin',                          # 0x0192
-0x0195: r'\texthvlig',                            # LATIN SMALL LETTER HV [ƕ]
-0x019E: r'\textnrleg',                            # LATIN SMALL LETTER N WITH LONG RIGHT LEG [ƞ]
-0x01F5: r"\'{g}",                                 # LATIN SMALL LETTER G WITH ACUTE [ǵ]
+0x0195: r'\texthvlig',                           # LATIN SMALL LETTER HV [ƕ]
+0x019E: r'\textnrleg',                           # LATIN SMALL LETTER N WITH LONG RIGHT LEG [ƞ]
+0x01E7: r'\v{g}',                                # character ǧ
+0x01F5: r"\'{g}",                                # LATIN SMALL LETTER G WITH ACUTE [ǵ]
 
 
 0x0228: r'\c{E}',
