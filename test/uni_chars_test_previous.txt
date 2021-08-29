@@ -318,6 +318,7 @@
 0x0192 [LATIN SMALL LETTER F WITH HOOK]                      |{\textflorin}|
 0x0195 [LATIN SMALL LETTER HV]                               |{\texthvlig}|
 0x019E [LATIN SMALL LETTER N WITH LONG RIGHT LEG]            |{\textnrleg}|
+0x01E7 [LATIN SMALL LETTER G WITH CARON]                     |{\v{g}}|
 0x01F5 [LATIN SMALL LETTER G WITH ACUTE]                     |{\'{g}}|
 0x0228 [LATIN CAPITAL LETTER E WITH CEDILLA]                 |{\c{E}}|
 0x0229 [LATIN SMALL LETTER E WITH CEDILLA]                   |{\c{e}}|
