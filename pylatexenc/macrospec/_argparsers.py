@@ -405,6 +405,47 @@ class ParsedVerbatimArgs(ParsedMacroArgs):
         )
 
 
+class ParsedLstListingArgs(ParsedMacroArgs):
+    r"""
+    Parsed representation of arguments to a LaTeX lstlisting environment, i.e.
+    ``\begin{lstlisting}...\end{lstlisting}``
+
+    Instances of `ParsedLstListingArgs` are returned by the args parser
+    :py:class:`LstListingArgsParser`.
+
+    Arguments:
+
+      - `lstlisting_chars_node` --- a properly initialized
+        :py:class:`pylatexenc.latexwalker.LatexCharsNode` that stores the
+        lstlisting text provided.  It is used to initialize the base class
+        :py:class:`ParsedMacroArgs` to expose a single mandatory argument with
+        the given lstlisting text.  The `lstlisting_text` attribute is initialized
+        from this node, too.
+
+    Attributes:
+
+    .. py:attribute:: lstlisting_text
+
+       The lstlisting text that was provided
+    """
+    def __init__(self, lstlisting_chars_node, **kwargs):
+
+        # provide argspec/argnlist to the parent class so that any code that is
+        # not "lstlisting environment-aware" sees this simply as the argument to
+        # an empty lstlisting environment
+        super(ParsedLstListingArgs, self).__init__(
+            argspec='{',
+            argnlist=[lstlisting_chars_node],
+            **kwargs
+        )
+        
+        self.lstlisting_text = lstlisting_chars_node.chars
+
+    def __repr__(self):
+        return "{}(lstlisting_text={!r})".format(
+            self.__class__.__name__, self.lstlisting_text
+        )
+
 
 class VerbatimArgsParser(MacroStandardArgsParser):
     r"""
@@ -491,3 +532,39 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             self.__class__.__name__, self.verbatim_arg_type
         )
 
+
+class LstListingArgsParser(MacroStandardArgsParser):
+    r"""
+    Parses the arguments to the LaTeX "lstlisting" environment.
+    """
+    def __init__(self, **kwargs):
+        super(LstListingArgsParser, self).__init__(argspec='{', **kwargs)
+
+    def parse_args(self, w, pos, parsing_state=None):
+
+        from .. import latexwalker
+
+        # simply scan the string until we find '\end{lstlisting}'.  That's
+        # exactly how LaTeX processes it.
+        endverbpos = w.s.find(r'\end{lstlisting}', pos)
+        if endverbpos == -1:
+            raise latexwalker.LatexWalkerParseError(
+                s=w.s,
+                pos=pos,
+                msg=r"Cannot find matching \end{lstlisting}"
+            )
+        # do NOT include the "\end{lstlisting}", latexwalker will expect to
+        # see it:
+        len_ = endverbpos-pos
+
+        argd = ParsedLstListingArgs(
+            lstlisting_chars_node=w.make_node(latexwalker.LatexCharsNode,
+                                            parsing_state=parsing_state,
+                                            chars=w.s[pos:pos+len_],
+                                            pos=pos,
+                                            len=len_)
+        )
+        return (argd, pos, len_)
+
+    def __repr__(self):
+        return '{}()'.format(self.__class__.__name__)

@@ -1050,6 +1050,42 @@ This is it."""
             167)
         )
 
+    def test_handling(self):
+
+        doc = r"""Use lstlisting environment for code
+\begin{lstlisting}
+int foo() {
+    // This function produces an error
+\end{lstlisting}
+This is it."""
+
+        lw = LatexWalker(doc)
+
+        parsing_state = lw.make_parsing_state()
+
+        p=0
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
+            ([
+                LatexCharsNode(parsing_state=parsing_state, pos=0, len=36,
+                               chars='Use lstlisting environment for code\n'),
+                LatexEnvironmentNode(
+                    parsing_state=parsing_state, pos=36, len=86,
+                    environmentname='lstlisting', nodelist=[],
+                    nodeargd=macrospec.ParsedLstListingArgs(
+                        lstlisting_chars_node=
+                        LatexCharsNode(
+                            parsing_state=parsing_state, pos=54, len=52,
+                            chars='\nint foo() {\n    // This function produces an error\n'
+                        ),
+                    )
+                ),
+                LatexCharsNode(parsing_state=parsing_state, pos=122, len=12,
+                               chars='\nThis is it.')
+            ],
+            0,
+            134)
+        )
 
     def test_parsing_state_changes(self):
 

@@ -28,7 +28,7 @@
 
 
 from ..macrospec import std_macro, std_environment, std_specials, \
-    MacroSpec, EnvironmentSpec, MacroStandardArgsParser, VerbatimArgsParser
+    MacroSpec, EnvironmentSpec, MacroStandardArgsParser, VerbatimArgsParser, LstListingArgsParser
 
 specs = [
     #
@@ -306,6 +306,16 @@ specs = [
         'specials': [
             # optionally users could include the specials "|" like in latex-doc
             # for verbatim |\like \this|...
+        ]}),
+
+    ('lstlisting', {
+        'macros': [],
+        'environments': [
+            EnvironmentSpec('lstlisting', args_parser=LstListingArgsParser()),
+        ],
+        'specials': [
+            # optionally users could include the specials "|" like in latex-doc
+            # for lstlisting |\like \this|...
         ]}),
 
     #
