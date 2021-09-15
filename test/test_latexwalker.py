@@ -1078,7 +1078,7 @@ This is it."""
                     environmentname='lstlisting',
                     nodelist=[],
                     nodeargd=macrospec.ParsedLstListingArgs(
-                        lstlisting_chars_node=
+                        chars_node=
                         LatexCharsNode(
                             parsing_state=parsing_state,
                             pos=(53-18)+1+18,

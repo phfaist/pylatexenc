@@ -430,20 +430,18 @@ class ParsedLstListingArgs(ParsedVerbatimArgs):
 
        The lstlisting text that was provided
     """
-    def __init__(self, lstlisting_chars_node, **kwargs):
+    def __init__(self, chars_node, **kwargs):
 
         # provide argspec/argnlist to the parent class so that any code that is
         # not "lstlisting environment-aware" sees this simply as the argument to
         # an empty lstlisting environment
         super(ParsedLstListingArgs, self).__init__(
-            verbatim_chars_node=,
-            verbatim_delimiters=,........
-            argspec='{',
-            argnlist=[lstlisting_chars_node],
+            verbatim_chars_node=chars_node,
+            verbatim_delimiters=None,
             **kwargs
         )
         
-        self.lstlisting_text = lstlisting_chars_node.chars
+        self.lstlisting_text = chars_node.chars
 
 
     def __repr__(self):
@@ -568,7 +566,7 @@ class LstListingArgsParser(MacroStandardArgsParser):
         len_ = endverbpos-pos
 
         argd = ParsedLstListingArgs(
-            lstlisting_chars_node=w.make_node(latexwalker.LatexCharsNode,
+            chars_node=w.make_node(latexwalker.LatexCharsNode,
                                             parsing_state=parsing_state,
                                             chars=w.s[pos:pos+len_],
                                             pos=pos,
