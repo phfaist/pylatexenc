@@ -260,7 +260,7 @@ class MacroStandardArgsParser(object):
           to continue parsing stuff at the index `pos+len` in the string.
         """
 
-        from .. import latexwalker
+        from ... import latexwalker
 
         if parsing_state is None:
             parsing_state = w.make_parsing_state()

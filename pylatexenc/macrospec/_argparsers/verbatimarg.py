@@ -209,7 +209,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
 
     def parse_args(self, w, pos, parsing_state=None):
 
-        from .. import latexwalker
+        from ... import latexwalker
 
         parsed_args_object_kwargs = {}
 
