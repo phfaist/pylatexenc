@@ -578,7 +578,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
                                                 chars=w.s[pos:pos+len_],
                                                 pos=pos,
                                                 len=len_),
-                **parsed_args_object_kwargs,
+                **parsed_args_object_kwargs
             )
             return (argd, pos_start, endverbpos - pos_start)
 
@@ -605,7 +605,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
                                                 pos=pos,
                                                 len=endpos-pos),
                 verbatim_delimiters=self.specials_delimiters,
-                **parsed_args_object_kwargs,
+                **parsed_args_object_kwargs
             )
 
             return (argd, pos_start, endpos+1-pos_start) # include delimiters in pos/len
@@ -643,7 +643,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
                                                 pos=beginpos,
                                                 len=endpos-beginpos),
                 verbatim_delimiters=(verbdelimchar, verbdelimchar),
-                **parsed_args_object_kwargs,
+                **parsed_args_object_kwargs
             )
 
             return (argd, pos_start, endpos+1-pos_start) # include delimiters in pos/len
