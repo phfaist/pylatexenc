@@ -1730,7 +1730,9 @@ class LatexWalker(object):
             raise LatexWalkerParseError(
                 s=self.s,
                 pos=pos,
-                msg='get_latex_braced_group: not an opening brace/bracket: %s' %(self.s[pos]),
+                msg='get_latex_braced_group: not an opening brace/bracket: %s' %(
+                    self.s[firsttok.pos:firsttok.pos+firsttok.len]
+                ),
                 **self.pos_to_lineno_colno(pos, as_dict=True)
             )
 
@@ -1851,6 +1853,147 @@ class LatexWalker(object):
                                   args=legnodeargs,
                                   pos=startpos,
                                   len=npos+nlen-startpos)
+
+
+    def get_delimited_group_token_chars(self, pos, delimiters=[('{', '}')],
+                                        start_with_delimiter='{',
+                                        wrap_in_group_node=True,
+                                        parsing_state=None):
+        """
+        ............
+        """
+        if parsing_state is None:
+            parsing_state = self.make_parsing_state() # get default parsing state
+
+        pos_start = None
+
+        count_open_delims = 0
+        open_delimiter = None
+        close_delimiter = None
+        tok = None
+
+        include_brace_chars = [
+            delimpair
+            for delimpair in delimiters
+            if delimpair != ('{', '}')
+        ]
+
+        while True:
+            try:
+                tok = self.get_token(pos,
+                                     include_brace_chars=include_brace_chars,
+                                     environments=False,
+                                     parsing_state=parsing_state)
+            except latexwalker.LatexWalkerEndOfStream as e:
+                raise LatexWalkerParseError(
+                    s=self.s,
+                    pos=pos,
+                    msg="Reached end of stream while looking for matching ‘%s’"%(
+                        close_delimiter
+                    ),
+                    **self.pos_to_lineno_colno(pos, as_dict=True)
+                )
+
+            if start_with_delimiter is not None and close_delimiter is None:
+                # first token must be the opening delimiter
+                if tok.tok != 'brace_open' or tok.arg != start_with_delimiter:
+                    raise LatexWalkerParseError(
+                        s=self.s,
+                        pos=tok.pos,
+                        msg="Expected opening brace ‘%s’, got ‘%s’"%(
+                            start_with_delimiter, tok.arg
+                        ),
+                        **self.pos_to_lineno_colno(tok.pos, as_dict=True)
+                    )
+
+            if pos_start is None:
+                pos_start = tok.pos
+
+            if tok.tok == 'brace_open':
+                if close_delimiter is None:
+                    open_delimiter = tok.arg
+                    if tok.arg == '{':
+                        close_delimiter = '}'
+                    else:
+                        close_delimiter = next( dpair[1] for dpair in delimiters
+                                                 if dpair[0] == tok.arg )
+                    count_open_delims = 1
+                    pos = tok.pos + tok.len
+                    continue
+                elif tok.arg == open_delimiter:
+                    count_open_delims += 1
+                    pos = tok.pos + tok.len
+                    continue
+                else:
+                    (inner_chars_node, inner_pos, inner_len) = \
+                        self.get_delimited_group_token_chars(pos,
+                                                             delimiters=delimiters,
+                                                             wrap_in_group_node=False,
+                                                             parsing_state=parsing_state)
+                    pos = inner_pos + inner_len
+                    continue
+            elif tok.tok == 'brace_close':
+                if close_delimiter is None:
+                    raise LatexWalkerParseError(
+                        s=self.s,
+                        pos=tok.pos,
+                        msg="Unexpected closing brace: '%s'"%(tok.arg),
+                        **self.pos_to_lineno_colno(tok.pos, as_dict=True)
+                    )
+                elif tok.arg == close_delimiter:
+                    count_open_delims -= 1
+                    pos = tok.pos + tok.len
+                    if count_open_delims == 0:
+                        # reached the end of the expression we're parsing
+                        break
+                    continue
+                else:
+                    # mismatching closing brace
+                    raise LatexWalkerParseError(
+                        s=self.s,
+                        pos=tok.pos,
+                        msg="Mismatched closing brace: '%s'"%(tok.arg),
+                        **self.pos_to_lineno_colno(tok.pos, as_dict=True)
+                    )
+            else:
+                pos = tok.pos + tok.len
+                continue
+
+        # keep `tok` as the last token we saw, normally a closing delimiter
+
+        if wrap_in_group_node:
+            # make sure we started and ended with a delimiter pair
+            if (self.s[pos_start], self.s[tok.pos]) in delimiters:
+                the_delimiters = (self.s[pos_start], self.s[tok.pos])
+                chars_pos_start = pos_start + 1
+                chars_pos_end = tok.pos
+            else:
+                # not okay
+                the_delimiters = ('','')
+                chars_pos_start = pos_start
+                chars_pos_end = pos
+        else:
+            chars_pos_start = pos_start
+            chars_pos_end = pos
+
+        chars_node = self.make_node(LatexCharsNode,
+                                    parsing_state=parsing_state,
+                                    chars=self.s[chars_pos_start:chars_pos_end],
+                                    pos=chars_pos_start,
+                                    len=chars_pos_end-chars_pos_start)
+
+        if wrap_in_group_node:
+            node = self.make_node(LatexGroupNode,
+                                  parsing_state=parsing_state,
+                                  nodelist=[chars_node],
+                                  delimiters=the_delimiters,
+                                  pos=pos_start,
+                                  len=pos-pos_start)
+        else:
+            node = chars_node
+
+        return (node, pos_start, pos - pos_start)
+
 
 
     def _exchandle_parse_subexpression(self, e, tok, what):
@@ -2011,7 +2154,7 @@ class LatexWalker(object):
 
         #
         # Man, I really need to rewrite this function properly. This is some
-        # pretty ugly sh*t.
+        # pretty ugly stuff...
         #
 
         origpos = pos
@@ -2190,8 +2333,10 @@ class LatexWalker(object):
                         parsing_state=parsing_state_inner
                     )
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append( _maketuple('math mode "{}"'.format(tok.arg), tok.pos,
-                                                       *self.pos_to_lineno_colno(tok.pos)) )
+                    e.open_contexts.append(
+                        _maketuple('math mode "{}"'.format(tok.arg), tok.pos,
+                                   *self.pos_to_lineno_colno(tok.pos))
+                    )
                     raise
                 p.pos = mpos + mlen
 
