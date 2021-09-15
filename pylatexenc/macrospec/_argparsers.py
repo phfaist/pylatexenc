@@ -351,6 +351,10 @@ class MacroStandardArgsParser(object):
     
 
 
+# ------------------------------------------------------------------------------
+
+
+
 
 class ParsedVerbatimArgs(ParsedMacroArgs):
     r"""
@@ -408,6 +412,26 @@ class ParsedVerbatimArgs(ParsedMacroArgs):
         self.verbatim_text = verbatim_chars_node.chars
         self.verbatim_delimiters = verbatim_delimiters
 
+
+    def to_json_object(self):
+        r"""
+        Called when we export the node structure to JSON when running latexwalker in
+        command-line.
+
+        Return a representation of the current parsed arguments in an object,
+        typically a dictionary, that can easily be exported to JSON.  The object
+        may contain latex nodes and other parsed-argument objects, as we use a
+        custom JSON encoder that understands these types.
+
+        Subclasses may
+        """
+
+        return dict(
+            super(ParsedVerbatimArgs, self).to_json_object(),
+            verbatim_text=self.verbatim_text,
+            verbatim_delimiters=self.verbatim_delimiters,
+        )
+
     def __repr__(self):
         return (
             "{}(verbatim_text={!r}, verbatim_delimiters={!r}) [ {} ]"
@@ -416,50 +440,6 @@ class ParsedVerbatimArgs(ParsedMacroArgs):
                 self.verbatim_text,
                 self.verbatim_delimiters,
                 super(ParsedVerbatimArgs, self).__repr__(),
-            )
-        )
-
-
-class ParsedLstListingArgs(ParsedVerbatimArgs):
-    r"""
-    Parsed representation of arguments to a LaTeX lstlisting environment, i.e.
-    ``\begin{lstlisting}...\end{lstlisting}``
-
-    Arguments:
-
-      - `lstlisting_chars_node` --- a properly initialized
-        :py:class:`pylatexenc.latexwalker.LatexCharsNode` that stores the
-        lstlisting text provided.  It is used to initialize the base class
-        :py:class:`ParsedMacroArgs` to expose a single mandatory argument with
-        the given lstlisting text.  The `lstlisting_text` attribute is initialized
-        from this node, too.
-
-    Attributes:
-
-    .. py:attribute:: lstlisting_text
-
-       The lstlisting text that was provided
-    """
-    def __init__(self, verbatim_chars_node, **kwargs):
-
-        # provide argspec/argnlist to the parent class so that any code that is
-        # not "lstlisting environment-aware" sees this simply as the argument to
-        # an empty lstlisting environment
-        super(ParsedLstListingArgs, self).__init__(
-            verbatim_chars_node=verbatim_chars_node,
-            **kwargs
-        )
-        
-        self.lstlisting_text = verbatim_chars_node.chars
-
-
-    def __repr__(self):
-        return (
-            "{}(lstlisting_text={!r}) [ {} ]"
-            .format(
-                self.__class__.__name__,
-                self.lstlisting_text,
-                super(ParsedLstListingArgs, self).__repr__()
             )
         )
 
@@ -661,7 +641,68 @@ class VerbatimArgsParser(MacroStandardArgsParser):
         )
 
 
+# --------------------------------------
 
+class ParsedLstListingArgs(ParsedVerbatimArgs):
+    r"""
+    Parsed representation of arguments to a LaTeX lstlisting environment, i.e.
+    ``\begin{lstlisting}...\end{lstlisting}``
+
+    Arguments:
+
+      - `lstlisting_chars_node` --- a properly initialized
+        :py:class:`pylatexenc.latexwalker.LatexCharsNode` that stores the
+        lstlisting text provided.  It is used to initialize the base class
+        :py:class:`ParsedMacroArgs` to expose a single mandatory argument with
+        the given lstlisting text.  The `lstlisting_text` attribute is initialized
+        from this node, too.
+
+    Attributes:
+
+    .. py:attribute:: lstlisting_text
+
+       The lstlisting text that was provided
+    """
+    def __init__(self, verbatim_chars_node, **kwargs):
+
+        # provide argspec/argnlist to the parent class so that any code that is
+        # not "lstlisting environment-aware" sees this simply as the argument to
+        # an empty lstlisting environment
+        super(ParsedLstListingArgs, self).__init__(
+            verbatim_chars_node=verbatim_chars_node,
+            **kwargs
+        )
+        
+        self.lstlisting_text = verbatim_chars_node.chars
+
+
+    def to_json_object(self):
+        r"""
+        Called when we export the node structure to JSON when running latexwalker in
+        command-line.
+
+        Return a representation of the current parsed arguments in an object,
+        typically a dictionary, that can easily be exported to JSON.  The object
+        may contain latex nodes and other parsed-argument objects, as we use a
+        custom JSON encoder that understands these types.
+
+        Subclasses may
+        """
+
+        return dict(
+            super(ParsedLstListingArgs, self).to_json_object(),
+            lstlisting_text=self.lstlisting_text
+        )
+
+    def __repr__(self):
+        return (
+            "{}(lstlisting_text={!r}) [ {} ]"
+            .format(
+                self.__class__.__name__,
+                self.lstlisting_text,
+                super(ParsedLstListingArgs, self).__repr__()
+            )
+        )
 
 class LstListingArgsParser(VerbatimArgsParser):
     def __init__(self):
@@ -671,3 +712,7 @@ class LstListingArgsParser(VerbatimArgsParser):
             verbatim_argspec='[',
             verbatim_parsed_args_class=ParsedLstListingArgs,
         )
+
+
+# ------------------------------------------------------------------------------
+
