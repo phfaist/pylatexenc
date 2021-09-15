@@ -1050,41 +1050,53 @@ This is it."""
             167)
         )
 
-    def test_handling(self):
+    def test_lstlisting_handling(self):
 
-        doc = r"""Use lstlisting environment for code
+        s = r"""Use lstlisting environment for code
 \begin{lstlisting}
 int foo() {
-    // This function produces an error
+    "^\\[1-9]+\n$" // some special chars
+    // unmatched open brace confuses non-verbatim parsing
 \end{lstlisting}
 This is it."""
 
-        lw = LatexWalker(doc)
+        lw = LatexWalker(s)
 
         parsing_state = lw.make_parsing_state()
+
+        print(lw.get_latex_nodes(pos=0, parsing_state=parsing_state)[0][1])
 
         p=0
         self.assertEqual(
             lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
             ([
-                LatexCharsNode(parsing_state=parsing_state, pos=0, len=36,
+                LatexCharsNode(parsing_state=parsing_state, pos=0, len=(53-18)+1,
                                chars='Use lstlisting environment for code\n'),
                 LatexEnvironmentNode(
-                    parsing_state=parsing_state, pos=36, len=86,
-                    environmentname='lstlisting', nodelist=[],
+                    parsing_state=parsing_state,
+                    pos=(53-18)+1, len=19+12+41+58+16,
+                    environmentname='lstlisting',
+                    nodelist=[],
                     nodeargd=macrospec.ParsedLstListingArgs(
                         lstlisting_chars_node=
                         LatexCharsNode(
-                            parsing_state=parsing_state, pos=54, len=52,
-                            chars='\nint foo() {\n    // This function produces an error\n'
+                            parsing_state=parsing_state,
+                            pos=(53-18)+1+18,
+                            len=1+12+41+58,
+                            chars=r"""
+int foo() {
+    "^\\[1-9]+\n$" // some special chars
+    // unmatched open brace confuses non-verbatim parsing
+"""
                         ),
                     )
                 ),
-                LatexCharsNode(parsing_state=parsing_state, pos=122, len=12,
+                LatexCharsNode(parsing_state=parsing_state,
+                               pos=s.find(r'\end{lstlisting}')+16, len=12,
                                chars='\nThis is it.')
             ],
             0,
-            134)
+            len(s))
         )
 
     def test_parsing_state_changes(self):

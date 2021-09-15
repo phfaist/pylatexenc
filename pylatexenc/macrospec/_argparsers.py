@@ -400,18 +400,20 @@ class ParsedVerbatimArgs(ParsedMacroArgs):
         self.verbatim_delimiters = verbatim_delimiters
 
     def __repr__(self):
-        return "{}(verbatim_text={!r}, verbatim_delimiters={!r})".format(
-            self.__class__.__name__, self.verbatim_text, self.verbatim_delimiters
+        return (
+            "{}(verbatim_text={!r}, verbatim_delimiters={!r}) [{!r}]"
+            .format(
+                self.__class__.__name__,
+                self.verbatim_text, self.verbatim_delimiters,
+                super(ParsedVerbatimArgs, self).__repr__()
+            )
         )
 
 
-class ParsedLstListingArgs(ParsedMacroArgs):
+class ParsedLstListingArgs(ParsedVerbatimArgs):
     r"""
     Parsed representation of arguments to a LaTeX lstlisting environment, i.e.
     ``\begin{lstlisting}...\end{lstlisting}``
-
-    Instances of `ParsedLstListingArgs` are returned by the args parser
-    :py:class:`LstListingArgsParser`.
 
     Arguments:
 
@@ -434,6 +436,8 @@ class ParsedLstListingArgs(ParsedMacroArgs):
         # not "lstlisting environment-aware" sees this simply as the argument to
         # an empty lstlisting environment
         super(ParsedLstListingArgs, self).__init__(
+            verbatim_chars_node=,
+            verbatim_delimiters=,........
             argspec='{',
             argnlist=[lstlisting_chars_node],
             **kwargs
@@ -441,9 +445,15 @@ class ParsedLstListingArgs(ParsedMacroArgs):
         
         self.lstlisting_text = lstlisting_chars_node.chars
 
+
     def __repr__(self):
-        return "{}(lstlisting_text={!r})".format(
-            self.__class__.__name__, self.lstlisting_text
+        return (
+            "{}(lstlisting_text={!r}) [{!r}]"
+            .format(
+                self.__class__.__name__,
+                self.lstlisting_text,
+                super(ParsedLstListingArgs, self).__repr__()
+            )
         )
 
 
