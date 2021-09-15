@@ -372,6 +372,11 @@ class ParsedVerbatimArgs(ParsedMacroArgs):
       - `verbatim_delimiters` --- a 2-item tuple of characters used to delimit
         the verbatim arguemnt (in case of a ``\verb+...+`` macro) or `None`.
 
+      - `verbatim_argspec`, `verbatim_argnlist` --- the argspec and node list
+        representing any regular (optional or mandatory) argument(s) that the
+        construct might have accepted, before the verbatim content.  (E.g.
+        ``\begin{lstlisting}[language=Python]``)
+
     Attributes:
 
     .. py:attribute:: verbatim_text
@@ -384,15 +389,19 @@ class ParsedVerbatimArgs(ParsedMacroArgs):
        this is set to a 2-item tuple that specifies the begin and end
        delimiters.  Otherwise, the attribute is `None`.
     """
-    def __init__(self, verbatim_chars_node, verbatim_delimiters=None,
+    def __init__(self,
+                 verbatim_chars_node,
+                 verbatim_delimiters=None,
+                 verbatim_argspec='',
+                 verbatim_argnlist=[],
                  **kwargs):
 
         # provide argspec/argnlist to the parent class so that any code that is
         # not "verbatim environment-aware" sees this simply as the argument to
         # an empty verbatim environment
         super(ParsedVerbatimArgs, self).__init__(
-            argspec='{',
-            argnlist=[verbatim_chars_node],
+            argspec=verbatim_argspec + '{',
+            argnlist=verbatim_argnlist + [verbatim_chars_node],
             **kwargs
         )
         
@@ -401,11 +410,12 @@ class ParsedVerbatimArgs(ParsedMacroArgs):
 
     def __repr__(self):
         return (
-            "{}(verbatim_text={!r}, verbatim_delimiters={!r}) [{!r}]"
+            "{}(verbatim_text={!r}, verbatim_delimiters={!r}) [ {} ]"
             .format(
                 self.__class__.__name__,
-                self.verbatim_text, self.verbatim_delimiters,
-                super(ParsedVerbatimArgs, self).__repr__()
+                self.verbatim_text,
+                self.verbatim_delimiters,
+                super(ParsedVerbatimArgs, self).__repr__(),
             )
         )
 
@@ -430,23 +440,22 @@ class ParsedLstListingArgs(ParsedVerbatimArgs):
 
        The lstlisting text that was provided
     """
-    def __init__(self, chars_node, **kwargs):
+    def __init__(self, verbatim_chars_node, **kwargs):
 
         # provide argspec/argnlist to the parent class so that any code that is
         # not "lstlisting environment-aware" sees this simply as the argument to
         # an empty lstlisting environment
         super(ParsedLstListingArgs, self).__init__(
-            verbatim_chars_node=chars_node,
-            verbatim_delimiters=None,
+            verbatim_chars_node=verbatim_chars_node,
             **kwargs
         )
         
-        self.lstlisting_text = chars_node.chars
+        self.lstlisting_text = verbatim_chars_node.chars
 
 
     def __repr__(self):
         return (
-            "{}(lstlisting_text={!r}) [{!r}]"
+            "{}(lstlisting_text={!r}) [ {} ]"
             .format(
                 self.__class__.__name__,
                 self.lstlisting_text,
@@ -467,38 +476,139 @@ class VerbatimArgsParser(MacroStandardArgsParser):
 
     .. py:attribute:: verbatim_arg_type
 
-      One of 'verbatim-environment' or 'verb-macro'.
+      One of 'verbatim-environment', 'verb-macro', or 'specials-delimiters'.
+
+    .. py:attribute:: verbatim_environment_name
+
+      Name of the environment which acts as verbatim environment.  This is used
+      to find the end of the environment in the document (we simply search for
+      ``\end{environment-name}``).
+
+    .. py:attribute:: verbatim_environment_argspec
+
+      Specify any standard macro argument(s) the verbatim environment (or analog
+      environment such as the `lstlisting` environment) accepts before their
+      verbatim content.
+
+    .. py:attribute:: verbatim_parsed_args_class
+    
+      The class to use to construct the parsed-arguments object after we parsed
+      the verbatim construct.  By default this is
+      :py:class:`ParsedVerbatimArgs`.  You can use another class that derives
+      from :py:class:`ParsedVerbatimArgs` and that accepts the same keyword
+      arguments.
+
+    .. py:attribute:: specials_delimiters
+
+      When parsing a "specials" form of a verbatim construct (e.g. ``|\begin|
+      and |\end| are special \LaTeX\ commands''), specify the opening and
+      closing delimiter here.  When parsing the verbatim construct, the closing
+      delimiter is searched and its first occurence is used (there is no
+      brace/parenthesis matching or anything of the kind).
     """
-    def __init__(self, verbatim_arg_type, **kwargs):
-        super(VerbatimArgsParser, self).__init__(argspec='{', **kwargs)
+    def __init__(self,
+                 verbatim_arg_type,
+                 verbatim_environment_name="verbatim",
+                 verbatim_argspec='',
+                 verbatim_parsed_args_class=ParsedVerbatimArgs,
+                 specials_delimiters=('|', '|'),
+                 **kwargs):
+        super(VerbatimArgsParser, self).__init__(
+            argspec=verbatim_argspec+'{',
+            **kwargs
+        )
         self.verbatim_arg_type = verbatim_arg_type
+        self.verbatim_environment_name = verbatim_environment_name
+        self.verbatim_argspec = verbatim_argspec
+        self.verbatim_parsed_args_class = verbatim_parsed_args_class
+        self.specials_delimiters = tuple(specials_delimiters)
+
+        if self.verbatim_argspec:
+            self.verbatim_std_arg_parser = MacroStandardArgsParser(
+                argspec=self.verbatim_argspec,
+                optional_arg_no_space=True, # "[" on new line is not an optional argument
+            )
+        else:
+            self.verbatim_std_arg_parser = None
 
     def parse_args(self, w, pos, parsing_state=None):
 
         from .. import latexwalker
 
+        parsed_args_object_kwargs = {}
+
+        # first, parse any standard arguments
+        if self.verbatim_std_arg_parser is not None:
+            (argd, ppos, plen) = self.verbatim_std_arg_parser.parse_args(
+                w,
+                pos,
+                parsing_state=parsing_state,
+            )
+            pos_start = ppos
+            pos = ppos+plen
+            parsed_args_object_kwargs['verbatim_argspec'] = argd.argspec
+            parsed_args_object_kwargs['verbatim_argnlist'] = argd.argnlist
+        else:
+            # the actual pos of the argument in the string is still to be
+            # determined
+            pos_start = None
+
+        # parse relevant verbatim construct
+
         if self.verbatim_arg_type == 'verbatim-environment':
+            # the contents start right away, if we didn't have any arguments
+            if pos_start is None:
+                pos_start = pos
             # simply scan the string until we find '\end{verbatim}'.  That's
             # exactly how LaTeX processes it.
-            endverbpos = w.s.find(r'\end{verbatim}', pos)
+            endverbpos = w.s.find(r'\end{'+self.verbatim_environment_name+r'}', pos)
             if endverbpos == -1:
                 raise latexwalker.LatexWalkerParseError(
                     s=w.s,
                     pos=pos,
-                    msg=r"Cannot find matching \end{verbatim}"
+                    msg=r"Cannot find matching \end{"+self.verbatim_environment_name+r"}"
                 )
             # do NOT include the "\end{verbatim}", latexwalker will expect to
             # see it:
             len_ = endverbpos-pos
 
-            argd = ParsedVerbatimArgs(
+            argd = self.verbatim_parsed_args_class(
                 verbatim_chars_node=w.make_node(latexwalker.LatexCharsNode,
                                                 parsing_state=parsing_state,
                                                 chars=w.s[pos:pos+len_],
                                                 pos=pos,
-                                                len=len_)
+                                                len=len_),
+                **parsed_args_object_kwargs,
             )
-            return (argd, pos, len_)
+            return (argd, pos_start, endverbpos - pos_start)
+
+        if self.verbatim_arg_type == 'specials-delimiters':
+
+            if pos_start is None:
+                pos_start = pos
+
+            endpos = w.s.find(self.specials_delimiters[1], pos)
+            if endpos == -1:
+                raise latexwalker.LatexWalkerParseError(
+                    s=w.s,
+                    pos=pos,
+                    msg=(r"End of stream reached while reading verbatim specials “{!r}...{!r}”"
+                         .format(*self.specials_delimiters))
+                )
+            
+            verbarg = w.s[pos:endpos]
+
+            argd = self.verbatim_parsed_args_class(
+                verbatim_chars_node=w.make_node(latexwalker.LatexCharsNode,
+                                                parsing_state=parsing_state,
+                                                chars=verbarg,
+                                                pos=pos,
+                                                len=endpos-pos),
+                verbatim_delimiters=self.specials_delimiters,
+                **parsed_args_object_kwargs,
+            )
+
+            return (argd, pos_start, endpos+1-pos_start) # include delimiters in pos/len
 
         if self.verbatim_arg_type == 'verb-macro':
             # read the next nonwhitespace char. This is the delimiter of the
@@ -513,6 +623,9 @@ class VerbatimArgsParser(MacroStandardArgsParser):
                     )
             verbdelimchar = w.s[pos]
             beginpos = pos+1
+            if pos_start is None:
+                pos_start = beginpos # the argument started here
+
             endpos = w.s.find(verbdelimchar, beginpos)
             if endpos == -1:
                 raise latexwalker.LatexWalkerParseError(
@@ -523,56 +636,38 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             
             verbarg = w.s[beginpos:endpos]
 
-            argd = ParsedVerbatimArgs(
+            argd = self.verbatim_parsed_args_class(
                 verbatim_chars_node=w.make_node(latexwalker.LatexCharsNode,
                                                 parsing_state=parsing_state,
                                                 chars=verbarg,
                                                 pos=beginpos,
                                                 len=endpos-beginpos),
                 verbatim_delimiters=(verbdelimchar, verbdelimchar),
+                **parsed_args_object_kwargs,
             )
 
-            return (argd, pos, endpos+1-pos) # include delimiters in pos/len
+            return (argd, pos_start, endpos+1-pos_start) # include delimiters in pos/len
 
 
     def __repr__(self):
-        return '{}(verbatim_arg_type={!r})'.format(
-            self.__class__.__name__, self.verbatim_arg_type
-        )
-
-
-class LstListingArgsParser(MacroStandardArgsParser):
-    r"""
-    Parses the arguments to the LaTeX "lstlisting" environment.
-    """
-    def __init__(self, **kwargs):
-        super(LstListingArgsParser, self).__init__(argspec='{', **kwargs)
-
-    def parse_args(self, w, pos, parsing_state=None):
-
-        from .. import latexwalker
-
-        # simply scan the string until we find '\end{lstlisting}'.  That's
-        # exactly how LaTeX processes it.
-        endverbpos = w.s.find(r'\end{lstlisting}', pos)
-        if endverbpos == -1:
-            raise latexwalker.LatexWalkerParseError(
-                s=w.s,
-                pos=pos,
-                msg=r"Cannot find matching \end{lstlisting}"
+        return (
+            '{}(verbatim_arg_type={!r}, verbatim_environment_name={!r}, verbatim_argspec={!r})'
+            .format(
+                self.__class__.__name__,
+                self.verbatim_arg_type,
+                self.verbatim_environment_name,
+                self.verbatim_argspec,
             )
-        # do NOT include the "\end{lstlisting}", latexwalker will expect to
-        # see it:
-        len_ = endverbpos-pos
-
-        argd = ParsedLstListingArgs(
-            chars_node=w.make_node(latexwalker.LatexCharsNode,
-                                            parsing_state=parsing_state,
-                                            chars=w.s[pos:pos+len_],
-                                            pos=pos,
-                                            len=len_)
         )
-        return (argd, pos, len_)
 
-    def __repr__(self):
-        return '{}()'.format(self.__class__.__name__)
+
+
+
+class LstListingArgsParser(VerbatimArgsParser):
+    def __init__(self):
+        super(LstListingArgsParser, self).__init__(
+            "verbatim-environment",
+            verbatim_environment_name="lstlisting",
+            verbatim_argspec='[',
+            verbatim_parsed_args_class=ParsedLstListingArgs,
+        )
