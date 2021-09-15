@@ -54,7 +54,7 @@ else:
 # ------------------------------------------------------------------------------
 
 from ._argparsers import ParsedMacroArgs, MacroStandardArgsParser, \
-    ParsedVerbatimArgs, VerbatimArgsParser
+    ParsedVerbatimArgs, VerbatimArgsParser, ParsedLstListingArgs, LstListingArgsParser
 
 # ------------------------------------------------------------------------------
 

@@ -1050,6 +1050,222 @@ This is it."""
             167)
         )
 
+    def test_verbatim_via_specials(self):
+
+        latextext = r"""
+Use the |\verb| command or the
+|\begin{verbatim}| ... |\end{verbatim}| environment
+to typeset verbatim text!
+
+Syntax errors within verbatim content, such as |{|, should
+not cause processing problems.
+"""
+
+        walker_context = get_default_latex_context_db()
+        walker_context.add_context_category(
+            'specials-verbatim',
+            specials=[
+                macrospec.SpecialsSpec('|', args_parser=macrospec.VerbatimArgsParser(
+                    verbatim_arg_type='specials-delimiters',
+                    specials_delimiters=('|', '|'),
+                )),
+            ],
+            prepend=True
+        )
+
+        lw = LatexWalker(latextext, latex_context=walker_context)
+
+        parsing_state = lw.make_parsing_state()
+
+        p=0
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
+            ([
+                LatexCharsNode(parsing_state=parsing_state, pos=0, len=1+8,
+                               chars='\nUse the '),
+                LatexSpecialsNode(
+                    parsing_state=parsing_state, pos=1+8, len=15-8,
+                    specials_chars='|',
+                    nodeargd=macrospec.ParsedVerbatimArgs(
+                        verbatim_chars_node=
+                        LatexCharsNode(parsing_state=parsing_state, pos=1+9, len=14-9,
+                                       chars='\\verb'),
+                        verbatim_delimiters=('|', '|'),
+                    )
+                ),
+                LatexCharsNode(parsing_state=parsing_state, pos=1+15, len=(30-15)+1,
+                               chars=' command or the\n'),
+                LatexSpecialsNode(
+                    parsing_state=parsing_state, pos=1+31, len=18-0,
+                    specials_chars='|',
+                    nodeargd=macrospec.ParsedVerbatimArgs(
+                        verbatim_chars_node=
+                        LatexCharsNode(parsing_state=parsing_state, pos=1+31+1, len=17-1,
+                                       chars='\\begin{verbatim}'),
+                        verbatim_delimiters=('|', '|'),
+                    )
+                ),
+                LatexCharsNode(parsing_state=parsing_state, pos=1+31+18, len=23-18,
+                               chars=' ... '),
+                LatexSpecialsNode(
+                    parsing_state=parsing_state, pos=1+31+23, len=39-23,
+                    specials_chars='|',
+                    nodeargd=macrospec.ParsedVerbatimArgs(
+                        verbatim_chars_node=
+                        LatexCharsNode(parsing_state=parsing_state, pos=1+31+24, len=38-24,
+                                       chars='\\end{verbatim}'),
+                        verbatim_delimiters=('|', '|'),
+                    )
+                ),
+                LatexCharsNode(parsing_state=parsing_state,
+                               pos=1+31+39, len=(52-39)+26+1+47,
+                               chars=r""" environment
+to typeset verbatim text!
+
+Syntax errors within verbatim content, such as """),
+                LatexSpecialsNode(
+                    parsing_state=parsing_state, pos=1+31+52+26+1+47, len=3,
+                    specials_chars='|',
+                    nodeargd=macrospec.ParsedVerbatimArgs(
+                        verbatim_chars_node=
+                        LatexCharsNode(parsing_state=parsing_state,
+                                       pos=1+31+52+26+1+48, len=1,
+                                       chars='{'),
+                        verbatim_delimiters=('|', '|'),
+                    )
+                ),
+                LatexCharsNode(parsing_state=parsing_state,
+                               pos=1+31+52+26+1+50, len=(59-50)+31,
+                               chars=r""", should
+not cause processing problems.
+"""),
+            ],
+            0,
+            len(latextext),
+            )
+        )
+
+    def test_lstlisting_handling(self):
+
+        s = r"""Use lstlisting environment for code
+\begin{lstlisting}
+int foo() {
+    "^\\[1-9]+\n$" // some special chars
+    // unmatched open brace confuses non-verbatim parsing
+\end{lstlisting}
+This is it."""
+
+        lw = LatexWalker(s)
+
+        parsing_state = lw.make_parsing_state()
+
+        print("DEBUG")
+        print(lw.get_latex_nodes(pos=0, parsing_state=parsing_state)[0][1])
+
+        p=0
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
+            ([
+                LatexCharsNode(parsing_state=parsing_state, pos=0, len=(53-18)+1,
+                               chars='Use lstlisting environment for code\n'),
+                LatexEnvironmentNode(
+                    parsing_state=parsing_state,
+                    pos=(53-18)+1, len=19+12+41+58+16,
+                    environmentname='lstlisting',
+                    nodelist=[],
+                    nodeargd=macrospec.ParsedLstListingArgs(
+                        verbatim_chars_node=
+                        LatexCharsNode(
+                            parsing_state=parsing_state,
+                            pos=(53-18)+1+18,
+                            len=1+12+41+58,
+                            chars=r"""
+int foo() {
+    "^\\[1-9]+\n$" // some special chars
+    // unmatched open brace confuses non-verbatim parsing
+"""
+                        ),
+                        verbatim_argspec='[',
+                        verbatim_argnlist=[None],
+                    )
+                ),
+                LatexCharsNode(parsing_state=parsing_state,
+                               pos=s.find(r'\end{lstlisting}')+16, len=12,
+                               chars='\nThis is it.')
+            ],
+            0,
+            len(s))
+        )
+
+    def test_lstlisting_withoptarg(self):
+
+        latextext = r"""Use lstlisting environment for code
+\begin{lstlisting}[language=C]
+int foo() {
+    "^\\[1-9]+\n$" // some special chars
+    // unmatched open brace confuses non-verbatim parsing
+\end{lstlisting}
+This is it."""
+
+        lw = LatexWalker(latextext)
+
+        parsing_state = lw.make_parsing_state()
+
+        print("DEBUG")
+        print(lw.get_latex_nodes(pos=0, parsing_state=parsing_state)[0][1])
+
+        p=0
+        self.assertEqual(
+            lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
+            ([
+                LatexCharsNode(parsing_state=parsing_state, pos=0, len=(60-24),
+                               chars='Use lstlisting environment for code\n'),
+                LatexEnvironmentNode(
+                    parsing_state=parsing_state,
+                    pos=(60-24), len=31+12+41+58+16,
+                    environmentname='lstlisting',
+                    nodelist=[],
+                    nodeargd=macrospec.ParsedLstListingArgs(
+                        verbatim_chars_node=
+                        LatexCharsNode(
+                            parsing_state=parsing_state,
+                            pos=(60-24)+30,
+                            len=1+12+41+58,
+                            chars=r"""
+int foo() {
+    "^\\[1-9]+\n$" // some special chars
+    // unmatched open brace confuses non-verbatim parsing
+"""
+                        ),
+                        verbatim_argspec='[',
+                        verbatim_argnlist=[
+                            LatexGroupNode(
+                                parsing_state=parsing_state,
+                                pos=(60-24)+18, len=30-18,
+                                nodelist=[
+                                    LatexCharsNode(parsing_state=parsing_state,
+                                                   pos=(60-24)+19,
+                                                   len=29-19,
+                                                   chars='language=C')
+                                ],
+                                delimiters=('[', ']'),
+                            )
+                        ],
+                    )
+                ),
+                LatexCharsNode(parsing_state=parsing_state,
+                               pos=latextext.find(r'\end{lstlisting}')+16, len=12,
+                               chars='\nThis is it.')
+            ],
+            0,
+            len(latextext))
+        )
+
+
+
+
+
+
 
     def test_parsing_state_changes(self):
 
