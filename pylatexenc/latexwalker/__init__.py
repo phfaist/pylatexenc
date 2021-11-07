@@ -854,8 +854,6 @@ class LatexMathNode(LatexNode):
     r"""
     A Math node type.
 
-    Note that currently only 'inline' math environments are detected.
-
     .. py:attribute:: displaytype
 
        Either 'inline' or 'display', to indicate an inline math block or a
