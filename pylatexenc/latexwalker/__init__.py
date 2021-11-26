@@ -94,19 +94,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# for Py3
-_basestring = str
-_unicode_from_str = lambda x: x
-
-
-## Py2 support code
-import sys
-if sys.version_info.major == 2:
-    # Py2
-    _basestring = basestring
-    _unicode_from_str = lambda x: x.decode('utf-8')
-## Py end support code
-
 
 from .. import macrospec
 

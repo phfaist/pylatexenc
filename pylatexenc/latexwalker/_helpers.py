@@ -31,6 +31,26 @@
 from __future__ import print_function, unicode_literals
 
 
+# for Py3
+_basestring = str
+_unicode_from_str = lambda x: x
+
+
+## Begin Py2 support code
+import sys
+if sys.version_info.major == 2:
+    # Py2
+    _basestring = basestring
+    _unicode_from_str = lambda x: x.decode('utf-8')
+## End Py support code
+
+
+from .. import macrospec
+
+from ._types import *
+
+
+
 import json
 
 
