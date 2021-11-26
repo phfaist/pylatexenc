@@ -42,28 +42,38 @@ You may also use the command-line version of `latex2text`::
 
 """
 
-from __future__ import print_function, unicode_literals #, absolute_import
+from __future__ import print_function, unicode_literals
 
 import os
 import re
-import logging
-import sys
 import inspect
 import textwrap
 
-if sys.version_info.major >= 3:
-    def unicode(string): return string
-    basestring = str
-    getfullargspec = inspect.getfullargspec
-else:
-    getfullargspec = inspect.getargspec
-    chr = unichr
 
-import pylatexenc
+# for Py3
+_basestring = str
+_getfullargspec = getattr(inspect, 'getfullargspec', None)
+
+## Begin Py2 support code
+import sys
+if sys.version_info.major == 2:
+    # Py2
+    _basestring = basestring
+    _getfullargspec = inspect.getargspec
+    chr = unichr
+#
+_python_is_narrow_build = (sys.maxunicode < 0x10FFFF)
+## End Py2 support code
+
+
+
+
+#import pylatexenc
 from .. import latexwalker
 from .. import macrospec
 from .. import _util
 
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -467,7 +477,7 @@ def _fmt_math_style_char(c, style):
     # don't know how to handle this char
     return c
 
-if sys.maxunicode < 0x10FFFF:
+if _python_is_narrow_build:
     # narrow python build, disable math alphabets.
     _fmt_math_style_char = lambda c, style: c
 
@@ -636,7 +646,7 @@ def _parse_strict_latex_spaces_dict(strict_latex_spaces):
     elif isinstance(strict_latex_spaces, dict):
         d.update(strict_latex_spaces)
         return d
-    elif isinstance(strict_latex_spaces, basestring):
+    elif isinstance(strict_latex_spaces, _basestring):
         if strict_latex_spaces == 'on':
             return _parse_strict_latex_spaces_dict(True)
         if strict_latex_spaces == 'off':
@@ -1332,7 +1342,7 @@ class LatexNodes2Text(object):
         """
         if callable(simplify_repl):
             kwargs = {}
-            fn_args = getfullargspec(simplify_repl)[0]
+            fn_args = _getfullargspec(simplify_repl)[0]
             if 'l2tobj' in fn_args:
                 # callable accepts an argument named 'l2tobj', provide pointer to self
                 kwargs['l2tobj'] = self
@@ -1473,7 +1483,7 @@ class LatexNodes2Text(object):
 
 
 
-class _PushEquationContext(latexwalker._PushPropOverride):
+class _PushEquationContext(_util.PushPropOverride):
     def __init__(self, l2t):
 
         new_strict_latex_spaces = None

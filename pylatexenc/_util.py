@@ -170,3 +170,26 @@ class LineNumbersCalculator(object):
         return (1 + line_no, col_no)
 
 
+
+# ------------------------------------------------------------------------------
+
+
+class PushPropOverride(object):
+    def __init__(self, obj, propname, new_value):
+        super(PushPropOverride, self).__init__()
+        self.obj = obj
+        self.propname = propname
+        self.new_value = new_value
+
+    def __enter__(self):
+        if self.new_value is not None:
+            self.initval = getattr(self.obj, self.propname)
+            setattr(self.obj, self.propname, self.new_value)
+        return self
+
+    def __exit__(self, type, value, traceback):
+        # clean-up
+        if self.new_value is not None:
+            setattr(self.obj, self.propname, self.initval)
+
+
