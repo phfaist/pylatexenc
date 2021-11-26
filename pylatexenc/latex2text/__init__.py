@@ -44,7 +44,6 @@ You may also use the command-line version of `latex2text`::
 
 from __future__ import print_function, unicode_literals
 
-import os
 import re
 import inspect
 import textwrap
@@ -671,6 +670,14 @@ def _parse_strict_latex_spaces_dict(strict_latex_spaces):
         raise ValueError("Invalid value for strict_latex_spaces: {!r}"
                          .format(strict_latex_spaces))
 
+#
+
+
+
+from _inputlatexfile import read_latex_file
+
+
+
 
 class LatexNodes2Text(object):
     r"""
@@ -964,35 +971,7 @@ class LatexNodes2Text(object):
         if self.tex_input_directory is None:
             return ''
 
-        fnfull = os.path.realpath(os.path.join(self.tex_input_directory, fn))
-        if self.strict_input:
-            # make sure that the input file is strictly within dirfull, and
-            # didn't escape with '../..' tricks or via symlinks.
-            dirfull = os.path.realpath(self.tex_input_directory)
-            if not fnfull.startswith(dirfull):
-                logger.warning(
-                    "Can't access path '%s' leading outside of mandated directory "
-                    "[strict input mode]",
-                    fn
-                )
-                return ''
-
-        if not os.path.exists(fnfull) and os.path.exists(fnfull + '.tex'):
-            fnfull = fnfull + '.tex'
-        if not os.path.exists(fnfull) and os.path.exists(fnfull + '.latex'):
-            fnfull = fnfull + '.latex'
-        if not os.path.isfile(fnfull):
-            logger.warning(u"Error, file doesn't exist: '%s'", fn)
-            return ''
-
-        logger.debug("Reading input file %r", fnfull)
-
-        try:
-            with open(fnfull) as f:
-                return f.read()
-        except IOError as e:
-            logger.warning(u"Error, can't access '%s': %s", fn, e)
-            return ''
+        return read_latex_file(self.tex_input_directory, fn)
 
 
     def _input_node_simplify_repl(self, n):
