@@ -28,99 +28,11 @@
 # time and without notice.
 
 
-try:
-    # Python >= 3.3
-    from collections.abc import MutableMapping
-except ImportError:
-    from collections import MutableMapping
-
-import warnings
 import bisect
+bisect_right_nodupl = bisect.bisect_right
 
 
 # ------------------------------------------------------------------------------
-
-
-
-def pylatexenc_deprecated_ver(ver, msg, stacklevel=2):
-    warnings.warn(
-        "Deprecated (pylatexenc {}): {} ".format(ver, msg.strip()),
-        DeprecationWarning,
-        stacklevel=stacklevel+1
-    )
-
-
-def pylatexenc_deprecated_2(msg, stacklevel=2):
-    warnings.warn(
-        ( "Deprecated (pylatexenc 2.0): {} "
-          "[see https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-2/]" )
-        .format(msg.strip()),
-        DeprecationWarning,
-        stacklevel=stacklevel+1
-    )
-
-
-
-# ------------------------------------------------------------------------------
-
-
-
-
-
-class LazyDict(MutableMapping):
-    r"""
-    A lazy dictionary that loads its data when it is first queried.
-
-    This is used to store the legacy
-    :py:data:`pylatexenc.latexwalker.default_macro_dict` as well as
-    :py:data:`pylatexenc.latex2text.default_macro_dict` etc.  Such that these
-    "dictionaries" are still exposed at the module-level, but the data is loaded
-    only if they are actually queried.
-    """
-    def __init__(self, generate_dict_fn):
-        self._full_dict = None
-        self._generate_dict_fn = generate_dict_fn
-
-    def _ensure_instance(self):
-        if self._full_dict is not None:
-            return
-        self._full_dict = self._generate_dict_fn()
-
-    def __getitem__(self, key):
-        self._ensure_instance()
-        return self._full_dict.__getitem__(key)
-
-    def __setitem__(self, key, val):
-        self._ensure_instance()
-        return self._full_dict.__setitem__(key, val)
-
-    def __delitem__(self, key):
-        self._ensure_instance()
-        return self._full_dict.__delitem__(key)
-
-    def __iter__(self):
-        self._ensure_instance()
-        return iter(self._full_dict)
-
-    def __len__(self):
-        self._ensure_instance()
-        return len(self._full_dict)
-
-    def copy(self):
-        self._ensure_instance()
-        return self._full_dict.copy()
-
-    def clear(self):
-        self._ensure_instance()
-        return self._full_dict.clear()
-
-
-
-
-
-# ------------------------------------------------------------------------------
-
-
 
 
 class LineNumbersCalculator(object):
@@ -160,7 +72,7 @@ class LineNumbersCalculator(object):
         # find line number in list
 
         # line_no is the index of the last item in self._pos_new_lines that is <= pos.
-        line_no = bisect.bisect_right(self._pos_new_lines, pos)-1
+        line_no = bisect_right_nodupl(self._pos_new_lines, pos)-1
         assert line_no >= 0 and line_no < len(self._pos_new_lines)
 
         col_no = pos - self._pos_new_lines[line_no]
@@ -192,4 +104,15 @@ class PushPropOverride(object):
         if self.new_value is not None:
             setattr(self.obj, self.propname, self.initval)
 
+
+
+# ------------------------------------------------------------------------------
+
+
+from ._util_support import (
+    pylatexenc_deprecated_ver,
+    pylatexenc_deprecated_2,
+    #
+    LazyDict
+)
 

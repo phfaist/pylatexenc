@@ -47,7 +47,7 @@ accept_list_modules = [
 ]
 
 
-_rx_import = re.compile(
+_rx_from_import = re.compile(
     r"""
     ^                                   # beginning of a line
     from
@@ -58,7 +58,7 @@ _rx_import = re.compile(
     (?P<import_targets>
       (?P<import_targets_no_parens>
         \s+
-        (?P<import_name>[A-Za-z0-9_]+)  # main imported module
+        (?P<import_name>[A-Za-z0-9_*]+) # main imported module
         (?:
           [ \t]+ as [ \t]+
           (?P<import_as>[A-Za-z0-9_]+)  # alias import name
@@ -76,8 +76,8 @@ _rx_import = re.compile(
       |
       (?P<import_targets_with_parens>
         \s*\(
-          (?:[A-Za-z0-9_,\s\n]+         # names, commas, whitespace, newlines
-            |  [#].*$ )+                  # or comments
+          (?:[A-Za-z0-9_,\s\n]+        # names, commas, whitespace, newlines
+            |  [#].*$ )+                # or comments
         \)
         [ \t]*$
       )
@@ -85,6 +85,119 @@ _rx_import = re.compile(
     """,
     flags=re.MULTILINE | re.VERBOSE
 )
+
+
+
+_rx_py2supportcode = re.compile(
+    r"""
+    ^import [ \t]+ sys \s*
+
+    ^if [ ]+ sys[.]version_info[.]major [ ]* == [ ]* 2 [ ]* : \s*[\n]
+
+    ( ^[ \t]+.*[\n] )+     # greedy capturing of lines with indentation
+
+    """,
+    flags=re.MULTILINE | re.VERBOSE
+)
+
+
+# remove arguments to super() calls
+_rx_super = re.compile(
+    r"""
+    super\s*
+    \(
+      \s*
+      (?P<clsname> [A-Za-z0-9_]+ )
+      \s*
+      ,
+      \s*
+      (?P<self> self )
+      \s*
+    \)
+    """,
+    flags=re.MULTILINE | re.VERBOSE
+)
+
+
+_rx_import = re.compile(
+    r"""
+    ^
+    import
+    [ \t]+
+    (?P<pkg_name>[a-zA-Z0-9_.]+)        # package name
+    [ \t]*
+    $
+    """,
+    flags=re.MULTILINE | re.VERBOSE
+)
+
+
+
+# logger = logging.getLogger(...)  at module level
+_rx_logger_defn = re.compile(
+    r"""
+    ^
+    logger
+    [ \t]+
+    =
+    [ \t]+
+    .*
+    $
+    """,
+    re.MULTILINE | re.VERBOSE
+)
+# logger.debug|warn|...
+_rx_logger_use = re.compile(
+    r"""
+    \b
+    logger
+    [ \t]*
+    [.]
+    [ \t]*
+    (?P<logger_method>
+      debug
+      |
+      info
+      |
+      warning
+      |
+      error
+      |
+      critical
+    )
+    """,
+    re.MULTILINE | re.VERBOSE
+)
+
+# 'bisect_right_nodupl = ..."
+_rx_bisect_defn = re.compile(
+    r"""
+    ^
+    bisect_right_nodupl
+    [ \t]+
+    =
+    [ \t]+
+    .*
+    $
+    """,
+    re.MULTILINE | re.VERBOSE
+)
+
+_rx_construct_dict_with_generator = re.compile(
+    r"""
+    \b
+    dict\b
+    \(
+    (?P<contents>
+      [^\[\n]+
+      \b for \b
+      .*
+    )
+    \)
+    """,
+    re.MULTILINE | re.VERBOSE
+)
+
 
 
 def process_source_file(relative_dir_items, filename_py):
@@ -96,7 +209,13 @@ def process_source_file(relative_dir_items, filename_py):
 
     print(f"Processing {relative_dir_items=}  {filename_py=}")
 
-    def _repl(m):
+    def _comment_out_text(text):
+        return '###> ' + text.replace('\n', '\n###> ') + '\n'
+
+    def _comment_out_match(m):
+        return '###> ' + m.group().replace('\n', '\n###> ') + '\n'
+
+    def _repl_from_import(m):
         
         pkg_where = m.group('pkg_where')
         import_targets = m.group('import_targets')
@@ -109,7 +228,7 @@ def process_source_file(relative_dir_items, filename_py):
             group = group[:-1]
 
         def _comment_out():
-            return '###> ' + group.replace('\n', '\n###> ') + '\n'
+            return _comment_out_text(group)
 
         if pkg_where == '__future__':
             # special '__future__' import, leave it out
@@ -171,11 +290,98 @@ def process_source_file(relative_dir_items, filename_py):
 
         # transform into simple absolute from X import Y statement
         return f'from {mod_dotname} import {import_targets}'
+
+    def _repl_import(m):
+
+        pkg_name = m.group('pkg_name')
+        group = m.group()
+
+        if pkg_name in ('logging', 'bisect',):
+            return _comment_out_text(group)
+
+        return group
+
+    def _repl_dict_generator(m):
+        
+        contents = m.group('contents')
+        group = m.group()
+
+        repl = 'dict([ ' + contents + ' ])'
+
+        print(
+            "*** replacing suspected dict construction from a generator "
+            "comprehension by explicit list: ***\n"
+            f"  ‘{group}’  -->\n"
+            f"     ‘{repl}’\n"
+        )
+
+        return repl
+
         
     with open(os.path.join(source_dir, *relative_dir_items, filename_py)) as f:
         source_content = f.read()
 
-    final_source_content = _rx_import.sub(_repl, source_content)
+    final_source_content = source_content
+
+    # remove Py2 support code
+    final_source_content = _rx_py2supportcode.sub(
+        lambda m: _comment_out_text(m.group()),
+        final_source_content)
+
+    # fix "from ... import ..." imports
+    final_source_content = _rx_from_import.sub(_repl_from_import, final_source_content)
+
+    # find imports and selectively keep them --- e.g., remove 'logging'
+    final_source_content = _rx_import.sub(_repl_import, final_source_content)
+    
+    # replace logger = logging.getLogger(...) as well as logger.XXX(...) -> console.log
+    final_source_content = _rx_logger_defn.sub(_comment_out_match, final_source_content)
+    final_source_content = _rx_logger_use.sub('console.log', final_source_content)
+
+    # super(SuperClass, self)  -->  super()
+    final_source_content = _rx_super.sub(
+        'super()',
+        final_source_content
+    )
+
+    # dict( x for x in zzz )  --> dict([ x for x in zzz ])
+    final_source_content = _rx_construct_dict_with_generator.sub(
+        _repl_dict_generator,
+        final_source_content
+    )
+
+    # custom implementation for bisect
+    custom_bisect = r"""
+def bisect_right_nodupl(a, x):
+    # find the first index of a that is > pos
+
+    lo = 0
+    hi = len(a)
+    mid = None
+
+    while True:
+        if a[lo] > x:
+            return lo
+        if a[hi-1] <= x:
+            return hi
+        if hi - lo <= 2:
+            if a[lo+1] > x:
+                return lo
+            else: #if a[lo+2] > x:
+                return lo+1
+        mid = (hi + lo) // 2
+        if a[mid] > x:
+            hi = mid+1
+        elif a[mid] <= x:
+            lo = mid
+"""
+    final_source_content = _rx_bisect_defn.sub(
+        lambda m: custom_bisect,
+        final_source_content
+    )
+        
+
+
 
     if not os.path.isdir(os.path.join(target_dir, *relative_dir_items)):
         os.makedirs(os.path.join(target_dir, *relative_dir_items))

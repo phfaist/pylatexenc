@@ -160,8 +160,6 @@ class MacroStandardArgsParser(object):
           to continue parsing stuff at the index `pos+len` in the string.
         """
 
-        from .. import latexwalker
-
         if parsing_state is None:
             parsing_state = w.make_parsing_state()
 
@@ -233,7 +231,7 @@ class MacroStandardArgsParser(object):
                     argnlist.append(None)
 
             else:
-                raise LatexWalkerError(
+                raise latexwalker_types.LatexWalkerError(
                     "Unknown macro argument kind for macro: {!r}".format(argt)
                 )
 
@@ -414,8 +412,6 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             self.verbatim_std_arg_parser = None
 
     def parse_args(self, w, pos, parsing_state=None):
-
-        from .. import latexwalker
 
         parsed_args_object_kwargs = {}
 
