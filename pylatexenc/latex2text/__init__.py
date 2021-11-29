@@ -674,7 +674,7 @@ def _parse_strict_latex_spaces_dict(strict_latex_spaces):
 
 
 
-from _inputlatexfile import read_latex_file
+from ._inputlatexfile import read_latex_file
 
 
 
@@ -971,7 +971,7 @@ class LatexNodes2Text(object):
         if self.tex_input_directory is None:
             return ''
 
-        return read_latex_file(self.tex_input_directory, fn)
+        return read_latex_file(self.tex_input_directory, self.strict_input, fn)
 
 
     def _input_node_simplify_repl(self, n):
