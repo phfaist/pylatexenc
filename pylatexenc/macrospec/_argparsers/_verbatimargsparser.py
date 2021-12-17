@@ -34,7 +34,7 @@ from ...latexwalker import _types as latexwalker_types
 from .._parsedargsbase import ParsedMacroArgs
 
 
-from . import MacroStandardArgsParser
+from ._base import MacroStandardArgsParser
 
 
 
