@@ -30,6 +30,7 @@
 from __future__ import print_function, unicode_literals
 
 
+from .._util import ChainMap
 
 
 
@@ -79,6 +80,13 @@ class LatexContextDb(object):
         self.category_list = []
         self.d = {}
 
+        # these chainmaps' list of maps mirror the category_list item for item.
+        self.lookup_chain_maps = {
+            'macros': ChainMap({}),
+            'environments': ChainMap({}),
+            'specials': ChainMap({}),
+        }
+
         self.unknown_macro_spec = None
         self.unknown_environment_spec = None
         self.unknown_specials_spec = None
@@ -124,28 +132,35 @@ class LatexContextDb(object):
             raise TypeError("add_context_category(): You may only specify one of "
                             "prepend=True, insert_before=... or insert_after=...")
 
+        category_dicts = {
+            'macros': dict( (m.macroname, m) for m in macros ),
+            'environments': dict( (e.environmentname, e) for e in environments ),
+            'specials': dict( (s.specials_chars, s) for s in specials ),
+        }
+
         if prepend:
-            self.category_list.insert(0, category)
+            insert_fn = lambda listobj, item: listobj.insert(0, item)
         elif insert_before:
             if insert_before in self.category_list:
                 i = self.category_list.index(insert_before)
             else:
                 i = 0
-            self.category_list.insert(i, category)
+            insert_fn = lambda listobj, item, i=i: listobj.insert(i, item)
         elif insert_after:
             if insert_after in self.category_list:
                 i = self.category_list.index(insert_after) + 1 # insert after found category
             else:
                 i = len(self.category_list)
-            self.category_list.insert(i, category)
+            insert_fn = lambda listobj, item, i=i: listobj.insert(i, item)
         else:
-            self.category_list.append(category)
+            insert_fn = lambda listobj, item: listobj.append(item)
 
-        self.d[category] = {
-            'macros': dict( (m.macroname, m) for m in macros ),
-            'environments': dict( (e.environmentname, e) for e in environments ),
-            'specials': dict( (s.specials_chars, s) for s in specials ),
-        }
+        insert_fn(self.category_list, category)
+        for which in ('macros', 'environments', 'specials',):
+            insert_fn(self.lookup_chain_maps[which].maps, category_dicts[which])
+
+        self.d[category] = category_dicts
+
         
     def set_unknown_macro_spec(self, macrospec):
         r"""
@@ -185,11 +200,14 @@ class LatexContextDb(object):
         set by :py:meth:`set_unknown_macro_spec()` or `None` if no such spec was
         set.
         """
-        for cat in self.category_list:
-            # search categories in the given order
-            if macroname in self.d[cat]['macros']:
-                return self.d[cat]['macros'][macroname]
-        return self.unknown_macro_spec
+        # for cat in self.category_list:
+        #     # search categories in the given order
+        #     if macroname in self.d[cat]['macros']:
+        #         return self.d[cat]['macros'][macroname]
+        try:
+            return self.lookup_chain_maps['macros'][macroname]
+        except KeyError:
+            return self.unknown_macro_spec
     
     def get_environment_spec(self, environmentname):
         r"""
@@ -202,11 +220,14 @@ class LatexContextDb(object):
         :py:meth:`set_unknown_environment_spec()` or `None` if no such spec was
         set.
         """
-        for cat in self.category_list:
-            # search categories in the given order
-            if environmentname in self.d[cat]['environments']:
-                return self.d[cat]['environments'][environmentname]
-        return self.unknown_environment_spec
+        # for cat in self.category_list:
+        #     # search categories in the given order
+        #     if environmentname in self.d[cat]['environments']:
+        #         return self.d[cat]['environments'][environmentname]
+        try:
+            return self.lookup_chain_maps['environments'][environmentname]
+        except KeyError:
+            return self.unknown_environment_spec
 
     def get_specials_spec(self, specials_chars):
         r"""
@@ -227,11 +248,14 @@ class LatexContextDb(object):
         :py:meth:`set_unknown_specials_spec()` or `None` if no such spec was
         set.
         """
-        for cat in self.category_list:
-            # search categories in the given order
-            if specials_chars in self.d[cat]['specials']:
-                return self.d[cat]['specials'][specials_chars]
-        return self.unknown_specials_spec
+        # for cat in self.category_list:
+        #     # search categories in the given order
+        #     if specials_chars in self.d[cat]['specials']:
+        #         return self.d[cat]['specials'][specials_chars]
+        try:
+            return self.lookup_chain_maps['specials'][specials_chars]
+        except KeyError:
+            return self.unknown_specials_spec
 
     def test_for_specials(self, s, pos, parsing_state=None):
         r"""

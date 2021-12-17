@@ -105,6 +105,15 @@ class PushPropOverride(object):
             setattr(self.obj, self.propname, self.initval)
 
 
+# ------------------------------------------------------------------------------
+
+
+try:
+    from collections import ChainMap
+except:
+    from chainmap import ChainMap
+
+
 
 # ------------------------------------------------------------------------------
 
