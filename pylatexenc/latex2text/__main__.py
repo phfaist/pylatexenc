@@ -23,6 +23,8 @@
 # THE SOFTWARE.
 #
 
+from __future__ import print_function, unicode_literals
+
 import sys
 import fileinput
 import argparse
@@ -44,14 +46,20 @@ def main(argv=None):
     codegroup = parser.add_argument_group("Input options")
 
     codegroup.add_argument('--code', '-c', action='store', default=None, metavar="LATEX_CODE",
-                           help="Convert the given LATEX_CODE to unicode text instead of reading "
-                           "from FILE or standard input.  You cannot specify FILEs if you use this "
-                           "option, and any standard input is ignored.")
+                           help="Convert the given LATEX_CODE to unicode text instead "
+                           "of reading from FILE or standard input.  You cannot specify "
+                           "FILEs if you use this option, and any standard input is ignored.")
+
+
+    codegroup.add_argument('--no-final-newline', '-n',
+                           action='store_true', default=False,
+                           help="Do not print a newline after the converted text.")
 
 
     codegroup.add_argument('files', metavar="FILE", nargs='*',
-                           help="Input files to read LaTeX code from. If no FILE(s) is/are specified, "
-                           "LaTeX code is read from standard input unless --code is specified")
+                           help="Input files to read LaTeX code from. If no FILE(s) "
+                           "is/are specified, LaTeX code is read from standard input "
+                           "unless --code is specified")
 
 
 
@@ -196,7 +204,11 @@ def main(argv=None):
                            keep_braced_groups_minlen=args.keep_braced_groups_minlen,
                            fill_text=fill_text)
 
-    print(ln2t.nodelist_to_text(nodelist))
+    print_kwargs = {}
+    if args.no_final_newline:
+        print_kwargs['end'] = ''
+
+    print(ln2t.nodelist_to_text(nodelist), **print_kwargs)
 
 
 
