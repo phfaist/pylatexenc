@@ -109,7 +109,9 @@ class PushPropOverride(object):
 # ------------------------------------------------------------------------------
 
 
-from ._util_support import (
+# (import these symbols for re-export)
+
+from ._util_support import (   # lgtm [py/unused-import]
     pylatexenc_deprecated_ver,
     pylatexenc_deprecated_2,
     #

@@ -708,7 +708,8 @@ class LatexWalker(object):
                         raise LatexWalkerParseError(
                             r"Expected expression, got \end",
                             self.s, pos,
-                            **self.pos_to_lineno_colno(pos, as_dict=True))
+                            **self.pos_to_lineno_colno(pos, as_dict=True)
+                        )
                     else:
                         return self._mknodeposlen(LatexCharsNode,
                                                   parsing_state=parsing_state,
@@ -868,7 +869,9 @@ class LatexWalker(object):
             raise LatexWalkerParseError(
                 s=self.s,
                 pos=pos,
-                msg='get_latex_braced_group: not an opening brace/bracket: %s' %(self.s[pos]),
+                msg='get_latex_braced_group: not an opening brace/bracket: %s' %(
+                    self.s[firsttok.pos:firsttok.pos+firsttok.len]
+                ),
                 **self.pos_to_lineno_colno(pos, as_dict=True)
             )
 

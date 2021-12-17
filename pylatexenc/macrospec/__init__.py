@@ -35,7 +35,7 @@ macros and environments, specifying how they should be parsed by
 """
 
 
-from ._parsedargs import ParsedMacroArgs
+from ._parsedargsbase import ParsedMacroArgs
 
 from ._argparsers import MacroStandardArgsParser, \
     ParsedVerbatimArgs, VerbatimArgsParser, ParsedLstListingArgs, LstListingArgsParser

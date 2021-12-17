@@ -29,7 +29,7 @@
 
 from __future__ import print_function, unicode_literals
 
-from ..macrospec import _parsedargs as macrospec_parsedargs
+from ..macrospec._parsedargsbase import ParsedMacroArgs
 
 
 # for Py3
@@ -45,6 +45,24 @@ if sys.version_info.major == 2:
 ## End Py2 support code
 
 
+
+# we'll be using "from _types import *" for convenience, so to avoid polluting
+# the other modules' namespaces, we define __all__ here.
+
+__all__ = [
+    'LatexWalkerError',
+    'LatexWalkerParseError',
+    'LatexWalkerEndOfStream',
+    'LatexToken',
+    'LatexNode',
+    'LatexCharsNode',
+    'LatexGroupNode',
+    'LatexCommentNode',
+    'LatexMacroNode',
+    'LatexEnvironmentNode',
+    'LatexSpecialsNode',
+    'LatexMathNode',
+]
 
 
 
@@ -532,7 +550,7 @@ class LatexMacroNode(LatexNode):
        :py:class:`LatexNode`.
     """
     def __init__(self, macroname, **kwargs):
-        nodeargd=kwargs.pop('nodeargd', macrospec_parsedargs.ParsedMacroArgs())
+        nodeargd=kwargs.pop('nodeargd', ParsedMacroArgs())
         macro_post_space=kwargs.pop('macro_post_space', '')
         # legacy:
         nodeoptarg=kwargs.pop('nodeoptarg', None)
@@ -610,7 +628,7 @@ class LatexEnvironmentNode(LatexNode):
     """
     
     def __init__(self, environmentname, nodelist, **kwargs):
-        nodeargd = kwargs.pop('nodeargd', macrospec_parsedargs.ParsedMacroArgs())
+        nodeargd = kwargs.pop('nodeargd', ParsedMacroArgs())
         # legacy:
         optargs = kwargs.pop('optargs', [])
         args = kwargs.pop('args', [])
