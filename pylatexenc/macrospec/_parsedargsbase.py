@@ -31,6 +31,22 @@ from __future__ import print_function, unicode_literals
 
 
 
+# class ParsedMacroArgument(object):
+#     r"""
+#     Store a single parsed argument that was provided to a macro, an environment,
+#     or a specials.
+#     """
+#     def __init__(self, node, argname, pre_ignored......, **kwargs):
+#         super(ParsedMacroArgument, self).__init__(**kwargs)
+
+#         self.node = node
+#         self.argname = argname
+
+#         self.pre_ignored_nodes = pre_ignored_nodes
+
+    
+
+
 
 class ParsedMacroArgs(object):
     r"""
@@ -84,9 +100,14 @@ class ParsedMacroArgs(object):
        the first argument is optional and all remaining args are mandatory; or
        it is `(None, <list of args>)` for any other argument structure.
     """
-    def __init__(self, argnlist=[], argspec='', **kwargs):
+    def __init__(self, #argument_list=[],
+                 argnlist=[], argspec='',
+                 **kwargs):
         super(ParsedMacroArgs, self).__init__(**kwargs)
-        
+
+#        self.argument_list = ............
+        # use argument_list instead of argspec/argnlist .......
+        # for pylatexenc < 3:
         self.argnlist = argnlist
         self.argspec = argspec
 

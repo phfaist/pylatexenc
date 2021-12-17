@@ -74,8 +74,18 @@ class MacroSpec(object):
         else:
             self.args_parser = args_parser
 
+    # def parse_instance(self, macroname, *args, **kwargs):
+    #     r"""
+    #     ............ Shorthand for calling the :py:attr:`args_parser`\ 's `parse_args()` method.
+    #     See :py:class:`MacroStandardArgsParser`.
+    #     """
+    #     ....................
+    #     return self.args_parser.parse_args(*args, **kwargs, macroname=macroname)
+
     def parse_args(self, *args, **kwargs):
         r"""
+        .............will be deprecated.
+
         Shorthand for calling the :py:attr:`args_parser`\ 's `parse_args()` method.
         See :py:class:`MacroStandardArgsParser`.
         """

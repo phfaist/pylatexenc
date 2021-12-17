@@ -322,6 +322,8 @@ class LatexWalker(object):
         # We don't store the latex_context in an attribute, because we always
         # access it via the current parsing_state
 
+        latex_context.freeze() # prevent future changes to the latex context db
+
         self.default_parsing_state = ParsingState(
             s=self.s,
             latex_context=latex_context,
@@ -395,12 +397,17 @@ class LatexWalker(object):
 
         Parse the token in the stream pointed to at position `pos`.
 
+        Returns a :py:class:`LatexToken`. Raises
+        :py:exc:`LatexWalkerEndOfStream` if end of stream reached.
+
         For tokens of type 'char', usually a single character is returned.  The
         only exception is at paragraph boundaries, where a single 'char'-type
         token has argument '\\n\\n'.
 
-        Returns a :py:class:`LatexToken`. Raises
-        :py:exc:`LatexWalkerEndOfStream` if end of stream reached.
+        Normally whitespace cannot be part of a latex-specials.  As an
+        exception, you can declare a `SpecialsSpec` in your `latex_context` with
+        the chars ``"\n\n"``, and it will be reported at paragraph breaks caused
+        by a double newline.
 
         The argument `include_brace_chars=` allows to specify additional pairs
         of single characters which should be considered as braces (i.e., of
@@ -493,8 +500,18 @@ class LatexWalker(object):
             space += s[pos]
             pos += 1
             if space.endswith('\n\n'):  # two \n's indicate new paragraph.
-                return LatexToken(tok='char', arg='\n\n', pos=pos-2, len=2,
-                                  pre_space=space[:-2])
+                space = space[:-2]
+                pos = pos - 2
+                try:
+                    sspec = parsing_state.latex_context.get_specials_spec(
+                        specials_chars='\n\n',
+                        raise_if_not_found=True
+                    )
+                    return LatexToken(tok='specials', arg=sspec,
+                                      pos=pos, len=2,
+                                      pre_space=space)
+                except KeyError:
+                    return LatexToken(tok='char', arg='\n\n', pos=pos, len=2, pre_space=space)
 
         if pos >= len(s):
             raise LatexWalkerEndOfStream(final_space=space)
