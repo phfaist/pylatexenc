@@ -32,6 +32,8 @@ from __future__ import print_function, unicode_literals
 
 from .._util import ChainMap
 
+from .._util import pylatexenc_deprecated_3
+
 
 
 
@@ -71,7 +73,14 @@ class LatexContextDb(object):
     the latex walker keeps track of what the latex context was when parsing
     nodes, and modifying the context will modify that stored information, too.
     Instead of being tempted to modify the object, create a new one with
-    :py:meth:`filter_context()`.
+    :py:meth:`filtered_context()`.
+    
+    To (partially) ensure that the database isn't modified while it is being
+    used, it can be "frozen" with the method :py:meth:`freeze()`.  This method
+    simply sets a flag and will cause methods like `add_context_category()` to
+    raise an error.  You can always construct new context category instances
+    based on the present one by calling :py:meth:`filtered_context()` or
+    :py:meth:`extended_with()`.
 
     See :py:func:`pylatexenc.latexwalker.get_default_latex_context_db()` for the
     default latex context for `latexwalker` with a default collection of known
@@ -407,8 +416,19 @@ class LatexContextDb(object):
                 yield spec
 
 
-    def filter_context(self, keep_categories=[], exclude_categories=[],
-                       keep_which=[], create_class=None):
+    def filter_context(self, *args, **kwargs):
+        r"""
+        .. deprecated:: 3.0
+
+           The `filter_context()` method was renamed `filtered_context()`.  The
+           method signature is unchanged.
+        """
+        pylatexenc_deprecated_3("`LatexContextDb.filter_context()` was renamed to "
+                                "`filtered_context()`.")
+        return self.filtered_context(*args, **kwargs)
+
+    def filtered_context(self, keep_categories=[], exclude_categories=[],
+                         keep_which=[], create_class=None):
         r"""
         Return a new :py:class:`LatexContextDb` instance where we only keep
         certain categories of macro and environment specifications.

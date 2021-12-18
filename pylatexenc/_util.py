@@ -123,6 +123,7 @@ except:
 from ._util_support import (   # lgtm [py/unused-import]
     pylatexenc_deprecated_ver,
     pylatexenc_deprecated_2,
+    pylatexenc_deprecated_3,
     #
     LazyDict
 )

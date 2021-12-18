@@ -56,6 +56,15 @@ def pylatexenc_deprecated_2(msg, stacklevel=2):
         stacklevel=stacklevel+1
     )
 
+def pylatexenc_deprecated_3(msg, stacklevel=2):
+    warnings.warn(
+        ( "Deprecated (pylatexenc 3.0): {} "
+          "[see https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-3/]" )
+        .format(msg.strip()),
+        DeprecationWarning,
+        stacklevel=stacklevel+1
+    )
+
 
 
 # ------------------------------------------------------------------------------
