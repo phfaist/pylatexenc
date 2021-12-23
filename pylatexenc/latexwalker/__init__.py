@@ -121,7 +121,9 @@ from ._types import (
 
 
 
-from ._walker import ParsingState, LatexWalker
+from ._parsingstate import ParsingState
+
+from ._walker import LatexWalker
 
 
 from ._get_defaultspecs import get_default_latex_context_db
