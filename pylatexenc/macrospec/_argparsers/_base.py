@@ -18,6 +18,22 @@ if sys.version_info.major == 2:
 
 
 
+# class LatexStandardArgument(object):
+#     def __init__(self,
+#                  arg_type='{',
+#                  arg_math_mode=False,
+#                  no_pre_space=False):
+#         self.arg_type = arg_type
+#         self.arg_math_mode = math_mode
+#         self.no_pre_space = no_pre_space
+
+#     def parse(self, w, pos, parsing_state, spec, arg_index):
+#         .....
+
+#         ... 
+
+
+
 class MacroStandardArgsParser(object):
     r"""
     Parses the arguments to a LaTeX macro.
