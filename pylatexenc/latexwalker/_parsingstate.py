@@ -105,6 +105,15 @@ class ParsingState(object):
         self.latex_context = None
         self.in_math_mode = False
         self.math_mode_delimiter = None
+
+        # new in pylatexenc 3
+        self.latex_group_delimiters = [ ('{', '}'), ]
+        self.latex_inline_math_delimiters = [ ('$', '$'), (r'\(', r'\)'), ]
+        self.latex_display_math_delimiters = [ ('$$', '$$'), (r'\[', r'\]'), ]
+        self.enable_environments = True
+        self.enable_comments = True
+        self.enable_nlnl_paragraph = True
+
         self._fields = ('s', 'latex_context', 'in_math_mode', 'math_mode_delimiter', )
 
         do_sanitize = kwargs.pop('_do_sanitize', True)

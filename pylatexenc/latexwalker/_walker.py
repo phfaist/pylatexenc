@@ -1050,7 +1050,7 @@ class LatexWalker(object):
 
         #
         # Man, I really need to rewrite this function properly. This is some
-        # pretty ugly sh*t.
+        # pretty ugly stuff.
         #
 
         origpos = pos
