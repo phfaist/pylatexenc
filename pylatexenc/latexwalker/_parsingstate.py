@@ -27,12 +27,28 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-
 from __future__ import print_function, unicode_literals
+
 
 
 import logging
 logger = logging.getLogger(__name__)
+
+
+class _StrictAsciiAlphaChars(object):
+    def __str__(self):
+        return "".join([
+            chr(ord('a')+j) for j in range(26)
+        ]) + "".join([
+            chr(ord('A')+j) for j in range(26)
+        ])
+    def __contains__(self, c):
+        n = ord(c)
+        return (
+            (97 <= n <= 122)  # 97 == ord('a'), 122 == ord('z')
+            or
+            (65 <= n <= 90) # 65, 90 == ord('A'), ord('Z')
+        )
 
 
 
@@ -74,7 +90,7 @@ class ParsingState(object):
        Information about the kind of math mode we are currently in, if
        `in_math_mode` is `True`.  This is a string which can be set to aid the
        parser.  The parser sets this field to the math mode delimiter that
-       initiated the math mode (one of ``'$'``, ``'$$'``, ``r'\('``, ``r'\)'``).
+       initiated the math mode (one of ``'$'``, ``'$$'``, ``r'\('``, ``r'\['``).
        For user-initiated math modes (e.g. by a custom environment definition),
        you can set this string to any custom value EXCEPT any of the core math
        mode delimiters listed above.
@@ -85,6 +101,36 @@ class ParsingState(object):
                  delimiter or two inline math mode delimiters (as in
                  ``$a$$b$``).  You should only set `math_mode_delimiter='$'` if
                  you know what you're doing.
+
+
+    .. py:attribute:: latex_group_delimiters
+
+       ............
+
+    .. py:attribute:: latex_inline_math_delimiters
+
+       ............
+
+    .. py:attribute:: latex_display_math_delimiters
+
+       ............
+
+    .. py:attribute:: enable_double_newline_paragraphs
+
+       ............
+
+    .. py:attribute:: enable_environments
+
+       ............
+
+    .. py:attribute:: enable_comments
+
+       ............
+
+    .. py:attribute:: macro_alpha_chars
+
+       ............
+
 
     .. versionadded:: 2.0
  
@@ -98,11 +144,21 @@ class ParsingState(object):
 
        All arguments must now be specified as keyword arguments as of version
        2.7.
+
+    .. versionadded:: 3.0
+
+       The attributes `latex_group_delimiters`, `latex_inline_math_delimiters`,
+       `latex_display_math_delimiters`, `enable_double_newline_paragraphs`,
+       `enable_environments`, `enable_comments`, and `macro_alpha_chars` were
+       introduced in version 3.
     """
     def __init__(self, **kwargs):
         super(ParsingState, self).__init__()
+
         self.s = None
+
         self.latex_context = None
+
         self.in_math_mode = False
         self.math_mode_delimiter = None
 
@@ -110,15 +166,76 @@ class ParsingState(object):
         self.latex_group_delimiters = [ ('{', '}'), ]
         self.latex_inline_math_delimiters = [ ('$', '$'), (r'\(', r'\)'), ]
         self.latex_display_math_delimiters = [ ('$$', '$$'), (r'\[', r'\]'), ]
+        self.enable_double_newline_paragraphs = True
         self.enable_environments = True
         self.enable_comments = True
-        self.enable_nlnl_paragraph = True
+        self.macro_alpha_chars = _StrictAsciiAlphaChars()
 
-        self._fields = ('s', 'latex_context', 'in_math_mode', 'math_mode_delimiter', )
+        # set internally by the other fields by _set_fields()
+        #self._macronames_math_delims = set()
+        self._openbracechars = frozenset()
+        self._closebracechars = frozenset()
+        self._math_delims_info_startchars = ''
+        self._math_delims_by_len = []
+        self._math_delims_info_by_open = {}
+        self._math_expecting_close_delim = None
+        # self._latex_inline_math_delimiters_dict = {}
+        # self._latex_display_math_delimiters_dict = {}
+
+        self._fields = (
+            's',
+            'latex_context', 'in_math_mode', 'math_mode_delimiter',
+            'latex_group_delimiters',
+            'latex_inline_math_delimiters', 'latex_display_math_delimiters',
+            'enable_environments',
+            'enable_comments',
+            'enable_double_newline_paragraphs',
+        )
 
         do_sanitize = kwargs.pop('_do_sanitize', True)
 
         self._set_fields(kwargs, do_sanitize=do_sanitize)
+
+    def _set_derivative_fields(self):
+        a, b = zip(*self.latex_group_delimiters)
+        self._openbracechars = frozenset(a)
+        self._closebracechars = frozenset(b)
+        #
+        # ......................
+        self._math_delims_info_startchars = frozenset([
+            x[:1]
+            for pair in (self.latex_inline_math_delimiters
+                      + self.latex_display_math_delimiters)
+            for x in pair
+        ])
+        self._math_delims_by_len = sorted(
+            latex_inline_math_delimiters + latex_display_math_delimiters,
+            key=lambda x: len(x[0]),
+            reverse=True,
+        )
+        self._math_delims_info_by_open = dict(
+            [ (open_delim, dict(close_delim=close_delim, tok='mathmode_inline'))
+              for open_delim, close_delim in self.latex_inline_math_delimiters ]
+            + [ (open_delim, dict(close_delim=close_delim, tok='mathmode_display'))
+              for open_delim, close_delim in self.latex_display_math_delimiters ]
+        )
+        if self.in_math_mode:
+            self._math_expecting_close_delim = None
+        else:
+            try:
+                self._math_expecting_close_delim_info = self._math_delims_info_by_open[
+                    self.math_mode_delimiter
+                ]
+            except KeyError as e:
+                logger.warning("Invalid open math_mode_delimiter %r in ‘%r’",
+                               self.math_mode_delimiter, self)
+                self._math_expecting_close_delim = None
+        # #
+        # self._latex_inline_math_delimiters_dict = \
+        #     dict(self._latex_inline_math_delimiters)
+        # self._latex_display_math_delimiters_dict = \
+        #     dict(self._latex_display_math_delimiters)
+
 
     def sub_context(self, **kwargs):
         r"""
@@ -159,6 +276,12 @@ class ParsingState(object):
             # Do some sanitization.  If we set in_math_mode=False, then we should
             # clear any math_mode_delimiter.
             self._sanitize(given_fields=kwargs)
+
+        #
+        # set internal preprocessed values
+        #
+        self._set_derivative_fields()
+
 
     def _sanitize(self, given_fields):
         """

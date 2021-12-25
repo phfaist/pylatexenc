@@ -1,5 +1,10 @@
 
 class LatexNodeListCollector(object):
+    r"""
+    .. versionadded:: 3.0
+
+       The `LatexNodeListCollector` class was added in `pylatexenc 3`.
+    """
     def __init__(self, tokenreader, w):
 
         self._tokenreader = tokenreader

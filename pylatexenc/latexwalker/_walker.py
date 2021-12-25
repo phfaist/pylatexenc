@@ -42,10 +42,16 @@ logger = logging.getLogger(__name__)
 
 
 
-def _maketuple(*args):
-    # for use with Python 2, where we don't have *args expansion in tuples and
-    # lists
-    return tuple(args)
+
+# for Py3
+_maketuple = tuple
+
+## Begin Py2 support code
+import sys
+if sys.version_info.major == 2:
+    # Py2
+    _maketuple = lambda *args: tuple(args)
+## End Py2 support code
 
 
 
@@ -1229,8 +1235,10 @@ class LatexWalker(object):
                         parsing_state=parsing_state_inner
                     )
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append( _maketuple('math mode "{}"'.format(tok.arg), tok.pos,
-                                                       *self.pos_to_lineno_colno(tok.pos)) )
+                    e.open_contexts.append(
+                        _maketuple('math mode "{}"'.format(tok.arg), tok.pos,
+                                   *self.pos_to_lineno_colno(tok.pos))
+                    )
                     raise
                 p.pos = mpos + mlen
 
@@ -1268,8 +1276,10 @@ class LatexWalker(object):
                 # except LatexWalkerEndOfStream as e:
                 #     # shouldn't happen.
                 except LatexWalkerParseError as e:
-                    e.open_contexts.append( _maketuple('open brace', tok.pos,
-                                                       *self.pos_to_lineno_colno(tok.pos)) )
+                    e.open_contexts.append(
+                        _maketuple('open brace', tok.pos,
+                                   *self.pos_to_lineno_colno(tok.pos))
+                    )
                     raise
 
                 p.pos = bpos + blen

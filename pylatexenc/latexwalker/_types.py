@@ -185,7 +185,11 @@ class LatexToken(object):
     Leading whitespace before the token is not returned as a separate
     'char'-type token, but it is given in the `pre_space` field of the token
     which follows.  Pre-space may contain a newline, but not two consecutive
-    newlines.
+    newlines.  The `pos` position is the position of the first character of the
+    token itself, which immediately follows any leading whitespace.  Similarly,
+    the `len` attribute does not include the leading whitespace's length,
+    meaning that `pos+len` points to the character immediately after the present
+    token.
 
     The `post_space` is only used for 'macro' and 'comment' tokens, and it
     stores any spaces encountered after a macro, or the newline with any
