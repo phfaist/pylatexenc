@@ -34,6 +34,9 @@ class LatexTokenReaderBase(object):
         self.fastforward_past_token(tok)
         return tok
 
+    def cur_pos(self):
+        raise RuntimeError("LatexTokenReaderBase subclasses must reimplement cur_pos()")
+
     def skip_space_chars(self, parsing_state):
         raise RuntimeError("This token reader does not support character-level access")
 
@@ -41,9 +44,6 @@ class LatexTokenReaderBase(object):
         raise RuntimeError("This token reader does not support character-level access")
 
     def next_chars(self, num_chars, parsing_state):
-        raise RuntimeError("This token reader does not support character-level access")
-
-    def cur_pos_chars(self):
         raise RuntimeError("This token reader does not support character-level access")
 
     def move_to_pos_chars(self, pos):
@@ -91,6 +91,9 @@ class LatexTokenListTokenReader(LatexTokenReaderBase):
 
     def move_past_token(self, tok):
         self._idx = self._find_tok_idx(tok, 'move_past_token') + 1
+
+    def cur_pos(self):
+        return peek_token(None).pos
 
 
 # ----------------------------
@@ -145,7 +148,7 @@ class LatexTokenReader(LatexTokenReaderBase):
             self._pos = len(self.s)
         return chars
 
-    def cur_pos_chars(self):
+    def cur_pos(self):
         return self._pos
 
     def move_to_pos_chars(self, pos):

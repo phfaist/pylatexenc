@@ -23,6 +23,7 @@ class LatexStandardArgumentParser(object):
                  include_skipped_comments=True,
                  expression_single_token_requiring_arg_is_error=True,
                  is_math_mode=None,
+                 do_not_skip_space=False,
                  **kwargs
                  ):
         super(LatexStandardArgument, self).__init__(**kwargs)
@@ -33,6 +34,7 @@ class LatexStandardArgumentParser(object):
         self.expression_single_token_requiring_arg_is_error = \
             expression_single_token_requiring_arg_is_error
         self.is_math_mode = is_math_mode
+        self.do_not_skip_space = do_not_skip_space
 
         self.arg_parsing_state_kwargs = dict(enable_environments=False)
         if self.is_math_mode is not None:
@@ -50,13 +52,15 @@ class LatexStandardArgumentParser(object):
             self.arg_parser = LatexDelimitedGroupParser(
                 require_brace_type='[',
                 include_brace_chars=('[',']',),
-                optional=True
+                optional=True,
+                do_not_skip_space=self.do_not_skip_space,
             )
 
         elif arg_spec in ('s', '*'):
 
             self.arg_parser = LatexOptionalCharsMarker(
                 chars='*'
+                do_not_skip_space=self.do_not_skip_space,
             )
 
         elif arg_spec.startswith('t'):
@@ -68,6 +72,7 @@ class LatexStandardArgumentParser(object):
 
             self.arg_parser = LatexOptionalCharsMarker(
                 chars=the_char
+                do_not_skip_space=self.do_not_skip_space,
             )
 
         elif arg_spec.startswith('r'):
@@ -81,7 +86,8 @@ class LatexStandardArgumentParser(object):
             self.arg_parser = LatexDelimitedGroupParser(
                 require_brace_type=open_char,
                 include_brace_chars=(open_char, close_char,),
-                optional=False
+                optional=False,
+                do_not_skip_space=self.do_not_skip_space,
             )
 
         elif arg_spec.startswith('d'):
@@ -95,7 +101,8 @@ class LatexStandardArgumentParser(object):
             self.arg_parser = LatexDelimitedGroupParser(
                 require_brace_type=open_char,
                 include_brace_chars=(open_char, close_char,),
-                optional=True
+                optional=True,
+                do_not_skip_space=self.do_not_skip_space,
             )
 
         else:
@@ -105,9 +112,16 @@ class LatexStandardArgumentParser(object):
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
-        arg_parsing_state = parsing_state.sub_context(
-            **self.arg_parsing_state_kwargs
-        )
+        arg_parsing_state = parsing_state
+
+        need_update_parsing_state = False
+        for k,v in self.arg_parsing_state_kwargs.items():
+            if getattr(parsing_state, k) != v:
+                need_update_parsing_state = True
+        if need_update_parsing_state:
+            arg_parsing_state = parsing_state.sub_context(
+                **self.arg_parsing_state_kwargs
+            )
 
         nodes, carryover_info = latex_walker.parse_content(
             self.arg_parser,
@@ -117,10 +131,7 @@ class LatexStandardArgumentParser(object):
             **kwargs
         )
 
-        # if carryover_info:
-        #     logger.warning("Ignoring carryover information (%r) when parsing macro arguments!",
-        #                    carryover_info)
-
         return node, carryover_info
 
             
+# ----------------------------

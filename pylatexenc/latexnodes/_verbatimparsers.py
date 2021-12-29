@@ -45,7 +45,7 @@ class LatexVerbatimBaseParser(object):
         verbatim_string = ''
         stop_condition_met = False
 
-        orig_pos = token_reader.cur_pos_chars()
+        orig_pos = token_reader.cur_pos()
 
         ended_with_eos = False
 
@@ -62,7 +62,7 @@ class LatexVerbatimBaseParser(object):
         except LatexWalkerEndOfStream:
             ended_with_eos = True
 
-        pos_end = token_reader.cur_pos_chars()
+        pos_end = token_reader.cur_pos()
         nodes = latex_walker.make_node(
             LatexCharsNode,
             chars=verbatim_string,
@@ -113,7 +113,7 @@ class LatexVerbatimDelimParser(LatexVerbatimBaseParser):
         
         token_reader.skip_space_chars()
 
-        orig_pos = token_reader.cur_pos_chars()
+        orig_pos = token_reader.cur_pos()
 
         if self.delimiter_chars is None:
             # read the delimiter character

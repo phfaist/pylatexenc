@@ -414,11 +414,13 @@ class LatexDelimitedGroupParser(object):
                  require_brace_type,
                  include_brace_chars=None,
                  optional=False,
+                 do_not_skip_space=False,
                  **kwargs):
         super(LatexDelimitedGroupParser, self).__init__(**kwargs)
         self.require_brace_type = require_brace_type
         self.include_brace_chars = include_brace_chars
         self.optional = optional
+        self.do_not_skip_space = do_not_skip_space
 
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
@@ -432,7 +434,8 @@ class LatexDelimitedGroupParser(object):
         firsttok = token_reader.next_token(pos, parsing_state=this_level_parsing_state)
 
         if firsttok.tok != 'brace_open'  \
-           or (require_brace_type is not None and firsttok.arg != require_brace_type):
+           or (require_brace_type is not None and firsttok.arg != require_brace_type) \
+           or (self.do_not_skip_space and firsttok.pre_space):
 
             if self.optional:
                 # all ok, the argument was optional and was simply not specified.
@@ -447,13 +450,15 @@ class LatexDelimitedGroupParser(object):
                     '‘' + od + '’'
                     for (od, cd) in this_level_parsing_state.latex_group_delimiters
                 ])
+            what_we_got = latex_walker.s[firsttok.pos:firsttok.pos+firsttok.len]
             raise LatexWalkerParseError(
-                msg='Expected an opening LaTeX delimiter (%s), got ‘%s’' %(
+                msg='Expected an opening LaTeX delimiter (%s), got ‘%s’%s' %(
                     acceptable_braces,
-                    latex_walker.s[firsttok.pos:firsttok.pos+firsttok.len]
+                    what_we_got
+                    ' with leading whitespace' if firsttok.pre_space else ''
                 )
                 recovery_nodes=LatexNodeList([]),
-                recovery_at_token=tok
+                recovery_at_token=firsttok
             )
 
         brace_type = firsttok.arg
