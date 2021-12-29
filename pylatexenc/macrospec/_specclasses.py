@@ -53,9 +53,12 @@ class _BaseSpec(object):
         else:
             self.args_parser = args_parser
 
-    def parse_instance(self, main_token, latex_walker, token_reader, parsing_state):
+
+    def get_instance_parser(self, main_token, latex_walker):
         r"""
         """
+
+        ......
 
         ................
 

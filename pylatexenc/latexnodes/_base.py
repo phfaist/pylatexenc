@@ -285,8 +285,12 @@ class LatexInvocableWithArgumentsParser(object):
         if spec.instance_parser is not None:
 
             return latex_walker.parse_content(
-                lambda *args, **kwargs: \
-                    spec.instance_parser(*args, instance_token=tok, **kwargs),
+                lambda *pargs, **pkwargs: \
+                    .........
+                    self.spec.get_instance_parser(*pargs,
+                                              main_token=self.main_token,
+                                              node_class=self.node_class,
+                                              **pkwargs),
                 latex_walker=latex_walker,
                 token_reader=token_reader,
                 parsing_state=self.parsing_state,

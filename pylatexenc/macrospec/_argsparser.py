@@ -120,10 +120,13 @@ class MacroStandardArgsParser(object):
             self.arg_parser = arg_parser
 
 
-    def __init__(self, argspec=None, **kwargs):
+    def __init__(self, argspec=None, environment_body_parser=None, **kwargs):
         super(MacroStandardArgsParser, self).__init__(**kwargs)
 
         self.argspec = argspec
+
+        # only used for environments
+        self.environment_body_parser = environment_body_parser
 
         # catch bugs, make sure that argspec is a string with only accepted chars
         if not isinstance(self.argspec, _basestring) or \
@@ -150,11 +153,12 @@ class MacroStandardArgsParser(object):
             for (j, a) in enumerate(self.argspec)
         ]
 
-        ....... TODO: implement features:
+        if self._like_pylatexenc1x_ignore_leading_star:
+            raise RuntimeError("_like_pylatexenc1x_ignore_leading_star: NOT YET IMPLEMENTED")
 
-          - _like_pylatexenc1x_ignore_leading_star
+        if self.optional_arg_no_space:
+            raise RuntimeError("optional_arg_no_space: NOT YET IMPLEMENTED")
 
-          - optional_arg_no_space
 
     def _arg_instance(self, arg_no, this_arg_spec):
         if isinstance(this_arg_spec, MacroStandardArgsParser.Argument):
@@ -187,35 +191,58 @@ class MacroStandardArgsParser(object):
         if token.tok == 'specials':
             return token.arg.specials_chars
 
-    def parse_instance(self, main_token, latex_walker, token_reader, parsing_state, **kwargs):
 
-        argnlist = []
 
-        for arg in self.arguments:
-            arg_no, arg_parser = arg
-            argnodes, carryover_info = latex_walker.parse_content(
-                arg_parser,
-                token_reader,
-                parsing_state,
-                open_context=(
-                    "Argument #{} of ‘{}’".format(arg_no, self.describe(main_token)),
-                    token_reader.cur_pos()
+    class _InstanceParser(object):
+        def __init__(self, mstdargsobj, arguments, main_token, node_class, **kwargs):
+            super(InstanceParser, self).__init__(**kwargs)
+            self.mstdargsobj = mstdargsobj
+            self.arguments = arguments
+            self.main_token = main_token
+            self.node_class = node_class
+
+        def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+
+            argnlist = []
+
+            for arg in self.arguments:
+                arg_no, arg_parser = arg
+                argnodes, carryover_info = latex_walker.parse_content(
+                    arg_parser,
+                    token_reader,
+                    parsing_state,
+                    open_context=(
+                        "Argument #{} of ‘{}’".format(arg_no,
+                                                      self.mstdargsobj.describe(main_token)),
+                        token_reader.cur_pos()
+                    )
                 )
+                if carryover_info is not None:
+                    logger.warning(
+                        "Parsing carry-over information (%r) ignored when parsing arguments!",
+                        carryover_info
+                    )
+                argnlist.append( argnodes )
+
+            parsed = ParsedMacroArgs(
+                argspec=self.mstdargsobj.argspec,
+                argnlist=argnlist,
+                arguments=self.arguments,
             )
-            if carryover_info is not None:
-                logger.warning(
-                    "Parsing carry-over information (%r) ignored when parsing arguments!",
-                    carryover_info
-                )
-            argnlist.append( argnodes )
 
-        parsed = ParsedMacroArgs(
-            argspec=self.argspec,
-            argnlist=argnlist,
-            arguments=self.arguments,
-        )
+            if node_class.has_body:
+                self.mstdargsobj.environment_body_parser.....
 
-        return parsed, None
+            return parsed, None
+            
+
+
+    def get_instance_parser(self, main_token, node_class, **kwargs):
+        return _InstanceParser(mstdargsobj=self,
+                               arguments=self.arguments,
+                               main_token=main_token,
+                               node_class=node_class,
+                               **kwargs)
         
 
 
