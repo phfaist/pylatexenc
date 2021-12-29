@@ -55,7 +55,8 @@ class _BaseSpec(object):
 
     # def parse_instance(self, macroname, *args, **kwargs):
     #     r"""
-    #     ............ Shorthand for calling the :py:attr:`args_parser`\ 's `parse_args()` method.
+    #     ............ Shorthand for calling the :py:attr:`args_parser`\ 's
+    #     `parse_args()` method.
     #     See :py:class:`MacroStandardArgsParser`.
     #     """
     #     ....................
@@ -70,9 +71,6 @@ class _BaseSpec(object):
         """
         return self.args_parser.parse_args(*args, **kwargs)
 
-
-    def needs_arguments(self):
-        .....
 
 
 

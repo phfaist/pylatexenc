@@ -152,25 +152,91 @@ class LatexWalkerTokenParseError(LatexWalkerParseError):
 
        A :py:class:`LatexToken` instance to use in place of a token that we
        tried, but failed, to parse.
+
+    .. py:attribute:: recovery_token_at_pos
+
+       The position at which to reset the token_reader's internal state to
+       attempt to recover from this error.
+
+
+    .. versionadded:: 3.0
+
+       The :py:class:`LatexWalkerTokenParseError` class was introduced in
+       `pylatexenc 3`.
     """
-    def __init__(self, recovery_token_placeholder, recovery_pos, **kwargs):
+    def __init__(self, recovery_token_placeholder, recovery_token_at_pos, **kwargs):
         super(LatexWalkerTokenParseError, self).__init__(**kwargs)
         self.recovery_token_placeholder = recovery_token_placeholder
-        self.recovery_pos = recovery_pos
+        self.recovery_token_at_pos = recovery_token_at_pos
 
-    def get_recovery_placeholder_result_and_pos(self):
-        r"""
-        This magical method enables the latex walker to gracefully recover from
-        token parse errors.  See
-        :py:meth:`LatexWalker.attempt_recovery_from_error()`.
-        """
-        return (self.recovery_token_placeholder, self.recovery_pos)
+
+class LatexWalkerNodesParseError(LatexWalkerParseError):
+    """
+    Represents an error while parsing content nodes, typically as a consequence
+    of LatexWalker.parse_content().  This class carries some additional
+    information about how best to recover from this parse error if we are
+    operating in tolerant parsing mode.  E.g., we can already report a list of
+    nodes parsed so far.
+
+    In addition to the attributes inherited by
+    :py:class:`LatexWalkerParseError`, we have:
+
+    .. py:attribute:: recovery_nodes
+
+       Nodes result (a :py:class:`LatexNode` or :py:class:`LatexNodeList`
+       instance) to use as if the parser call had returned successfully.
+
+    .. py:attribute:: recovery_carryoverinfo
+
+       Carry-over `info` dictionary to use as if the parser call had returned
+       successfully.
+
+    .. py:attribute:: recovery_at_token
+
+       If non-`None`, then we should reset the token reader's internal position
+       to try to continue parsing at the given token's position.
+
+    .. py:attribute:: recovery_past_token
+
+       If non-`None`, then we should reset the token reader's internal position
+       to try to continue parsing immediately after the given token's position.
+
+       This attribute is not to be set if `recovery_at_token` is already
+       non-`None`.
+
+
+    .. versionadded:: 3.0
+
+       The :py:class:`LatexWalkerNodesParseError` class was introduced in
+       `pylatexenc 3`.
+    """
+    def __init__(self,
+                 recovery_nodes=None,
+                 recovery_carryoverinfo=None,
+                 recovery_at_token=None,
+                 recovery_past_token=None,
+                 **kwargs):
+        super(LatexWalkerTokenParseError, self).__init__(**kwargs)
+        self.recovery_nodes = recovery_nodes
+        self.recovery_carryoverinfo = recovery_carryoverinfo
+        self.recovery_at_token = recovery_at_token
+        self.recovery_past_token = recovery_past_token
+
 
 
 
 class LatexWalkerEndOfStream(LatexWalkerError):
     """
-    Reached end of input stream (e.g., end of file).
+    We reached end of the input string.
+
+    .. py:attribute:: final_space
+
+       Any trailing space at the end of the input string that might need to be
+       included in a character node.
+
+       .. versionadded:: 2.0
+
+          The attribute `final_space` was added in `pylatexenc 2`.
     """
     def __init__(self, final_space=''):
         super(LatexWalkerEndOfStream, self).__init__()
@@ -198,8 +264,8 @@ class LatexToken(object):
     for more information on how tokens are parsed.
 
     This is not the same thing as a LaTeX token, it's just a part of the input
-    which we treat in the same way (e.g. a bunch of content characters, a
-    comment, a macro, etc.)
+    which we treat in the same way (e.g. a text character, a comment, a macro,
+    etc.)
 
     Information about the object is stored into the fields `tok` and `arg`. The
     `tok` field is a string which identifies the type of the token. The `arg`
@@ -223,7 +289,9 @@ class LatexToken(object):
     The `post_space` is only used for 'macro' and 'comment' tokens, and it
     stores any spaces encountered after a macro, or the newline with any
     following spaces that terminates a LaTeX comment.  When we encounter two
-    consecutive newlines these are not included in `post_space`.
+    consecutive newlines these are not included in `post_space`.  Contrary to
+    `pre_space`, the length of the `post_space` is included in the attribute
+    `len`.
 
     The `tok` field may be one of:
 
@@ -366,9 +434,19 @@ class LatexNode(object):
        
        The attributes `parsing_state`, `pos` and `len` were added in
        `pylatexenc 2.0`.
+
+    .. py:attribute:: latex_walker
+
+       The :py:class:`LatexWalker` instance used to create this node.
+
+       .. versionadded:: 3.0
+
+          The attribute latex_walker was added in `pylatexenc 3`.
+
     """
     def __init__(self, _fields, _redundant_fields=None,
-                 parsing_state=None, pos=None, len=None, **kwargs):
+                 parsing_state=None, pos=None, len=None, latex_walker=None,
+                 **kwargs):
 
         # Important: subclasses must specify a list of fields they set in the
         # `_fields` argument.  They should only specify base (non-redundant)
@@ -377,6 +455,7 @@ class LatexNode(object):
         super(LatexNode, self).__init__(**kwargs)
 
         self.parsing_state = parsing_state
+        self.latex_walker = latex_walker
         self.pos = pos
         self.len = len
 
@@ -418,6 +497,7 @@ class LatexNode(object):
         return other is not None  and  \
             self.nodeType() == other.nodeType()  and  \
             other.parsing_state is self.parsing_state and \
+            other.latex_walker is self.latex_walker and \
             other.pos == self.pos and \
             other.len == self.len and \
             all(
@@ -476,6 +556,8 @@ class LatexGroupNode(LatexNode):
 
        A list of nodes describing the contents of the LaTeX braced group.  Each
        item of the list is a :py:class:`LatexNode`.
+    
+       This attribute is normally a :py:class:`LatexNodeList`.
 
     .. py:attribute:: delimiters
 
@@ -640,6 +722,8 @@ class LatexEnvironmentNode(LatexNode):
        A list of :py:class:`LatexNode`'s that represent all the contents between
        the ``\begin{...}`` instruction and the ``\end{...}`` instruction.
 
+       This attribute is normally a :py:class:`LatexNodeList`.
+
     .. py:attribute:: nodeargd
 
        The :py:class:`pylatexenc.macrospec.ParsedMacroArgs` object that
@@ -783,8 +867,8 @@ class LatexMathNode(LatexNode):
 
     .. py:attribute:: nodelist
     
-       The contents of the environment, given as a list of
-       :py:class:`LatexNode`'s.
+       The contents of the environment.  This attribute is normally a
+       :py:class:`LatexNodeList`.
     """
     def __init__(self, displaytype, nodelist=[], **kwargs):
         delimiters = kwargs.pop('delimiters', (None, None))
@@ -829,10 +913,21 @@ class LatexNodeList(object):
        The total length spanned by this node list, assuming that the `nodelist`
        represents a single continuous sequence of nodes in the latex string.
     """
-    def __init__(self, nodelist, parsing_state, **kwargs):
+    def __init__(self, nodelist, **kwargs):
+
+        if isinstance(nodelist, LatexNodeList):
+            obj = nodelist
+            self.nodelist = obj.nodelist
+            self.parsing_state = obj.parsing_state
+            self.latex_walker = obj.latex_walker
+            self.pos = obj.pos
+            self.len = obj.len
+            return
+
         self.nodelist = nodelist
 
-        self.parsing_state = parsing_state
+        self.parsing_state = kwargs.pop('parsing_state', None)
+        self.latex_walker = kwargs.pop('latex_walker', None)
         self.pos = kwargs.pop('pos', None)
         self.len = kwargs.pop('len', None)
 
@@ -851,6 +946,84 @@ class LatexNodeList(object):
         return len(self.nodelist)
     
     
+    def split_at_chars(self, sep_chars):
+        r"""
+        Split the node list into multiple node lists corresponding to chunks
+        delimited by the given `sep_chars`.
+
+        More precisely, this method iterates over the node list, collecting
+        nodes as they are iterated over.  In simple character nodes, every
+        occurrence of `sep_chars` causes a new list to be initiated.
+
+        This method is useful to split arguments delimited by tokens, e.g.::
+
+            \cite{key1,key2,my{special,key},keyN}
+
+        In the above example, splitting the argument of the ``\cite`` command
+        with the ``,`` separator yields four node lists ``[ (node for "key1")
+        ]``, ``[ (node for "key2") ]``, ``[ (chars node for "my"), (group node
+        for "{special,key}" ...) ]``, and ``[ (node for "keyN") ]``.
+
+        If `sep_chars` is a Python callable object, then it is assumed to be a
+        function that, when called with a string, returns a list of strings
+        corresponding to the string split at the desired locations.  To split at
+        a regex, for instance, you can use::
+
+            # make sure there are no capturing parentheses, see re.split()
+            rx_space = re.compile(r'\s+')
+
+            split_node_lists = nodelist.split_at_chars(rx_space.split)
+        """
+        
+        split_node_lists = []
+        
+        if callable(sep_chars):
+            sep_chars_fn = sep_chars
+        else:
+            sep_chars_fn = lambda chars, sep_chars=sep_chars: chars.split(sep_chars)
+
+        lw = self.latex_walker
+        if lw is not None:
+            make_node = lw.make_node
+        else:
+            make_node = lambda cls, **kwargs: cls(**kwargs)
+
+        def chars_to_node(chars, orig_node, rel_pos):
+            return make_node(LatexCharsNode,
+                             parsing_state=self.parsing_state,
+                             pos=orig_node.pos + rel_pos,
+                             len=len(chars),
+                             chars=chars)
+
+        pending_nodes = []
+
+        for n in self.nodelist:
+            if n.isNodeType(latexwalker.LatexCharsNode):
+                parts = sep_chars_fn(n.chars)
+                rel_pos = 0
+                if parts[0]:
+                    pending_nodes.append( chars_to_node(parts[0], n, 0) )
+                    rel_pos = len(parts[0])
+                    parts = parts[1:]
+                if not parts:
+                    # string didn't contain any separator
+                    continue
+                if pending_nodes:
+                    split_node_lists.append(pending_nodes)
+                    pending_nodes = []
+                for p in parts:
+                    split_node_lists.append( [ chars_to_node(p, n, rel_pos) ] )
+                    rel_pos += len(p)
+
+                continue
+
+            pending_nodes.append( n )
+
+        if pending_nodes:
+            split_node_lists.append(pending_nodes)
+
+        return split_node_lists
+        
 
 
 

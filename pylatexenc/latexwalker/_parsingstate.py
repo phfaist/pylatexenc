@@ -172,16 +172,12 @@ class ParsingState(object):
         self.macro_alpha_chars = _StrictAsciiAlphaChars()
 
         # set internally by the other fields by _set_fields()
-        #self._macronames_math_delims = set()
         self._latex_group_delimchars_by_open = {}
-        #self._latex_group_delimchars_open = frozenset()
         self._latex_group_delimchars_close = frozenset()
         self._math_delims_info_startchars = ''
         self._math_delims_by_len = []
         self._math_delims_info_by_open = {}
         self._math_expecting_close_delim = None
-        # self._latex_inline_math_delimiters_dict = {}
-        # self._latex_display_math_delimiters_dict = {}
 
         self._fields = (
             's',
@@ -211,7 +207,7 @@ class ParsingState(object):
             for x in pair
         ])
         self._math_delims_by_len = sorted(
-            latex_inline_math_delimiters + latex_display_math_delimiters,
+            self.latex_inline_math_delimiters + self.latex_display_math_delimiters,
             key=lambda x: len(x[0]),
             reverse=True,
         )

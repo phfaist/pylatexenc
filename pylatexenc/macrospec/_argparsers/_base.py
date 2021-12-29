@@ -113,6 +113,7 @@ class MacroStandardArgsParser(object):
         # function explicitly
         self._like_pylatexenc1x_ignore_leading_star = False
 
+
     def parse_args(self, w, pos, parsing_state=None):
         r"""
         Parse the arguments encountered at position `pos` in the

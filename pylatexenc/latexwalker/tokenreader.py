@@ -6,7 +6,75 @@ logger = logging.getLogger(__name__)
 
 
 
-class LatexTokenReader(object):
+class LatexTokenReaderBase(object):
+    def __init__(self, **kwargs):
+        super(LatexTokenReaderBase, self).__init__(**kwargs)
+
+
+    def make_token(self, **kwargs):
+        return LatexToken(**kwargs)
+
+    def move_to_token(self, tok):
+        raise RuntimeError(
+            "LatexTokenReaderBase subclasses must reimplement rewind_to_token()"
+        )
+
+    def move_past_token(self, tok):
+        raise RuntimeError(
+            "LatexTokenReaderBase subclasses must reimplement fastforward_past_token()"
+        )
+
+    def peek_token(self, parsing_state):
+        raise RuntimeError(
+            "LatexTokenReaderBase subclasses must reimplement peek_token()"
+        )
+
+    def next_token(self, parsing_state):
+        tok = self.peek_token(parsing_state=parsing_state)
+        self.fastforward_past_token(tok)
+        return tok
+
+
+
+class LatexTokenListTokenReader(LatexTokenReaderBase):
+    r"""
+    A token reader object that simply yields tokens from a list of
+    already-parsed tokens.
+
+    This object doesn't parse any LaTeX code.  Use `LatexTokenReader`
+    for that.
+    """
+    def __init__(self, token_list):
+        self.token_list = token_list
+        self._idx = 0
+
+    def peek_token(self, parsing_state):
+        if self._idx >= len(self.token_list):
+            raise LatexWalkerEndOfStream()
+        return self.token_list[self._idx]
+
+    def next_token(self, parsing_state):
+        # optimize implementation because the base class calls
+        # fastforward_after_token(), which needs to look up the token in the
+        # token_list again
+        tok = self.peek_token(parsing_state)
+        self._idx += 1
+        return tok
+
+    def _find_tok_idx(self, tok, methname):
+        i = next([j for j, t in enumerate(self.token_list) if t is tok], None)
+        if i is None:
+            raise IndexError("{}({!r}): no such token in list".format(methname, tok))
+        return i
+
+    def move_to_token(self, tok):
+        self._idx = self._find_tok_idx(tok, 'move_to_token')
+
+    def move_past_token(self, tok):
+        self._idx = self._find_tok_idx(tok, 'move_past_token') + 1
+
+
+class LatexTokenReader(LatexTokenReaderBase):
     r"""
     Parse tokens from an input string.
 
@@ -25,14 +93,36 @@ class LatexTokenReader(object):
         self._rx_environment_name = \
             re.compile(r'^\{(?P<environmentname>[\w* ._-]+)\}')
 
+    def move_to_token(self, tok, rewind_pre_space=True):
+        if rewind_pre_space:
+            new_pos = tok.pos - len(tok.pre_space)
+        else:
+            new_pos = tok.pos
+        self._advance_to_pos(new_pos)
+
+    def move_past_token(self, tok, fastforward_post_space=True):
+        new_pos = tok.pos + tok.len
+
+        # note tok.len includes post_space, contrary to pre_space (??)
+        if not fastforward_post_space:
+            post_space = getattr(tok, 'post_space', None)
+            if post_space:
+                new_pos -= len(post_space)
+
+        self._advance_to_pos(new_pos)
+            
 
     def _advance_to_pos(self, pos):
         self._pos = pos
 
+    def rewind_to_pos(self, pos):
+        if pos > self._pos:
+            raise ValueError("Internal error, rewind_to_pos() requires a position that is "
+                             "*before* the current position, got %d > %d" % (pos, self._pos))
+        self._advance_to_pos(pos)
 
-    def make_token(self, **kwargs):
-        return LatexToken(**kwargs)
-
+    def jump_to_pos(self, pos):
+        self._advance_to_pos(pos)
 
 
     def skip_space(self, parsing_state):
@@ -56,32 +146,6 @@ class LatexTokenReader(object):
 
     def peek_space(self, parsing_state):
         return self.impl_peek_space(self.s, self._pos, parsing_state)
-
-
-    def next_token(self, parsing_state):
-        tok = self.peek_token(parsing_state=parsing_state)
-        self._advance_to_pos(tok.pos+tok.len)
-        return tok
-
-    def rewind_last_token(self, tok, rewind_pre_space=True):
-        if self._pos != (tok.pos+tok.len):
-            raise ValueError(
-                "rewind_last_token(): The given token is not the last token read"
-            )
-        if rewind_pre_space:
-            new_pos = tok.pos - len(tok.pre_space)
-        else:
-            new_pos = tok.pos
-        self._advance_to_pos(new_pos)
-
-    def rewind_to_pos(self, pos):
-        if pos > self._pos:
-            raise ValueError("Internal error, rewind_to_pos() requires a position that is "
-                             "*before* the current position, got %d > %d" % (pos, self._pos))
-        self._advance_to_pos(pos)
-
-    def jump_to_pos(self, pos):
-        self._advance_to_pos(pos)
 
 
     def peek_token(self, parsing_state):
@@ -250,7 +314,7 @@ class LatexTokenReader(object):
                     len=0,
                     pre_space=pre_space
                 ),
-                recovery_pos=len(s)
+                recovery_token_at_pos=len(s)
             )
 
         c = s[pos+1] # next char is necessarily part of macro
@@ -269,7 +333,7 @@ class LatexTokenReader(object):
         if isalphamacro:
             post_space, post_space_pos, post_space_len = \
                 self.impl_peek_space(s, pos+i, parsing_state)
-            i +=  post_space_pos + post_space_len - (pos + i)
+            i =  post_space_pos + post_space_len - pos
 
         return self.make_token(tok='macro', arg=macro,
                                pos=pos, len=i,
@@ -300,7 +364,7 @@ class LatexTokenReader(object):
                     len=len(tokarg),
                     pre_space=pre_space
                 ),
-                recovery_pos=pos+len(tokarg),
+                recovery_token_at_pos=pos+len(tokarg),
             )
 
         return self.make_token(
