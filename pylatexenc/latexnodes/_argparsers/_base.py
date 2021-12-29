@@ -1,7 +1,7 @@
 from __future__ import print_function, unicode_literals
 
 
-from ...latexwalker import _types as latexwalker_types
+from .._nodetypes import *
 from .._parsedargsbase import ParsedMacroArgs
 
 
@@ -15,22 +15,6 @@ if sys.version_info.major == 2:
     _basestring = basestring
 ## End Py2 support code
 
-
-
-
-# class LatexStandardArgument(object):
-#     def __init__(self,
-#                  arg_type='{',
-#                  arg_math_mode=False,
-#                  no_pre_space=False):
-#         self.arg_type = arg_type
-#         self.arg_math_mode = math_mode
-#         self.no_pre_space = no_pre_space
-
-#     def parse(self, w, pos, parsing_state, spec, arg_index):
-#         .....
-
-#         ... 
 
 
 

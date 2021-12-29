@@ -29,7 +29,7 @@
 
 from __future__ import print_function, unicode_literals
 
-from ..macrospec._parsedargsbase import ParsedMacroArgs
+from ._parsedargsbase import ParsedMacroArgs
 
 
 # for Py3

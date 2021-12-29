@@ -20,13 +20,11 @@ class _TryAgainWithSkippedCommentNodes(Exception):
 class LatexExpressionParser(object):
     def __init__(self,
                  include_skipped_comments=True,
-                 beginend_macro_is_error=True,
                  single_token_requiring_arg_is_error=True,
                  **kwargs
                  ):
         super(LatexExpressionParser, self).__init__(**kwargs)
         self.include_skipped_comments = include_skipped_comments
-        self.beginend_macro_is_error = beginend_macro_is_error
         self.single_token_requiring_arg_is_error = single_token_requiring_arg_is_error
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
@@ -80,7 +78,8 @@ class LatexExpressionParser(object):
 
             macroname = tok.arg
 
-            if self.beginend_macro_is_error and macroname in ('begin', 'end',):
+            if self.single_token_requiring_arg_is_error \
+               and macroname in ('begin', 'end',):
                 # error, we were expecting a single token
                 exc = latex_walker.check_tolerant_parsing_ignore_error(
                     LatexWalkerParseError(

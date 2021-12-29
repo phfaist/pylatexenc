@@ -29,7 +29,7 @@
 
 from __future__ import print_function, unicode_literals
 
-from ._argparsers import MacroStandardArgsParser
+from ..latexnodes import MacroStandardArgsParser
 
 
 # for Py3
@@ -53,14 +53,12 @@ class _BaseSpec(object):
         else:
             self.args_parser = args_parser
 
-    # def parse_instance(self, macroname, *args, **kwargs):
-    #     r"""
-    #     ............ Shorthand for calling the :py:attr:`args_parser`\ 's
-    #     `parse_args()` method.
-    #     See :py:class:`MacroStandardArgsParser`.
-    #     """
-    #     ....................
-    #     return self.args_parser.parse_args(*args, **kwargs, macroname=macroname)
+    def parse_instance(self, main_token, latex_walker, token_reader, parsing_state):
+        r"""
+        """
+
+        ................
+
 
     def parse_args(self, *args, **kwargs):
         r"""
@@ -69,6 +67,10 @@ class _BaseSpec(object):
         Shorthand for calling the :py:attr:`args_parser`\ 's `parse_args()` method.
         See :py:class:`MacroStandardArgsParser`.
         """
+
+        ................
+
+
         return self.args_parser.parse_args(*args, **kwargs)
 
 
@@ -104,7 +106,9 @@ class MacroSpec(_BaseSpec):
         #     self.args_parser = args_parser
 
     def __repr__(self):
-        return 'MacroSpec(macroname=%r, args_parser=%r)'%(self.macroname, self.args_parser)
+        return 'MacroSpec(macroname={!r}, args_parser={!r})'.format(
+            self.macroname, self.args_parser
+        )
 
 
 
@@ -166,8 +170,11 @@ class EnvironmentSpec(_BaseSpec):
     #     return self.args_parser.parse_args(*args, **kwargs)
 
     def __repr__(self):
-        return 'EnvironmentSpec(environmentname=%r, args_parser=%r, is_math_mode=%r)'%(
-            self.environmentname, self.args_parser, self.is_math_mode
+        return (
+            'EnvironmentSpec(environmentname={!r}, args_parser={!r}, is_math_mode={!r})'
+            .format(
+                self.environmentname, self.args_parser, self.is_math_mode
+            )
         )
 
 
@@ -210,7 +217,7 @@ class SpecialsSpec(_BaseSpec):
         return super(SpecialsSpec, self).parse_args(*args, **kwargs)
 
     def __repr__(self):
-        return 'SpecialsSpec(specials_chars=%r, args_parser=%r)'%(
+        return 'SpecialsSpec(specials_chars={!r}, args_parser={!r})'.format(
             self.specials_chars, self.args_parser
         )
 

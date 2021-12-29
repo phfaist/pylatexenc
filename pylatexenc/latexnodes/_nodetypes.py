@@ -29,7 +29,7 @@
 
 from __future__ import print_function, unicode_literals
 
-from ..macrospec._parsedargsbase import ParsedMacroArgs
+from ._parsedargsbase import ParsedMacroArgs
 
 
 # for Py3
@@ -756,6 +756,10 @@ class LatexNodeList(object):
             self.len = end_pos - self.pos
 
     def __getitem__(self, index):
+        if index < 0:
+            # do this manually here for potential future use with transcrypt,
+            # where negative indexing is not supported.
+            index = len(self.nodelist) + index
         return self.nodelist[index]
 
     def __len__(self):

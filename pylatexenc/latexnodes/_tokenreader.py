@@ -34,6 +34,25 @@ class LatexTokenReaderBase(object):
         self.fastforward_past_token(tok)
         return tok
 
+    def skip_space_chars(self, parsing_state):
+        raise RuntimeError("This token reader does not support character-level access")
+
+    def peek_chars(self, num_chars, parsing_state):
+        raise RuntimeError("This token reader does not support character-level access")
+
+    def next_chars(self, num_chars, parsing_state):
+        raise RuntimeError("This token reader does not support character-level access")
+
+    def cur_pos_chars(self):
+        raise RuntimeError("This token reader does not support character-level access")
+
+    def move_to_pos_chars(self, pos):
+        raise RuntimeError("This token reader does not support character-level access")
+
+
+
+
+# ----------------------------
 
 
 class LatexTokenListTokenReader(LatexTokenReaderBase):
@@ -74,6 +93,8 @@ class LatexTokenListTokenReader(LatexTokenReaderBase):
         self._idx = self._find_tok_idx(tok, 'move_past_token') + 1
 
 
+# ----------------------------
+
 class LatexTokenReader(LatexTokenReaderBase):
     r"""
     Parse tokens from an input string.
@@ -112,6 +133,27 @@ class LatexTokenReader(LatexTokenReaderBase):
         self._advance_to_pos(new_pos)
             
 
+    def peek_chars(self, num_chars, parsing_state):
+        if self._pos >= len(self.s):
+            raise LatexWalkerEndOfStream()
+        return self.s[self._pos, self._pos+num_chars]
+
+    def next_chars(self, num_chars, parsing_state):
+        chars = self.peek_chars(num_chars, parsing_state)
+        self._pos += num_chars
+        if self._pos > len(self.s):
+            self._pos = len(self.s)
+        return chars
+
+    def cur_pos_chars(self):
+        return self._pos
+
+    def move_to_pos_chars(self, pos):
+        self._advance_to_pos(pos)
+
+
+
+
     def _advance_to_pos(self, pos):
         self._pos = pos
 
@@ -125,7 +167,7 @@ class LatexTokenReader(LatexTokenReaderBase):
         self._advance_to_pos(pos)
 
 
-    def skip_space(self, parsing_state):
+    def skip_space_chars(self, parsing_state):
         r"""
         Move internal position to skip any whitespace.  The position pointer is left
         immediately after any encountered whitespace.  If the current pointed
@@ -138,14 +180,14 @@ class LatexTokenReader(LatexTokenReaderBase):
         """
 
         (space, space_pos, space_len) = \
-            self.impl_peek_space(self.s, self._pos, self.parsing_state, self)
+            self.impl_peek_space_chars(self.s, self._pos, self.parsing_state, self)
 
         self._advance_to_pos(space_pos + space_len)
 
         return (space, space_pos, space_len)
 
-    def peek_space(self, parsing_state):
-        return self.impl_peek_space(self.s, self._pos, parsing_state)
+    def peek_space_chars(self, parsing_state):
+        return self.impl_peek_space_chars(self.s, self._pos, parsing_state)
 
 
     def peek_token(self, parsing_state):
@@ -155,7 +197,7 @@ class LatexTokenReader(LatexTokenReaderBase):
         len_s = len(s)
         pos = self._pos
 
-        pre_space, space_pos, space_len = self.impl_peek_space(s, pos, parsing_state)
+        pre_space, space_pos, space_len = self.impl_peek_space_chars(s, pos, parsing_state)
 
         pos = space_pos + space_len
         if pos >= len_s:
@@ -231,7 +273,7 @@ class LatexTokenReader(LatexTokenReaderBase):
 
 
 
-    def impl_peek_space(self, s, pos, parsing_state):
+    def impl_peek_space_chars(self, s, pos, parsing_state):
         r"""
         Look at the string `s`, and identify how many characters need to be skipped
         in order to skip whitespace.  Does not update the internal position
@@ -332,7 +374,7 @@ class LatexTokenReader(LatexTokenReaderBase):
         post_space = ''
         if isalphamacro:
             post_space, post_space_pos, post_space_len = \
-                self.impl_peek_space(s, pos+i, parsing_state)
+                self.impl_peek_space_chars(s, pos+i, parsing_state)
             i =  post_space_pos + post_space_len - pos
 
         return self.make_token(tok='macro', arg=macro,
@@ -391,7 +433,7 @@ class LatexTokenReader(LatexTokenReaderBase):
             # skip whitespace, starting from the first \n that finishes the
             # comment
             post_space, post_space_pos, post_space_len = \
-                self.impl_peek_space(s, sppos, parsing_state)
+                self.impl_peek_space_chars(s, sppos, parsing_state)
             comment_content_offset = sppos - pos
             comment_with_whitespace_len = post_space_pos + post_space_len - pos
 

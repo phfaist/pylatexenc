@@ -15,8 +15,9 @@ class LatexNodesCollector(LatexNodesCollectorBase):
             latex_walker,
             token_reader,
             parsing_state,
+            make_child_parsing_state=None,
             stop_token_condition=None,
-            stop_nodelist_condition=None
+            stop_nodelist_condition=None,
     ):
         super(LatexNodesCollector, self).__init__(
             latex_walker=latex_walker,
@@ -25,6 +26,7 @@ class LatexNodesCollector(LatexNodesCollectorBase):
             stop_token_condition=stop_token_condition,
             stop_nodelist_condition=stop_nodelist_condition
         )
+        self.make_child_parsing_state = make_child_parsing_state
 
 
     def parse_comment_node(self, tok):
@@ -52,7 +54,7 @@ class LatexNodesCollector(LatexNodesCollectorBase):
                     require_brace_type=tok.arg,
                 ),
                 token_reader=token_reader,
-                parsing_state=self.parsing_state,
+                parsing_state=self.make_child_parsing_state(self.parsing_state),
         )
 
         stop_exc = self.push_to_nodelist(groupnode)
@@ -130,7 +132,7 @@ class LatexNodesCollector(LatexNodesCollectorBase):
                 what=what,
             ),
             token_reader=token_reader,
-            parsing_state=self.parsing_state,
+            parsing_state=self.make_child_parsing_state(self.parsing_state),
         )
 
         self.update_state_from_carryover_info(carryover_info)
@@ -242,6 +244,26 @@ class LatexGeneralNodesParser(object):
 
             raise LatexNodesCollector.ReachedEndOfStream()
 
+
+# ------------------------------------------------------------------------------
+
+
+class LatexSingleNodeParser(LatexGeneralNodesParser):
+    def __init__(self, stop_after_comment=True, **kwargs):
+        super(LatexSingleNodeParser, self).__init__(
+            stop_nodelist_condition=self._stop_nodelist_condition,
+            require_stop_condition_met=False,
+            **kwargs
+        )
+        self.stop_after_comment = stop_after_comment
+        
+    def _stop_nodelist_condition(self, nodelist):
+        nl = nodelist
+        if not self.stop_after_comment:
+            nl = [n for n in nl if not n.isNodeType(LatexCommentNode)]
+        if len(nl) >= 1:
+            return True
+        return False
 
 
 
@@ -388,15 +410,26 @@ class LatexInvocableWithArgumentsParser(object):
 
 
 class LatexDelimitedGroupParser(object):
-    def __init__(self, require_brace_type, optional=False, **kwargs):
+    def __init__(self,
+                 require_brace_type,
+                 include_brace_chars=None,
+                 optional=False,
+                 **kwargs):
         super(LatexDelimitedGroupParser, self).__init__(**kwargs)
         self.require_brace_type = require_brace_type
+        self.include_brace_chars = include_brace_chars
         self.optional = optional
 
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
-        firsttok = token_reader.next_token(pos, parsing_state=parsing_state)
+        if self.include_brace_chars:
+            this_level_parsing_state = parsing_state.sub_context(
+                latex_group_delimiters= \
+                    parsing_state.latex_group_delimiters + [include_brace_chars]
+            )
+
+        firsttok = token_reader.next_token(pos, parsing_state=this_level_parsing_state)
 
         if firsttok.tok != 'brace_open'  \
            or (require_brace_type is not None and firsttok.arg != require_brace_type):
@@ -412,7 +445,7 @@ class LatexDelimitedGroupParser(object):
             else:
                 acceptable_braces = ", ".join([
                     '‘' + od + '’'
-                    for (od, cd) in parsing_state.latex_group_delimiters
+                    for (od, cd) in this_level_parsing_state.latex_group_delimiters
                 ])
             raise LatexWalkerParseError(
                 msg='Expected an opening LaTeX delimiter (%s), got ‘%s’' %(
@@ -424,7 +457,7 @@ class LatexDelimitedGroupParser(object):
             )
 
         brace_type = firsttok.arg
-        closing_brace = parsing_state._latex_group_delimchars_by_open[brace_type]
+        closing_brace = this_level_parsing_state._latex_group_delimchars_by_open[brace_type]
 
         def stop_token_condition(token):
             if token.tok == 'brace_close' and token.arg == closing_brace:
@@ -434,9 +467,10 @@ class LatexDelimitedGroupParser(object):
         nodelist = latex_walker.parse_content(
             LatexGeneralNodesParser(
                 stop_token_condition=stop_token_condition,
+                child_parsing_state=parsing_state,
             ),
             token_reader=token_reader,
-            parsing_state=parsing_state,
+            parsing_state=this_level_parsing_state,
             open_context=(
                 'LaTeX delimited expression ‘{}…{}’'.format(brace_type, closing_brace),
                 firsttok

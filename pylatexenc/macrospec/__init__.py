@@ -35,14 +35,15 @@ macros and environments, specifying how they should be parsed by
 """
 
 
-from ._parsedargsbase import ParsedMacroArgs
-
-from ._argparsers import MacroStandardArgsParser, \
-    ParsedVerbatimArgs, VerbatimArgsParser, ParsedLstListingArgs, LstListingArgsParser
-
 from ._specclasses import MacroSpec, EnvironmentSpec, SpecialsSpec
 
 from ._spechelpers import std_macro, std_environment, std_specials
 
 from ._latexcontextdb import LatexContextDb
+
+
+# compatibility with pylatexenc 2
+from ..latexnodes._parsedargsbase import ParsedMacroArgs
+from ..latexnodes._argparsers import MacroStandardArgsParser, \
+    ParsedVerbatimArgs, VerbatimArgsParser, ParsedLstListingArgs, LstListingArgsParser
 

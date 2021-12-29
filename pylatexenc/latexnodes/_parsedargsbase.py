@@ -29,21 +29,6 @@
 
 from __future__ import print_function, unicode_literals
 
-
-
-# class ParsedMacroArgument(object):
-#     r"""
-#     Store a single parsed argument that was provided to a macro, an environment,
-#     or a specials.
-#     """
-#     def __init__(self, node, argname, pre_ignored......, **kwargs):
-#         super(ParsedMacroArgument, self).__init__(**kwargs)
-
-#         self.node = node
-#         self.argname = argname
-
-#         self.pre_ignored_nodes = pre_ignored_nodes
-
     
 
 
@@ -108,10 +93,13 @@ class ParsedMacroArgs(object):
         self.argspec = argspec
 
         # for LatexMacroNode to provide some kind of compatibility with pylatexenc < 2
-        self.legacy_nodeoptarg_nodeargs = \
-            self._get_legacy_attribs(self.argspec, self.argnlist)
+        #self.legacy_nodeoptarg_nodeargs = \
+        #    self._get_legacy_attribs(self.argspec, self.argnlist)
 
-    def _get_legacy_attribs(self, argspec, argnlist):
+    @property
+    def legacy_nodeoptarg_nodeargs(self):
+        argspec = self.argspec
+        argnlist = self.argnlist
         nskip = 0
         while argspec.startswith('*'):
             argspec = argspec[1:]
@@ -120,6 +108,7 @@ class ParsedMacroArgs(object):
             return ( argnlist[nskip], argnlist[nskip+1:] )
         else:
             return (None, argnlist)
+
 
     def to_json_object(self):
         r"""
