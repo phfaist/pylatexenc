@@ -16,10 +16,9 @@ class LatexTokenReader(object):
 
        The `LatexTokenReader` class was introduced in `pylatexenc` 3.
     """
-    def __init__(self, s, parsing_state):
+    def __init__(self, s):
         super(LatexTokenReader, self).__init__()
         self.s = s
-        self.parsing_state = parsing_state
 
         self._pos = 0
 
@@ -36,7 +35,7 @@ class LatexTokenReader(object):
 
 
 
-    def skip_space(self):
+    def skip_space(self, parsing_state):
         r"""
         Move internal position to skip any whitespace.  The position pointer is left
         immediately after any encountered whitespace.  If the current pointed
@@ -49,29 +48,48 @@ class LatexTokenReader(object):
         """
 
         (space, space_pos, space_len) = \
-            self.impl_peek_space(self.s, self.pos, self.parsing_state, self)
+            self.impl_peek_space(self.s, self._pos, self.parsing_state, self)
 
         self._advance_to_pos(space_pos + space_len)
 
         return (space, space_pos, space_len)
 
-    def peek_space(self):
-        return self.impl_peek_space(self.s, self.pos, self.parsing_state)
+    def peek_space(self, parsing_state):
+        return self.impl_peek_space(self.s, self._pos, parsing_state)
 
 
-    def next_token(self):
-        tok = self.peek_token()
+    def next_token(self, parsing_state):
+        tok = self.peek_token(parsing_state=parsing_state)
         self._advance_to_pos(tok.pos+tok.len)
         return tok
 
+    def rewind_last_token(self, tok, rewind_pre_space=True):
+        if self._pos != (tok.pos+tok.len):
+            raise ValueError(
+                "rewind_last_token(): The given token is not the last token read"
+            )
+        if rewind_pre_space:
+            new_pos = tok.pos - len(tok.pre_space)
+        else:
+            new_pos = tok.pos
+        self._advance_to_pos(new_pos)
 
-    def peek_token(self):
+    def rewind_to_pos(self, pos):
+        if pos > self._pos:
+            raise ValueError("Internal error, rewind_to_pos() requires a position that is "
+                             "*before* the current position, got %d > %d" % (pos, self._pos))
+        self._advance_to_pos(pos)
+
+    def jump_to_pos(self, pos):
+        self._advance_to_pos(pos)
+
+
+    def peek_token(self, parsing_state):
 
         # shorthands (& to avoid repeated lookups)
         s = self.s
         len_s = len(s)
-        pos = self.pos
-        parsing_state = self.parsing_state
+        pos = self._pos
 
         pre_space, space_pos, space_len = self.impl_peek_space(s, pos, parsing_state)
 
@@ -127,10 +145,10 @@ class LatexTokenReader(object):
                                           pre_space=pre_space)
 
 
-        if c in parsing_state._openbracechars:
+        if c in parsing_state._latex_group_delimchars_by_open:
             return self.make_token(tok='brace_open', arg=c, pos=pos, len=1,
                                    pre_space=pre_space)
-        if c in parsing_state._closebracechars:
+        if c in parsing_state._latex_group_delimchars_close:
             return self.make_token(tok='brace_close', arg=c, pos=pos, len=1,
                                    pre_space=pre_space)
 
@@ -216,15 +234,23 @@ class LatexTokenReader(object):
     def impl_read_macro(self, s, pos, parsing_state, pre_space):
 
         if s[pos] != '\\':
-            raise ValueError("Internal error, expected '\\' in default_impl_read_macro()")
+            raise ValueError("Internal error, expected '\\' in impl_read_macro()")
 
         # read information for an escape sequence
 
         if pos+1 >= len(s):
-            raise LatexWalkerParseError(
+            raise LatexWalkerTokenParseError(
                 s=s,
                 pos=pos+1,
                 msg="Expected macro name after ‘\\’ escape character",
+                recovery_token_placeholder=LatexToken(
+                    tok='char',
+                    arg='',
+                    pos=pos,
+                    len=0,
+                    pre_space=pre_space
+                ),
+                recovery_pos=len(s)
             )
 
         c = s[pos+1] # next char is necessarily part of macro
@@ -263,10 +289,18 @@ class LatexTokenReader(object):
 
         envmatch = self._rx_environment_name.match(s, pos)
         if envmatch is None:
-            raise LatexWalkerParseError(
-                msg=r"Bad ‘\{}’ macro: expected {{environmentname}}".format(beginend),
+            tokarg = '\\'+beginend
+            raise LatexWalkerTokenParseError(
+                msg=r"Bad ‘\{}’ call: expected {{environmentname}}".format(beginend),
                 len=i,
-                placeholder='\\'+beginend
+                recovery_token_placeholder=LatexToken(
+                    tok='char',
+                    arg=tokarg,
+                    pos=pos,
+                    len=len(tokarg),
+                    pre_space=pre_space
+                ),
+                recovery_pos=pos+len(tokarg),
             )
 
         return self.make_token(

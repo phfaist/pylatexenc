@@ -1,4 +1,6 @@
 
+......... kill this file, define instead a class LatexNodesParser in _parsers/__init__.py ...........
+
 class LatexNodeListCollector(object):
     r"""
     .. versionadded:: 3.0

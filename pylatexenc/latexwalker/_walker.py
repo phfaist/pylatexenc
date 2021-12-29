@@ -260,6 +260,7 @@ class LatexWalker(object):
         The parse flags currently set on this object.  Returns a dictionary with
         keys 'keep_inline_math', 'tolerant_parsing' and 'strict_braces'.
 
+
         .. deprecated:: 2.0
 
            The 'keep_inline_math' key is always set to `None` starting in
@@ -275,8 +276,101 @@ class LatexWalker(object):
     def _report_ignore_parse_error(self, exc):
         logger.info("Ignoring parse error (tolerant parsing mode): %s", exc)
         
-    def get_token(self, pos, include_brace_chars=None, environments=True,
-                  keep_inline_math=None, parsing_state=None, **kwargs):
+
+    
+    def check_tolerant_parsing_ignore_error(self, exc):
+        r"""
+        Check if we should attempt to recover from the given error in tolerant
+        parsing mode.
+
+        If tolerant parsing mode is not enabled, or if `exc` is not an instance
+        of :py:exc:`LatexWalkerError` (e.g., :py:exc:`LatexWalkerParseError` or
+        :py:exc:`LatexWalkerEndOfStream`), then `exc` is returned unchanged.
+        Otherwise, `None` is returned.
+
+        Calling code should check the return value; if None was returned, then
+        recovery from that error should be attempted, otherwise, the returned
+        exception object should be raised.
+        """
+
+        if not self.tolerant_parsing or not isinstance(exc, LatexWalkerError):
+            return exc
+
+        # will recover from error ->
+        self._report_ignore_parse_error(exc)
+
+        return None
+
+
+    class _ParsingContext(object):
+        def __init__(self, latex_walker, open_context):
+            self.latex_walker = latex_walker
+            self.open_context = open_context
+
+            self.recovery_from_exception = None
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, exc_traceback):
+            if exc_value is not None and isinstance(exc_value, LatexWalkerParseError):
+                e = exc_value
+                if self.open_context:
+                    what, pos = self.open_context
+                    e.open_contexts.append(
+                        _maketuple(what, pos, * self.latex_walker.pos_to_lineno_colno(pos))
+                    )
+
+                epos = getattr(e, 'pos', None)
+                if epos is not None and e.lineno is None and e.colno is None:
+                    e.lineno, e.colno = self.pos_to_lineno_colno(e.pos)
+                e = self.latex_walker.check_tolerant_parsing_ignore_error(e)
+                if e is None:
+                    # we're trying to recover from this error (tolerant parsing mode)
+                    self.recovery_from_exception = e
+                    return True # error was handled
+
+                return None # raise the same error further
+
+        def perform_recovery_nodes(self, token_reader):
+            if self.recovery_from_exception is None:
+                raise RuntimeError("No exception had happened to try to recover nodes from")
+
+            # set nodes
+            nodes = getattr(self.recovery_from_exception, 'recovery_nodes', None)
+            # reset token_reader's position
+            reset_pos = getattr(self.recovery_from_exception, 'recovery_pos', None)
+            if reset_pos is not None:
+                token_reader.jump_to_pos(reset_pos)
+
+            return nodes
+
+    def new_parsing_open_context(self, open_context=None):
+        return LatexWalker._ParsingContext(self, open_context)
+
+    def parse_construct(self, parser, token_reader=None, parsing_state=None,
+                        open_context=None):
+
+        if token_reader is None:
+            token_reader = LatexTokenReader(self.s)
+        if parsing_state is None:
+            parsing_state = self.make_parsing_state()
+
+        nodes = None
+
+        with self.new_parsing_open_context(open_context) as pc:
+
+            nodes = parser(latex_walker=self, token_reader=token_reader,
+                           parsing_state=parsing_state)
+
+        if pc.recovery_from_exception is not None:
+            nodes = pc.perform_recovery_nodes(token_reader)
+
+        return nodes
+
+
+    def _get_token__legacy(self, pos, include_brace_chars=None, environments=True,
+                           keep_inline_math=None, parsing_state=None, **kwargs):
         r"""
         Parses the latex content given to the constructor (and stored in `self.s`),
         starting at position `pos`, to parse a single "token", as defined by
@@ -554,7 +648,6 @@ class LatexWalker(object):
             len
         )
 
-    
     def pos_to_lineno_colno(self, pos, as_dict=False):
         r"""
         Return the line and column number corresponding to the given `pos` in our
@@ -575,6 +668,9 @@ class LatexWalker(object):
             self._line_no_calc = _util.LineNumbersCalculator(self.s)
 
         return self._line_no_calc.pos_to_lineno_colno(pos, as_dict=as_dict)
+
+
+    def make_parser......(self, ....)
 
 
     def get_latex_expression(self, pos, strict_braces=None, parsing_state=None):

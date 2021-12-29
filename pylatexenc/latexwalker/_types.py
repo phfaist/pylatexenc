@@ -52,6 +52,7 @@ if sys.version_info.major == 2:
 __all__ = [
     'LatexWalkerError',
     'LatexWalkerParseError',
+    'LatexWalkerTokenParseError',
     'LatexWalkerEndOfStream',
     'LatexToken',
     'LatexNode',
@@ -62,6 +63,7 @@ __all__ = [
     'LatexEnvironmentNode',
     'LatexSpecialsNode',
     'LatexMathNode',
+    'LatexNodeList',
 ]
 
 
@@ -100,6 +102,7 @@ class LatexWalkerParseError(LatexWalkerError):
 
        The column number where the error occurred in the line `lineno`, starting
        at 1.
+
     """
     def __init__(self, msg, s=None, pos=None, lineno=None, colno=None):
         self.input_source = None # attribute can be set to add to error msg display
@@ -136,6 +139,32 @@ class LatexWalkerParseError(LatexWalkerError):
     def __str__(self):
         return self._dispstr()
 
+
+class LatexWalkerTokenParseError(LatexWalkerParseError):
+    """
+    Represents an error while parsing a single token of LaTeX code.  See
+    :py:class:`LatexTokenReader`.
+
+    In addition to the attributes inherited by
+    :py:class:`LatexWalkerParseError`, we have:
+
+    .. py:attribute:: recovery_token_placeholder
+
+       A :py:class:`LatexToken` instance to use in place of a token that we
+       tried, but failed, to parse.
+    """
+    def __init__(self, recovery_token_placeholder, recovery_pos, **kwargs):
+        super(LatexWalkerTokenParseError, self).__init__(**kwargs)
+        self.recovery_token_placeholder = recovery_token_placeholder
+        self.recovery_pos = recovery_pos
+
+    def get_recovery_placeholder_result_and_pos(self):
+        r"""
+        This magical method enables the latex walker to gracefully recover from
+        token parse errors.  See
+        :py:meth:`LatexWalker.attempt_recovery_from_error()`.
+        """
+        return (self.recovery_token_placeholder, self.recovery_pos)
 
 
 
@@ -433,6 +462,8 @@ class LatexCharsNode(LatexNode):
         return LatexCharsNode
 
 
+
+
 class LatexGroupNode(LatexNode):
     r"""
     A LaTeX group delimited by braces, ``{like this}``.
@@ -506,6 +537,15 @@ class LatexMacroNode(LatexNode):
 
        The name of the macro (string), *without* the leading backslash.
 
+    .. py:attribute:: spec
+
+       The specification object for this macro (a :py:class:`MacroSpec`
+       instance).
+
+       .. versionadded:: 3.0
+
+       The `spec` attribute was introduced in `pylatexenc 3`.
+
     .. py:attribute:: nodeargd
 
        The :py:class:`pylatexenc.macrospec.ParsedMacroArgs` object that
@@ -554,8 +594,9 @@ class LatexMacroNode(LatexNode):
        :py:class:`LatexNode`.
     """
     def __init__(self, macroname, **kwargs):
-        nodeargd=kwargs.pop('nodeargd', ParsedMacroArgs())
-        macro_post_space=kwargs.pop('macro_post_space', '')
+        nodeargd = kwargs.pop('nodeargd', ParsedMacroArgs())
+        macro_post_space = kwargs.pop('macro_post_space', '')
+        spec = kwargs.pop('spec', None)
         # legacy:
         nodeoptarg=kwargs.pop('nodeoptarg', None)
         nodeargs=kwargs.pop('nodeargs', [])
@@ -566,6 +607,7 @@ class LatexMacroNode(LatexNode):
             **kwargs)
 
         self.macroname = macroname
+        self.spec = spec
         self.nodeargd = nodeargd
         self.macro_post_space = macro_post_space
         # legacy:
@@ -583,6 +625,15 @@ class LatexEnvironmentNode(LatexNode):
     .. py:attribute:: environmentname
 
        The name of the environment ('itemize', 'equation', ...)
+
+    .. py:attribute:: spec
+
+       The specification object for this macro (an :py:class:`EnvironmentSpec`
+       instance).
+
+       .. versionadded:: 3.0
+
+       The `spec` attribute was introduced in `pylatexenc 3`.
 
     .. py:attribute:: nodelist
 
@@ -633,6 +684,7 @@ class LatexEnvironmentNode(LatexNode):
     
     def __init__(self, environmentname, nodelist, **kwargs):
         nodeargd = kwargs.pop('nodeargd', ParsedMacroArgs())
+        spec = kwargs.pop('spec', None)
         # legacy:
         optargs = kwargs.pop('optargs', [])
         args = kwargs.pop('args', [])
@@ -643,6 +695,7 @@ class LatexEnvironmentNode(LatexNode):
             **kwargs)
 
         self.environmentname = environmentname
+        self.spec = spec
         self.nodelist = nodelist
         self.nodeargd = nodeargd
         # legacy:
@@ -661,6 +714,15 @@ class LatexSpecialsNode(LatexNode):
     .. py:attribute:: specials_chars
 
        The name of the specials (string), *without* the leading backslash.
+
+    .. py:attribute:: spec
+
+       The specification object for this macro (a :py:class:`SpecialsSpec`
+       instance).
+
+       .. versionadded:: 3.0
+
+       The `spec` attribute was introduced in `pylatexenc 3`.
 
     .. py:attribute:: nodeargd
 
@@ -683,7 +745,7 @@ class LatexSpecialsNode(LatexNode):
 
        Latex specials were introduced in `pylatexenc 2.0`.
     """
-    def __init__(self, specials_chars, **kwargs):
+    def __init__(self, specials_chars, spec, **kwargs):
         nodeargd=kwargs.pop('nodeargd', None)
 
         super(LatexSpecialsNode, self).__init__(
@@ -691,6 +753,7 @@ class LatexSpecialsNode(LatexNode):
             **kwargs)
 
         self.specials_chars = specials_chars
+        self.spec = spec
         self.nodeargd = nodeargd
 
     def nodeType(self):
@@ -737,6 +800,58 @@ class LatexMathNode(LatexNode):
 
     def nodeType(self):
         return LatexMathNode
+
+
+
+# ------------------------------------------------------------------------------
+
+
+
+class LatexNodeList(object):
+    r"""
+    Represents a list of nodes, along with the spanning position and length.
+
+    You can use a :py:class:`LatexNodeList` pretty much like a python `list` of
+    nodes, including as an argument to `len()` and with indexing as in `obj[i]`.
+
+    .. py:attribute:: nodelist
+
+       A list of node instances.
+
+    .. py:attribute:: pos
+    
+       The position in the parsed string where this node list starts, assuming
+       that the `nodelist` represents a single continuous sequence of nodes in
+       the latex string.
+
+    .. py:attribute:: len
+
+       The total length spanned by this node list, assuming that the `nodelist`
+       represents a single continuous sequence of nodes in the latex string.
+    """
+    def __init__(self, nodelist, parsing_state, **kwargs):
+        self.nodelist = nodelist
+
+        self.parsing_state = parsing_state
+        self.pos = kwargs.pop('pos', None)
+        self.len = kwargs.pop('len', None)
+
+        if self.pos is None:
+            self.pos = next([n.pos for n in nodelist if n is not None],
+                            None)
+        if self.len is None:
+            end_pos = next([n.pos+n.len for n in nodelist if n is not None],
+                           None)
+            self.len = end_pos - self.pos
+
+    def __getitem__(self, index):
+        return self.nodelist[index]
+
+    def __len__(self):
+        return len(self.nodelist)
+    
+    
+
 
 
 

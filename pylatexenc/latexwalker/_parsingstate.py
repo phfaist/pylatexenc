@@ -163,7 +163,7 @@ class ParsingState(object):
         self.math_mode_delimiter = None
 
         # new in pylatexenc 3
-        self.latex_group_delimiters = [ ('{', '}'), ]
+        self.latex_group_delimiters = [ ('{', '}'), ] # must be single characters!
         self.latex_inline_math_delimiters = [ ('$', '$'), (r'\(', r'\)'), ]
         self.latex_display_math_delimiters = [ ('$$', '$$'), (r'\[', r'\]'), ]
         self.enable_double_newline_paragraphs = True
@@ -173,8 +173,9 @@ class ParsingState(object):
 
         # set internally by the other fields by _set_fields()
         #self._macronames_math_delims = set()
-        self._openbracechars = frozenset()
-        self._closebracechars = frozenset()
+        self._latex_group_delimchars_by_open = {}
+        #self._latex_group_delimchars_open = frozenset()
+        self._latex_group_delimchars_close = frozenset()
         self._math_delims_info_startchars = ''
         self._math_delims_by_len = []
         self._math_delims_info_by_open = {}
@@ -198,8 +199,9 @@ class ParsingState(object):
 
     def _set_derivative_fields(self):
         a, b = zip(*self.latex_group_delimiters)
-        self._openbracechars = frozenset(a)
-        self._closebracechars = frozenset(b)
+        self._latex_group_delimchars_by_open = dict(self.latex_group_delimiters)
+        #self._latex_group_delimchars_open = frozenset(a)
+        self._latex_group_delimchars_close = frozenset(b)
         #
         # ......................
         self._math_delims_info_startchars = frozenset([
@@ -219,7 +221,7 @@ class ParsingState(object):
             + [ (open_delim, dict(close_delim=close_delim, tok='mathmode_display'))
               for open_delim, close_delim in self.latex_display_math_delimiters ]
         )
-        if self.in_math_mode:
+        if not self.in_math_mode:
             self._math_expecting_close_delim = None
         else:
             try:
@@ -227,14 +229,10 @@ class ParsingState(object):
                     self.math_mode_delimiter
                 ]
             except KeyError as e:
-                logger.warning("Invalid open math_mode_delimiter %r in ‘%r’",
-                               self.math_mode_delimiter, self)
+                # Normal, can happen in math environments delimited by
+                # e.g. \begin{align}...\end{align}
                 self._math_expecting_close_delim = None
-        # #
-        # self._latex_inline_math_delimiters_dict = \
-        #     dict(self._latex_inline_math_delimiters)
-        # self._latex_display_math_delimiters_dict = \
-        #     dict(self._latex_display_math_delimiters)
+
 
 
     def sub_context(self, **kwargs):
