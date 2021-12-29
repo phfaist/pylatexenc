@@ -1,7 +1,6 @@
 
 from __future__ import print_function, unicode_literals, absolute_imports
 
-from ...macrospec._specclasses import MacroSpec, EnvironmentSpec, SpecialsSpec
 
 from ._nodescollectorbase import LatexNodesCollectorBase
 
@@ -28,7 +27,25 @@ class LatexNodesCollector(LatexNodesCollectorBase):
         )
 
 
+    def parse_comment_node(self, tok):
+
+        commentnode = latex_walker.make_node(
+                LatexCommentNode,
+                parsing_state=self.parsing_state,
+                comment=tok.arg,
+                comment_post_space=tok.post_space,
+                pos=tok.pos,
+                len=tok.len
+        )
+
+        stop_exc = self.push_to_nodelist( commentnode )
+        if stop_exc is not None:
+            stop_exc.pos_end = tok.pos + tok.len
+            raise stop_exc
+
+
     def parse_latex_group(self, tok):
+
         groupnode = \
             latex_walker.parse_content(
                 LatexDelimitedGroupParser(
@@ -59,10 +76,13 @@ class LatexNodesCollector(LatexNodesCollectorBase):
             )
             if exc is not None:
                 raise exc
-            mspec = MacroSpec('')
+            mspec = None
 
-        return self.parse_invocable_token_type(tok, mspec)
 
+        node_class = LatexMacroNode
+        what = 'macro ‘\\{}’'.format(macroname)
+
+        return self.parse_invocable_token_type(tok, mspec, node_class, what)
 
     def parse_environment(self, tok):
 
@@ -81,36 +101,23 @@ class LatexNodesCollector(LatexNodesCollectorBase):
             )
             if exc is not None:
                 raise exc
-            envspec = EnvironmentSpec('')
+            envspec = None
 
-        return self.parse_invocable_token_type(tok, envspec)
+        node_class = LatexEnvironmentNode
+        what = 'environment ‘{{{}}}’'.format(environmentname)
 
+        return self.parse_invocable_token_type(tok, envspec, node_class, what)
 
     def parse_specials(self, tok):
+
         specials_spec = tok.arg
-        return self.parse_invocable_token_type(tok, specials_spec)
 
+        node_class = LatexSpecialsNode
+        what = 'specials ‘{}’'.format(specials_spec.specials_chars)
 
-    def parse_comment_node(self, tok):
+        return self.parse_invocable_token_type(tok, specials_spec, node_class, what)
 
-        commentnode = latex_walker.make_node(
-                LatexCommentNode,
-                parsing_state=self.parsing_state,
-                comment=tok.arg,
-                comment_post_space=tok.post_space,
-                pos=tok.pos,
-                len=tok.len
-        )
-
-        stop_exc = self.push_to_nodelist( commentnode )
-        if stop_exc is not None:
-            stop_exc.pos_end = tok.pos + tok.len
-            raise stop_exc
-
-
-
-
-    def parse_invocable_token_type(self, tok, spec):
+    def parse_invocable_token_type(self, tok, spec, node_class, what):
 
         latex_walker = self.latex_walker
         token_reader = self.token_reader
@@ -119,6 +126,8 @@ class LatexNodesCollector(LatexNodesCollectorBase):
             LatexInvocableWithArgumentsParser(
                 main_token=tok,
                 spec=spec,
+                node_class=node_class,
+                what=what,
             ),
             token_reader=token_reader,
             parsing_state=self.parsing_state,
@@ -240,22 +249,14 @@ class LatexGeneralNodesParser(object):
 
 
 class LatexInvocableWithArgumentsParser(object):
-    def __init__(self, main_token, spec):
+    def __init__(self, main_token, spec, node_class, what):
         super(LatexInvocableWithArgumentsParser, self).__init__()
         self.main_token = main_token
         self.spec = spec
 
-        if isinstance(self.spec, MacroSpec):
-            self.node_class = LatexMacroNode
-            self.what = 'macro ‘\\{}’'.format(self.main_token.arg)
-        elif isinstance(self.spec, EnvironmentSpec):
-            self.node_class = LatexEnvironmentNode
-            self.what = 'environment ‘{{{}}}’'.format(self.main_token.arg)
-        elif isinstance(self.spec, SpecialsSpec):
-            self.node_class = LatexSpecialsNode
-            self.what = 'specials ‘{}’'.format(self.main_token.arg.specials_chars)
-        else:
-            raise TypeError("Invalid/unknown spec class {!r}".format(self.spec))
+        self.node_class = node_class
+        self.what = what
+
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 

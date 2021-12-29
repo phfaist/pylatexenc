@@ -1,7 +1,11 @@
 
-from .._types import LatexWalkerParseError, LatexWalkerTokenParseError
+from ._types import LatexWalkerParseError, LatexWalkerTokenParseError
 
 from ._std import LatexDelimitedGroupParser
+
+
+
+# --------------------------------------
 
 
 
@@ -103,9 +107,9 @@ class LatexExpressionParser(object):
                     )
                 ]
 
-            macrospec = expr_parsing_state.latex_context.get_macro_spec(macroname)
+            mspec = expr_parsing_state.latex_context.get_macro_spec(macroname)
 
-            self._check_if_requires_args(latex_walker, macrospec,
+            self._check_if_requires_args(latex_walker, mspec,
                                          r"a single macro ‘\{}’".format(macroname))
 
             return [
@@ -113,7 +117,7 @@ class LatexExpressionParser(object):
                     LatexMacroNode,
                     parsing_state=expr_parsing_state,
                     macroname=tok.arg,
-                    spec=macrospec,
+                    spec=mspec,
                     nodeargd=None,
                     macro_post_space=tok.post_space,
                     nodeoptarg=None,
@@ -244,10 +248,4 @@ class LatexExpressionParser(object):
             )
             if exc is not None:
                 raise exc
-
-
-
-
-# ------------------------------------------------------------------------------
-
 
