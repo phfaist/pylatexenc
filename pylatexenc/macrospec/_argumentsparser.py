@@ -106,7 +106,7 @@ class _LegacyMacroArgsParserWrapper(LatexParserBase):
             adic = {}
 
         pos_end = apos + alen
-        token_reader.jump_to_pos(pos_end)
+        token_reader.move_to_pos_chars(pos_end)
 
         # if nodeargd is not None and nodeargd.legacy_nodeoptarg_nodeargs:
         #     legnodeoptarg = nodeargd.legacy_nodeoptarg_nodeargs[0]

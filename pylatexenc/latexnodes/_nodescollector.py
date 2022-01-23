@@ -29,8 +29,8 @@
 
 from __future__ import print_function, unicode_literals
 
-from _exctypes import *
-from _nodetypes import *
+from ._exctypes import *
+from ._nodetypes import *
 
 
 
@@ -144,7 +144,7 @@ class LatexNodesCollector(object):
     def _check_token_stop_condition(self, tok):
         stop_token_condition = self.parserobj.stop_token_condition
         if stop_token_condition is not None:
-            stop_data = stop_token_condition(tok):
+            stop_data = stop_token_condition(tok)
             if stop_data:
                 self.stop_token_condition_met = True
                 return LatexNodesCollector.ReachedStoppingCondition(stop_data=stop_data)
@@ -213,7 +213,7 @@ class LatexNodesCollector(object):
 
         # first, let's check if a token-based stopping condition is met.
         
-        stop_exc = self._check_token_stop_condition(tok):
+        stop_exc = self._check_token_stop_condition(tok)
         if stop_exc is not None:
             stop_exc.pos_end = tok.pos + tok.len
             raise stop_exc

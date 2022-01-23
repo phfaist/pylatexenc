@@ -1,7 +1,39 @@
+# -*- coding: utf-8 -*-
+#
+# The MIT License (MIT)
+# 
+# Copyright (c) 2019 Philippe Faist
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+
+
+# Internal module. Internal API may move, disappear or otherwise change at any
+# time and without notice.
+
 import re
 import logging
 logger = logging.getLogger(__name__)
 
+from ._exctypes import LatexWalkerTokenParseError
+
+from ._token import LatexToken
 from ._tokenreaderbase import LatexTokenReaderBase
 
 
@@ -22,7 +54,7 @@ class LatexTokenReader(LatexTokenReaderBase):
         self._pos = 0
 
         self._rx_environment_name = \
-            re.compile(r'^\{(?P<environmentname>[\w* ._-]+)\}')
+            re.compile(r'\s*\{(?P<environmentname>[\w* ._-]+)\}')
 
     def move_to_token(self, tok, rewind_pre_space=True):
         if rewind_pre_space:
@@ -73,8 +105,6 @@ class LatexTokenReader(LatexTokenReaderBase):
                              "*before* the current position, got %d > %d" % (pos, self._pos))
         self._advance_to_pos(pos)
 
-    def jump_to_pos(self, pos):
-        self._advance_to_pos(pos)
 
 
     def skip_space_chars(self, parsing_state):
@@ -118,18 +148,20 @@ class LatexTokenReader(LatexTokenReaderBase):
            and s[pos] == '\n' and s[pos+1] == '\n'  \
            and parsing_state.enable_double_newline_paragraphs:
             # two \n's indicate new paragraph.
-            try:
-                sspec = parsing_state.latex_context.get_specials_spec(
-                    specials_chars='\n\n',
-                    raise_if_not_found=True
-                )
-                return self.make_token(tok='specials', arg=sspec,
-                                       pos=pos, len=2,
-                                       pre_space=pre_space)
-            except KeyError:
-                return self.make_token(tok='char', arg='\n\n',
-                                       pos=pos, len=2,
-                                       pre_space=pre_space)
+            if parsing_state.latex_context is not None:
+                try:
+                    sspec = parsing_state.latex_context.get_specials_spec(
+                        specials_chars='\n\n',
+                        raise_if_not_found=True
+                    )
+                    return self.make_token(tok='specials', arg=sspec,
+                                           pos=pos, len=2,
+                                           pre_space=pre_space)
+                except KeyError:
+                    pass
+            return self.make_token(tok='char', arg='\n\n',
+                                   pos=pos, len=2,
+                                   pre_space=pre_space)
 
         c = s[pos]
 
@@ -155,7 +187,7 @@ class LatexTokenReader(LatexTokenReaderBase):
                                         pre_space=pre_space)
 
         # check if we have a latex comment
-        if c == '%': 
+        if c == '%' and parsing_state.enable_comments:
             return self.impl_read_comment(s=s, pos=pos,
                                           parsing_state=parsing_state,
                                           pre_space=pre_space)
@@ -168,13 +200,14 @@ class LatexTokenReader(LatexTokenReaderBase):
             return self.make_token(tok='brace_close', arg=c, pos=pos, len=1,
                                    pre_space=pre_space)
 
-        sspec = parsing_state.latex_context.test_for_specials(
-            s, pos, parsing_state=parsing_state
-        )
-        if sspec is not None:
-            return self.make_token(tok='specials', arg=sspec,
-                                   pos=pos, len=len(sspec.specials_chars),
-                                   pre_space=pre_space)
+        if parsing_state.latex_context is not None:
+            sspec = parsing_state.latex_context.test_for_specials(
+                s, pos, parsing_state=parsing_state
+            )
+            if sspec is not None:
+                return self.make_token(tok='specials', arg=sspec,
+                                       pos=pos, len=len(sspec.specials_chars),
+                                       pre_space=pre_space)
 
         # otherwise, the token is a normal 'char' type.
 
@@ -223,26 +256,33 @@ class LatexTokenReader(LatexTokenReaderBase):
         return (space, pos, p2-pos)
 
 
-    def maybe_read_math_mode(self, s, pos, parsing_state, pre_space):
+    def impl_maybe_read_math_mode_delimiter(self, s, pos, parsing_state, pre_space):
+
         if parsing_state.in_math_mode:
             # looking for closing math mode
             expecting_close = parsing_state._math_expecting_close_delim_info
             expecting_close_delim = expecting_close['close_delim']
             expecting_close_tok = expecting_close['tok']
-            if s.startswith(expecting_close_delim):
+            if s.startswith(expecting_close_delim, pos):
                 return self.make_token(tok=expecting_close_tok, arg=expecting_close_delim,
                                        pos=pos, len=len(expecting_close_delim),
                                        pre_space=pre_space)
-            return None
 
-        # see if we have an opening math mode
-        for delim in parsing_state._math_delims_by_len:
+        # see if we have a math mode delimiter; either an opening delimiter
+        # while not in math mode or an unexpected open/close delimiter.  It's
+        # not our job here to detect parse errors, we simply report the
+        # delimiter and let the parsers report syntax errors.  We do need some
+        # minimal logic to choose between different possible delimiters, though,
+        # like matching the expected closing delimiter above.
+        #
+
+        #print(f"{parsing_state._math_all_delims_by_len=}")
+
+        for delim, tok_type in parsing_state._math_all_delims_by_len:
             if s.startswith(delim, pos):
-                info = parsing_state._math_delims_info_by_open[delim]
-                # found open math delimiter
-                return self.make_token(tok=info['tok'], arg=delim,
+                return self.make_token(tok=tok_type, arg=delim,
                                        pos=pos, len=len(delim),
-                                       pre_space=space)
+                                       pre_space=pre_space)
 
         return None
 
@@ -303,12 +343,16 @@ class LatexTokenReader(LatexTokenReaderBase):
                 "Internal error, expected ‘\\begin’ or ‘\\end’ in read_environment"
             )
 
-        envmatch = self._rx_environment_name.match(s, pos)
+        pos_envname = pos + 1 + len(beginend)
+
+        #print("MATCHING ENV NAME TO: ", repr(s[pos_envname:]))
+
+        envmatch = self._rx_environment_name.match(s, pos_envname)
         if envmatch is None:
             tokarg = '\\'+beginend
             raise LatexWalkerTokenParseError(
                 msg=r"Bad ‘\{}’ call: expected {{environmentname}}".format(beginend),
-                len=i,
+                pos=pos,
                 recovery_token_placeholder=LatexToken(
                     tok='char',
                     arg=tokarg,

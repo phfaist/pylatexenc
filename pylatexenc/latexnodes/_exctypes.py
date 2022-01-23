@@ -29,8 +29,6 @@
 
 from __future__ import print_function, unicode_literals
 
-from ._parsedargsbase import ParsedMacroArgs
-
 
 # for Py3
 _basestring = str
@@ -125,7 +123,9 @@ class LatexWalkerParseError(LatexWalkerError):
             if colno is not None:
                 return '@(%d,%d)'%(lineno, colno)
             return '@%d'%(lineno)
-        return '@ char %d'%(pos)
+        if pos is not None:
+            return '@ char %d'%(pos)
+        return '@ <unknown>'
 
     def __str__(self):
         return self._dispstr()

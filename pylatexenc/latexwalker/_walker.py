@@ -388,7 +388,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         """
         token_reader = LatexTokenReader(self.s)
         if pos is not None:
-            token_reader.jump_to_pos(pos)
+            token_reader.move_to_pos_chars(pos)
         return token_reader
 
     def parse_content(self, parser, token_reader=None, parsing_state=None,
@@ -708,6 +708,13 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
         return LatexToken(tok='char', arg=s[pos], pos=pos, len=1, pre_space=space)
 
+
+    def make_nodes_collector(self,
+                             latex_walker,
+                             token_reader,
+                             parsing_state,
+                             **kwargs):
+        return LatexNodesCollector(latex_walker, token_reader, parsing_state, **kwargs)
 
     def make_node(self, node_class, **kwargs):
         r"""

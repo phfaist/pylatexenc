@@ -38,13 +38,14 @@ class LatexWalkerBase(object):
                       open_context=None, **kwargs):
         raise RuntimeError("LatexWalkerBase subclasses must reimplement parse_content()")
 
-
-    def make_nodes_collector(self, **kwargs):
-
-  
-
     def make_node(self, node_class, **kwargs):
         raise RuntimeError("LatexWalkerBase subclasses must reimplement make_node()")
 
-
+    def make_nodes_collector(self,
+                             latex_walker,
+                             token_reader,
+                             parsing_state,
+                             **kwargs):
+        raise RuntimeError(
+            "LatexWalkerBase subclasses must reimplement make_nodes_collector()")
 

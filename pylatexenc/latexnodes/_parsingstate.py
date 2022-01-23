@@ -179,6 +179,7 @@ class ParsingState(object):
         self._math_delims_info_startchars = ''
         self._math_delims_by_len = []
         self._math_delims_info_by_open = {}
+        self._math_delims_close = frozenset()
         self._math_expecting_close_delim = None
 
         self._fields = (
@@ -186,9 +187,10 @@ class ParsingState(object):
             'latex_context', 'in_math_mode', 'math_mode_delimiter',
             'latex_group_delimiters',
             'latex_inline_math_delimiters', 'latex_display_math_delimiters',
+            'enable_double_newline_paragraphs',
             'enable_environments',
             'enable_comments',
-            'enable_double_newline_paragraphs',
+            'macro_alpha_chars',
         )
 
         do_sanitize = kwargs.pop('_do_sanitize', True)
@@ -201,26 +203,44 @@ class ParsingState(object):
         #self._latex_group_delimchars_open = frozenset(a)
         self._latex_group_delimchars_close = frozenset(b)
         #
-        # ......................
+        #
+        # FIXME: DO NOT RECOMPUTE THESE FIELDS ALL THE TIME WHEN THE DELIMITER
+        # LISTS DO NOT CHANGE....
         self._math_delims_info_startchars = frozenset([
             x[:1]
             for pair in (self.latex_inline_math_delimiters
                       + self.latex_display_math_delimiters)
             for x in pair
         ])
-        self._math_delims_by_len = sorted(
-            self.latex_inline_math_delimiters + self.latex_display_math_delimiters,
+        self._math_all_delims_by_len = sorted(
+            [
+                (delim, tok_type)
+                for delimlist, tok_type in (
+                        (self.latex_inline_math_delimiters, 'mathmode_inline'),
+                        (self.latex_display_math_delimiters, 'mathmode_display'),
+                )
+                for delim in set([dlm for dlmpair in delimlist for dlm in dlmpair])
+            ],
             key=lambda x: len(x[0]),
             reverse=True,
         )
+        # self._math_delims_by_len = sorted(
+        #     self.latex_inline_math_delimiters + self.latex_display_math_delimiters,
+        #     key=lambda x: len(x[0]),
+        #     reverse=True,
+        # )
         self._math_delims_info_by_open = dict(
             [ (open_delim, dict(close_delim=close_delim, tok='mathmode_inline'))
               for open_delim, close_delim in self.latex_inline_math_delimiters ]
             + [ (open_delim, dict(close_delim=close_delim, tok='mathmode_display'))
               for open_delim, close_delim in self.latex_display_math_delimiters ]
         )
+        self._math_delims_close = frozenset([
+            info['close_delim']
+            for opendelim,info in self._math_delims_info_by_open.items()
+        ])
         if not self.in_math_mode:
-            self._math_expecting_close_delim = None
+            self._math_expecting_close_delim_info = None
         else:
             try:
                 self._math_expecting_close_delim_info = self._math_delims_info_by_open[
@@ -229,7 +249,7 @@ class ParsingState(object):
             except KeyError as e:
                 # Normal, can happen in math environments delimited by
                 # e.g. \begin{align}...\end{align}
-                self._math_expecting_close_delim = None
+                self._math_expecting_close_delim_info = None
 
 
 

@@ -68,11 +68,11 @@ class LatexExpressionParser(object):
 
             # recover from error and continue.  These recovery fields are
             # specific to LatexWalkerTokenParseError.  They can only be set when
-            # the token reader implements jump_to_pos(); we cannot use
+            # the token reader implements move_to_pos_chars(); we cannot use
             # move_past_token() etc. because the token couldn't be parsed
             # successfully!
             tok = exc.recovery_token_placeholder
-            token_reader.jump_to_pos(exc.recovery_token_at_pos)
+            token_reader.move_to_pos_chars(exc.recovery_token_at_pos)
 
 
         if tok.tok == 'macro':

@@ -32,7 +32,6 @@ from __future__ import print_function, unicode_literals
     
 
 
-
 class ParsedMacroArgs(object):
     r"""
     Parsed representation of macro arguments.
@@ -102,14 +101,16 @@ class ParsedMacroArgs(object):
 
         self.pos, self.len = kwargs.pop('pos', None), kwargs.pop('len', None)
 
-        # for LatexMacroNode to provide some kind of compatibility with pylatexenc < 2
-        #self.legacy_nodeoptarg_nodeargs = \
-        #    self._get_legacy_attribs(self.argspec, self.argnlist)
 
     @property
     def argspec(self):
-        .... warn deprecated ... ...
-        ... produce legacy "argspec" string .........
+        if not hasattr(self, '_argspec'):
+            self._argspec = "".join([
+                arg if isinstance(arg, _basestring) else getattr(arg, 'spec_s', '?')
+                for arg in self.arguments_spec_list
+            ])
+        return self._argspec
+
 
     @property
     def legacy_nodeoptarg_nodeargs(self):
@@ -125,11 +126,12 @@ class ParsedMacroArgs(object):
             return (None, argnlist)
 
 
-    def get_arg_node_by_name(self, argname):
-        ...........
+    # --TODO--
+    #
+    # def get_arg_node_by_name(self, argname):
+    #     ...........
 
-
-
+ 
     def to_json_object(self):
         r"""
         Called when we export the node structure to JSON when running latexwalker in
@@ -144,12 +146,13 @@ class ParsedMacroArgs(object):
         """
 
         return dict(
-            argspec=self.argspec,
+            arguments_spec_list=self.arguments_spec_list,
+            #argspec=self.argspec,
             argnlist=self.argnlist,
         )
 
     def __repr__(self):
-        return "{}(argspec={!r}, argnlist={!r})".format(
-            self.__class__.__name__, self.argspec, self.argnlist
+        return "{}(arguments_spec_list={!r}, argnlist={!r})".format(
+            self.__class__.__name__, self.arguments_spec_list, self.argnlist
         )
 
