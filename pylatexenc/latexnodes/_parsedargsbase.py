@@ -29,7 +29,17 @@
 
 from __future__ import print_function, unicode_literals
 
-    
+
+# for Py3
+_basestring = str
+
+## Begin Py2 support code
+import sys
+if sys.version_info.major == 2:
+    # Py2
+    _basestring = basestring
+## End Py2 support code
+
 
 
 class ParsedMacroArgs(object):

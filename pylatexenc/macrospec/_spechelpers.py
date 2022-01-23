@@ -29,7 +29,6 @@
 
 from __future__ import print_function, unicode_literals
 
-from ._argparsers import MacroStandardArgsParser
 from ._specclasses import MacroSpec, EnvironmentSpec, SpecialsSpec
 
 
@@ -134,9 +133,9 @@ def std_macro(macname, *args, **kwargs):
         argspec += '{'*args[1]
 
     if kwargs.get('make_environment_spec', False):
-        return EnvironmentSpec(macname, args_parser=MacroStandardArgsParser(argspec),
+        return EnvironmentSpec(macname, argspec,
                                is_math_mode=kwargs.get('environment_is_math_mode', False))
-    return MacroSpec(macname, args_parser=MacroStandardArgsParser(argspec))
+    return MacroSpec(macname, argspec)
 
 
 def std_environment(envname, *args, **kwargs):
@@ -216,5 +215,5 @@ def std_specials(specials_chars):
     any argument parsing.  For more complicated specials, you can instantiate a
     :py:class:`SpecialsSpec` directly.
     """
-    return SpecialsSpec(specials_chars, args_parser=None)
+    return SpecialsSpec(specials_chars, None)
 

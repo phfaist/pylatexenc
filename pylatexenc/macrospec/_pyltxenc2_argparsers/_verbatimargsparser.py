@@ -30,8 +30,9 @@
 from __future__ import print_function, unicode_literals
 
 
-from ...latexwalker import _types as latexwalker_types
-from .._parsedargsbase import ParsedMacroArgs
+from ...latexnodes import _exctypes as latexnodes_exctypes
+from ...latexnodes import _nodetypes as latexnodes_nodetypes
+from ...latexnodes import ParsedMacroArgs
 
 
 from ._base import MacroStandardArgsParser
@@ -223,7 +224,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             # exactly how LaTeX processes it.
             endverbpos = w.s.find(r'\end{'+self.verbatim_environment_name+r'}', pos)
             if endverbpos == -1:
-                raise latexwalker_types.LatexWalkerParseError(
+                raise latexnodes_exctypes.LatexWalkerParseError(
                     s=w.s,
                     pos=pos,
                     msg=r"Cannot find matching \end{"+self.verbatim_environment_name+r"}"
@@ -233,7 +234,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             len_ = endverbpos-pos
 
             argd = self.verbatim_parsed_args_class(
-                verbatim_chars_node=w.make_node(latexwalker_types.LatexCharsNode,
+                verbatim_chars_node=w.make_node(latexnodes_nodetypes.LatexCharsNode,
                                                 parsing_state=parsing_state,
                                                 chars=w.s[pos:pos+len_],
                                                 pos=pos,
@@ -249,7 +250,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
 
             endpos = w.s.find(self.specials_delimiters[1], pos)
             if endpos == -1:
-                raise latexwalker_types.LatexWalkerParseError(
+                raise latexnodes_exctypes.LatexWalkerParseError(
                     s=w.s,
                     pos=pos,
                     msg=(r"End of stream reached while reading verbatim specials “{!r}...{!r}”"
@@ -259,7 +260,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             verbarg = w.s[pos:endpos]
 
             argd = self.verbatim_parsed_args_class(
-                verbatim_chars_node=w.make_node(latexwalker_types.LatexCharsNode,
+                verbatim_chars_node=w.make_node(latexnodes_nodetypes.LatexCharsNode,
                                                 parsing_state=parsing_state,
                                                 chars=verbarg,
                                                 pos=pos,
@@ -276,7 +277,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             while w.s[pos].isspace():
                 pos += 1
                 if pos >= len(w.s):
-                    raise latexwalker_types.LatexWalkerParseError(
+                    raise latexnodes_exctypes.LatexWalkerParseError(
                         s=w.s,
                         pos=pos,
                         msg=r"Missing argument to \verb command"
@@ -288,7 +289,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
 
             endpos = w.s.find(verbdelimchar, beginpos)
             if endpos == -1:
-                raise latexwalker_types.LatexWalkerParseError(
+                raise latexnodes_exctypes.LatexWalkerParseError(
                     s=w.s,
                     pos=pos,
                     msg=r"End of stream reached while reading argument to \verb command"
@@ -297,7 +298,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             verbarg = w.s[beginpos:endpos]
 
             argd = self.verbatim_parsed_args_class(
-                verbatim_chars_node=w.make_node(latexwalker_types.LatexCharsNode,
+                verbatim_chars_node=w.make_node(latexnodes_nodetypes.LatexCharsNode,
                                                 parsing_state=parsing_state,
                                                 chars=verbarg,
                                                 pos=beginpos,

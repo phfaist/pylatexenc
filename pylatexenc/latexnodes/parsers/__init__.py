@@ -2,7 +2,7 @@
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2019 Philippe Faist
+# Copyright (c) 2022 Philippe Faist
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,40 +23,31 @@
 # THE SOFTWARE.
 #
 
-r"""
-Provides classes and helper functions to describe a LaTeX context of known
-macros and environments, specifying how they should be parsed by
-:py:mod:`pylatexenc.latexwalker`.
 
-.. versionadded:: 2.0
+from ._base import LatexParserBase
 
-   The entire module :py:mod:`pylatexenc.macrospec` was introduced in
-   `pylatexenc 2.0`.
-"""
-
-
-from ._specclasses import MacroSpec, EnvironmentSpec, SpecialsSpec
-
-from ._spechelpers import std_macro, std_environment, std_specials
-
-from ._latexcontextdb import LatexContextDb
-
-
-
-from ._argumentsparser import (
-    LatexArgumentSpec,
-    LatexArgumentsParser
+from ._generalnodes import (
+    LatexGeneralNodesParser,
+    LatexSingleNodeParser,
+    LatexDelimitedGroupParser,
+    LatexMathParser,
 )
 
-from ._macrocallparser import (
-    LatexMacroCallParser,
-    LatexEnvironmentCallParser,
-    LatexSpecialsCallParser
+from ._expression import (
+    LatexExpressionParser,
+)
+
+from ._optionals import (
+    LatexOptionalCharsMarkerParser,
+)
+
+from ._stdarg import (
+    LatexStandardArgumentParser,
+    get_standard_argument_parser,
 )
 
 
-# compatibility with pylatexenc 2
-from ..latexnodes import ParsedMacroArgs
-from ._pyltxenc2_argparsers import MacroStandardArgsParser, \
-    ParsedVerbatimArgs, VerbatimArgsParser, ParsedLstListingArgs, LstListingArgsParser
-
+from ._verbatim import (
+    LatexVerbatimBaseParser,
+    LatexVerbatimDelimParser,
+)

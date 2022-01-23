@@ -103,11 +103,13 @@ class LatexNodesCollector(object):
         self._pending_chars = ''
         self._pending_chars_pos = None
 
-        strnode = latex_walker.make_node(LatexCharsNode,
-                                         parsing_state=self.parsing_state,
-                                         chars=chars+tok.pre_space,
-                                         pos=charspos,
-                                         len=tok.pos - charspos)
+        strnode = self.latex_walker.make_node(
+            LatexCharsNode,
+            parsing_state=self.parsing_state,
+            chars=chars,
+            pos=charspos,
+            len=len(chars),
+        )
         return self.push_to_nodelist(strnode)
         
     def finalize(self):
@@ -121,7 +123,8 @@ class LatexNodesCollector(object):
 
 
     def pos_start(self):
-        p = next([ n.pos for n in self._nodelist if n is not None], None)
+        p = next( ( n.pos for n in self._nodelist if n is not None ),
+                  None )
         if p is not None:
             return p
         return self._pending_chars_pos
@@ -134,7 +137,7 @@ class LatexNodesCollector(object):
         return None
 
     def _check_nodelist_stop_condition(self):
-        stop_nodelist_condition = self.parserobj.stop_nodelist_condition
+        stop_nodelist_condition = self.stop_nodelist_condition
         if stop_nodelist_condition is not None:
             stop_data = stop_nodelist_condition(self._nodelist)
             if stop_data:
@@ -142,7 +145,7 @@ class LatexNodesCollector(object):
                 return LatexNodesCollector.ReachedStoppingCondition(stop_data=stop_data)
 
     def _check_token_stop_condition(self, tok):
-        stop_token_condition = self.parserobj.stop_token_condition
+        stop_token_condition = self.stop_token_condition
         if stop_token_condition is not None:
             stop_data = stop_token_condition(tok)
             if stop_data:
@@ -178,7 +181,8 @@ class LatexNodesCollector(object):
         # if it's not a char, push the last pending chars into the node list
         # before we do anything else (include the present token's pre_space)
         if self._pending_chars:
-            exc = self.flush_pending_chars()
+            self._pending_chars += tok.pre_space
+            stop_exc = self.flush_pending_chars()
             if stop_exc is not None:
                 # rewind to position immediately after the new token's
                 # pre_space, because we didn't parse that new token yet but we
@@ -317,6 +321,8 @@ class LatexNodesCollector(object):
 
     def parse_latex_group(self, tok):
 
+        token_reader.move_to_token(tok)
+
         groupnode = \
             latex_walker.parse_content(
                 self.make_group_parser(
@@ -336,9 +342,9 @@ class LatexNodesCollector(object):
     def parse_macro(self, tok):
 
         macroname = tok.arg
-        mspec = tok.spec
-        if mspec is None:
-            mspec = self.parsing_state.latex_context.get_macro_spec(macroname)
+        # mspec = tok.spec
+        # if mspec is None:
+        mspec = self.parsing_state.latex_context.get_macro_spec(macroname)
         if mspec is None:
             exc = latex_walker.check_tolerant_parsing_ignore_error(
                 LatexWalkerParseError(
@@ -350,7 +356,6 @@ class LatexNodesCollector(object):
                 raise exc
             mspec = None
 
-
         node_class = LatexMacroNode
         what = 'macro ‘\\{}’'.format(macroname)
 
@@ -359,10 +364,10 @@ class LatexNodesCollector(object):
     def parse_environment(self, tok):
 
         environmentname = tok.arg
-        envspec = tok.spec
-        if envspec is None:
-            envspec = \
-                self.parsing_state.latex_context.get_environment_spec(environmentname)
+        # envspec = tok.spec
+        # if envspec is None:
+        envspec = \
+            self.parsing_state.latex_context.get_environment_spec(environmentname)
 
         if envspec is None:
             exc = latex_walker.check_tolerant_parsing_ignore_error(
@@ -416,15 +421,23 @@ class LatexNodesCollector(object):
 
     def parse_math(self, tok):
 
+        self.token_reader.move_to_token(tok)
+
+        math_parsing_state = self.parsing_state.sub_context(
+            in_math_mode=True,
+            math_mode_delimiter=tok.arg
+        )
+
         # a math inline or display environment
         mathnode = \
             latex_walker.parse_content(
                 self.make_math_parser(
-                    require_brace_type=tok.arg,
+                    require_math_delimiter=tok.arg,
                 ),
                 token_reader=self.token_reader,
-                parsing_state=self.parsing_state,
-        )
+                parsing_state=self.make_child_parsing_state(math_parsing_state,
+                                                            LatexMathNode)
+            )
 
         stop_exc = self.push_to_nodelist(mathnode)
         if stop_exc is not None:

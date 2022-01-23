@@ -1,6 +1,36 @@
+# -*- coding: utf-8 -*-
+#
+# The MIT License (MIT)
+# 
+# Copyright (c) 2022 Philippe Faist
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+
+
+# Internal module. Internal API may move, disappear or otherwise change at any
+# time and without notice.
 
 from __future__ import print_function, unicode_literals
 
+from .._exctypes import *
+from .._nodetypes import *
 
 from .._nodescollector import LatexNodesCollector
 
@@ -41,6 +71,8 @@ class LatexGeneralNodesParser(LatexParserBase):
             latex_walker=latex_walker,
             token_reader=token_reader,
             parsing_state=parsing_state,
+            make_group_parser=LatexDelimitedGroupParser,
+            make_math_parser=LatexMathParser,
             stop_token_condition=self.stop_token_condition,
             stop_nodelist_condition=self.stop_nodelist_condition,
             make_child_parsing_state=make_child_parsing_state,
@@ -160,10 +192,12 @@ class LatexDelimitedGroupParser(LatexParserBase):
         if self.include_brace_chars:
             this_level_parsing_state = parsing_state.sub_context(
                 latex_group_delimiters= \
-                    parsing_state.latex_group_delimiters + [include_brace_chars]
+                    parsing_state.latex_group_delimiters + [self.include_brace_chars]
             )
 
-        firsttok = token_reader.next_token(pos, parsing_state=this_level_parsing_state)
+        firsttok = token_reader.next_token(parsing_state=this_level_parsing_state)
+
+        require_brace_type = self.require_brace_type
 
         if firsttok.tok != 'brace_open'  \
            or (require_brace_type is not None and firsttok.arg != require_brace_type) \
@@ -186,9 +220,9 @@ class LatexDelimitedGroupParser(LatexParserBase):
             raise LatexWalkerParseError(
                 msg='Expected an opening LaTeX delimiter (%s), got ‘%s’%s' %(
                     acceptable_braces,
-                    what_we_got
+                    what_we_got,
                     ' with leading whitespace' if firsttok.pre_space else ''
-                )
+                ),
                 recovery_nodes=LatexNodeList([]),
                 recovery_at_token=firsttok
             )
@@ -221,5 +255,115 @@ class LatexDelimitedGroupParser(LatexParserBase):
                                       pos = firsttok.pos,
                                       len = nodelist.pos + nodelist.len - firsttok.pos)
 
+
+
+
+
+
+
+# ------------------------------------------------------------------------------
+
+
+
+
+class LatexMathParser(LatexParserBase):
+    def __init__(self,
+                 require_math_mode_delimiter=None,
+                 do_not_skip_space=False,
+                 optional=False,
+                 already_read_firsttok=None,
+                 **kwargs):
+        super(LatexMathParser, self).__init__(**kwargs)
+        self.require_math_mode_delimiter = require_math_mode_delimiter
+        self.do_not_skip_space = do_not_skip_space
+        self.optional = optional
+        self.already_read_firsttok = already_read_firsttok
+
+    def get_math_parsing_state(self, parsing_state, math_mode_delimiter):
+        return parsing_state.sub_context(in_math_mode=True,
+                                         math_mode_delimiter=math_mode_delimiter)
+
+    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+
+        if self.already_read_firsttok is not None:
+            firsttok = self.already_read_firsttok
+        else:
+            firsttok = token_reader.next_token(pos, parsing_state=parsing_state)
+
+        require_math_mode_delimiter = self.require_math_mode_delimiter
+
+        if firsttok.tok not in ('mathmode_inline', 'mathmode_display')  \
+           or (require_math_mode_delimiter is not None
+               and firsttok.arg != require_math_mode_delimiter) \
+           or (self.do_not_skip_space and firsttok.pre_space):
+
+            if self.optional:
+                # all ok, the argument was optional and was simply not specified.
+                token_reader.move_to_token(firsttok)
+                return None, None
+
+            #
+            if require_math_mode_delimiter:
+                acceptable_mm = '‘' + require_math_mode_delimiter + '’'
+            else:
+                acceptable_mm = ", ".join([
+                    '‘' + od + '’'
+                    for (od, cd) in (
+                            parsing_state.latex_inline_math_mode_delimiters
+                            + parsing_state.latex_display_math_mode_delimiters
+                    )
+                ])
+            what_we_got = latex_walker.s[firsttok.pos:firsttok.pos+firsttok.len]
+            raise LatexWalkerParseError(
+                msg='Expected a LaTeX math mode opening delimiter (%s), got ‘%s’%s' %(
+                    acceptable_mm,
+                    what_we_got,
+                    ' with leading whitespace' if firsttok.pre_space else ''
+                ),
+                recovery_nodes=LatexNodeList([]),
+                recovery_at_token=firsttok
+            )
+
+        math_mode_delimiter = firsttok.arg
+        math_mode_type = firsttok.tok
+        closing_math_mode_delim = \
+            parsing_state._math_expecting_close_delim_info['close_delim']
+
+        math_parsing_state = self.get_math_parsing_state(parsing_state, math_mode_delimiter)
+
+        def stop_token_condition(token):
+            if token.tok == math_mode_type and token.arg == closing_math_mode_delim:
+                return True
+            return False
+
+        nodelist = latex_walker.parse_content(
+            LatexGeneralNodesParser(
+                stop_token_condition=stop_token_condition,
+                child_parsing_state=parsing_state,
+            ),
+            token_reader=token_reader,
+            parsing_state=math_parsing_state,
+            open_context=(
+                'LaTeX math ‘{}…{}’'.format(math_mode_delimiter, closing_math_mode_delim),
+                firsttok
+            )
+        )
+
+        if math_mode_type == 'mathmode_inline':
+            displaytype = 'inline'
+        elif math_mode_type == 'mathmode_display':
+            displaytype = 'display'
+        else:
+            displaytype = '<unknown>'
+
+        return latex_walker.make_node(
+            LatexMathNode,
+            displaytype=displaytype,
+            nodelist=nodelist,
+            parsing_state=parsing_state,
+            delimiters=(math_mode_delimiter, closing_math_mode_delim),
+            pos = firsttok.pos,
+            len = nodelist.pos + nodelist.len - firsttok.pos
+        )
 
 

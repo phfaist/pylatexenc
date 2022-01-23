@@ -1,8 +1,8 @@
 from __future__ import print_function, unicode_literals
 
 
-from .._nodetypes import *
-from .._parsedargsbase import ParsedMacroArgs
+from ...latexnodes._nodetypes import *
+from ...latexnodes import ParsedMacroArgs
 
 
 # for Py3

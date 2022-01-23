@@ -2,7 +2,7 @@
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2019 Philippe Faist
+# Copyright (c) 2022 Philippe Faist
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -33,11 +33,11 @@ from __future__ import print_function, unicode_literals
 import logging
 logger = logging.getLogger(__name__)
 
-from ._types import LatexWalkerParseError, LatexWalkerTokenParseError
+from .._exctypes import LatexWalkerParseError, LatexWalkerTokenParseError
 
-from ._std import LatexDelimitedGroupParser
-
-from ._optionals import *
+from ._base import LatexParserBase
+from ._generalnodes import LatexDelimitedGroupParser
+from ._optionals import LatexOptionalCharsMarkerParser
 
 
 
@@ -66,7 +66,7 @@ def get_standard_argument_parser(arg_spec, **kwargs):
     k = tuple(list(d.items()))
     if k not in _std_arg_parser_instances:
         instance = LatexStandardArgumentParser(arg_spec, **kwargs)
-        _std_args_parsers[k] = instance
+        _std_arg_parser_instances[k] = instance
         return instance
 
     return _std_arg_parser_instances[k]
@@ -136,7 +136,7 @@ class LatexStandardArgumentParser(LatexParserBase):
         elif arg_spec in ('s', '*'):
 
             return LatexOptionalCharsMarker(
-                chars='*'
+                chars='*',
                 do_not_skip_space=self.do_not_skip_space,
             )
 
@@ -148,7 +148,7 @@ class LatexStandardArgumentParser(LatexParserBase):
             the_char = arg_spec[1]
 
             return LatexOptionalCharsMarker(
-                chars=the_char
+                chars=the_char,
                 do_not_skip_space=self.do_not_skip_space,
             )
 
@@ -205,7 +205,6 @@ class LatexStandardArgumentParser(LatexParserBase):
 
         nodes, carryover_info = latex_walker.parse_content(
             arg_parser,
-            latex_walker=latex_walker,
             token_reader=token_reader,
             parsing_state=arg_parsing_state,
             **kwargs

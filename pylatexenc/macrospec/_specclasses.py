@@ -30,6 +30,14 @@
 from __future__ import print_function, unicode_literals
 
 
+from ..latexnodes import CallableSpecBase
+
+from ._argumentsparser import LatexArgumentsParser
+from ._macrocallparser import (
+    LatexMacroCallParser, LatexEnvironmentCallParser, LatexSpecialsCallParser
+)
+
+
 # for Py3
 _basestring = str
 
@@ -206,7 +214,15 @@ class SpecialsSpec(_SpecBase):
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
-def _legacy_pyltxenc2_init_from_args_parser(spec, args_parser):
+from ._argumentsparser import _LegacyPyltxenc2MacroArgsParserWrapper
+
+
+def _legacy_pyltxenc2_init_from_args_parser(spec, kwargs):
+
+    args_parser = kwargs.pop('args_parser', None)
+    if args_parser is None:
+        return
+
     # legacy support
     if spec.arguments_spec_list is not None:
         raise ValueError("You cannot specify both arguments_spec_list= and args_parser=")

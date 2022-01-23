@@ -1,5 +1,47 @@
+# -*- coding: utf-8 -*-
+#
+# The MIT License (MIT)
+# 
+# Copyright (c) 2022 Philippe Faist
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
 
-from ..latexnodes import get_standard_argument_parser
+
+# Internal module. Internal API may move, disappear or otherwise change at any
+# time and without notice.
+
+from __future__ import print_function, unicode_literals
+
+from ..latexnodes.parsers import get_standard_argument_parser, LatexParserBase
+
+
+# for Py3
+_basestring = str
+
+## Begin Py2 support code
+import sys
+if sys.version_info.major == 2:
+    # Py2
+    _basestring = basestring
+## End Py2 support code
+
 
 
 class LatexArgumentSpec(object):
@@ -85,9 +127,9 @@ class LatexArgumentsParser(LatexParserBase):
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
-class _LegacyMacroArgsParserWrapper(LatexParserBase):
+class _LegacyPyltxenc2MacroArgsParserWrapper(LatexParserBase):
     def __init__(self, args_parser, spec_object):
-        super(_LegacyMacroArgsParserWrapper, self).__init__()
+        super(_LegacyPyltxenc2MacroArgsParserWrapper, self).__init__()
 
         self.args_parser = args_parser
         self.spec_object = spec_object

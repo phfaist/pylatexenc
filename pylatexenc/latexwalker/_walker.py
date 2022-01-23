@@ -35,11 +35,12 @@ from .. import _util
 from .. import latexnodes
 from .. import macrospec
 
-from ._types import *
+from ..latexnodes._exctypes import *
+from ..latexnodes._nodetypes import *
+from ..latexnodes.parsers import LatexGeneralNodesParser
 from ._get_defaultspecs import get_default_latex_context_db
-from ._parsingstate import ParsingState
+from ..latexnodes import ParsingState
 
-from ._parsers._std import
 
 import logging
 logger = logging.getLogger(__name__)
@@ -290,7 +291,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         from parse errors in tolerant parsing mode.
         """
         def __init__(self, latex_walker, open_context):
-            super(_ParsingContext, self).__init__()
+            super(LatexWalker._ParsingContext, self).__init__()
 
             self.latex_walker = latex_walker
             self.open_context = open_context
@@ -386,7 +387,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         then the token reader is initialized to start parsing at the position
         index `pos` in the string.
         """
-        token_reader = LatexTokenReader(self.s)
+        token_reader = latexnodes.LatexTokenReader(self.s)
         if pos is not None:
             token_reader.move_to_pos_chars(pos)
         return token_reader
@@ -714,7 +715,12 @@ class LatexWalker(latexnodes.LatexWalkerBase):
                              token_reader,
                              parsing_state,
                              **kwargs):
-        return LatexNodesCollector(latex_walker, token_reader, parsing_state, **kwargs)
+        return latexnodes.LatexNodesCollector(
+            latex_walker,
+            token_reader,
+            parsing_state,
+            **kwargs
+        )
 
     def make_node(self, node_class, **kwargs):
         r"""
@@ -1212,6 +1218,8 @@ class LatexWalker(latexnodes.LatexWalkerBase):
             stop_condition_message = \
                 "Was expecting ‘{}’".format(stop_upon_closing_mathmode)
 
+        else:
+            require_stop_condition_met = False
 
         parser = LatexGeneralNodesParser(
             stop_token_condition=stop_token_condition,
@@ -1221,7 +1229,6 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
         nodes = self.parse_content(
             parser,
-            latex_walker=self,
             token_reader=self.make_token_reader(pos=pos),
             parsing_state=parsing_state,
         )

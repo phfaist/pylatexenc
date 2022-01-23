@@ -176,11 +176,13 @@ class ParsingState(object):
         # set internally by the other fields by _set_fields()
         self._latex_group_delimchars_by_open = {}
         self._latex_group_delimchars_close = frozenset()
+        #
         self._math_delims_info_startchars = ''
-        self._math_delims_by_len = []
+        #self._math_delims_by_len = []
+        self._math_all_delims_by_len = frozenset()
         self._math_delims_info_by_open = {}
         self._math_delims_close = frozenset()
-        self._math_expecting_close_delim = None
+        self._math_expecting_close_delim_info = None
 
         self._fields = (
             's',
@@ -193,20 +195,20 @@ class ParsingState(object):
             'macro_alpha_chars',
         )
 
-        do_sanitize = kwargs.pop('_do_sanitize', True)
+        do_postprocess = kwargs.pop('_do_postprocess', True)
 
-        self._set_fields(kwargs, do_sanitize=do_sanitize)
+        self._set_fields(kwargs, do_postprocess=do_postprocess)
 
     def _set_derivative_fields(self):
-        a, b = zip(*self.latex_group_delimiters)
-        self._latex_group_delimchars_by_open = dict(self.latex_group_delimiters)
-        #self._latex_group_delimchars_open = frozenset(a)
-        self._latex_group_delimchars_close = frozenset(b)
-        #
         #
         # FIXME: DO NOT RECOMPUTE THESE FIELDS ALL THE TIME WHEN THE DELIMITER
         # LISTS DO NOT CHANGE....
-        self._math_delims_info_startchars = frozenset([
+        #
+        a, b = zip(*self.latex_group_delimiters)
+        self._latex_group_delimchars_by_open = dict(self.latex_group_delimiters)
+        self._latex_group_delimchars_close = frozenset(b)
+        #
+        self._math_delims_info_startchars = "".join([
             x[:1]
             for pair in (self.latex_inline_math_delimiters
                       + self.latex_display_math_delimiters)
@@ -224,6 +226,7 @@ class ParsingState(object):
             key=lambda x: len(x[0]),
             reverse=True,
         )
+        print(f"{self._math_all_delims_by_len=}")
         # self._math_delims_by_len = sorted(
         #     self.latex_inline_math_delimiters + self.latex_display_math_delimiters,
         #     key=lambda x: len(x[0]),
@@ -267,7 +270,7 @@ class ParsingState(object):
         If no arguments are provided, this returns a copy of the present parsing
         context object.
         """
-        p = self.__class__(_do_sanitize=False, **self.get_fields())
+        p = self.__class__(_do_postprocess=False, **self.get_fields())
 
         p._set_fields(kwargs)
 
@@ -281,22 +284,22 @@ class ParsingState(object):
         return dict([(f, getattr(self, f)) for f in self._fields])
 
 
-    def _set_fields(self, kwargs, do_sanitize=True):
+    def _set_fields(self, kwargs, do_postprocess=True):
 
         for k, v in kwargs.items():
             if k not in self._fields:
                 raise ValueError("Invalid field for ParsingState: {}={!r}".format(k, v))
             setattr(self, k, v)
 
-        if do_sanitize:
+        if do_postprocess:
             # Do some sanitization.  If we set in_math_mode=False, then we should
             # clear any math_mode_delimiter.
             self._sanitize(given_fields=kwargs)
 
-        #
-        # set internal preprocessed values
-        #
-        self._set_derivative_fields()
+            #
+            # set internal preprocessed values
+            #
+            self._set_derivative_fields()
 
 
     def _sanitize(self, given_fields):

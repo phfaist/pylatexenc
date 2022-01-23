@@ -101,27 +101,15 @@ from .. import macrospec
 # ------------------------------------------------------------------------------
 
 
-from ._types import (
-    LatexWalkerError,
-    LatexWalkerParseError,
-    LatexWalkerEndOfStream,
-    #
-    LatexToken,
-    #
-    LatexNode,
-    LatexCharsNode,
-    LatexGroupNode,
-    LatexCommentNode,
-    LatexMacroNode,
-    LatexEnvironmentNode,
-    LatexSpecialsNode,
-    LatexMathNode,
-)
+# backwards compatibility with pylatexenc-2
+from ..latexnodes._exctypes import *
+from ..latexnodes._nodetypes import *
+from ..latexnodes._token import LatexToken
 
 
 
 
-from ._parsingstate import ParsingState
+from ..latexnodes import ParsingState
 
 from ._walker import LatexWalker
 
