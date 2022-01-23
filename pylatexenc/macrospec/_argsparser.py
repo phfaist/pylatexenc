@@ -45,6 +45,8 @@ if sys.version_info.major == 2:
 
 
 
+.............. TRASH THIS CLASS DEFINITION ..........................
+
 class MacroStandardArgsParser(object):
     r"""
     Parses the arguments to a LaTeX macro.
@@ -113,6 +115,7 @@ class MacroStandardArgsParser(object):
        See the corresponding constructor argument.
     """
 
+.............. TRASH THIS CLASS DEFINITION ..........................
 
     class Argument:
         def __init__(self, arg_parser=None, arg_no=None):
@@ -128,13 +131,13 @@ class MacroStandardArgsParser(object):
         # only used for environments
         self.environment_body_parser = environment_body_parser
 
-        # catch bugs, make sure that argspec is a string with only accepted chars
-        if not isinstance(self.argspec, _basestring) or \
-           not all(x in '*[{' for x in self.argspec):
-            raise TypeError(
-                "argspec must be a string containing chars '*', '[', '{{' only: {!r}"
-                .format(self.argspec)
-            )
+        # # catch bugs, make sure that argspec is a string with only accepted chars
+        # if not isinstance(self.argspec, _basestring) or \
+        #    not all(x in '*[{' for x in self.argspec):
+        #     raise TypeError(
+        #         "argspec must be a string containing chars '*', '[', '{{' only: {!r}"
+        #         .format(self.argspec)
+        #     )
 
         # legacy attributes
         self.optional_arg_no_space = kwargs.pop('optional_arg_no_space', False)

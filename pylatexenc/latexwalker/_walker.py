@@ -32,7 +32,9 @@ from __future__ import print_function, unicode_literals
 import re
 
 from .. import _util
+from .. import latexnodes
 from .. import macrospec
+
 from ._types import *
 from ._get_defaultspecs import get_default_latex_context_db
 from ._parsingstate import ParsingState
@@ -61,7 +63,7 @@ if sys.version_info.major == 2:
 
 
 
-class LatexWalker(object):
+class LatexWalker(latexnodes.LatexWalkerBase):
     r"""
     A parser which walks through an input stream, parsing it as LaTeX markup.
 
@@ -288,6 +290,8 @@ class LatexWalker(object):
         from parse errors in tolerant parsing mode.
         """
         def __init__(self, latex_walker, open_context):
+            super(_ParsingContext, self).__init__()
+
             self.latex_walker = latex_walker
             self.open_context = open_context
 
@@ -455,6 +459,12 @@ class LatexWalker(object):
         starting at position `pos`, to parse a single "token", as defined by
         :py:class:`LatexToken`.
 
+        .. deprecated:: 3.0
+        
+           This method was deprecated as of `pylatexenc 3`.  Please use token
+           readers instead, see :py:meth:`make_token_reader()` and
+           :py:class:`LatexTokenReader`.
+
         Parse the token in the stream pointed to at position `pos`.
 
         Returns a :py:class:`LatexToken`. Raises
@@ -508,6 +518,9 @@ class LatexWalker(object):
         
         _util.pylatexenc_deprecated_3("get_token(); use LatexTokenReader instances instead, "
                                       "see LatexWalker.make_token_reader()")
+
+        raise RuntimeError("NEED TO IMPLEMENT LEGACY SUPPORT FUNCTION")
+
 
         if parsing_state is None:
             parsing_state = self.make_parsing_state() # get default parsing state
@@ -775,6 +788,9 @@ class LatexWalker(object):
            The `parsing_state` argument was introduced in version 2.0.
         """
 
+        raise RuntimeError("NEED TO IMPLEMENT LEGACY SUPPORT FUNCTION")
+
+
         if parsing_state is None:
             parsing_state = self.make_parsing_state() # get default parsing state
 
@@ -876,6 +892,9 @@ class LatexWalker(object):
            The `parsing_state` argument was introduced in version 2.0.
         """
 
+        raise RuntimeError("NEED TO IMPLEMENT LEGACY SUPPORT FUNCTION")
+
+
         if parsing_state is None:
             parsing_state = self.make_parsing_state() # get default parsing state
 
@@ -922,6 +941,9 @@ class LatexWalker(object):
 
            The `parsing_state` argument was introduced in version 2.0.
         """
+
+        raise RuntimeError("NEED TO IMPLEMENT LEGACY SUPPORT FUNCTION")
+
 
         if parsing_state is None:
             parsing_state = self.make_parsing_state() # get default parsing state

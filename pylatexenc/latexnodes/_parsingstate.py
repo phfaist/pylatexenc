@@ -42,6 +42,8 @@ class _StrictAsciiAlphaChars(object):
         ]) + "".join([
             chr(ord('A')+j) for j in range(26)
         ])
+    def __repr__(self):
+        return repr(self.__str__())
     def __contains__(self, c):
         n = ord(c)
         return (

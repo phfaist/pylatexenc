@@ -1,7 +1,8 @@
 
 from ._types import LatexWalkerParseError, LatexWalkerTokenParseError
 
-from ._std import LatexDelimitedGroupParser
+from ._base import LatexParserBase
+from ._generalnodes import LatexDelimitedGroupParser
 
 
 

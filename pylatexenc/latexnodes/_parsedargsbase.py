@@ -85,16 +85,31 @@ class ParsedMacroArgs(object):
        the first argument is optional and all remaining args are mandatory; or
        it is `(None, <list of args>)` for any other argument structure.
     """
-    def __init__(self, argnlist=[], argspec='',
+    def __init__(self,
+                 argnlist=[],
+                 arguments_spec_list=None,
+                 #
+                 #argspec='',
                  **kwargs):
         super(ParsedMacroArgs, self).__init__(**kwargs)
 
+        if arguments_spec_list is None and 'argspec' in kwargs:
+            arguments_spec_list = kwargs.pop(argspec)
+
         self.argnlist = argnlist
-        self.argspec = argspec
+
+        self.arguments_spec_list = arguments_spec_list
+
+        self.pos, self.len = kwargs.pop('pos', None), kwargs.pop('len', None)
 
         # for LatexMacroNode to provide some kind of compatibility with pylatexenc < 2
         #self.legacy_nodeoptarg_nodeargs = \
         #    self._get_legacy_attribs(self.argspec, self.argnlist)
+
+    @property
+    def argspec(self):
+        .... warn deprecated ... ...
+        ... produce legacy "argspec" string .........
 
     @property
     def legacy_nodeoptarg_nodeargs(self):
@@ -108,6 +123,11 @@ class ParsedMacroArgs(object):
             return ( argnlist[nskip], argnlist[nskip+1:] )
         else:
             return (None, argnlist)
+
+
+    def get_arg_node_by_name(self, argname):
+        ...........
+
 
 
     def to_json_object(self):

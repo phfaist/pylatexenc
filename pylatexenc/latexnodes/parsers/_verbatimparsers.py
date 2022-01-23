@@ -83,10 +83,21 @@ class LatexVerbatimBaseParser(object):
 class LatexVerbatimDelimParser(LatexVerbatimBaseParser):
     def __init__(self,
                  delimiter_chars=None,
+                 auto_delimiter_chars=None,
                  **kwargs):
         super(LatexVerbatimDelimParser, self).__init__(**kwargs)
 
         self.delimiter_chars = delimiter_chars
+
+        if auto_delimiter_chars is not None:
+            self.auto_delimiter_chars = dict(auto_delimiter_chars)
+        else:
+            self.auto_delimiter_chars = {
+                '{': '}',
+                '[': ']',
+                '<': '>',
+                '(': ')',
+            }
 
         self.depth_counter = 1
 
@@ -120,12 +131,7 @@ class LatexVerbatimDelimParser(LatexVerbatimBaseParser):
 
             open_delim_char = token_reader.next_chars(1, parsing_state=parsing_state)
             
-            close_delim_char = {
-                '{': '}',
-                '[': ']',
-                '<': '>',
-                '(': ')',
-            }.get(open_delim_char, open_delim_char)
+            close_delim_char = self.auto_delimiter_chars.get(open_delim_char, open_delim_char)
 
             self.delimiter_chars = (open_delim_char, close_delim_char)
 

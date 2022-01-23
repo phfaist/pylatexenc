@@ -29,8 +29,6 @@
 
 from __future__ import print_function, unicode_literals
 
-from ..latexnodes import MacroStandardArgsParser
-
 
 # for Py3
 _basestring = str
@@ -45,41 +43,28 @@ if sys.version_info.major == 2:
 
 
 
-class _BaseSpec(object):
-    def __init__(self, args_parser=MacroStandardArgsParser(), **kwargs):
-        super(_BaseSpec, self).__init__(**kwargs)
-        if isinstance(args_parser, _basestring):
-            self.args_parser = MacroStandardArgsParser(args_parser)
-        else:
-            self.args_parser = args_parser
+class _SpecBase(CallableSpecBase):
+    def __init__(self, arguments_spec_list=None, make_carryover_info=None, **kwargs):
+        self.arguments_spec_list = arguments_spec_list
+        self.arguments_parser = LatexArgumentsParser(arguments_spec_list)
 
+        self._make_carryover_info_fn = make_carryover_info
 
-    def get_instance_parser(self, main_token, latex_walker):
-        r"""
-        """
+        _li = getattr(self, '_legacy_pyltxenc2_init_from_args_parser', None)
+        if _li is not None:
+            _li(kwargs)
 
-        ......
-
-        ................
-
-
-    def parse_args(self, *args, **kwargs):
-        r"""
-        .............will be deprecated.
-
-        Shorthand for calling the :py:attr:`args_parser`\ 's `parse_args()` method.
-        See :py:class:`MacroStandardArgsParser`.
-        """
-
-        ................
-
-
-        return self.args_parser.parse_args(*args, **kwargs)
+        if kwargs:
+            raise ValueError("Unknown argument(s): {!r}".format(kwargs))
+    
+    def make_carryover_info(self, parsed_node):
+        if self._make_carryover_info_fn is not None:
+            return self._make_carryover_info_fn(parsed_node)
+        return None
 
 
 
-
-class MacroSpec(_BaseSpec):
+class MacroSpec(_SpecBase):
     r"""
     Stores the specification of a macro.
 
@@ -100,22 +85,23 @@ class MacroSpec(_BaseSpec):
        argspec argument for :py:class:`MacroStandardArgsParser` and such an
        instance is automatically created.
     """
-    def __init__(self, macroname, args_parser=MacroStandardArgsParser(), **kwargs):
-        super(MacroSpec, self).__init__(args_parser=args_parser, **kwargs)
+    def __init__(self, macroname, arguments_spec_list=None, **kwargs):
+        super(MacroSpec, self).__init__(arguments_spec_list=arguments_spec_list, **kwargs)
+
         self.macroname = macroname
-        # if isinstance(args_parser, _basestring):
-        #     self.args_parser = MacroStandardArgsParser(args_parser)
-        # else:
-        #     self.args_parser = args_parser
 
     def __repr__(self):
-        return 'MacroSpec(macroname={!r}, args_parser={!r})'.format(
-            self.macroname, self.args_parser
+        return 'MacroSpec(macroname={!r}, arguments_spec_list={!r})'.format(
+            self.macroname, self.arguments_spec_list
         )
 
+    def get_node_parser(self, token):
+        return LatexMacroCallParser(token, self)
 
 
-class EnvironmentSpec(_BaseSpec):
+
+
+class EnvironmentSpec(_SpecBase):
     r"""
     Stores the specification of a LaTeX environment.
 
@@ -155,34 +141,35 @@ class EnvironmentSpec(_BaseSpec):
        would recognize the expression ``\begin{equation}*`` but not
        ``\begin{equation*}``.
     """
-    def __init__(self, environmentname, args_parser=MacroStandardArgsParser(),
-                 is_math_mode=False, **kwargs):
-        super(EnvironmentSpec, self).__init__(args_parser=args_parser, **kwargs)
-        self.environmentname = environmentname
-        # if isinstance(args_parser, _basestring):
-        #     self.args_parser = MacroStandardArgsParser(args_parser)
-        # else:
-        #     self.args_parser = args_parser
-        self.is_math_mode = is_math_mode
+    def __init__(self, environmentname, arguments_spec_list=None,
+                 is_math_mode=False, body_parser=None, **kwargs):
+        super(EnvironmentSpec, self).__init__(
+            arguments_spec_list=arguments_spec_list,
+            **kwargs
+        )
 
-    # def parse_args(self, *args, **kwargs):
-    #     r"""
-    #     Shorthand for calling the :py:attr:`args_parser`\ 's `parse_args()` method.
-    #     See :py:class:`MacroStandardArgsParser`.
-    #     """
-    #     return self.args_parser.parse_args(*args, **kwargs)
+        self.environmentname = environmentname
+        self.is_math_mode = is_math_mode
+        self.body_parser = body_parser
+
 
     def __repr__(self):
         return (
-            'EnvironmentSpec(environmentname={!r}, args_parser={!r}, is_math_mode={!r})'
+            'EnvironmentSpec(environmentname={!r}, arguments_spec_list={!r}, '
+            'is_math_mode={!r}, body_parser={!r})'
             .format(
-                self.environmentname, self.args_parser, self.is_math_mode
+                self.environmentname, self.arguments_spec_list,
+                self.is_math_mode, self.body_parser
             )
         )
 
+    def get_node_parser(self, token):
+        return LatexEnvironmentCallParser(token, self)
 
 
-class SpecialsSpec(_BaseSpec):
+
+
+class SpecialsSpec(_SpecBase):
     r"""
     Specification of a LaTeX "special char sequence": an active char, a
     ligature, or some other non-macro char sequence that has a special meaning.
@@ -200,28 +187,63 @@ class SpecialsSpec(_BaseSpec):
        the specials is encountered.  Can/should be set to `None` if the specials
        should not parse any arguments (e.g. '~').
     """
-    def __init__(self, specials_chars,
-                 args_parser=None,
-                 **kwargs):
-        super(SpecialsSpec, self).__init__(args_parser=args_parser, **kwargs)
-        self.specials_chars = specials_chars
-        #self.args_parser = args_parser
+    def __init__(self, specials_chars, arguments_spec_list=None, **kwargs):
+        super(SpecialsSpec, self).__init__(arguments_spec_list=arguments_spec_list, **kwargs)
 
-    def parse_args(self, *args, **kwargs):
-        r"""
-        Basically a shorthand for calling the :py:attr:`args_parser`\ 's
-        `parse_args()` method.  See :py:class:`MacroStandardArgsParser`.
-        
-        If however the py:attr:`args_parser` attribute is `None`, then this
-        method returns `None`.
-        """
-        if self.args_parser is None:
-            return None
-        return super(SpecialsSpec, self).parse_args(*args, **kwargs)
+        self.specials_chars = specials_chars
 
     def __repr__(self):
-        return 'SpecialsSpec(specials_chars={!r}, args_parser={!r})'.format(
-            self.specials_chars, self.args_parser
+        return 'SpecialsSpec(specials_chars={!r}, arguments_spec_list={!r})'.format(
+            self.specials_chars, self.arguments_spec_list
         )
 
+    def get_node_parser(self, token):
+        return LatexSpecialsCallParser(token, self)
 
+
+
+
+
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
+def _legacy_pyltxenc2_init_from_args_parser(spec, args_parser):
+    # legacy support
+    if spec.arguments_spec_list is not None:
+        raise ValueError("You cannot specify both arguments_spec_list= and args_parser=")
+
+    if isinstance(args_parser, _basestring):
+        spec.arguments_spec_list = args_parser
+        spec.arguments_parser = LatexArgumentsParser(args_parser)
+    else:
+        spec.arguments_spec_list = list(args_parser.argspec)
+        spec.arguments_parser = _LegacyPyltxenc2MacroArgsParserWrapper(args_parser, spec)
+
+
+setattr(_SpecBase, '_legacy_pyltxenc2_init_from_args_parser',
+        _legacy_pyltxenc2_init_from_args_parser)
+
+
+def _legacy_pyltxenc2_run_parse_args(spec, w, pos, parsing_state=None):
+    r"""
+    .. deprecated:: 3.0
+
+        This method is not recommented starting from `pylatexenc 3`.  You can
+        use parser stored as the `arguments_parser` attribute instead.
+    """
+
+    parsed, carryover_info = latex_walker.parse_content(
+        spec.arguments_parser,
+        latex_walker,
+        w.make_token_reader(pos=pos),
+        parsing_state,
+    )
+
+    if carryover_info is not None:
+        return parsed, parsed.pos, parsed.len, carryover_info._to_legacy_pyltxenc2_dict()
+
+    return parsed, parsed.pos, parsed.len
+
+
+setattr(_SpecBase, 'parse_args', _legacy_pyltxenc2_run_parse_args)
+
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE

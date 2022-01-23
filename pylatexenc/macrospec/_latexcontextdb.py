@@ -37,7 +37,7 @@ from .._util import pylatexenc_deprecated_3
 
 
 
-_autogen_category_prefix = '__lcdb_new_category_'
+_autogen_category_prefix = '__lctxdb_new_category_'
 
 
 
@@ -426,6 +426,7 @@ class LatexContextDb(object):
         pylatexenc_deprecated_3("`LatexContextDb.filter_context()` was renamed to "
                                 "`filtered_context()`.")
         return self.filtered_context(*args, **kwargs)
+
 
     def filtered_context(self, keep_categories=[], exclude_categories=[],
                          keep_which=[], create_class=None):

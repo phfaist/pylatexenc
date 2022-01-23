@@ -27,13 +27,14 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals, absolute_imports
+from __future__ import print_function, unicode_literals
 
 from _exctypes import *
 from _nodetypes import *
 
 
-class LatexNodesCollectorBase(object):
+
+class LatexNodesCollector(object):
 
     class ReachedEndOfStream(Exception):
         pass
@@ -44,10 +45,18 @@ class LatexNodesCollectorBase(object):
             self.stop_data = stop_data
 
 
-    def __init__(self, latex_walker, token_reader, parsing_state,
-                 stop_token_condition=None, stop_nodelist_condition=None):
+    def __init__(self,
+                 latex_walker,
+                 token_reader,
+                 parsing_state,
+                 make_group_parser,
+                 make_math_parser,
+                 stop_token_condition=None,
+                 stop_nodelist_condition=None,
+                 make_child_parsing_state=None,
+                 ):
 
-        super(LatexNodesCollectorBase, self).__init__()
+        super(LatexNodesCollector, self).__init__()
 
         self.latex_walker = latex_walker
         self.token_reader = token_reader
@@ -57,6 +66,9 @@ class LatexNodesCollectorBase(object):
 
         self.stop_token_condition_met = False
         self.stop_nodelist_condition_met = False
+
+        self.make_group_parser = make_group_parser # like "LatexDelimitedGroupParser"
+        self.make_math_parser = make_math_parser # like "LatexMathParser"
 
         # current parsing state. This attribute might change as we parse tokens
         # and nodes.
@@ -68,6 +80,14 @@ class LatexNodesCollectorBase(object):
         # characters that we are accumulating
         self._pending_chars_pos = None
         self._pending_chars = ''
+
+        # override custom function to make the child parsing state
+        if make_child_parsing_state is not None:
+            self.make_child_parsing_state = make_child_parsing_state
+
+
+    def make_child_parsing_state(self, parsing_state, node_class):
+        return self.parsing_state
 
     def push_pending_chars(self, chars, pos):
         self._pending_chars += chars
@@ -253,21 +273,7 @@ class LatexNodesCollectorBase(object):
 
         elif tok.tok in ('mathmode_inline', 'mathmode_display'):
 
-            # a math inline or display environment
-            mathnode = \
-                latex_walker.parse_content(
-                    LatexMathParser(
-                        require_brace_type=tok.arg,
-                    ),
-                    token_reader=token_reader,
-                    parsing_state=self.parsing_state,
-            )
-
-            stop_exc = self.push_to_nodelist(mathnode)
-            if stop_exc is not None:
-                stop_exc.pos_end = mathnode.pos + mathnode.len
-                raise stop_exc
-            
+            self.parse_math(tok)
             return
 
         else:
@@ -279,9 +285,148 @@ class LatexNodesCollectorBase(object):
 
 
     def update_state_from_carryover_info(self, carryover_info):
-    
-        # see if we should change the current parsing state!
-        if 'new_parsing_state' in carryover_info:
-            self.parsing_state = carryover_info['new_parsing_state']
+
+        if carryover_info is not None:
+            self.parsing_state = \
+                carryover_info.get_updated_parsing_state(self.parsing_state)
         
 
+
+
+    # ------------------
+
+
+
+
+    def parse_comment_node(self, tok):
+
+        commentnode = latex_walker.make_node(
+                LatexCommentNode,
+                parsing_state=self.parsing_state,
+                comment=tok.arg,
+                comment_post_space=tok.post_space,
+                pos=tok.pos,
+                len=tok.len
+        )
+
+        stop_exc = self.push_to_nodelist( commentnode )
+        if stop_exc is not None:
+            stop_exc.pos_end = tok.pos + tok.len
+            raise stop_exc
+
+
+    def parse_latex_group(self, tok):
+
+        groupnode = \
+            latex_walker.parse_content(
+                self.make_group_parser(
+                    require_brace_type=tok.arg,
+                ),
+                token_reader=self.token_reader,
+                parsing_state=self.make_child_parsing_state(self.parsing_state,
+                                                            LatexGroupNode),
+        )
+
+        stop_exc = self.push_to_nodelist(groupnode)
+        if stop_exc is not None:
+            stop_exc.pos_end = groupnode.pos + groupnode.len
+            raise stop_exc
+
+
+    def parse_macro(self, tok):
+
+        macroname = tok.arg
+        mspec = tok.spec
+        if mspec is None:
+            mspec = self.parsing_state.latex_context.get_macro_spec(macroname)
+        if mspec is None:
+            exc = latex_walker.check_tolerant_parsing_ignore_error(
+                LatexWalkerParseError(
+                    msg=r"Encountered unknown macro ‘\{}’".format(macroname),
+                    pos=tok.pos
+                )
+            )
+            if exc is not None:
+                raise exc
+            mspec = None
+
+
+        node_class = LatexMacroNode
+        what = 'macro ‘\\{}’'.format(macroname)
+
+        return self.parse_invocable_token_type(tok, mspec, node_class, what)
+
+    def parse_environment(self, tok):
+
+        environmentname = tok.arg
+        envspec = tok.spec
+        if envspec is None:
+            envspec = \
+                self.parsing_state.latex_context.get_environment_spec(environmentname)
+
+        if envspec is None:
+            exc = latex_walker.check_tolerant_parsing_ignore_error(
+                LatexWalkerParseError(
+                    msg=r"Encountered unknown environment ‘{{{}}}’".format(environmentname),
+                    pos=tok.pos
+                )
+            )
+            if exc is not None:
+                raise exc
+            envspec = None
+
+        node_class = LatexEnvironmentNode
+        what = 'environment ‘{{{}}}’'.format(environmentname)
+
+        return self.parse_invocable_token_type(tok, envspec, node_class, what)
+
+    def parse_specials(self, tok):
+
+        specials_spec = tok.arg
+
+        node_class = LatexSpecialsNode
+        what = 'specials ‘{}’'.format(specials_spec.specials_chars)
+
+        return self.parse_invocable_token_type(tok, specials_spec, node_class, what)
+
+    def parse_invocable_token_type(self, tok, spec, node_class, what):
+
+        latex_walker = self.latex_walker
+        token_reader = self.token_reader
+
+        node_parser = spec.get_node_parser(tok)
+
+        result_node, carryover_info = latex_walker.parse_content(
+            node_parser,
+            token_reader=token_reader,
+            parsing_state=self.make_child_parsing_state(self.parsing_state, node_class),
+            open_context=(what, tok),
+        )
+
+        self.update_state_from_carryover_info(carryover_info)
+
+        if result_node is None:
+            return
+
+        exc = self.push_to_nodelist(result_node)
+        if exc is not None:
+            exc.pos_end = result_node.pos + result_node.len
+            raise exc
+
+
+    def parse_math(self, tok):
+
+        # a math inline or display environment
+        mathnode = \
+            latex_walker.parse_content(
+                self.make_math_parser(
+                    require_brace_type=tok.arg,
+                ),
+                token_reader=self.token_reader,
+                parsing_state=self.parsing_state,
+        )
+
+        stop_exc = self.push_to_nodelist(mathnode)
+        if stop_exc is not None:
+            stop_exc.pos_end = mathnode.pos + mathnode.len
+            raise stop_exc
