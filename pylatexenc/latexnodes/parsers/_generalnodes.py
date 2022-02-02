@@ -89,11 +89,14 @@ class LatexGeneralNodesParser(LatexParserBase):
                 # all good! Return the node list that we got.
                 pos_start = collector.pos_start()
                 nodelist = collector.get_final_nodelist()
+                len_ = None
+                if e.pos_end is not None and pos_start is not None:
+                    len_ = e.pos_end - pos_start
                 return LatexNodeList(
                     nodelist=nodelist,
                     parsing_state=parsing_state,
                     pos=pos_start,
-                    len=e.pos_end - pos_start
+                    len=len_
                 ), collector.get_parser_carryover_info()
 
             except LatexWalkerError as e:

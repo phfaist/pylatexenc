@@ -152,9 +152,9 @@ class _LegacyPyltxenc2MacroArgsParserWrapper(LatexParserBase):
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
-        argsresult = spec.parse_args(w=latex_walker,
-                                     pos=token_reader.cur_pos(),
-                                     parsing_state=p.parsing_state)
+        argsresult = self.args_parser.parse_args(w=latex_walker,
+                                                 pos=token_reader.cur_pos(),
+                                                 parsing_state=parsing_state)
 
         if len(argsresult) == 4:
             (nodeargd, apos, alen, adic) = argsresult
@@ -164,6 +164,9 @@ class _LegacyPyltxenc2MacroArgsParserWrapper(LatexParserBase):
 
         pos_end = apos + alen
         token_reader.move_to_pos_chars(pos_end)
+
+        nodeargd.pos = apos
+        nodeargd.len = alen
 
         # if nodeargd is not None and nodeargd.legacy_nodeoptarg_nodeargs:
         #     legnodeoptarg = nodeargd.legacy_nodeoptarg_nodeargs[0]
@@ -187,7 +190,7 @@ class _LegacyPyltxenc2MacroArgsParserWrapper(LatexParserBase):
         else:
             carryover_info = None
 
-        return node, carryover_info
+        return nodeargd, carryover_info
 
 
 

@@ -141,10 +141,14 @@ class _LatexCallableParserBase(LatexParserBase):
         else:
             body_nodelist = None
 
-        if nodeargd is not None:
+        len_ = None
+
+        if nodeargd is not None and nodeargd.pos is not None and nodeargd.len is not None:
             len_ = nodeargd.pos + nodeargd.len - pos_start
 
-        if body_nodelist is not None:
+        if body_nodelist is not None and body_nodelist.pos is not None \
+           and body_nodelist.len is not None:
+            #
             len_ = body_nodelist.pos + body_nodelist.len - pos_start
 
         node_kwargs = dict(self.node_extra_kwargs)

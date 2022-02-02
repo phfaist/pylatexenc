@@ -247,11 +247,10 @@ def _legacy_pyltxenc2_run_parse_args(spec, w, pos, parsing_state=None):
         use parser stored as the `arguments_parser` attribute instead.
     """
 
-    parsed, carryover_info = latex_walker.parse_content(
+    parsed, carryover_info = w.parse_content(
         spec.arguments_parser,
-        latex_walker,
-        w.make_token_reader(pos=pos),
-        parsing_state,
+        token_reader=w.make_token_reader(pos=pos),
+        parsing_state=parsing_state,
     )
 
     if carryover_info is not None:

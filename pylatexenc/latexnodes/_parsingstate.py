@@ -226,7 +226,7 @@ class ParsingState(object):
             key=lambda x: len(x[0]),
             reverse=True,
         )
-        print(f"{self._math_all_delims_by_len=}")
+        #print(f"{self._math_all_delims_by_len=}")
         # self._math_delims_by_len = sorted(
         #     self.latex_inline_math_delimiters + self.latex_display_math_delimiters,
         #     key=lambda x: len(x[0]),
