@@ -63,10 +63,15 @@ def get_default_latex_context_db():
     db = macrospec.LatexContextDb()
     
     for cat, catspecs in specs:
-        db.add_context_category(cat,
-                                macros=catspecs['macros'],
-                                environments=catspecs['environments'],
-                                specials=catspecs['specials'])
+        db.add_context_category(
+            cat,
+            macros=catspecs['macros'],
+            environments=catspecs['environments'],
+            specials=catspecs['specials']
+        )
+
+    db.set_unknown_macro_spec(macrospec.MacroSpec(''))
+    db.set_unknown_environment_spec(macrospec.EnvironmentSpec(''))
 
     return db
 

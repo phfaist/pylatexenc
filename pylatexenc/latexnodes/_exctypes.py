@@ -51,6 +51,7 @@ if sys.version_info.major == 2:
 __all__ = [
     'LatexWalkerError',
     'LatexWalkerParseError',
+    'LatexWalkerNodesParseError',
     'LatexWalkerTokenParseError',
     'LatexWalkerEndOfStream',
 ]
@@ -207,7 +208,7 @@ class LatexWalkerNodesParseError(LatexWalkerParseError):
                  recovery_at_token=None,
                  recovery_past_token=None,
                  **kwargs):
-        super(LatexWalkerTokenParseError, self).__init__(**kwargs)
+        super(LatexWalkerNodesParseError, self).__init__(**kwargs)
         self.recovery_nodes = recovery_nodes
         self.recovery_carryoverinfo = recovery_carryoverinfo
         self.recovery_at_token = recovery_at_token

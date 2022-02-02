@@ -194,6 +194,8 @@ class LatexDelimitedGroupParser(LatexParserBase):
                 latex_group_delimiters= \
                     parsing_state.latex_group_delimiters + [self.include_brace_chars]
             )
+        else:
+            this_level_parsing_state = parsing_state
 
         firsttok = token_reader.next_token(parsing_state=this_level_parsing_state)
 
@@ -217,7 +219,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
                     for (od, cd) in this_level_parsing_state.latex_group_delimiters
                 ])
             what_we_got = latex_walker.s[firsttok.pos:firsttok.pos+firsttok.len]
-            raise LatexWalkerParseError(
+            raise LatexWalkerNodesParseError(
                 msg='Expected an opening LaTeX delimiter (%s), got ‘%s’%s' %(
                     acceptable_braces,
                     what_we_got,
@@ -235,7 +237,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
                 return True
             return False
 
-        nodelist = latex_walker.parse_content(
+        nodelist, carryover_info = latex_walker.parse_content(
             LatexGeneralNodesParser(
                 stop_token_condition=stop_token_condition,
                 child_parsing_state=parsing_state,
@@ -248,12 +250,18 @@ class LatexDelimitedGroupParser(LatexParserBase):
             )
         )
 
-        return latex_walker.make_node(LatexGroupNode,
-                                      nodelist=nodelist,
-                                      parsing_state=parsing_state,
-                                      delimiters=(brace_type, closing_brace),
-                                      pos = firsttok.pos,
-                                      len = nodelist.pos + nodelist.len - firsttok.pos)
+        # can discard the carryover_info since the parsing state gets reset at
+        # the end of the group.
+
+        groupnode = \
+            latex_walker.make_node(LatexGroupNode,
+                                   nodelist=nodelist,
+                                   parsing_state=parsing_state,
+                                   delimiters=(brace_type, closing_brace),
+                                   pos = firsttok.pos,
+                                   len = nodelist.pos + nodelist.len - firsttok.pos)
+
+        return groupnode, None
 
 
 
@@ -314,7 +322,7 @@ class LatexMathParser(LatexParserBase):
                     )
                 ])
             what_we_got = latex_walker.s[firsttok.pos:firsttok.pos+firsttok.len]
-            raise LatexWalkerParseError(
+            raise LatexWalkerNodesParseError(
                 msg='Expected a LaTeX math mode opening delimiter (%s), got ‘%s’%s' %(
                     acceptable_mm,
                     what_we_got,

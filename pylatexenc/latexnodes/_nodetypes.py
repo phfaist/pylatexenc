@@ -190,6 +190,21 @@ class LatexNode(object):
             )
 
 
+    def to_json_object_with_latexwalker(self, latexwalker):
+        # Prepare a dictionary with the correct keys and values.
+        d = {
+            'nodetype': self.__class__.__name__,
+        }
+        #redundant_fields = getattr(n, '_redundant_fields', n._fields)
+        for fld in self._fields:
+            if fld == 'spec':
+                continue # skip 'spec' field for now...
+            d[fld] = self.__dict__[fld]
+        d.update(latexwalker.pos_to_lineno_colno(self.pos, as_dict=True))
+        return d
+
+
+
 class LatexCharsNode(LatexNode):
     """
     A string of characters in the LaTeX document, without any special LaTeX
@@ -611,13 +626,9 @@ class LatexNodeList(object):
         self.pos = kwargs.pop('pos', None)
         self.len = kwargs.pop('len', None)
 
-        if self.pos is None:
-            self.pos = next([n.pos for n in nodelist if n is not None],
-                            None)
-        if self.len is None:
-            end_pos = next([n.pos+n.len for n in nodelist if n is not None],
-                           None)
-            self.len = end_pos - self.pos
+        self.pos, self.len = \
+            _update_poslen_from_nodelist(self.pos, self.len, self.nodelist)
+
 
     def __getitem__(self, index):
         if index < 0:
@@ -709,7 +720,34 @@ class LatexNodeList(object):
         return split_node_lists
         
 
+    def to_json_object(self):
+        return self.nodelist
+
+    def __repr__(self):
+        import pprint
+        return 'LatexNodeList({nodelist}, pos={pos!r}, len={len!r})'.format(
+            nodelist=pprint.pformat(self.nodelist),
+            pos=self.pos,
+            len=self.len
+        )
+
 
 
 
 # ------------------------------------------------------------------------------
+
+
+def _update_poslen_from_nodelist(pos, len_, nodelist):
+
+    if pos is None:
+        pos = next( (n.pos for n in nodelist if n is not None),
+                    None )
+
+    if len_ is None:
+        end_pos = next( (n.pos+n.len for n in nodelist
+                         if n is not None and n.pos is not None and n.len is not None),
+                        None )
+        if end_pos is not None and pos is not None:
+            len_ = end_pos - pos
+
+    return pos, len_

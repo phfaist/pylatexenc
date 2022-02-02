@@ -36,6 +36,9 @@ logger = logging.getLogger(__name__)
 
 
 
+# .............. I think this should be called "ParsingStateChanges" instead
+# .... ....... .........
+
 class CarryoverInformation(object):
     r"""
     ........................
@@ -64,13 +67,16 @@ class CarryoverInformation(object):
     """
     def __init__(self,
                  set_parsing_state=None,
-                 update_parsing_state_kwargs=None,
+                 update_parsing_state_attributes=None,
                  inner_parsing_state=None,
                  extend_latex_context=None,
                  **kwargs):
 
         self.set_parsing_state = set_parsing_state
-        self.update_parsing_state_attributes = dict(update_parsing_state_attributes)
+        if update_parsing_state_attributes:
+            self.update_parsing_state_attributes = dict(update_parsing_state_attributes)
+        else:
+            self.update_parsing_state_attributes = None
 
         self.inner_parsing_state = inner_parsing_state
 

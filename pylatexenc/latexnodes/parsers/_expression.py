@@ -31,6 +31,7 @@ from __future__ import print_function, unicode_literals
 
 
 from .._exctypes import LatexWalkerParseError, LatexWalkerTokenParseError
+from .._nodetypes import _update_poslen_from_nodelist
 
 from ._base import LatexParserBase
 from ._generalnodes import LatexDelimitedGroupParser
@@ -64,34 +65,55 @@ class LatexExpressionParser(LatexParserBase):
         expr_parsing_state = parsing_state.sub_context(enable_environments=False)
         
         exprnodes = []
-        p = None
-        l = None
+        # p = None
+        # l = None
         while True:
             try:
                 moreexprnodes = \
                     self._parse_single_token(latex_walker,
                                              token_reader,
                                              expr_parsing_state,
+                                             parsing_state=parsing_state,
                                              **kwargs)
             except _TryAgainWithSkippedCommentNodes as e:
                 exprnodes += e.skipped_comment_nodes
-                if p is None:
-                    p = e.pos
+                # if p is None:
+                #     p = e.pos
                 continue
 
             exprnodes += moreexprnodes
-            if p is None:
-                p = pp
-            l = pp + ll - p
 
-            return LatexNodeList(nodelist=exprnodes, pos=p, len=l,)
+            # if len(moreexprnodes) > 0:
+            #     lastnode = moreexprnodes[len(moreexprnodes)-1]
+            #     pp, ll = lastnode.pos, lastnode.len
+            #     if p is None and pp is not None:
+            #         p = pp
+            #     if p is not None and pp is not None and ll is not None:
+            #         l = pp + ll - p
+
+            if len(exprnodes) == 1:
+                thenodelist = exprnodes[0]
+            else:
+                # determine (pos,len) automatically please...
+                pos, len_ = _update_poslen_from_nodelist(pos=None, len=None,
+                                                         nodelist=exprnodes)
+
+                thenodelist = latex_walker.make_node(
+                    LatexGroupNode,
+                    nodelist=exprnodes,
+                    delimiters=('',''),
+                    pos=pos,
+                    len=len_,
+                )
+
+            return thenodelist, None
 
 
-    def _parse_single_token(self, latex_walker, token_reader, expr_parsing_state, **kwargs):
+    def _parse_single_token(self, latex_walker, token_reader, expr_parsing_state,
+                            parsing_state, **kwargs):
 
         try:
-            tok = token_reader.next_token(environments=False,
-                                          parsing_state=expr_parsing_state)
+            tok = token_reader.next_token( parsing_state=expr_parsing_state )
         except LatexWalkerTokenParseError as e:
             exc = latex_walker.check_tolerant_parsing_ignore_error(e)
             if exc is not None:
@@ -126,7 +148,7 @@ class LatexExpressionParser(LatexParserBase):
                 return [
                     latex_walker.make_node(
                         LatexMacroNode,
-                        parsing_state=expr_parsing_state,
+                        parsing_state=parsing_state,
                         macroname=macroname,
                         spec=None,
                         nodeargd=None,
@@ -138,7 +160,7 @@ class LatexExpressionParser(LatexParserBase):
                     )
                 ]
 
-            mspec = expr_parsing_state.latex_context.get_macro_spec(macroname)
+            mspec = parsing_state.latex_context.get_macro_spec(macroname)
 
             self._check_if_requires_args(latex_walker, mspec,
                                          r"a single macro ‘\{}’".format(macroname))
@@ -146,7 +168,7 @@ class LatexExpressionParser(LatexParserBase):
             return [
                 latex_walker.make_node(
                     LatexMacroNode,
-                    parsing_state=expr_parsing_state,
+                    parsing_state=parsing_state,
                     macroname=tok.arg,
                     spec=mspec,
                     nodeargd=None,
@@ -168,7 +190,7 @@ class LatexExpressionParser(LatexParserBase):
             return [
                 latex_walker.make_node(
                     LatexSpecialsNode,
-                    parsing_state=expr_parsing_state,
+                    parsing_state=parsing_state,
                     specials_chars=specialsspec.specials_chars,
                     spec=specialsspec,
                     nodeargd=None,
@@ -182,7 +204,7 @@ class LatexExpressionParser(LatexParserBase):
             if self.include_skipped_comments:
                 cnodes = [
                     latex_walker.make_node(LatexCommentNode,
-                                           parsing_state=expr_parsing_state,
+                                           parsing_state=parsing_state,
                                            comment=tok.arg,
                                            comment_post_space=tok.post_space,
                                            pos=tok.pos,
@@ -196,13 +218,21 @@ class LatexExpressionParser(LatexParserBase):
 
         if tok.tok == 'brace_open':
 
-            groupnode = latex_walker.parse_content(
+            # put the token back so that it can be found again by the
+            # LatexDelimitedGroupParser
+            token_reader.move_to_token(tok)
+
+            groupnode, carryover_info = latex_walker.parse_content(
                 LatexDelimitedGroupParser(
                     require_brace_type=tok.arg
                 ),
                 token_reader=token_reader,
                 parsing_state=parsing_state,
             )
+
+            if carryover_info is not None:
+                logger.warning("Ignoring carryover_info after parsing an expression group!")
+
             return [ groupnode ]
 
         if tok.tok == 'brace_close':
@@ -252,12 +282,12 @@ class LatexExpressionParser(LatexParserBase):
                                                         pos=tok.pos,
                                                         len=tok.len)
                 
-            raise LatexWalkerParseError(
+            raise LatexWalkerNodesParseError(
                 "Unexpected math mode delimiter ‘{}’, was expecting a LaTeX expression"
                 .format(tok.arg),
                 pos=tok.pos,
                 recovery_nodes=recovery_nodes,
-                recovery_past_token=tok.pos+tok.len
+                recovery_past_token=tok,
             )
 
         raise LatexWalkerParseError(

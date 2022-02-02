@@ -31,7 +31,7 @@ import re
 import logging
 logger = logging.getLogger(__name__)
 
-from ._exctypes import LatexWalkerTokenParseError
+from ._exctypes import LatexWalkerTokenParseError, LatexWalkerEndOfStream
 
 from ._token import LatexToken
 from ._tokenreaderbase import LatexTokenReaderBase

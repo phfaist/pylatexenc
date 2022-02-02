@@ -46,17 +46,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-
-
-# for Py3
-_maketuple = tuple
-
-## Begin Py2 support code
-import sys
-if sys.version_info.major == 2:
-    # Py2
-    _maketuple = lambda *args: tuple(args)
-## End Py2 support code
+_maketuple = lambda *args: tuple(args)
 
 
 
@@ -306,14 +296,15 @@ class LatexWalker(latexnodes.LatexWalkerBase):
                 e = exc_value
                 if self.open_context:
                     what, tok = self.open_context
-                    e.open_contexts.append(
-                        _maketuple(what, tok.pos,
-                                   * self.latex_walker.pos_to_lineno_colno(tok.pos))
-                    )
+                    if what is not None:
+                        e.open_contexts.append(
+                            _maketuple(what, tok.pos,
+                                       * self.latex_walker.pos_to_lineno_colno(tok.pos))
+                        )
 
                 epos = getattr(e, 'pos', None)
                 if epos is not None and e.lineno is None and e.colno is None:
-                    e.lineno, e.colno = self.pos_to_lineno_colno(e.pos)
+                    e.lineno, e.colno = self.latex_walker.pos_to_lineno_colno(e.pos)
                 e = self.latex_walker.check_tolerant_parsing_ignore_error(e)
                 if e is None:
                     # we're trying to recover from this error (tolerant parsing mode)
@@ -441,8 +432,13 @@ class LatexWalker(latexnodes.LatexWalkerBase):
             parsing_state = self.make_parsing_state()
 
         nodes = None
+        info = None
 
-        with self.new_parsing_open_context(open_context) as pc:
+        open_context_name, open_context_tok = None, None
+        if open_context:
+            open_context_name, open_context_tok = open_context
+
+        with self.new_parsing_open_context(open_context_name, open_context_tok) as pc:
 
             nodes, info = parser(latex_walker=self, token_reader=token_reader,
                                  parsing_state=parsing_state)
@@ -1227,15 +1223,19 @@ class LatexWalker(latexnodes.LatexWalkerBase):
             require_stop_condition_met=require_stop_condition_met,
         )
 
-        nodes = self.parse_content(
+        nodes, info = self.parse_content(
             parser,
             token_reader=self.make_token_reader(pos=pos),
             parsing_state=parsing_state,
         )
 
-        nodes = LatexNodeList(nodes)
+        if info is not None:
+            logger.warning("Call to get_latex_nodes() ignores carryover information "
+                           "of parsing state")
 
-        return (nodes, nodes.pos, nodes.len)
+        nodelist = LatexNodeList(nodes)
+
+        return (nodelist, nodes.pos, nodes.len)
 
     # def get_latex_nodes(self, pos=0, stop_upon_closing_brace=None,
     #                     stop_upon_end_environment=None,

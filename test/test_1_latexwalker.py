@@ -17,6 +17,12 @@ from pylatexenc.latexwalker import (
 
 from pylatexenc import macrospec
 
+
+# patch __eq__ for comparison with lists
+from pylatexenc.latexnodes import LatexNodeList
+LatexNodeList.__eq__ = lambda self, other: self.nodelist == other
+
+
 def _tmp1133(a, b):
     return b is not None and a.argnlist == b.argnlist
 macrospec.ParsedMacroArgs.__eq__ = _tmp1133

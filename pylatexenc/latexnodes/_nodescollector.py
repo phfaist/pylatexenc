@@ -33,6 +33,8 @@ from ._exctypes import *
 from ._nodetypes import *
 
 
+from ._carryoverinfo import CarryoverInformation
+
 
 class LatexNodesCollector(object):
 
@@ -81,6 +83,9 @@ class LatexNodesCollector(object):
         self._pending_chars_pos = None
         self._pending_chars = ''
 
+        # whether finalize() was called or not
+        self._finalized = False
+
         # override custom function to make the child parsing state
         if make_child_parsing_state is not None:
             self.make_child_parsing_state = make_child_parsing_state
@@ -113,6 +118,9 @@ class LatexNodesCollector(object):
         return self.push_to_nodelist(strnode)
         
     def finalize(self):
+        if self._finalized:
+            return
+        self._finalized = True
         exc = self.flush_pending_chars()
         if exc is not None:
             raise exc
@@ -121,15 +129,43 @@ class LatexNodesCollector(object):
         self.finalize()
         return self._nodelist
 
+    def get_parser_carryover_info(self):
+        if not self._finalized:
+            raise RuntimeError("Call to get_parser_carryover_info() before finalize()")
+
+        # report our updated parsing state
+        return CarryoverInformation(set_parsing_state=self.parsing_state)
+
 
     def pos_start(self):
+        r"""
+        Returns the first position of nodes in the collected node list (collected up
+        to this point).
+        """
         p = next( ( n.pos for n in self._nodelist if n is not None ),
                   None )
         if p is not None:
             return p
         return self._pending_chars_pos
 
+    def pos_end(self):
+        r"""
+        Returns the position immediately after the last node in the collected node
+        list (collected up to this point).
+        """
+        lastnode = next( ( n for n in reversed(self._nodelist) if n is not None ),
+                         None )
+        if lastnode is None:
+            return None
+        if lastnode.pos is None or lastnode.len is None:
+            return None
+        return lastnode.pos + lastnode.len
+
+
     def push_to_nodelist(self, node):
+        if self._finalized:
+            raise RuntimeError("You already called finalize()")
+
         self._nodelist.append(node)
         exc = self._check_nodelist_stop_condition()
         if exc is not None:
@@ -164,10 +200,30 @@ class LatexNodesCollector(object):
         this function returns, we should continue reading nodes.
         """
 
+        if self._finalized:
+            raise RuntimeError("You already called finalize()")
+
         latex_walker = self.latex_walker
         token_reader = self.token_reader
 
-        tok = token_reader.next_token(parsing_state=self.parsing_state)
+        try:
+
+            tok = token_reader.next_token(parsing_state=self.parsing_state)
+
+        except LatexWalkerEndOfStream as e:
+            final_space = getattr(e, 'final_space', None)
+            if final_space:
+                tok = token_reader.make_token(
+                    tok='char',
+                    arg=final_space,
+                    pos=token_reader.cur_pos()-len(final_space),
+                    len=len(final_space)
+                )
+            else:
+                exc = LatexNodesCollector.ReachedEndOfStream()
+                exc.pos_end = token_reader.cur_pos()
+                raise exc
+
 
         # if it's a char, just append it to the stream of last "pending"
         # characters.
@@ -225,14 +281,14 @@ class LatexNodesCollector(object):
         # check for tokens that are illegal in this context
 
         if tok.tok == 'brace_close':
-            raise LatexWalkerParseError(
+            raise LatexWalkerNodesParseError(
                 msg=("Unexpected mismatching closing delimiter ‘{}’".format(tok.arg)),
                 pos=tok.pos,
                 recovery_past_token=tok,
             )
 
         if tok.tok == 'end_environment':
-            raise LatexWalkerParseError(
+            raise LatexWalkerNodesParseError(
                 msg=("Unexpected closing environment: ‘{}’".format(tok.arg)),
                 pos=tok.pos,
                 recovery_past_token=tok,
@@ -241,7 +297,7 @@ class LatexNodesCollector(object):
         if tok.tok in ('mathmode_inline', 'mathmode_display') \
            and tok.arg not in parsing_state._math_delims_info_by_open:
             # an unexpected closing math mode delimiter
-            raise LatexWalkerParseError(
+            raise LatexWalkerNodesParseError(
                 msg="Unexpected closing math mode token ‘{}’".format(
                     tok.arg,
                 ),
@@ -293,7 +349,7 @@ class LatexNodesCollector(object):
         if carryover_info is not None:
             self.parsing_state = \
                 carryover_info.get_updated_parsing_state(self.parsing_state)
-        
+
 
 
 
@@ -363,6 +419,9 @@ class LatexNodesCollector(object):
 
     def parse_environment(self, tok):
 
+        latex_walker = self.latex_walker
+        #token_reader = self.token_reader
+
         environmentname = tok.arg
         # envspec = tok.spec
         # if envspec is None:
@@ -399,14 +458,20 @@ class LatexNodesCollector(object):
         latex_walker = self.latex_walker
         token_reader = self.token_reader
 
-        node_parser = spec.get_node_parser(tok)
+        if spec is not None:
 
-        result_node, carryover_info = latex_walker.parse_content(
-            node_parser,
-            token_reader=token_reader,
-            parsing_state=self.make_child_parsing_state(self.parsing_state, node_class),
-            open_context=(what, tok),
-        )
+            node_parser = spec.get_node_parser(tok)
+
+            result_node, carryover_info = latex_walker.parse_content(
+                node_parser,
+                token_reader=token_reader,
+                parsing_state=self.make_child_parsing_state(self.parsing_state, node_class),
+                open_context=(what, tok),
+            )
+
+        else:
+            result_node = None
+            carryover_info = None
 
         self.update_state_from_carryover_info(carryover_info)
 

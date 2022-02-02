@@ -38,6 +38,7 @@ from .._exctypes import LatexWalkerParseError, LatexWalkerTokenParseError
 from ._base import LatexParserBase
 from ._generalnodes import LatexDelimitedGroupParser
 from ._optionals import LatexOptionalCharsMarkerParser
+from ._expression import LatexExpressionParser
 
 
 
@@ -104,6 +105,7 @@ class LatexStandardArgumentParser(LatexParserBase):
         self._arg_parsing_state_kwargs = None
         self._arg_parser = None
 
+
     def get_arg_parsing_state_kwargs(self):
 
         arg_parsing_state_kwargs = {}
@@ -121,7 +123,8 @@ class LatexStandardArgumentParser(LatexParserBase):
 
             return LatexExpressionParser(
                 include_skipped_comments=self.include_skipped_comments,
-                single_token_requiring_arg_is_error=single_token_requiring_arg_is_error,
+                single_token_requiring_arg_is_error=\
+                    self.expression_single_token_requiring_arg_is_error,
             )
 
         elif arg_spec in ('o', '['):
@@ -210,6 +213,6 @@ class LatexStandardArgumentParser(LatexParserBase):
             **kwargs
         )
 
-        return node, carryover_info
+        return nodes, carryover_info
 
             

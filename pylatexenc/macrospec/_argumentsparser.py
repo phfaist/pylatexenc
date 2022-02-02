@@ -31,6 +31,8 @@ from __future__ import print_function, unicode_literals
 
 from ..latexnodes.parsers import get_standard_argument_parser, LatexParserBase
 
+from ..latexnodes import ParsedMacroArgs
+
 
 # for Py3
 _basestring = str
@@ -56,6 +58,12 @@ class LatexArgumentSpec(object):
 
         self.argname = argname
 
+
+    def to_json_object(self):
+        if self.argname:
+            return dict(argname=self.argname, spec=self.spec)
+        return dict(spec=self.spec)
+        
 
 
 class LatexArgumentsParser(LatexParserBase):
@@ -91,7 +99,7 @@ class LatexArgumentsParser(LatexParserBase):
                 parsing_state,
                 open_context=(
                     "Argument #{}".format(argno),
-                    token_reader.cur_pos()
+                    token_reader.peek_token(parsing_state=parsing_state)
                 )
             )
             if carryover_info is not None:

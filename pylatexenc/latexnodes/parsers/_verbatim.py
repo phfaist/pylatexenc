@@ -55,7 +55,7 @@ class LatexVerbatimBaseParser(LatexParserBase):
         return False
 
     def error_end_of_stream(self, pos, recovery_nodes, latex_walker):
-        raise LatexWalkerParseError(
+        raise LatexWalkerNodesParseError(
             msg="End of stream reached while reading verbatim content",
             pos=pos,
             recovery_nodes=recovery_nodes

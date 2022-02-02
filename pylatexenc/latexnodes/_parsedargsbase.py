@@ -42,6 +42,9 @@ if sys.version_info.major == 2:
 
 
 
+
+
+
 class ParsedMacroArgs(object):
     r"""
     Parsed representation of macro arguments.
@@ -100,16 +103,18 @@ class ParsedMacroArgs(object):
                  #
                  #argspec='',
                  **kwargs):
+        pos, len_ = kwargs.pop('pos', None), kwargs.pop('len', None)
+        argspec = kwargs.pop('argspec', None)
         super(ParsedMacroArgs, self).__init__(**kwargs)
 
-        if arguments_spec_list is None and 'argspec' in kwargs:
-            arguments_spec_list = kwargs.pop(argspec)
+        if arguments_spec_list is None and argspec is not None:
+            arguments_spec_list = argspec
 
         self.argnlist = argnlist
 
         self.arguments_spec_list = arguments_spec_list
 
-        self.pos, self.len = kwargs.pop('pos', None), kwargs.pop('len', None)
+        self.pos, self.len = pos, len_
 
 
     @property

@@ -29,9 +29,12 @@
 
 from __future__ import print_function, unicode_literals
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 from ..latexnodes import LatexMacroNode, LatexEnvironmentNode, LatexSpecialsNode
-from ..latexnodes.parsers import LatexParserBase
+from ..latexnodes.parsers import LatexParserBase, LatexGeneralNodesParser
 
 
 # works for macros, environments, and specials.
@@ -129,7 +132,7 @@ class _LatexCallableParserBase(LatexParserBase):
         if self.parse_body:
             body_nodelist = self.parse_call_body(
                 nodeargd, arg_carryover_info,
-                latex_wealker, token_reader, parsing_state,
+                latex_walker, token_reader, parsing_state,
                 **kwargs
             )
         else:
@@ -142,7 +145,7 @@ class _LatexCallableParserBase(LatexParserBase):
         if body_nodelist is not None:
             len_ = body_nodelist.pos + body_nodelist.len - pos_start
 
-        node_kwargs = dict(node_extra_kwargs)
+        node_kwargs = dict(self.node_extra_kwargs)
         if body_nodelist is not None:
             node_kwargs['nodelist'] = body_nodelist
 
@@ -186,9 +189,10 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
 
     def __init__(self, token_call, environmentspec):
         environmentname = token_call.arg
-        super(LatexMacroCallParser, self).__init__(
+        super(LatexEnvironmentCallParser, self).__init__(
             spec_object=environmentspec,
             what="environment {{{}}}".format(environmentname),
+            parse_body=True,
             node_class=LatexEnvironmentNode,
             node_extra_kwargs=dict(environmentname=environmentname)
         )
@@ -201,7 +205,9 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
 
     def make_body_parsing_state(self, nodeargd, arg_carryover_info, parsing_state):
 
-        if arg_carryover_info.inner_parsing_state is not None:
+        if arg_carryover_info is not None \
+           and arg_carryover_info.inner_parsing_state is not None:
+            #
             parsing_state = arg_carryover_info.inner_parsing_state
 
         kw = {}
