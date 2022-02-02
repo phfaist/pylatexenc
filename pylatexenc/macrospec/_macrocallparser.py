@@ -40,12 +40,15 @@ from ..latexnodes.parsers import LatexParserBase, LatexGeneralNodesParser
 # works for macros, environments, and specials.
 class _LatexCallableParserBase(LatexParserBase):
     def __init__(self,
+                 token_call,
                  spec_object,
                  what,
                  node_class,
                  node_extra_kwargs,
                  parse_body=False,
                  ):
+
+        self.token_call = token_call
 
         self.spec_object = spec_object
         self.what = what
@@ -118,7 +121,7 @@ class _LatexCallableParserBase(LatexParserBase):
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
-        pos_start = token_reader.cur_pos()
+        pos_start = self.token_call.pos #token_reader.cur_pos()
 
         # parse any arguments first
         if self.arguments_parser is not None:
@@ -139,8 +142,7 @@ class _LatexCallableParserBase(LatexParserBase):
             body_nodelist = None
 
         if nodeargd is not None:
-            pos_start = nodeargd.pos
-            len_ = nodeargd.len
+            len_ = nodeargd.pos + nodeargd.len - pos_start
 
         if body_nodelist is not None:
             len_ = body_nodelist.pos + body_nodelist.len - pos_start
@@ -174,13 +176,13 @@ class LatexMacroCallParser(_LatexCallableParserBase):
         macroname = token_call.arg
         macro_post_space = token_call.post_space
         super(LatexMacroCallParser, self).__init__(
+            token_call=token_call,
             spec_object=macrospec,
             what="macro call (\{})".format(macroname),
             node_class=LatexMacroNode,
             node_extra_kwargs=dict(macroname=macroname,
                                    macro_post_space=macro_post_space)
         )
-        self.token_call = token_call
         self.macroname = macroname
         self.macro_post_space = macro_post_space
 
@@ -190,13 +192,13 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
     def __init__(self, token_call, environmentspec):
         environmentname = token_call.arg
         super(LatexEnvironmentCallParser, self).__init__(
+            token_call=token_call,
             spec_object=environmentspec,
             what="environment {{{}}}".format(environmentname),
             parse_body=True,
             node_class=LatexEnvironmentNode,
             node_extra_kwargs=dict(environmentname=environmentname)
         )
-        self.token_call = token_call
         self.environmentname = environmentname
 
         self.body_parser = LatexGeneralNodesParser(
@@ -230,10 +232,10 @@ class LatexSpecialsCallParser(_LatexCallableParserBase):
     def __init__(self, token_call, specialsspec):
         specials_chars = specialsspec.specials_chars
         super(LatexMacroCallParser, self).__init__(
+            token_call=token_call,
             spec_object=macrospec,
             what="specials ‘{}’".format(specials_chars),
             node_class=LatexSpecialsNode,
             node_extra_kwargs=dict(specials_chars=specials_chars)
         )
-        self.token_call = token_call
         self.specials_chars = specials_chars

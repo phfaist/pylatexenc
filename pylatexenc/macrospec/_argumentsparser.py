@@ -59,6 +59,13 @@ class LatexArgumentSpec(object):
         self.argname = argname
 
 
+    def __repr__(self):
+        return "{cls}(argname={argname!r}, spec={spec!r})".format(
+            cls=self.__class__.__name__,
+            argname=self.argname,
+            spec=self.spec
+        )
+
     def to_json_object(self):
         if self.argname:
             return dict(argname=self.argname, spec=self.spec)
