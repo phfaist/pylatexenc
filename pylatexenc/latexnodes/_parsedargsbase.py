@@ -121,7 +121,7 @@ class ParsedMacroArgs(object):
     def argspec(self):
         if not hasattr(self, '_argspec'):
             self._argspec = "".join([
-                arg if isinstance(arg, _basestring) else getattr(arg, 'spec_s', '?')
+                arg if isinstance(arg, _basestring) else getattr(arg, 'spec', '?')
                 for arg in self.arguments_spec_list
             ])
         return self._argspec

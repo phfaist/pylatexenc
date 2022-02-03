@@ -440,8 +440,17 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
         with self.new_parsing_open_context(open_context_name, open_context_tok) as pc:
 
-            nodes, info = parser(latex_walker=self, token_reader=token_reader,
-                                 parsing_state=parsing_state)
+            try:
+
+                nodes, info = parser(latex_walker=self,
+                                     token_reader=token_reader,
+                                     parsing_state=parsing_state)
+
+            except LatexWalkerEndOfStream:
+                logger.warning("End of stream encountered when parsing content with %s (%s)",
+                               parser.__class__.__name__, open_context_name)
+                nodes, info = None, None
+                pass
 
         if pc.recovery_from_exception is not None:
             nodes, info = pc.perform_recovery_nodes_info(token_reader)
@@ -1145,97 +1154,6 @@ class LatexWalker(latexnodes.LatexWalkerBase):
     #     return e
    
 
-    def get_latex_nodes(self, pos=0,
-                        stop_upon_closing_brace=None,
-                        stop_upon_end_environment=None,
-                        stop_upon_closing_mathmode=None,
-                        read_max_nodes=None,
-                        parsing_state=None):
-        
-        _util.pylatexenc_deprecated_3(
-            "get_latex_nodes(): "
-            "use LatexWalker.parse_content(LatexGeneralNodesParser(), ...) instead."
-        )
-
-        if parsing_state is None:
-            parsing_state = self.make_parsing_state()
-
-        def stop_token_condition(tok):
-            if stop_upon_closing_brace is not None:
-                if tok.tok == 'brace_close' and tok.arg == stop_upon_closing_brace:
-                    # stop condition met
-                    return True
-            if stop_upon_end_environment is not None:
-                if tok.tok == 'end_environment' and tok.arg == stop_upon_end_environment:
-                    # stop condition met
-                    return True
-            if stop_upon_closing_mathmode is not None:
-                if tok.tok in ('mathmode_inline', 'mathmode_display') \
-                   and tok.arg == stop_upon_closing_mathmode:
-                    # stop condition met
-                    return True
-            return False
-
-        def stop_nodelist_condition(nodelist):
-            if read_max_nodes is not None:
-                if len(nodelist) >= read_max_nodes:
-                    # stop condition met
-                    return True
-            return False
-
-        if stop_upon_closing_brace is not None:
-            # we need to include the corresponding open brace as brace character
-            # in the parsing state.
-            if len(stop_upon_closing_brace) == 2:
-                opbr,clbr = stop_upon_closing_brace
-                stop_upon_closing_brace = clbr
-            else:
-                clbr = stop_upon_closing_brace
-                opbr = { '}': '{',
-                         ']': '[', 
-                         ')': '(',
-                         '>': '<' }.get(clbr, None)
-            if (opbr, clbr) not in parsing_state.latex_group_delimiters:
-                parsing_state = parsing_state.sub_context(
-                    latex_group_delimiters= \
-                        list(parsing_state.latex_group_delimiters) + [ (opbr, clbr) ]
-                )
-    
-            require_stop_condition_met = True
-            stop_condition_message = "Was expecting ‘{}’".format(stop_upon_closing_brace)
-
-        elif stop_upon_end_environment is not None:
-            require_stop_condition_met = True
-            stop_condition_message = \
-                "Was expecting ‘\\end{{{}}}’".format(stop_upon_end_environment)
-
-        elif stop_upon_closing_mathmode is not None:
-            require_stop_condition_met = True
-            stop_condition_message = \
-                "Was expecting ‘{}’".format(stop_upon_closing_mathmode)
-
-        else:
-            require_stop_condition_met = False
-
-        parser = LatexGeneralNodesParser(
-            stop_token_condition=stop_token_condition,
-            stop_nodelist_condition=stop_nodelist_condition,
-            require_stop_condition_met=require_stop_condition_met,
-        )
-
-        nodes, info = self.parse_content(
-            parser,
-            token_reader=self.make_token_reader(pos=pos),
-            parsing_state=parsing_state,
-        )
-
-        if info is not None:
-            logger.warning("Call to get_latex_nodes() ignores carryover information "
-                           "of parsing state")
-
-        nodelist = LatexNodeList(nodes)
-
-        return (nodelist, nodes.pos, nodes.len)
 
     # def get_latex_nodes(self, pos=0, stop_upon_closing_brace=None,
     #                     stop_upon_end_environment=None,
@@ -1775,3 +1693,111 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
     #     # code never reaches here
 
+
+
+
+
+
+
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
+def _pyltxenc2_LatexWalker_get_latex_nodes(
+        self,
+        pos=0,
+        stop_upon_closing_brace=None,
+        stop_upon_end_environment=None,
+        stop_upon_closing_mathmode=None,
+        read_max_nodes=None,
+        parsing_state=None
+):
+
+    _util.pylatexenc_deprecated_3(
+        "get_latex_nodes(): "
+        "use LatexWalker.parse_content(LatexGeneralNodesParser(), ...) instead."
+    )
+
+    if parsing_state is None:
+        parsing_state = self.make_parsing_state()
+
+    def stop_token_condition(tok):
+        if stop_upon_closing_brace is not None:
+            if tok.tok == 'brace_close' and tok.arg == stop_upon_closing_brace:
+                # stop condition met
+                return True
+        if stop_upon_end_environment is not None:
+            if tok.tok == 'end_environment' and tok.arg == stop_upon_end_environment:
+                # stop condition met
+                return True
+        if stop_upon_closing_mathmode is not None:
+            if tok.tok in ('mathmode_inline', 'mathmode_display') \
+               and tok.arg == stop_upon_closing_mathmode:
+                # stop condition met
+                return True
+        return False
+
+    def stop_nodelist_condition(nodelist):
+        #print(f"**** nodelist stopping condition ? *** {nodelist=} ")
+        if read_max_nodes is not None:
+            if len(nodelist) >= read_max_nodes:
+                # stop condition met
+                #print(f"\t\tSTOP CONDITION TRUE")
+                return True
+        return False
+
+    if stop_upon_closing_brace is not None:
+        # we need to include the corresponding open brace as brace character
+        # in the parsing state.
+        if len(stop_upon_closing_brace) == 2:
+            opbr,clbr = stop_upon_closing_brace
+            stop_upon_closing_brace = clbr
+        else:
+            clbr = stop_upon_closing_brace
+            opbr = { '}': '{',
+                     ']': '[', 
+                     ')': '(',
+                     '>': '<' }.get(clbr, None)
+        if (opbr, clbr) not in parsing_state.latex_group_delimiters:
+            parsing_state = parsing_state.sub_context(
+                latex_group_delimiters= \
+                    list(parsing_state.latex_group_delimiters) + [ (opbr, clbr) ]
+            )
+
+        require_stop_condition_met = True
+        stop_condition_message = "Was expecting ‘{}’".format(stop_upon_closing_brace)
+
+    elif stop_upon_end_environment is not None:
+        require_stop_condition_met = True
+        stop_condition_message = \
+            "Was expecting ‘\\end{{{}}}’".format(stop_upon_end_environment)
+
+    elif stop_upon_closing_mathmode is not None:
+        require_stop_condition_met = True
+        stop_condition_message = \
+            "Was expecting ‘{}’".format(stop_upon_closing_mathmode)
+
+    else:
+        require_stop_condition_met = False
+
+    parser = LatexGeneralNodesParser(
+        stop_token_condition=stop_token_condition,
+        stop_nodelist_condition=stop_nodelist_condition,
+        require_stop_condition_met=require_stop_condition_met,
+    )
+
+    nodes, info = self.parse_content(
+        parser,
+        token_reader=self.make_token_reader(pos=pos),
+        parsing_state=parsing_state,
+    )
+
+    if info is not None:
+        logger.warning("Call to get_latex_nodes() ignores carryover information "
+                       "of parsing state")
+
+    nodelist = LatexNodeList(nodes)
+
+    return (nodelist, nodes.pos, nodes.len)
+
+LatexWalker.get_latex_nodes = _pyltxenc2_LatexWalker_get_latex_nodes
+
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE

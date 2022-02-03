@@ -131,6 +131,9 @@ class _LatexCallableParserBase(LatexParserBase):
         else:
             nodeargd, arg_carryover_info = None, None
 
+        logger.debug("Parsed macro/env/specials arguments; nodeargd=%r, arg_carryover_info=%r",
+                     nodeargd, arg_carryover_info)
+
         # parse any body, if applicable (e.g. environments)
         if self.parse_body:
             body_nodelist = self.parse_call_body(
@@ -166,6 +169,8 @@ class _LatexCallableParserBase(LatexParserBase):
             # per-node-type stuff:
             **node_kwargs
         )
+
+        logger.debug("Parsed macro/env/specials call to node %r", node)
 
         carryover_info = self.make_carryover_info(node)
 
@@ -235,9 +240,9 @@ class LatexSpecialsCallParser(_LatexCallableParserBase):
 
     def __init__(self, token_call, specialsspec):
         specials_chars = specialsspec.specials_chars
-        super(LatexMacroCallParser, self).__init__(
+        super(LatexSpecialsCallParser, self).__init__(
             token_call=token_call,
-            spec_object=macrospec,
+            spec_object=specialsspec,
             what="specials ‘{}’".format(specials_chars),
             node_class=LatexSpecialsNode,
             node_extra_kwargs=dict(specials_chars=specials_chars)

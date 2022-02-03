@@ -32,6 +32,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+from ._exctypes import LatexWalkerEndOfStream
 from ._token import LatexToken
 
 
@@ -57,6 +58,12 @@ class LatexTokenReaderBase(object):
         raise RuntimeError(
             "LatexTokenReaderBase subclasses must reimplement peek_token()"
         )
+
+    def peek_token_or_none(self, parsing_state):
+        try:
+            self.peek_token(parsing_state=parsing_state)
+        except LatexWalkerEndOfStream:
+            return None
 
     def next_token(self, parsing_state):
         tok = self.peek_token(parsing_state=parsing_state)

@@ -90,8 +90,9 @@ class LatexGeneralNodesParser(LatexParserBase):
                 pos_start = collector.pos_start()
                 nodelist = collector.get_final_nodelist()
                 len_ = None
-                if e.pos_end is not None and pos_start is not None:
-                    len_ = e.pos_end - pos_start
+                pos_end = getattr(e, 'pos_end', token_reader.cur_pos())
+                if pos_end is not None and pos_start is not None:
+                    len_ = pos_end - pos_start
                 return LatexNodeList(
                     nodelist=nodelist,
                     parsing_state=parsing_state,
@@ -211,7 +212,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
             if self.optional:
                 # all ok, the argument was optional and was simply not specified.
                 token_reader.move_to_token(firsttok)
-                return None
+                return None, None
 
             #
             if require_brace_type:
@@ -347,7 +348,7 @@ class LatexMathParser(LatexParserBase):
                 return True
             return False
 
-        nodelist = latex_walker.parse_content(
+        nodelist, carryover_info = latex_walker.parse_content(
             LatexGeneralNodesParser(
                 stop_token_condition=stop_token_condition,
                 child_parsing_state=parsing_state,
@@ -367,7 +368,7 @@ class LatexMathParser(LatexParserBase):
         else:
             displaytype = '<unknown>'
 
-        return latex_walker.make_node(
+        node = latex_walker.make_node(
             LatexMathNode,
             displaytype=displaytype,
             nodelist=nodelist,
@@ -376,5 +377,7 @@ class LatexMathParser(LatexParserBase):
             pos = firsttok.pos,
             len = nodelist.pos + nodelist.len - firsttok.pos
         )
+
+        return node, carryover_info
 
 

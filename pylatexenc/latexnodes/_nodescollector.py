@@ -120,10 +120,14 @@ class LatexNodesCollector(object):
     def finalize(self):
         if self._finalized:
             return
-        self._finalized = True
+
         exc = self.flush_pending_chars()
+
+        self._finalized = True
+
         if exc is not None:
             raise exc
+
 
     def get_final_nodelist(self):
         self.finalize()
@@ -167,25 +171,30 @@ class LatexNodesCollector(object):
             raise RuntimeError("You already called finalize()")
 
         self._nodelist.append(node)
+
         exc = self._check_nodelist_stop_condition()
         if exc is not None:
             return exc
         return None
 
     def _check_nodelist_stop_condition(self):
+        #print(f"*** checking for nodelist stopping condition ... {self._nodelist=}")
         stop_nodelist_condition = self.stop_nodelist_condition
         if stop_nodelist_condition is not None:
             stop_data = stop_nodelist_condition(self._nodelist)
             if stop_data:
                 self.stop_nodelist_condition_met = True
+                #print(f"\t\tStopping condition met!")
                 return LatexNodesCollector.ReachedStoppingCondition(stop_data=stop_data)
 
     def _check_token_stop_condition(self, tok):
+        #print(f"*** checking for token stopping condition ... {tok=}")
         stop_token_condition = self.stop_token_condition
         if stop_token_condition is not None:
             stop_data = stop_token_condition(tok)
             if stop_data:
                 self.stop_token_condition_met = True
+                #print(f"\t\tStopping condition met!")
                 return LatexNodesCollector.ReachedStoppingCondition(stop_data=stop_data)
 
 
@@ -213,13 +222,17 @@ class LatexNodesCollector(object):
         except LatexWalkerEndOfStream as e:
             final_space = getattr(e, 'final_space', None)
             if final_space:
+                # process the final space as an extra char token
                 tok = token_reader.make_token(
                     tok='char',
-                    arg=final_space,
-                    pos=token_reader.cur_pos()-len(final_space),
-                    len=len(final_space)
+                    arg='',
+                    pre_space=final_space,
+                    pos=token_reader.cur_pos()+len(final_space),
+                    len=0,
                 )
+                token_reader.move_past_token(tok)
             else:
+                print("*** reached end of stream!")
                 exc = LatexNodesCollector.ReachedEndOfStream()
                 exc.pos_end = token_reader.cur_pos()
                 raise exc
@@ -360,7 +373,7 @@ class LatexNodesCollector(object):
 
     def parse_comment_node(self, tok):
 
-        commentnode = latex_walker.make_node(
+        commentnode = self.latex_walker.make_node(
                 LatexCommentNode,
                 parsing_state=self.parsing_state,
                 comment=tok.arg,
@@ -377,10 +390,10 @@ class LatexNodesCollector(object):
 
     def parse_latex_group(self, tok):
 
-        token_reader.move_to_token(tok)
+        self.token_reader.move_to_token(tok)
 
-        groupnode = \
-            latex_walker.parse_content(
+        groupnode, carryover_info = \
+            self.latex_walker.parse_content(
                 self.make_group_parser(
                     require_brace_type=tok.arg,
                 ),
@@ -388,6 +401,10 @@ class LatexNodesCollector(object):
                 parsing_state=self.make_child_parsing_state(self.parsing_state,
                                                             LatexGroupNode),
         )
+
+        if carryover_info is not None:
+            logger.warning("carryover_info is ignored after parsing a LaTeX group: %r",
+                           carryover_info)
 
         stop_exc = self.push_to_nodelist(groupnode)
         if stop_exc is not None:
@@ -480,7 +497,10 @@ class LatexNodesCollector(object):
 
         exc = self.push_to_nodelist(result_node)
         if exc is not None:
-            exc.pos_end = result_node.pos + result_node.len
+            if result_node.pos is not None and result_node.len is not None:
+                exc.pos_end = result_node.pos + result_node.len
+            else:
+                exc.pos_end = None
             raise exc
 
 

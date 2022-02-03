@@ -29,6 +29,9 @@
 
 from __future__ import print_function, unicode_literals
 
+import logging
+logger = logging.getLogger(__name__)
+
 from ..latexnodes.parsers import get_standard_argument_parser, LatexParserBase
 
 from ..latexnodes import ParsedMacroArgs
@@ -99,6 +102,11 @@ class LatexArgumentsParser(LatexParserBase):
         last_arg_node = None
 
         for argno, arg in enumerate(self.arguments_spec_list):
+
+            logger.debug("Parsing argument %d / %s", argno, arg.arg_node_parser.__class__.__name__)
+
+            peeked_token = token_reader.peek_token_or_none(parsing_state=parsing_state)
+
             arg_node_parser = arg.arg_node_parser
             argnodes, carryover_info = latex_walker.parse_content(
                 arg_node_parser,
@@ -106,7 +114,7 @@ class LatexArgumentsParser(LatexParserBase):
                 parsing_state,
                 open_context=(
                     "Argument #{}".format(argno),
-                    token_reader.peek_token(parsing_state=parsing_state)
+                    peeked_token
                 )
             )
             if carryover_info is not None:
@@ -134,6 +142,8 @@ class LatexArgumentsParser(LatexParserBase):
             pos=pos,
             len=len_
         )
+
+        logger.debug("Parsed arguments = %r", parsed)
 
         return parsed, None
 
