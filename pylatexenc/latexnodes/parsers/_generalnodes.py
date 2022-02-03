@@ -29,6 +29,9 @@
 
 from __future__ import print_function, unicode_literals
 
+import logging
+logger = logging.getLogger(__name__)
+
 from .._exctypes import *
 from .._nodetypes import *
 
@@ -47,6 +50,7 @@ class LatexGeneralNodesParser(LatexParserBase):
                  require_stop_condition_met=True,
                  stop_condition_message=None,
                  child_parsing_state=None,
+                 handle_stop_condition_token=None,
                  **kwargs):
         super(LatexGeneralNodesParser, self).__init__(**kwargs)
         self.stop_token_condition = stop_token_condition
@@ -56,9 +60,13 @@ class LatexGeneralNodesParser(LatexParserBase):
         self.stop_condition_message = stop_condition_message
         # parsing state for child nodes
         self.child_parsing_state = child_parsing_state
+        # 
+        self.handle_stop_condition_token = handle_stop_condition_token
+
 
     def _make_child_parsing_state(self, parsing_state, node_class):
         return self.child_parsing_state
+
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
@@ -78,76 +86,57 @@ class LatexGeneralNodesParser(LatexParserBase):
             make_child_parsing_state=make_child_parsing_state,
         )
 
-        while True:
-
-            try:
-
-                self._read_and_process_one_token_handle_eos(collector)
-
-            except (LatexNodesCollector.ReachedEndOfStream,
-                    LatexNodesCollector.ReachedStoppingCondition) as e:
-                # all good! Return the node list that we got.
-                pos_start = collector.pos_start()
-                nodelist = collector.get_final_nodelist()
-                len_ = None
-                pos_end = getattr(e, 'pos_end', token_reader.cur_pos())
-                if pos_end is not None and pos_start is not None:
-                    len_ = pos_end - pos_start
-                return LatexNodeList(
-                    nodelist=nodelist,
-                    parsing_state=parsing_state,
-                    pos=pos_start,
-                    len=len_
-                ), collector.get_parser_carryover_info()
-
-            except LatexWalkerError as e:
-                # we got an error! Add some info to help with recovery in case
-                # we're in tolerant parsing mode, and then raise the issue
-                # further up.
-                collector.finalize()
-                nodelist = collector.get_final_nodelist()
-                pos_start = collector.pos_start()
-                pos_end = collector.pos_end()
-                len_ = \
-                    None if (pos_start is None or pos_end is None) else (pos_end - pos_start)
-                e.recovery_nodes = LatexNodeList(
-                    nodelist=nodelist,
-                    parsing_state=parsing_state,
-                    pos=pos_start,
-                    len=len_
-                )
-                e.carryover_info = collector.get_parser_carryover_info()
-                raise
-
-
-    def _read_and_process_one_token_handle_eos(self, collector):
-
         try:
+            collector.process_tokens()
 
-            collector.read_and_process_one_token()
+        except LatexWalkerParseError as e:
+            # we got an error! Add some info to help with recovery in case
+            # we're in tolerant parsing mode, and then raise the issue
+            # further up.
+            raise LatexWalkerNodesParseError.new_from(
+                e,
+                recovery_nodes=collector.get_final_nodelist(),
+                recovery_carryover_info=collector.get_parser_carryover_info(),
+            )
 
-        except LatexWalkerEndOfStream as e:
+        # check that any required stop condition was met
 
-            collector.finalize()
+        if ( self.require_stop_condition_met and
+             ( ( self.stop_token_condition is not None
+                 and not collector.stop_token_condition_met() )
+               or ( self.stop_nodelist_condition is not None
+                    and not collector.stop_nodelist_condition_met() ) )
+            ):
+            #
+            message = self.stop_condition_message
+            if message is None:
+                message = (
+                    'End of stream encountered while parsing nodes without '
+                    'stop condition being met'
+                )
+            exc = LatexWalkerNodesParseError(
+                msg=message,
+                pos=collector.pos_start(),
+                recovery_nodes=collector.get_final_nodelist(),
+                recovery_carryover_info=collector.get_parser_carryover_info(),
+            )
+            raise exc
 
-            if ( self.require_stop_condition_met and
-                 ( ( self.stop_token_condition is not None
-                     and not collector.stop_token_condition_met )
-                   or ( self.stop_nodelist_condition is not None
-                        and not collector.stop_nodelist_condition_met ) )
-                ):
-                #
-                message = self.stop_condition_message
-                if message is None:
-                    message = (
-                        'End of stream encountered while parsing nodes without '
-                        'stop condition being met'
-                    )
-                exc = LatexWalkerParseError(msg=message, pos=collector.pos_start())
-                exc.recovery_nodes = LatexNodeList(collector.nodelist)
-                raise exc
+        if self.stop_token_condition is not None \
+           and self.handle_stop_condition_token is not None:
+            # do something with the token that caused the stop condition to fire
+            self.handle_stop_condition_token(
+                collector.stop_token_condition_met_token()
+            )
+            # and 
 
-            raise LatexNodesCollector.ReachedEndOfStream()
+        # put together the node list & carry on
+
+        nodelist = collector.get_final_nodelist()
+        carryover_info = collector.get_parser_carryover_info()
+
+        return nodelist, carryover_info
+
 
 
 # ------------------------------------------------------------------------------
@@ -171,6 +160,9 @@ class LatexSingleNodeParser(LatexGeneralNodesParser):
         return False
 
 
+    def contents_can_be_empty(self):
+        return False
+
 
 # ------------------------------------------------------------------------------
 
@@ -191,12 +183,16 @@ class LatexDelimitedGroupParser(LatexParserBase):
         self.do_not_skip_space = do_not_skip_space
 
 
+    def contents_can_be_empty(self):
+        return self.optional
+
+
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
         if self.include_brace_chars:
             this_level_parsing_state = parsing_state.sub_context(
                 latex_group_delimiters= \
-                    parsing_state.latex_group_delimiters + [self.include_brace_chars]
+                    parsing_state.latex_group_delimiters + list(self.include_brace_chars)
             )
         else:
             this_level_parsing_state = parsing_state
@@ -204,6 +200,12 @@ class LatexDelimitedGroupParser(LatexParserBase):
         firsttok = token_reader.next_token(parsing_state=this_level_parsing_state)
 
         require_brace_type = self.require_brace_type
+
+        if require_brace_type not in this_level_parsing_state._latex_group_delimchars_by_open:
+            logger.warning("Required opening brace ‘%s’ is not a valid brace type; "
+                           "delimiters = %s",
+                           require_brace_type,
+                           this_level_parsing_state.latex_group_delimiters)
 
         if firsttok.tok != 'brace_open'  \
            or (require_brace_type is not None and firsttok.arg != require_brace_type) \
@@ -222,11 +224,10 @@ class LatexDelimitedGroupParser(LatexParserBase):
                     '‘' + od + '’'
                     for (od, cd) in this_level_parsing_state.latex_group_delimiters
                 ])
-            what_we_got = latex_walker.s[firsttok.pos:firsttok.pos+firsttok.len]
             raise LatexWalkerNodesParseError(
-                msg='Expected an opening LaTeX delimiter (%s), got ‘%s’%s' %(
+                msg='Expected an opening LaTeX delimiter (%s), got %s/‘%s’%s' %(
                     acceptable_braces,
-                    what_we_got,
+                    firsttok.tok, firsttok.arg,
                     ' with leading whitespace' if firsttok.pre_space else ''
                 ),
                 recovery_nodes=LatexNodeList([]),
@@ -241,10 +242,17 @@ class LatexDelimitedGroupParser(LatexParserBase):
                 return True
             return False
 
+        def handle_stop_condition_token(token):
+            assert token.tok == 'brace_close'            
+            token_reader.move_past_token(token)
+
+
         nodelist, carryover_info = latex_walker.parse_content(
             LatexGeneralNodesParser(
                 stop_token_condition=stop_token_condition,
                 child_parsing_state=parsing_state,
+                require_stop_condition_met=True,
+                handle_stop_condition_token=handle_stop_condition_token,
             ),
             token_reader=token_reader,
             parsing_state=this_level_parsing_state,
@@ -260,10 +268,11 @@ class LatexDelimitedGroupParser(LatexParserBase):
         groupnode = \
             latex_walker.make_node(LatexGroupNode,
                                    nodelist=nodelist,
-                                   parsing_state=parsing_state,
+                                   parsing_state=this_level_parsing_state,
                                    delimiters=(brace_type, closing_brace),
                                    pos = firsttok.pos,
-                                   len = nodelist.pos + nodelist.len - firsttok.pos)
+                                   # use cur_pos() to include the closing brace
+                                   len = token_reader.cur_pos() - firsttok.pos)
 
         return groupnode, None
 
@@ -291,16 +300,22 @@ class LatexMathParser(LatexParserBase):
         self.optional = optional
         self.already_read_firsttok = already_read_firsttok
 
+
+    def contents_can_be_empty(self):
+        return self.optional
+
+
     def get_math_parsing_state(self, parsing_state, math_mode_delimiter):
         return parsing_state.sub_context(in_math_mode=True,
                                          math_mode_delimiter=math_mode_delimiter)
+
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
         if self.already_read_firsttok is not None:
             firsttok = self.already_read_firsttok
         else:
-            firsttok = token_reader.next_token(pos, parsing_state=parsing_state)
+            firsttok = token_reader.next_token(parsing_state=parsing_state)
 
         require_math_mode_delimiter = self.require_math_mode_delimiter
 
@@ -325,11 +340,11 @@ class LatexMathParser(LatexParserBase):
                             + parsing_state.latex_display_math_mode_delimiters
                     )
                 ])
-            what_we_got = latex_walker.s[firsttok.pos:firsttok.pos+firsttok.len]
             raise LatexWalkerNodesParseError(
-                msg='Expected a LaTeX math mode opening delimiter (%s), got ‘%s’%s' %(
+                msg='Expected a LaTeX math mode opening delimiter (%s), got %s/‘%s’%s' %(
                     acceptable_mm,
-                    what_we_got,
+                    firsttok.tok,
+                    firsttok.arg,
                     ' with leading whitespace' if firsttok.pre_space else ''
                 ),
                 recovery_nodes=LatexNodeList([]),
@@ -338,11 +353,12 @@ class LatexMathParser(LatexParserBase):
 
         math_mode_delimiter = firsttok.arg
         math_mode_type = firsttok.tok
-        closing_math_mode_delim = \
-            parsing_state._math_expecting_close_delim_info['close_delim']
 
         math_parsing_state = self.get_math_parsing_state(parsing_state, math_mode_delimiter)
 
+        closing_math_mode_delim = \
+            math_parsing_state._math_expecting_close_delim_info['close_delim']
+        
         def stop_token_condition(token):
             if token.tok == math_mode_type and token.arg == closing_math_mode_delim:
                 return True
@@ -351,7 +367,7 @@ class LatexMathParser(LatexParserBase):
         nodelist, carryover_info = latex_walker.parse_content(
             LatexGeneralNodesParser(
                 stop_token_condition=stop_token_condition,
-                child_parsing_state=parsing_state,
+                #child_parsing_state=parsing_state, # ??? why ???
             ),
             token_reader=token_reader,
             parsing_state=math_parsing_state,
@@ -368,6 +384,10 @@ class LatexMathParser(LatexParserBase):
         else:
             displaytype = '<unknown>'
 
+        len_ = None
+        if nodelist is not None and nodelist.pos is not None and nodelist.len is not None:
+            len_ = nodelist.pos + nodelist.len - firsttok.pos
+
         node = latex_walker.make_node(
             LatexMathNode,
             displaytype=displaytype,
@@ -375,7 +395,7 @@ class LatexMathParser(LatexParserBase):
             parsing_state=parsing_state,
             delimiters=(math_mode_delimiter, closing_math_mode_delim),
             pos = firsttok.pos,
-            len = nodelist.pos + nodelist.len - firsttok.pos
+            len = len_
         )
 
         return node, carryover_info

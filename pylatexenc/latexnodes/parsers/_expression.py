@@ -30,7 +30,10 @@
 from __future__ import print_function, unicode_literals
 
 
-from .._exctypes import LatexWalkerParseError, LatexWalkerTokenParseError
+from .._exctypes import (
+    LatexWalkerParseError, LatexWalkerTokenParseError, LatexWalkerEndOfStream
+)
+from .._nodetypes import *
 from .._nodetypes import _update_poslen_from_nodelist
 
 from ._base import LatexParserBase
@@ -59,6 +62,11 @@ class LatexExpressionParser(LatexParserBase):
         super(LatexExpressionParser, self).__init__(**kwargs)
         self.include_skipped_comments = include_skipped_comments
         self.single_token_requiring_arg_is_error = single_token_requiring_arg_is_error
+
+
+    def contents_can_be_empty(self):
+        return False
+
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
@@ -126,7 +134,16 @@ class LatexExpressionParser(LatexParserBase):
             # successfully!
             tok = exc.recovery_token_placeholder
             token_reader.move_to_pos_chars(exc.recovery_token_at_pos)
-
+        except LatexWalkerEndOfStream as e:
+            exc = latex_walker.check_tolerant_parsing_ignore_error(
+                LatexWalkerParseError(
+                    r"End of input encountered but we expected an expression",
+                    pos=token_reader.cur_pos()
+                )
+            )
+            if exc is not None:
+                raise exc
+            return []
 
         if tok.tok == 'macro':
 
@@ -162,7 +179,7 @@ class LatexExpressionParser(LatexParserBase):
 
             mspec = parsing_state.latex_context.get_macro_spec(macroname)
 
-            self._check_if_requires_args(latex_walker, mspec,
+            self._check_if_requires_args(latex_walker, mspec, tok,
                                          r"a single macro ‘\{}’".format(macroname))
 
             return [
@@ -184,7 +201,7 @@ class LatexExpressionParser(LatexParserBase):
 
             specialsspec = tok.arg
 
-            self._check_if_requires_args(latex_walker, specialsspec,
+            self._check_if_requires_args(latex_walker, specialsspec, tok,
                                          r"specials ‘{}’".format(specialsspec.specials_chars))
 
             return [
@@ -296,10 +313,12 @@ class LatexExpressionParser(LatexParserBase):
         )
 
 
-    def _check_if_requires_args(self, latex_walker, spec, what_we_got):
+    def _check_if_requires_args(self, latex_walker, spec, got_token, what_we_got):
+
+        print("**** Checking if macro ‘\\", got_token.arg, "’ requires an arg ...", sep='')
 
         if self.single_token_requiring_arg_is_error \
-           and spec.needs_arguments():
+           and not spec.get_node_parser(got_token).contents_can_be_empty():
             exc = latex_walker.check_tolerant_parsing_ignore_error(
                 LatexWalkerParseError(
                     (r"Expected a LaTeX expression but got {} which "

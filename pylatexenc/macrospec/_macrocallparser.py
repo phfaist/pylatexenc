@@ -59,8 +59,6 @@ class _LatexCallableParserBase(LatexParserBase):
 
         self.parse_body = parse_body
 
-        self.body_parser = None
-
         self.make_carryover_info = spec_object.make_carryover_info
 
 
@@ -79,15 +77,8 @@ class _LatexCallableParserBase(LatexParserBase):
         return nodeargd, carryover_info
 
     def make_body_parser(self, nodeargd, arg_carryover_info):
-        if arg_carryover_info is not None:
-            logger.warning(
-                "Parsing carry-over information (%r) ignored after arguments to %s!",
-                arg_carryover_info,
-                self.what
-            )
-        if self.body_parser is None:
-            return None
-        return self.body_parser
+        raise RuntimeError(
+            "No default implementation of make_body_parser() in base class")
 
     def make_body_parsing_state(self, nodeargd, arg_carryover_info, parsing_state):
         raise RuntimeError(
@@ -111,12 +102,7 @@ class _LatexCallableParserBase(LatexParserBase):
             # )
             **kwargs
         )
-        if carryover_info is not None:
-            logger.warning(
-                "Parsing carry-over information (%r) ignored after body!",
-                carryover_info
-            )
-        return nodelist
+        return nodelist, carryover_info
 
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
@@ -136,13 +122,21 @@ class _LatexCallableParserBase(LatexParserBase):
 
         # parse any body, if applicable (e.g. environments)
         if self.parse_body:
-            body_nodelist = self.parse_call_body(
+            body_nodelist, body_carryover_info = self.parse_call_body(
                 nodeargd, arg_carryover_info,
                 latex_walker, token_reader, parsing_state,
                 **kwargs
             )
         else:
             body_nodelist = None
+            body_carryover_info = None
+
+        if body_carryover_info is not None:
+            logger.warning(
+                "Parsing carry-over information (%r) ignored after body!",
+                body_carryover_info
+            )
+
 
         len_ = None
 
@@ -155,7 +149,7 @@ class _LatexCallableParserBase(LatexParserBase):
             len_ = body_nodelist.pos + body_nodelist.len - pos_start
 
         node_kwargs = dict(self.node_extra_kwargs)
-        if body_nodelist is not None:
+        if self.parse_body:
             node_kwargs['nodelist'] = body_nodelist
 
         node = latex_walker.make_node(
@@ -210,7 +204,20 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
         )
         self.environmentname = environmentname
 
-        self.body_parser = LatexGeneralNodesParser(
+    def make_body_parser(self, nodeargd, arg_carryover_info):
+        if arg_carryover_info is not None:
+            logger.warning(
+                "Parsing carry-over information (%r) ignored after arguments to %s!",
+                arg_carryover_info,
+                self.what
+            )
+
+        if self.spec_object.body_parser is not None:
+            return self.spec_object.body_parser
+
+        # can't cache parser instance because the stop condition depends on the
+        # environment name
+        return LatexGeneralNodesParser(
             stop_token_condition=self._parse_body_token_stop_condition
         )
 

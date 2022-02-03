@@ -70,6 +70,10 @@ class _SpecBase(CallableSpecBase):
             return self._make_carryover_info_fn(parsed_node)
         return None
 
+    def needs_arguments(self):
+        for arg in self.arguments_spec_list:
+            if arg.spec.is_required():
+                return True
 
 
 class MacroSpec(_SpecBase):

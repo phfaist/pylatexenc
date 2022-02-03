@@ -131,7 +131,7 @@ class LatexStandardArgumentParser(LatexParserBase):
 
             return LatexDelimitedGroupParser(
                 require_brace_type='[',
-                include_brace_chars=('[',']',),
+                include_brace_chars=[('[',']',)],
                 optional=True,
                 do_not_skip_space=self.do_not_skip_space,
             )
@@ -165,7 +165,7 @@ class LatexStandardArgumentParser(LatexParserBase):
 
             return LatexDelimitedGroupParser(
                 require_brace_type=open_char,
-                include_brace_chars=(open_char, close_char,),
+                include_brace_chars=[(open_char, close_char,)],
                 optional=False,
                 do_not_skip_space=self.do_not_skip_space,
             )
@@ -180,7 +180,7 @@ class LatexStandardArgumentParser(LatexParserBase):
 
             return LatexDelimitedGroupParser(
                 require_brace_type=open_char,
-                include_brace_chars=(open_char, close_char,),
+                include_brace_chars=[(open_char, close_char,)],
                 optional=True,
                 do_not_skip_space=self.do_not_skip_space,
             )

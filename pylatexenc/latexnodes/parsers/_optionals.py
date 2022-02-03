@@ -54,6 +54,11 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
             raise ValueError(("Invalid chars={!r}, needs to be non-empty "
                               "string (after stripping whitespce)").format(chars))
 
+
+    def contents_can_be_empty(self):
+        return True
+
+
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
         
         orig_pos_tok = token_reader.peek_token()

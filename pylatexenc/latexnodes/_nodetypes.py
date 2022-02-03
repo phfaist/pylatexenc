@@ -720,6 +720,14 @@ class LatexNodeList(object):
         return split_node_lists
         
 
+    def __eq__(self, other):
+        return (
+            self.nodelist == other.nodelist
+            and self.pos == other.pos
+            and self.len == other.len
+        )
+
+
     def to_json_object(self):
         return self.nodelist
 
@@ -744,7 +752,7 @@ def _update_poslen_from_nodelist(pos, len_, nodelist):
                     None )
 
     if len_ is None:
-        end_pos = next( (n.pos+n.len for n in nodelist
+        end_pos = next( (n.pos+n.len for n in reversed(nodelist)
                          if n is not None and n.pos is not None and n.len is not None),
                         None )
         if end_pos is not None and pos is not None:

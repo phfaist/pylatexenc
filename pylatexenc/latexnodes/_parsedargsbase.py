@@ -98,7 +98,7 @@ class ParsedMacroArgs(object):
        it is `(None, <list of args>)` for any other argument structure.
     """
     def __init__(self,
-                 argnlist=[],
+                 argnlist=None,
                  arguments_spec_list=None,
                  #
                  #argspec='',
@@ -110,9 +110,9 @@ class ParsedMacroArgs(object):
         if arguments_spec_list is None and argspec is not None:
             arguments_spec_list = argspec
 
-        self.argnlist = argnlist
+        self.argnlist = argnlist if argnlist else []
 
-        self.arguments_spec_list = arguments_spec_list
+        self.arguments_spec_list = arguments_spec_list if arguments_spec_list else []
 
         self.pos, self.len = pos, len_
 

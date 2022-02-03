@@ -2,7 +2,7 @@
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2019 Philippe Faist
+# Copyright (c) 2022 Philippe Faist
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -37,11 +37,47 @@ from ._carryoverinfo import CarryoverInformation
 
 
 class LatexNodesCollector(object):
+    r"""
+    Process a stream of LaTeX tokens and convert them into a list of nodes.
+
+    The `LatexNodesCollector` class functions hand-in-hand with parsers to
+    transform tokens into nodes.  The parser sets up the parsing state
+    correctly, checks the input against errors such as missing mandatory
+    arguments, and then typically defers to a `LatexNodesCollector` instance to
+    actually parse a bulk of contents.  The `LatexNodesCollector` instance, on
+    the other hand, recurses down to calling parsers when we encounter new
+    macros, environments, specials, etc. in the bulk that is being parsed.  The
+    result is a node list containing a full tree of child nodes that represents
+    the logical structure of the tokens that were encountered.
+    
+    The public API of this class resides essentially in the
+    :py:meth:`process_tokens()`, as well as the :py:meth:`get_final_nodelist()`
+    (and some other friends, see docs below).
+    """
 
     class ReachedEndOfStream(Exception):
+        r"""
+        Raised by the :py:meth:`process_one_token()` method if we reached the end of
+        stream.
+        
+        You should not have to worry about this exception unless you call
+        :py:meth:`process_one_token()` yourself.  But most of the time you'll be
+        calling :py:meth:`process_tokens()` instead, which does not raise this
+        exception; it directly raises :py:exc:`LatexWalkerEndOfStream` as the
+        higher-level parsers do.
+        """
         pass
 
     class ReachedStoppingCondition(Exception):
+        r"""
+        Raised by the :py:meth:`process_one_token()` method to indicate that a
+        stopping condition was met.
+        
+        You should not have to worry about this exception unless you call
+        :py:meth:`process_one_token()` yourself.  But most of the time you'll be
+        calling :py:meth:`process_tokens()` instead, which simply stops
+        processing tokens if a stopping condition is met.
+        """
         def __init__(self, stop_data, **kwargs):
             super(LatexNodesCollector.ReachedStoppingCondition, self).__init__(**kwargs)
             self.stop_data = stop_data
@@ -66,8 +102,11 @@ class LatexNodesCollector(object):
         self.stop_token_condition = stop_token_condition
         self.stop_nodelist_condition = stop_nodelist_condition
 
-        self.stop_token_condition_met = False
-        self.stop_nodelist_condition_met = False
+        self._stop_token_condition_met = False
+        # the token that caused the condition to be met:
+        self._stop_token_condition_met_token = None
+        self._stop_nodelist_condition_met = False
+        self._reached_end_of_stream = False
 
         self.make_group_parser = make_group_parser # like "LatexDelimitedGroupParser"
         self.make_math_parser = make_math_parser # like "LatexMathParser"
@@ -75,6 +114,8 @@ class LatexNodesCollector(object):
         # current parsing state. This attribute might change as we parse tokens
         # and nodes.
         self.parsing_state = parsing_state
+
+        self.start_parsing_state = parsing_state
 
         # a node list that we are building
         self._nodelist = []
@@ -91,51 +132,31 @@ class LatexNodesCollector(object):
             self.make_child_parsing_state = make_child_parsing_state
 
 
-    def make_child_parsing_state(self, parsing_state, node_class):
-        return self.parsing_state
-
-    def push_pending_chars(self, chars, pos):
-        self._pending_chars += chars
-        if self._pending_chars_pos is None:
-            self._pending_chars_pos = pos
-
-    def flush_pending_chars(self):
-        if not self._pending_chars:
-            # no pending chars to flush
-            return None
-
-        charspos, chars = self._pending_chars_pos, self._pending_chars
-        self._pending_chars = ''
-        self._pending_chars_pos = None
-
-        strnode = self.latex_walker.make_node(
-            LatexCharsNode,
-            parsing_state=self.parsing_state,
-            chars=chars,
-            pos=charspos,
-            len=len(chars),
-        )
-        return self.push_to_nodelist(strnode)
-        
-    def finalize(self):
-        if self._finalized:
-            return
-
-        exc = self.flush_pending_chars()
-
-        self._finalized = True
-
-        if exc is not None:
-            raise exc
-
 
     def get_final_nodelist(self):
-        self.finalize()
-        return self._nodelist
+        r"""
+        Returns the final nodelist collected from the processed tokens.
+
+        The return value is a :py:class:`LatexNodeList` instance.
+        """
+        if not self._finalized:
+            raise RuntimeError("Call to get_final_nodelist() before finalize()")
+
+        return LatexNodeList(
+            nodelist=self._nodelist,
+            parsing_state=self.start_parsing_state,
+        )
+
 
     def get_parser_carryover_info(self):
+        r"""
+        """
         if not self._finalized:
             raise RuntimeError("Call to get_parser_carryover_info() before finalize()")
+
+        if self.start_parsing_state is self.parsing_state:
+            # we ended with the same object as the initial parsing state
+            return None
 
         # report our updated parsing state
         return CarryoverInformation(set_parsing_state=self.parsing_state)
@@ -166,7 +187,118 @@ class LatexNodesCollector(object):
         return lastnode.pos + lastnode.len
 
 
+    def stop_token_condition_met(self):
+        r"""
+        Returns `True` if the condition set as `stop_token_condition` was met while
+        processing tokens.
+        """
+        return self._stop_token_condition_met
+
+    def stop_token_condition_met_token(self):
+        r"""
+        Returns the token that caused the stop condition to be met.
+        """
+        return self._stop_token_condition_met_token
+
+    def stop_nodelist_condition_met(self):
+        r"""
+        Returns `True` if the condition set as `stop_nodelist_condition` was met
+        while processing tokens.
+        """
+        return self._stop_nodelist_condition_met
+
+    def reached_end_of_stream(self):
+        r"""
+        Returns `True` if we reached the end of the stream.
+        """
+        return self._reached_end_of_stream
+
+
+    def is_finalized(self):
+        r"""
+        Whether this object's node list has been finalized.
+
+        Once the object is finalized, you cannot parse any more tokens.  See
+        :py:meth:`finalize()`.
+        """
+        return self._finalized
+
+    def finalize(self):
+        r"""
+        Finalize this object's node list.  This ensures that any pending characters
+        that were read are collected into a final chars node.  (In the future,
+        there might be other tasks to perform to finalize the node list.)
+
+        Normally you don't have to worry about calling `finalize()` yourself,
+        because it is automatically called by :py:meth:`process_tokens()`.  You
+        should only worry about calling `finalize()` if you are calling
+        `process_one_token()` manually.
+
+        Once you call `finalize()`, you can no longer make any further calls to
+        :py:meth:`process_tokens()` or :py:meth:`process_one_token()`.
+        """
+        if self._finalized:
+            return
+
+        exc = self.flush_pending_chars()
+
+        self._finalized = True
+
+        if exc is not None:
+            raise exc
+
+
+    # -----
+
+    #
+    # "Protected methods" -- should only be called by subclasses' dervied
+    # methods.
+    #
+
+    def push_pending_chars(self, chars, pos):
+        r"""
+        This method should only be called internally or by subclass derived methods.
+    
+        Adds `chars` to the pending chars string, i.e., the latest chars that we
+        have seen that will have to be collected into a chars node once we
+        encounter anything other than a regular char.
+        """
+        self._pending_chars += chars
+        if self._pending_chars_pos is None:
+            self._pending_chars_pos = pos
+
+    def flush_pending_chars(self):
+        r"""
+        This method should only be called internally or by subclass derived methods.
+    
+        Create a chars node out of all the pending chars that were added with
+        calls to `push_pending_chars()`.  Adds the chars node to the node list,
+        and clears the pending chars string.
+        """
+        if not self._pending_chars:
+            # no pending chars to flush
+            return None
+
+        charspos, chars = self._pending_chars_pos, self._pending_chars
+        self._pending_chars = ''
+        self._pending_chars_pos = None
+
+        strnode = self.latex_walker.make_node(
+            LatexCharsNode,
+            parsing_state=self.parsing_state,
+            chars=chars,
+            pos=charspos,
+            len=len(chars),
+        )
+        return self.push_to_nodelist(strnode)
+
     def push_to_nodelist(self, node):
+        r"""
+        This method should only be called internally or by subclass derived methods.
+
+        Add the given node to the final node list that we are building.
+        """
+
         if self._finalized:
             raise RuntimeError("You already called finalize()")
 
@@ -177,13 +309,32 @@ class LatexNodesCollector(object):
             return exc
         return None
 
+
+    def update_state_from_carryover_info(self, carryover_info):
+        r"""
+        This method should only be called internally or by subclass derived methods.
+
+        Update our `parsing_state` attribute to account for any carryover
+        information that might have been provided by some parsed construct (say,
+        a macro call).
+        """
+
+        if carryover_info is not None:
+            self.parsing_state = \
+                carryover_info.get_updated_parsing_state(self.parsing_state)
+
+
+
+    # ------------------
+
+
     def _check_nodelist_stop_condition(self):
         #print(f"*** checking for nodelist stopping condition ... {self._nodelist=}")
         stop_nodelist_condition = self.stop_nodelist_condition
         if stop_nodelist_condition is not None:
             stop_data = stop_nodelist_condition(self._nodelist)
             if stop_data:
-                self.stop_nodelist_condition_met = True
+                self._stop_nodelist_condition_met = True
                 #print(f"\t\tStopping condition met!")
                 return LatexNodesCollector.ReachedStoppingCondition(stop_data=stop_data)
 
@@ -193,20 +344,95 @@ class LatexNodesCollector(object):
         if stop_token_condition is not None:
             stop_data = stop_token_condition(tok)
             if stop_data:
-                self.stop_token_condition_met = True
+                self._stop_token_condition_met = True
+                self._stop_token_condition_met_token = tok
                 #print(f"\t\tStopping condition met!")
                 return LatexNodesCollector.ReachedStoppingCondition(stop_data=stop_data)
 
 
-    def read_and_process_one_token(self):
+    def process_tokens(self):
+        r"""
+        Read tokens from `token_reader` until either we reach the end of the stream,
+        or a stopping condition is met.
+
+        This function never returns anything interesting.
+
+        In all cases, the object is finalized (see :py:meth:`finalize()`) before
+        this method finishes its execution, regardless of whether the function
+        finishes by normal return or by raising an exception.
+
+        You can inspect the reason that caused the end of the processing using
+        the methods :py:meth:`stop_token_condition_met()`,
+        :py:meth:`stop_nodelist_condition_met()` and
+        :py:meth:`reached_end_of_stream()`.
+        
+        You can then call :py:meth:`get_final_nodelist()` to get the nodelist,
+        :py:meth:`get_parser_carryover_info()` to get any carry-over information
+        for the parser for future parsing, etc.
+        """
+
+        try:
+
+            while True:
+                self.process_one_token()
+
+        except LatexNodesCollector.ReachedStoppingCondition as e:
+            # all good! We finished collecting our node list.
+            return
+
+        except LatexNodesCollector.ReachedEndOfStream as e:
+            # all good!  We reached the end of the input.  Note that any final
+            # space has already been included into a chars node in the nodelist.
+            self._reached_end_of_stream = True
+            return
+
+        except LatexWalkerError as e:
+            # we got an error! We'll let whoever called us process this
+            raise
+
+        finally:
+            self.finalize()
+
+
+
+
+    def process_one_token(self):
         r"""
         Read a single token and process it, recursing into brace blocks and
         environments etc if needed, and appending stuff to nodelist.
 
-        Raises an exception whenever we should stop reading (this might include
-        non-error exceptions like `ReachedEndOfStream` or
-        `ReachedStoppingCondition`).  This function never returns any value.  If
-        this function returns, we should continue reading nodes.
+        Whereas :py:meth:`process_tokens()` gathers tokens into nodes until a
+        stopping condition is met or until the end of the stream is reached, the
+        `process_one_token()` provides finer control on the execution of the
+        process of collecting tokens and gathering them into nodes.
+
+        .. warning::
+
+           Normally, it is better to use `process_tokens()` directly.  If you
+           want to read a single node, simply set a stopping condition that
+           stops for instance once the node list has length at least one.
+
+           The `process_one_token()` method requires you to take care of some
+           tasks yourself, which are normally automatically taken care of by
+           :py:meth:`process_tokens()`.  Read on below for more information.
+
+        A number of tasks that are taken care of by :py:meth:`process_tokens()`
+        are NOT taken care of here:
+
+        - If an end of stream is reached, we raise the exception
+          `LatexNodesCollector.ReachedEndOfStream`.  It's up to you to catch it
+          and do something relevant.
+
+        - If a stopping condition is met, we raise the exception
+          `LatexNodesCollector.ReachedStoppingCondition`.  It's up to you to
+          catch it and do something relevant.
+
+        - The function returns normally (without any return value) if neither a
+          stopping condition is met nor the end of stream is met.  Normally,
+          this means we should continue processing tokens.
+
+        - You have to take care that you call :py:meth:`finalize()` on the nodes
+          collector instance once you're done processing tokens.
         """
 
         if self._finalized:
@@ -232,7 +458,7 @@ class LatexNodesCollector(object):
                 )
                 token_reader.move_past_token(tok)
             else:
-                print("*** reached end of stream!")
+                #print("*** reached end of stream!")
                 exc = LatexNodesCollector.ReachedEndOfStream()
                 exc.pos_end = token_reader.cur_pos()
                 raise exc
@@ -288,6 +514,9 @@ class LatexNodesCollector(object):
         
         stop_exc = self._check_token_stop_condition(tok)
         if stop_exc is not None:
+            # leave the token in the input stream if it generated a stopping
+            # condition.
+            token_reader.move_to_token(tok)
             stop_exc.pos_end = tok.pos + tok.len
             raise stop_exc
 
@@ -308,7 +537,7 @@ class LatexNodesCollector(object):
             )
 
         if tok.tok in ('mathmode_inline', 'mathmode_display') \
-           and tok.arg not in parsing_state._math_delims_info_by_open:
+           and tok.arg not in self.parsing_state._math_delims_info_by_open:
             # an unexpected closing math mode delimiter
             raise LatexWalkerNodesParseError(
                 msg="Unexpected closing math mode token ‘{}’".format(
@@ -357,21 +586,36 @@ class LatexNodesCollector(object):
             )
 
 
-    def update_state_from_carryover_info(self, carryover_info):
-
-        if carryover_info is not None:
-            self.parsing_state = \
-                carryover_info.get_updated_parsing_state(self.parsing_state)
-
-
-
 
     # ------------------
 
+    #
+    # Methods that can be reimplemented:
+    #
 
+    def make_child_parsing_state(self, parsing_state, node_class):
+        r"""
+        Create a parsing state a child node of the given type `node_class`.
+
+        You can reimplement this method to customize the parsing state of child
+        nodes.
+        """
+        return self.parsing_state
 
 
     def parse_comment_node(self, tok):
+        r"""
+        Process a token that introduces a comment. The token `tok` is of type
+        ``tok.tok == 'comment'``.
+
+        The default implementation creates a :py:class:`LatexCommentNode` and
+        pushes it onto the node list.
+
+        This method can be reimplemented to customize its behavior.
+        Implementations should create the relevant node(s) and push them onto
+        the node list with a call to :py:meth:`push_to_nodelist()` (refer to
+        that method's doc).
+        """
 
         commentnode = self.latex_walker.make_node(
                 LatexCommentNode,
@@ -389,6 +633,20 @@ class LatexNodesCollector(object):
 
 
     def parse_latex_group(self, tok):
+        r"""
+        Process a token that introduces a LaTeX group (e.g. ``{a group}``). The
+        token `tok` is of type ``tok.tok == 'brace_open'`` according to the
+        current parsing state.
+
+        The default implementation uses the `make_group_parser` specified to the
+        constructor to parse the group node, and pushes the resulting node onto
+        the node list.
+
+        This method can be reimplemented to customize its behavior.
+        Implementations should create the relevant node(s) and push them onto
+        the node list with a call to :py:meth:`push_to_nodelist()` (refer to
+        that method's doc).
+        """
 
         self.token_reader.move_to_token(tok)
 
@@ -413,6 +671,19 @@ class LatexNodesCollector(object):
 
 
     def parse_macro(self, tok):
+        r"""
+        Process a token representing a macro (e.g. ``\macro``). The token `tok` is
+        of type ``tok.tok == 'macro'``.
+
+        The default implementation looks up the corresponding macro
+        specification object via the parsing state's latex context database, and
+        defers to :py:meth:`parse_invocable_token_type()`.
+
+        This method can be reimplemented to customize its behavior.
+        Implementations should create the relevant node(s) and push them onto
+        the node list with a call to :py:meth:`push_to_nodelist()` (refer to
+        that method's doc).
+        """
 
         macroname = tok.arg
         # mspec = tok.spec
@@ -435,6 +706,20 @@ class LatexNodesCollector(object):
         return self.parse_invocable_token_type(tok, mspec, node_class, what)
 
     def parse_environment(self, tok):
+        r"""
+        Process a token representing an environment
+        (e.g. ``\begin{environment}``). The token `tok` is of type ``tok.tok ==
+        'begin_environment'``.
+
+        The default implementation looks up the corresponding environment
+        specification object via the parsing state's latex context database, and
+        defers to :py:meth:`parse_invocable_token_type()`.
+
+        This method can be reimplemented to customize its behavior.
+        Implementations should create the relevant node(s) and push them onto
+        the node list with a call to :py:meth:`push_to_nodelist()` (refer to
+        that method's doc).
+        """
 
         latex_walker = self.latex_walker
         #token_reader = self.token_reader
@@ -462,6 +747,18 @@ class LatexNodesCollector(object):
         return self.parse_invocable_token_type(tok, envspec, node_class, what)
 
     def parse_specials(self, tok):
+        r"""
+        Process a token representing LaTeX specials (e.g. ``~``). The token `tok` is
+        of type ``tok.tok == 'specials'``.
+
+        The default implementation defers to
+        :py:meth:`parse_invocable_token_type()`.
+
+        This method can be reimplemented to customize its behavior.
+        Implementations should create the relevant node(s) and push them onto
+        the node list with a call to :py:meth:`push_to_nodelist()` (refer to
+        that method's doc).
+        """
 
         specials_spec = tok.arg
 
@@ -471,6 +768,24 @@ class LatexNodesCollector(object):
         return self.parse_invocable_token_type(tok, specials_spec, node_class, what)
 
     def parse_invocable_token_type(self, tok, spec, node_class, what):
+        r"""
+        Process a token representing either a macro call, a begin environment call,
+        or specials chars.
+
+        This method is a convenience method that collects the similar processing
+        for these three node types.  The specification class is queried for the
+        relevant parser object (``spec.get_node_parser()``), to which we defer
+        for parsing the macro call / the environment / the specials.
+
+        Additionally, the current parsing state is updated using the carry-over
+        information reported by the call parser.
+
+
+        This method can be reimplemented to customize its behavior.
+        Implementations should create the relevant node(s) and push them onto
+        the node list with a call to :py:meth:`push_to_nodelist()` (refer to
+        that method's doc).
+        """
 
         latex_walker = self.latex_walker
         token_reader = self.token_reader
@@ -505,6 +820,20 @@ class LatexNodesCollector(object):
 
 
     def parse_math(self, tok):
+        r"""
+        Process a token that introduces LaTeX math mode (e.g. ``$ ... $`` or ``\[
+        ... \]``). The token `tok` is of type ``tok.tok in ('mathmode_inline',
+        'mathmode_display')`` according to the current parsing state.
+
+        The default implementation uses the `make_math_parser` specified to the
+        constructor to parse the group node, and pushes the resulting node onto
+        the node list.
+
+        This method can be reimplemented to customize its behavior.
+        Implementations should create the relevant node(s) and push them onto
+        the node list with a call to :py:meth:`push_to_nodelist()` (refer to
+        that method's doc).
+        """
 
         self.token_reader.move_to_token(tok)
 
@@ -514,17 +843,24 @@ class LatexNodesCollector(object):
         )
 
         # a math inline or display environment
-        mathnode = \
-            latex_walker.parse_content(
+        mathnode, carryover_info = \
+            self.latex_walker.parse_content(
                 self.make_math_parser(
-                    require_math_delimiter=tok.arg,
+                    require_math_mode_delimiter=tok.arg,
                 ),
                 token_reader=self.token_reader,
                 parsing_state=self.make_child_parsing_state(math_parsing_state,
                                                             LatexMathNode)
             )
 
+        if carryover_info is not None:
+            logger.warning("carryover_info is ignored after parsing a LaTeX math: %r",
+                           carryover_info)
+
         stop_exc = self.push_to_nodelist(mathnode)
         if stop_exc is not None:
-            stop_exc.pos_end = mathnode.pos + mathnode.len
+            if mathnode is not None and mathnode.pos is not None and mathnode.len is not None:
+                stop_exc.pos_end = mathnode.pos + mathnode.len
+            else:
+                stop_exc.pos_end = None
             raise stop_exc

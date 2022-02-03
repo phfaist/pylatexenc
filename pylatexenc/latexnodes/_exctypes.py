@@ -94,14 +94,18 @@ class LatexWalkerParseError(LatexWalkerError):
        at 1.
 
     """
-    def __init__(self, msg, s=None, pos=None, lineno=None, colno=None):
-        self.input_source = None # attribute can be set to add to error msg display
+    def __init__(self, msg, s=None, pos=None, lineno=None, colno=None, **kwargs):
+        self.input_source = kwargs.pop('input_source', None)
         self.msg = msg
         self.s = s
         self.pos = pos
         self.lineno = lineno
         self.colno = colno
-        self.open_contexts = []
+        self.open_contexts = kwargs.pop('open_contexts', [])
+
+        if kwargs:
+            raise ValueError("Unexpected keyword argument(s) to LatexWalkerParseError(): "
+                             + repr(kwargs))
 
         super(LatexWalkerParseError, self).__init__(self._dispstr())
 
@@ -130,6 +134,20 @@ class LatexWalkerParseError(LatexWalkerError):
 
     def __str__(self):
         return self._dispstr()
+
+    @classmethod
+    def new_from(Cls, other_exception, **kwargs):
+        r"""
+        Construct the exception from the properties in `other_exception`, which
+        should also be of :py:class:`LatexWalkerParseError` type or subclass,
+        with the additional attributes set via `kwargs`.  You can call this
+        static method on subclasses, too, to construct subclass instances.
+        """
+        d = dict([(k, v) for
+                  (k, v) in other_exception.__dict__.items()
+                  if not k.startswith('_')])
+        d.update(kwargs)
+        return Cls(**d)
 
 
 class LatexWalkerTokenParseError(LatexWalkerParseError):
@@ -204,13 +222,13 @@ class LatexWalkerNodesParseError(LatexWalkerParseError):
     """
     def __init__(self,
                  recovery_nodes=None,
-                 recovery_carryoverinfo=None,
+                 recovery_carryover_info=None,
                  recovery_at_token=None,
                  recovery_past_token=None,
                  **kwargs):
         super(LatexWalkerNodesParseError, self).__init__(**kwargs)
         self.recovery_nodes = recovery_nodes
-        self.recovery_carryoverinfo = recovery_carryoverinfo
+        self.recovery_carryover_info = recovery_carryover_info
         self.recovery_at_token = recovery_at_token
         self.recovery_past_token = recovery_past_token
 

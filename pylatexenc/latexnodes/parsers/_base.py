@@ -43,4 +43,11 @@ class LatexParserBase(object):
         raise RuntimeError("LatexParserBase subclasses must reimplement __call__()")
 
 
-
+    def contents_can_be_empty(self):
+        r"""
+        If absorbing no tokens is a valid option for the thing this object is meant
+        to parse, then we should return `True` here.  E.g., group contents,
+        optional arguments, etc.  But a parser for a mandatory argument would
+        `False` here.
+        """
+        return True
