@@ -31,7 +31,10 @@ from __future__ import print_function, unicode_literals
 
 
 from .._exctypes import (
-    LatexWalkerParseError, LatexWalkerTokenParseError, LatexWalkerEndOfStream
+    LatexWalkerParseError,
+    LatexWalkerTokenParseError,
+    LatexWalkerNodesParseError,
+    LatexWalkerEndOfStream
 )
 from .._nodetypes import *
 from .._nodetypes import _update_posposend_from_nodelist
@@ -158,8 +161,6 @@ class LatexExpressionParser(LatexParserBase):
                         spec=None,
                         nodeargd=None,
                         macro_post_space=tok.post_space,
-                        nodeoptarg=None,
-                        nodeargs=None,
                         pos=tok.pos,
                         pos_end=tok.pos_end
                     )
@@ -178,8 +179,6 @@ class LatexExpressionParser(LatexParserBase):
                     spec=mspec,
                     nodeargd=None,
                     macro_post_space=tok.post_space,
-                    nodeoptarg=None,
-                    nodeargs=None,
                     pos=tok.pos,
                     pos_end=tok.pos_end
                 )
@@ -242,7 +241,7 @@ class LatexExpressionParser(LatexParserBase):
 
         if tok.tok == 'brace_close':
 
-            raise LatexWalkerNodesParseError(
+            exc = LatexWalkerNodesParseError(
                 msg="Expected LaTeX expression, got closing brace ‘{}’".format(tok.arg),
                 pos=tok.pos,
                 recovery_nodes=latex_walker.make_node(LatexCharsNode,
@@ -254,6 +253,9 @@ class LatexExpressionParser(LatexParserBase):
                 # from the parse error
                 recovery_at_token=tok
             )
+            # internal, to aid pylatexenc2 compatibility code
+            exc._error_was_unexpected_closing_brace_in_expression = True
+            raise exc
 
         if tok.tok == 'char':
 
@@ -275,8 +277,6 @@ class LatexExpressionParser(LatexParserBase):
                 recovery_nodes = latex_walker.make_node(LatexMacroNode,
                                                         parsing_state=parsing_state,
                                                         macroname=tok.arg,
-                                                        nodeoptarg=None,
-                                                        nodeargs=None,
                                                         macro_post_space=tok.post_space,
                                                         pos=tok.pos,
                                                         pos_end=tok.pos_end)

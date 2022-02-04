@@ -137,13 +137,14 @@ class _LatexCallableParserBase(LatexParserBase):
             )
 
 
-        pos_end = None
+        # pos_end = None
+        # if nodeargd is not None:
+        #     pos_end = nodeargd.pos_end
+        # if body_nodelist is not None:
+        #     pos_end = body_nodelist.pos_end
 
-        if nodeargd is not None:
-            pos_end = nodeargd.pos_end
-
-        if body_nodelist is not None:
-            pos_end = body_nodelist.pos_end
+        # use cur_pos() because we want to include stuff like \end{environemnt}.
+        pos_end = token_reader.cur_pos()
 
         node_kwargs = dict(self.node_extra_kwargs)
         if self.parse_body:
@@ -215,7 +216,8 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
         # can't cache parser instance because the stop condition depends on the
         # environment name
         return LatexGeneralNodesParser(
-            stop_token_condition=self._parse_body_token_stop_condition
+            stop_token_condition=self._parse_body_token_stop_condition,
+            handle_stop_condition_token=self._handle_stop_condition_token,
         )
 
     def make_body_parsing_state(self, nodeargd, arg_carryover_info, parsing_state):
@@ -232,6 +234,9 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
         if kw:
             return parsing_state.sub_context(**kw)
         return parsing_state
+
+    def _handle_stop_condition_token(self, t, token_reader):
+        token_reader.move_past_token(t)
 
     def _parse_body_token_stop_condition(self, t):
         if t.tok == 'end_environment' and t.arg == self.environmentname:

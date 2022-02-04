@@ -127,7 +127,8 @@ class LatexGeneralNodesParser(LatexParserBase):
            and self.handle_stop_condition_token is not None:
             # do something with the token that caused the stop condition to fire
             self.handle_stop_condition_token(
-                collector.stop_token_condition_met_token()
+                collector.stop_token_condition_met_token(),
+                token_reader
             )
             # and 
 
@@ -243,7 +244,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
                 return True
             return False
 
-        def handle_stop_condition_token(token):
+        def handle_stop_condition_token(token, token_reader):
             assert token.tok == 'brace_close'
             token_reader.move_past_token(token)
 
@@ -364,7 +365,7 @@ class LatexMathParser(LatexParserBase):
                 return True
             return False
 
-        def handle_stop_condition_token(token):
+        def handle_stop_condition_token(token, token_reader):
             assert token.tok.startswith('mathmode_')
             token_reader.move_past_token(token)
 

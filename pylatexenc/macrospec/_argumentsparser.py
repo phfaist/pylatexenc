@@ -198,4 +198,6 @@ class _LegacyPyltxenc2MacroArgsParserWrapper(LatexParserBase):
 
 
 
+
+
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE

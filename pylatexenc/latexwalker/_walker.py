@@ -799,15 +799,35 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
         single_token_requiring_arg_is_error=not self.tolerant_parsing,
     )
 
-    nodes, info = self.parse_content(
-        parser,
-        token_reader=self.make_token_reader(pos=pos),
-        parsing_state=parsing_state,
-    )
+    try:
+        nodes, info = self.parse_content(
+            parser,
+            token_reader=self.make_token_reader(pos=pos),
+            parsing_state=parsing_state,
+        )
+    except LatexWalkerParseError as e:
+        # only raise error if we have strict_braces; otherwise leave token in
+        # the input stream and let the next call report an error.  (I don't know
+        # why this is the best behavior, but it's needed because that's how
+        # pylatexenc 2 worked.)
+        if getattr(e, '_error_was_unexpected_closing_brace_in_expression', False) \
+           and not strict_braces:
+            nodes, info = None, None
+        else:
+            raise
 
     if info is not None:
         logger.warning("Call to get_latex_expression() ignores carryover information "
                        "of parsing state")
+
+    if nodes is None and self.tolerant_parsing or strict_braces is False:
+        nodes = self.make_node(
+            LatexCharsNode,
+            parsing_state=parsing_state,
+            chars='',
+            pos=pos,
+            pos_end=pos,
+        )
 
     if nodes is not None:
         p, l = nodes.pos, nodes.len
@@ -980,7 +1000,7 @@ def _pyltxenc2_LatexWalker_get_latex_environment(
     if environmentname is not None and envnode.environmentname != environmentname:
         raise LatexWalkerParseError(
             "Expected environment {{{correct_envname}}}, got {{{got_envname}}}".format(
-                correct_envname=environmentnode,
+                correct_envname=environmentname,
                 got_envname=envnode.environmentname
             )
         )
