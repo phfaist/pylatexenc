@@ -32,3 +32,7 @@ from ._callablespecbase import (
 from ._walkerbase import (
     LatexWalkerBase
 )
+
+from ._latexcontextdbbase import (
+    LatexContextDbBase
+)

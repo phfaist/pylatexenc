@@ -20,84 +20,17 @@ from pylatexenc.latexnodes import (
     LatexMacroNode,
     LatexEnvironmentNode,
     LatexSpecialsNode,
-    LatexWalkerBase,
-    ParsingState
+    ParsingState,
+    ParsedMacroArgs,
 )
 
 
-class DummyWalker(LatexWalkerBase):
-
-    def make_node(self, node_class, **kwargs):
-        return node_class(**kwargs)
-
-    def make_nodes_collector(self,
-                             latex_walker,
-                             token_reader,
-                             parsing_state,
-                             **kwargs):
-        return latexnodes.LatexNodesCollector(
-            latex_walker,
-            token_reader,
-            parsing_state,
-            **kwargs
-        )
-
-    def parse_content(self, parser, token_reader=None, parsing_state=None,
-                      open_context=None):
-
-        if open_context is not None:
-            what, tok = open_context
-            logger.debug("Parsing content -- %s -- (%r)", what, tok)
-        else:
-            logger.debug("Parsing content (%s) ...", parser.__class__.__name__)
-
-        nodes, carryover_info = parser(latex_walker=self,
-                                       token_reader=token_reader,
-                                       parsing_state=parsing_state)
-
-        logger.debug("Parsing content done (%s).", parser.__class__.__name__)
-
-        return nodes, carryover_info
-
-
-
-
-def dummy_empty_group_parser(latex_walker, token_reader, parsing_state):
-    first_token = token_reader.next_token(parsing_state=parsing_state)
-    second_token = token_reader.next_token(parsing_state=parsing_state)
-
-    if first_token.tok == 'brace_open' and second_token.tok == 'brace_close':
-        # good
-        n = latex_walker.make_node(
-            LatexGroupNode,
-            delimiters=(first_token.arg, second_token.arg),
-            nodelist=LatexNodeList([], pos='<POS>', pos_end='<POS_END>'),
-            pos=first_token.pos,
-            pos_end=second_token.pos_end,
-            parsing_state=parsing_state
-        )
-        return n, None
-
-    raise RuntimeError("dummy empty group parser: expected an empty group.")
-
-def dummy_empty_mathmode_parser(latex_walker, token_reader, parsing_state):
-    first_token = token_reader.next_token(parsing_state=parsing_state)
-    second_token = token_reader.next_token(parsing_state=parsing_state)
-
-    if first_token.tok in ('mathmode_inline','mathmode_display') \
-       and second_token.tok == ('mathmode_inline', 'mathmode_display'):
-        # good
-        n = latex_walker.make_node(
-            LatexMathNode,
-            delimiters=(first_token.arg, second_token.arg),
-            nodelist=LatexNodeList([], pos='<POS>', pos_end='<POS_END>'),
-            pos=first_token.pos,
-            pos_end=second_token.pos_end,
-            parsing_state=parsing_state
-        )
-        return n, None
-
-    raise RuntimeError("dummy math mode group parser: expected an empty math mode group.")
+from ._helpers_tests import (
+    DummyWalker,
+    dummy_empty_group_parser,
+    dummy_empty_mathmode_parser,
+    DummyLatexContextDb,
+)
 
 
 
@@ -133,7 +66,11 @@ class TestLatexNodesCollector(unittest.TestCase):
                 )
             ])
         )
-        
+        self.assertEqual(nc.pos_start(), 0)
+        self.assertEqual(nc.pos_end(), len(latextext))
+        self.assertTrue(nc.reached_end_of_stream())
+        self.assertFalse(nc.stop_token_condition_met())
+        self.assertFalse(nc.stop_nodelist_condition_met())
 
     def test_simple_comment_node(self):
         
@@ -166,6 +103,11 @@ class TestLatexNodesCollector(unittest.TestCase):
                 )
             ])
         )
+        self.assertEqual(nc.pos_start(), 0)
+        self.assertEqual(nc.pos_end(), len(latextext))
+        self.assertTrue(nc.reached_end_of_stream())
+        self.assertFalse(nc.stop_token_condition_met())
+        self.assertFalse(nc.stop_nodelist_condition_met())
 
     def test_simple_group_node(self):
         
@@ -202,7 +144,259 @@ class TestLatexNodesCollector(unittest.TestCase):
                 )
             ])
         )
-            
+        self.assertEqual(nc.pos_start(), 0)
+        self.assertEqual(nc.pos_end(), len(latextext))
+        self.assertTrue(nc.reached_end_of_stream())
+        self.assertFalse(nc.stop_token_condition_met())
+        self.assertFalse(nc.stop_nodelist_condition_met())
+
+    def test_simple_math_node(self):
+        
+        latextext = r'''\(\)'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+        lw = DummyWalker()
+
+        def make_dummy_empty_mathmode_parser(require_math_mode_delimiter):
+            self.assertEqual(require_math_mode_delimiter, r'\(')
+            return dummy_empty_mathmode_parser
+
+        nc = LatexNodesCollector(latex_walker=lw,
+                                 token_reader=tr,
+                                 parsing_state=ps,
+                                 make_group_parser=None,
+                                 make_math_parser=make_dummy_empty_mathmode_parser,
+                                 )
+
+        nc.process_tokens()
+        
+        nodelist = nc.get_final_nodelist()
+
+        self.assertEqual(
+            nodelist,
+            LatexNodeList([
+                LatexMathNode(
+                    parsing_state=ps,
+                    nodelist=LatexNodeList([], pos='<POS>', pos_end='<POS_END>'),
+                    delimiters=(r'\(',r'\)'),
+                    displaytype='inline',
+                    pos=0,
+                    pos_end=4,
+                )
+            ])
+        )
+        self.assertEqual(nc.pos_start(), 0)
+        self.assertEqual(nc.pos_end(), len(latextext))
+        self.assertTrue(nc.reached_end_of_stream())
+        self.assertFalse(nc.stop_token_condition_met())
+        self.assertFalse(nc.stop_nodelist_condition_met())
+        
+    def test_final_whitespace_after_chars(self):
+        
+        latextext = '''Chars node       \t\n    '''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+        lw = DummyWalker()
+
+        nc = LatexNodesCollector(latex_walker=lw,
+                                 token_reader=tr,
+                                 parsing_state=ps,
+                                 make_group_parser=None,
+                                 make_math_parser=None,
+                                 )
+
+        nc.process_tokens()
+        
+        nodelist = nc.get_final_nodelist()
+
+        self.assertEqual(
+            nodelist,
+            LatexNodeList([
+                LatexCharsNode(
+                    parsing_state=ps,
+                    chars='Chars node       \t\n    ',
+                    pos=0,
+                    pos_end=len(latextext)
+                )
+            ])
+        )
+        self.assertEqual(nc.pos_start(), 0)
+        self.assertEqual(nc.pos_end(), len(latextext))
+        self.assertTrue(nc.reached_end_of_stream())
+        self.assertFalse(nc.stop_token_condition_met())
+        self.assertFalse(nc.stop_nodelist_condition_met())
+
+    def test_final_whitespace_after_group(self):
+        
+        latextext = '''{}       \t\n    '''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+        lw = DummyWalker()
+
+        def make_dummy_empty_group_parser(require_brace_type):
+            self.assertEqual(require_brace_type, '{')
+            return dummy_empty_group_parser
+
+
+        nc = LatexNodesCollector(latex_walker=lw,
+                                 token_reader=tr,
+                                 parsing_state=ps,
+                                 make_group_parser=make_dummy_empty_group_parser,
+                                 make_math_parser=None,
+                                 )
+
+        nc.process_tokens()
+        
+        nodelist = nc.get_final_nodelist()
+
+        self.assertEqual(
+            nodelist,
+            LatexNodeList([
+                LatexGroupNode(
+                    parsing_state=ps,
+                    nodelist=LatexNodeList([], pos='<POS>', pos_end='<POS_END>'),
+                    delimiters=('{','}'),
+                    pos=0,
+                    pos_end=2,
+                ),
+                LatexCharsNode(
+                    parsing_state=ps,
+                    chars='       \t\n    ',
+                    pos=2,
+                    pos_end=len(latextext)
+                )
+            ])
+        )
+        self.assertEqual(nc.pos_start(), 0)
+        self.assertEqual(nc.pos_end(), len(latextext))
+        self.assertTrue(nc.reached_end_of_stream())
+        self.assertFalse(nc.stop_token_condition_met())
+        self.assertFalse(nc.stop_nodelist_condition_met())
+
+
+    #
+    # test macros and other callables
+    #
+
+    def test_simple_macro_node(self):
+        
+        latextext = r'''\somemacro    '''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        nc = LatexNodesCollector(latex_walker=lw,
+                                 token_reader=tr,
+                                 parsing_state=ps,
+                                 make_group_parser=None,
+                                 make_math_parser=None,
+                                 )
+
+        nc.process_tokens()
+        
+        nodelist = nc.get_final_nodelist()
+
+        self.assertEqual(
+            nodelist,
+            LatexNodeList([
+                LatexMacroNode(
+                    parsing_state=ps,
+                    macroname='somemacro',
+                    macro_post_space='    ',
+                    spec=ps.latex_context.get_macro_spec('somemacro'),
+                    nodeargd=ParsedMacroArgs(),
+                    pos=0,
+                    pos_end=len(latextext),
+                )
+            ])
+        )
+        self.assertEqual(nc.pos_start(), 0)
+        self.assertEqual(nc.pos_end(), len(latextext))
+        self.assertTrue(nc.reached_end_of_stream())
+        self.assertFalse(nc.stop_token_condition_met())
+        self.assertFalse(nc.stop_nodelist_condition_met())
+
+    def test_simple_environment_node(self):
+        
+        latextext = r'''\begin{someenv}\end{someenv}'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        nc = LatexNodesCollector(latex_walker=lw,
+                                 token_reader=tr,
+                                 parsing_state=ps,
+                                 make_group_parser=None,
+                                 make_math_parser=None,
+                                 )
+
+        nc.process_tokens()
+        
+        nodelist = nc.get_final_nodelist()
+
+        self.assertEqual(
+            nodelist,
+            LatexNodeList([
+                LatexEnvironmentNode(
+                    parsing_state=ps,
+                    environmentname='someenv',
+                    spec=ps.latex_context.get_environment_spec('someenv'),
+                    nodeargd=ParsedMacroArgs(),
+                    nodelist=LatexNodeList([]),
+                    pos=0,
+                    pos_end=len(latextext),
+                )
+            ])
+        )
+        self.assertEqual(nc.pos_start(), 0)
+        self.assertEqual(nc.pos_end(), len(latextext))
+        self.assertTrue(nc.reached_end_of_stream())
+        self.assertFalse(nc.stop_token_condition_met())
+        self.assertFalse(nc.stop_nodelist_condition_met())
+
+
+    def test_simple_specials_node(self):
+        
+        latextext = r'''~'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        nc = LatexNodesCollector(latex_walker=lw,
+                                 token_reader=tr,
+                                 parsing_state=ps,
+                                 make_group_parser=None,
+                                 make_math_parser=None,
+                                 )
+
+        nc.process_tokens()
+        
+        nodelist = nc.get_final_nodelist()
+
+        self.assertEqual(
+            nodelist,
+            LatexNodeList([
+                LatexSpecialsNode(
+                    parsing_state=ps,
+                    specials_chars='~',
+                    nodeargd=ParsedMacroArgs(),
+                    spec=ps.latex_context.get_specials_spec('~'),
+                    pos=0,
+                    pos_end=len(latextext),
+                )
+            ])
+        )
+        self.assertEqual(nc.pos_start(), 0)
+        self.assertEqual(nc.pos_end(), len(latextext))
+        self.assertTrue(nc.reached_end_of_stream())
+        self.assertFalse(nc.stop_token_condition_met())
+        self.assertFalse(nc.stop_nodelist_condition_met())
 
 
 

@@ -49,7 +49,6 @@ class _LatexCallableParserBase(LatexParserBase):
                  ):
 
         self.token_call = token_call
-
         self.spec_object = spec_object
         self.what = what
         self.node_class = node_class

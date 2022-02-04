@@ -151,6 +151,14 @@ class ParsedMacroArgs(object):
     # def get_arg_node_by_name(self, argname):
     #     ...........
 
+
+    def __eq__(self, other):
+        return (
+            self.arguments_spec_list == other.arguments_spec_list
+            and self.argnlist == other.argnlist
+            and self.pos == other.pos
+            and self.pos_end == other.pos_end
+        )
  
     def to_json_object(self):
         r"""

@@ -30,11 +30,20 @@
 from __future__ import print_function, unicode_literals
 
 
+class LatexContextDbBase(object):
 
-class CallableSpecBase(object):
-    r"""
-    .................
-    """
+    def get_macro_spec(self, macroname):
+        raise KeyError('No such macro: ‘{}’'.format(macroname))
 
-    def get_node_parser(self, token):
-        raise RuntimeError("Subclasses must reimplement get_node_parser()")
+    def get_environment_spec(self, environmentname):
+        raise KeyError('No such environment: ‘{}’'.format(environmentname))
+
+    def test_for_specials(self, s, pos, parsing_state):
+        r"""
+        ..............
+
+        If non-`None`, the returned object, in addition to being a
+        `CallableSpecBase` type object, must also expose the attribute
+        `specials_chars`.
+        """
+        return None

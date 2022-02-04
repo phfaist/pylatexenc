@@ -685,11 +685,13 @@ class LatexNodesCollector(object):
         """
 
         macroname = tok.arg
-        # mspec = tok.spec
-        # if mspec is None:
-        mspec = self.parsing_state.latex_context.get_macro_spec(macroname)
+
+        mspec = None
+        if self.parsing_state.latex_context is not None:
+            mspec = self.parsing_state.latex_context.get_macro_spec(macroname)
+
         if mspec is None:
-            exc = latex_walker.check_tolerant_parsing_ignore_error(
+            exc = self.latex_walker.check_tolerant_parsing_ignore_error(
                 LatexWalkerParseError(
                     msg=r"Encountered unknown macro ‘\{}’".format(macroname),
                     pos=tok.pos
@@ -790,25 +792,27 @@ class LatexNodesCollector(object):
         token_reader = self.token_reader
 
         if spec is not None:
-
             node_parser = spec.get_node_parser(tok)
+        else:
+            node_parser = None
 
+        if node_parser is not None:
             result_node, carryover_info = latex_walker.parse_content(
                 node_parser,
                 token_reader=token_reader,
                 parsing_state=self.make_child_parsing_state(self.parsing_state, node_class),
                 open_context=(what, tok),
             )
-
         else:
+            logger.warning("No parser found for callable token %r", tok)
             result_node = None
             carryover_info = None
 
         self.update_state_from_carryover_info(carryover_info)
 
         if result_node is None:
-            logger.warning("Parser %s produced no node (None) for token %r",
-                           node_parser.__class__.__name__, tok)
+            logger.warning("Parser %r produced no node (None) for token %r",
+                           node_parser, tok)
             return
 
         exc = self.push_to_nodelist(result_node)

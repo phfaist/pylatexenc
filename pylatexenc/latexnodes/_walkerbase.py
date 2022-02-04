@@ -49,3 +49,14 @@ class LatexWalkerBase(object):
         raise RuntimeError(
             "LatexWalkerBase subclasses must reimplement make_nodes_collector()")
 
+
+    def check_tolerant_parsing_ignore_error(self, exc):
+        r"""
+        You can inspect the exception object `exc` and decide whether or not to
+        attempt to recover from the exception (if you want to be tolerant to
+        parsing errors).
+
+        Return the exception object if it should be raised, or return None if
+        recovery should be attempted.
+        """
+        return exc
