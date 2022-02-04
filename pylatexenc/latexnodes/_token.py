@@ -147,7 +147,7 @@ class LatexToken(object):
         without any lookup in the latex context database.  This is not the case
         for specials.]
     """
-    def __init__(self, tok, arg, pos, pos_end, pre_space, post_space='', **kwargs):
+    def __init__(self, tok, arg, pos, pos_end=None, pre_space='', post_space='', **kwargs):
 
         len_ = kwargs.pop('len', None)
 

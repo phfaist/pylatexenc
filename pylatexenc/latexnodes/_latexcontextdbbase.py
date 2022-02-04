@@ -33,10 +33,19 @@ from __future__ import print_function, unicode_literals
 class LatexContextDbBase(object):
 
     def get_macro_spec(self, macroname):
-        raise KeyError('No such macro: ‘{}’'.format(macroname))
+        r"""
+        ..........
+
+        Should return `None` if no spec for a macro with the given name is
+        found.
+        """
+        return None
 
     def get_environment_spec(self, environmentname):
-        raise KeyError('No such environment: ‘{}’'.format(environmentname))
+        return None
+
+    def get_specials_spec(self, specials_chars):
+        return None
 
     def test_for_specials(self, s, pos, parsing_state):
         r"""

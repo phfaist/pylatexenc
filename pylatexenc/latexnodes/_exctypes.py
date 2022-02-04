@@ -29,6 +29,9 @@
 
 from __future__ import print_function, unicode_literals
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 # for Py3
 _basestring = str
@@ -129,25 +132,32 @@ class LatexWalkerParseError(LatexWalkerError):
                 return '@(%d,%d)'%(lineno, colno)
             return '@%d'%(lineno)
         if pos is not None:
-            return '@ char %d'%(pos)
+            return '@ char pos %d'%(pos)
         return '@ <unknown>'
 
     def __str__(self):
         return self._dispstr()
 
-    @classmethod
-    def new_from(Cls, other_exception, **kwargs):
-        r"""
-        Construct the exception from the properties in `other_exception`, which
-        should also be of :py:class:`LatexWalkerParseError` type or subclass,
-        with the additional attributes set via `kwargs`.  You can call this
-        static method on subclasses, too, to construct subclass instances.
-        """
-        d = dict([(k, v) for
-                  (k, v) in other_exception.__dict__.items()
-                  if not k.startswith('_')])
-        d.update(kwargs)
-        return Cls(**d)
+    #
+    # ### Problem: other_exception might have properties (e.g., from a
+    # ### token-walker-parse-error) that are incompatible with the Cls class
+    # ### (e.g. nodes-walker-parse-error)
+    #
+    # @classmethod
+    # def new_from(Cls, other_exception, **kwargs):
+    #     r"""
+    #     Construct the exception from the properties in `other_exception`, which
+    #     should also be of :py:class:`LatexWalkerParseError` type or subclass,
+    #     with the additional attributes set via `kwargs`.  You can call this
+    #     static method on subclasses, too, to construct subclass instances.
+    #     """
+    #     logger.debug("new_from(): Cls=%r, other_exception=%r, kwargs=%r",
+    #                  Cls, other_exception, kwargs)
+    #     d = dict([(k, v) for
+    #               (k, v) in other_exception.__dict__.items()
+    #               if not k.startswith('_')])
+    #     d.update(kwargs)
+    #     return Cls(**d)
 
 
 class LatexWalkerTokenParseError(LatexWalkerParseError):

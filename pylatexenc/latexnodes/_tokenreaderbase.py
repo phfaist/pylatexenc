@@ -44,12 +44,12 @@ class LatexTokenReaderBase(object):
     def make_token(self, **kwargs):
         return LatexToken(**kwargs)
 
-    def move_to_token(self, tok):
+    def move_to_token(self, tok, rewind_pre_space=True):
         raise RuntimeError(
             "LatexTokenReaderBase subclasses must reimplement rewind_to_token()"
         )
 
-    def move_past_token(self, tok):
+    def move_past_token(self, tok, fastforward_post_space=True):
         raise RuntimeError(
             "LatexTokenReaderBase subclasses must reimplement move_past_token()"
         )
@@ -123,10 +123,10 @@ class LatexTokenListTokenReader(LatexTokenReaderBase):
             raise IndexError("{}({!r}): no such token in list".format(methname, tok))
         return i
 
-    def move_to_token(self, tok):
+    def move_to_token(self, tok, rewind_pre_space=True):
         self._idx = self._find_tok_idx(tok, 'move_to_token')
 
-    def move_past_token(self, tok):
+    def move_past_token(self, tok, fastforward_post_space=True):
         self._idx = self._find_tok_idx(tok, 'move_past_token') + 1
 
     def cur_pos(self):

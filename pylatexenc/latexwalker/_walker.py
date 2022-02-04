@@ -389,7 +389,8 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         then the token reader is initialized to start parsing at the position
         index `pos` in the string.
         """
-        token_reader = latexnodes.LatexTokenReader(self.s)
+        token_reader = latexnodes.LatexTokenReader(self.s,
+                                                   tolerant_parsing=self.tolerant_parsing)
         if pos is not None:
             token_reader.move_to_pos_chars(pos)
         return token_reader
@@ -678,15 +679,18 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
         if stop_upon_closing_brace is not None:
             if tok.tok == 'brace_close' and tok.arg == stop_upon_closing_brace:
                 # stop condition met
+                logger.debug("Stop condition reached - closing brace - %r", tok)
                 return True
         if stop_upon_end_environment is not None:
             if tok.tok == 'end_environment' and tok.arg == stop_upon_end_environment:
                 # stop condition met
+                logger.debug("Stop condition reached - end environ - %r", tok)
                 return True
         if stop_upon_closing_mathmode is not None:
             if tok.tok in ('mathmode_inline', 'mathmode_display') \
                and tok.arg == stop_upon_closing_mathmode:
                 # stop condition met
+                logger.debug("Stop condition reached - closing math mode - %r", tok)
                 return True
         return False
 
@@ -695,7 +699,8 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
         if read_max_nodes is not None:
             if len(nodelist) >= read_max_nodes:
                 # stop condition met
-                #print(f"\t\tSTOP CONDITION TRUE")
+                logger.debug("Stop condition reached - nodes read (%d) >= read_max_nodes (%d)",
+                             len(nodelist), read_max_nodes)
                 return True
         return False
 
@@ -733,26 +738,44 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
     else:
         require_stop_condition_met = False
 
+    # tokens that cause a stop should be absorbed in pos_end (e.g. closing
+    # brace, closing math mode delimiter)
+    def handle_stop_condition_token(token, token_reader):
+        logger.debug("moving past token %r", token)
+        token_reader.move_past_token(token)
+
     parser = LatexGeneralNodesParser(
         stop_token_condition=stop_token_condition,
         stop_nodelist_condition=stop_nodelist_condition,
         require_stop_condition_met=require_stop_condition_met,
+        handle_stop_condition_token=handle_stop_condition_token,
     )
+
+    token_reader = self.make_token_reader(pos=pos)
+
+    logger.debug("token_reader.cur_pos() is initialized to %d", token_reader.cur_pos())
 
     nodes, info = self.parse_content(
         parser,
-        token_reader=self.make_token_reader(pos=pos),
+        token_reader=token_reader,
         parsing_state=parsing_state,
     )
+
+    logger.debug("token_reader.cur_pos() is now %d", token_reader.cur_pos())
+
+    # use cur_pos() to include any final stop condition token etc.
+    pos_end = token_reader.cur_pos()
 
     if info is not None:
         logger.warning("Call to get_latex_nodes() ignores carryover information "
                        "of parsing state")
 
     if nodes is not None:
-        p, l = nodes.pos, nodes.len
+        p = nodes.pos
+        l = pos_end - p
     else:
-        p, l = None, None
+        p = None
+        l = None
 
     return (nodes, p, l)
 

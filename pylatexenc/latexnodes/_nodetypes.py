@@ -219,7 +219,7 @@ class LatexNode(object):
         #redundant_fields = getattr(n, '_redundant_fields', n._fields)
         for fld in self._fields:
             if fld == 'spec':
-                continue # skip 'spec' field for now...
+                d[fld] == repr(self.spec) # TODO: maybe do something smarter here
             d[fld] = self.__dict__[fld]
         d.update(latexwalker.pos_to_lineno_colno(self.pos, as_dict=True))
         return d
@@ -545,8 +545,10 @@ class LatexSpecialsNode(LatexNode):
 
        Latex specials were introduced in `pylatexenc 2.0`.
     """
-    def __init__(self, specials_chars, spec, **kwargs):
-        nodeargd=kwargs.pop('nodeargd', None)
+    def __init__(self, specials_chars, **kwargs):
+
+        spec = kwargs.pop('spec', None)
+        nodeargd = kwargs.pop('nodeargd', None)
 
         super(LatexSpecialsNode, self).__init__(
             _fields = ('specials_chars','spec','nodeargd'),

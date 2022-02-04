@@ -47,9 +47,14 @@ class LatexTokenReader(LatexTokenReaderBase):
 
        The `LatexTokenReader` class was introduced in `pylatexenc` 3.
     """
-    def __init__(self, s):
+    def __init__(self, s, **kwargs):
         super(LatexTokenReader, self).__init__()
         self.s = s
+        
+        self.tolerant_parsing = kwargs.pop('tolerant_parsing', False)
+        
+        if kwargs:
+            raise ValueError("Invalid argument(s) to LatexTokenReader: %r", kwargs)
 
         self._pos = 0
 
@@ -73,7 +78,7 @@ class LatexTokenReader(LatexTokenReaderBase):
                 new_pos -= len(post_space)
 
         self._advance_to_pos(new_pos)
-            
+
 
     def peek_chars(self, num_chars, parsing_state):
         if self._pos >= len(self.s):
@@ -94,8 +99,6 @@ class LatexTokenReader(LatexTokenReaderBase):
         self._advance_to_pos(pos)
 
 
-
-
     def _advance_to_pos(self, pos):
         self._pos = pos
 
@@ -104,7 +107,6 @@ class LatexTokenReader(LatexTokenReaderBase):
             raise ValueError("Internal error, rewind_to_pos() requires a position that is "
                              "*before* the current position, got %d > %d" % (pos, self._pos))
         self._advance_to_pos(pos)
-
 
 
     def skip_space_chars(self, parsing_state):
@@ -132,33 +134,51 @@ class LatexTokenReader(LatexTokenReaderBase):
 
     def peek_token(self, parsing_state):
 
+        try:
+            
+            return self.impl_peek_token(parsing_state)
+
+        except LatexWalkerTokenParseError as exc:
+            if self.tolerant_parsing:
+                # return recovery token if we're in tolerant parsing mode
+                self.move_to_pos_chars(exc.recovery_token_at_pos)
+                return exc.recovery_token_placeholder
+            else:
+                # raise it up the chain
+                raise
+
+    def impl_peek_token(self, parsing_state):
+
         # shorthands (& to avoid repeated lookups)
         s = self.s
         len_s = len(s)
         pos = self._pos
 
-        pre_space, space_pos, space_pos_end = self.impl_peek_space_chars(s, pos, parsing_state)
+        pre_space, space_pos, space_pos_end = \
+            self.impl_peek_space_chars(s, pos, parsing_state)
 
         pos = space_pos_end
         if pos >= len_s:
             raise LatexWalkerEndOfStream(final_space=pre_space)
 
         # first, see if we have a new paragraph token
-        if pos < len_s - 2  \
-           and s[pos] == '\n' and s[pos+1] == '\n'  \
-           and parsing_state.enable_double_newline_paragraphs:
+        if (pos < len_s - 2
+            and s[pos] == '\n' and s[pos+1] == '\n'
+            and parsing_state.enable_double_newline_paragraphs):
             # two \n's indicate new paragraph.
             if parsing_state.latex_context is not None:
                 try:
                     sspec = parsing_state.latex_context.get_specials_spec(
                         specials_chars='\n\n',
-                        raise_if_not_found=True
                     )
-                    return self.make_token(tok='specials', arg=sspec,
-                                           pos=pos, pos_end=pos+2,
-                                           pre_space=pre_space)
                 except KeyError:
-                    pass
+                    sspec = None
+                if sspec is not None:
+                    return self.make_token(tok='specials',
+                                           arg=sspec,
+                                           pos=pos,
+                                           pos_end=pos+2,
+                                           pre_space=pre_space)
             return self.make_token(tok='char', arg='\n\n',
                                    pos=pos, pos_end=pos+2,
                                    pre_space=pre_space)
@@ -305,7 +325,7 @@ class LatexTokenReader(LatexTokenReaderBase):
                 s=s,
                 pos=pos+1,
                 msg="Expected macro name after ‘\\’ escape character",
-                recovery_token_placeholder=LatexToken(
+                recovery_token_placeholder=self.make_token(
                     tok='char',
                     arg='',
                     pos=pos,

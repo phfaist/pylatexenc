@@ -365,11 +365,13 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
         
         p = latextext.find(r'?`')
         self.assertEqual(lw.get_latex_expression(pos=p, parsing_state=parsing_state),
-                         (LatexSpecialsNode(parsing_state=parsing_state,
-                                            specials_chars='?`',
-                                            nodeargd=None,
-                                            pos=p, len=2),
-                          p, 2))
+                         (LatexSpecialsNode(
+                             parsing_state=parsing_state,
+                             specials_chars='?`',
+                             spec=parsing_state.latex_context.get_specials_spec(r'?`'),
+                             nodeargd=None,
+                             pos=p, len=2
+                         ), p, 2))
 
 
 
@@ -590,7 +592,8 @@ Also: {\itshape some italic text}.
 
         p = latextext.find('Also: {')+len('Also: {') # points inside right after open brace
         self.assertEqual(
-            lw.get_latex_nodes(pos=p, stop_upon_closing_brace='}', parsing_state=parsing_state),
+            lw.get_latex_nodes(pos=p, stop_upon_closing_brace='}',
+                               parsing_state=parsing_state),
             ([
                 LatexMacroNode(parsing_state=parsing_state,
                                macroname='itshape', macro_post_space=' ',
@@ -1709,6 +1712,11 @@ Use macros: """,
 
     def test_bug_issueno49(self):
         # see issue #49
+        #
+        # The issue was that when a char token with whitespace was flushed
+        # before looking at a new token, and when the read_max_nodes condition
+        # was hit just at that moment, the third tuple element 'len' of the
+        # return value of get_latex_nodes() was incorrect.
 
         doc_content = r"""\emph{A}
 \emph{B}"""

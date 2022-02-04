@@ -303,17 +303,20 @@ class LatexExpressionParser(LatexParserBase):
 
     def _check_if_requires_args(self, latex_walker, spec, got_token, what_we_got):
 
-        print("**** Checking if macro ‘\\", got_token.arg, "’ requires an arg ...", sep='')
+        if self.single_token_requiring_arg_is_error:
 
-        if self.single_token_requiring_arg_is_error \
-           and not spec.get_node_parser(got_token).contents_can_be_empty():
-            exc = latex_walker.check_tolerant_parsing_ignore_error(
-                LatexWalkerParseError(
-                    (r"Expected a LaTeX expression but got {} which "
-                     r"expects arguments; did you mean to provide an expression "
-                     r"in {{curly braces}} ?").format(what_we_got),
+            arg_contents_empty_ok = spec.get_node_parser(got_token).contents_can_be_empty()
+            logger.debug("Checking if %s/‘%s’ requires an arg: %r",
+                         got_token.tok, got_token.arg, arg_contents_empty_ok)
+
+            if not arg_contents_empty_ok:
+                exc = latex_walker.check_tolerant_parsing_ignore_error(
+                    LatexWalkerParseError(
+                        (r"Expected a LaTeX expression but got {} which "
+                         r"expects arguments; did you mean to provide an expression "
+                         r"in {{curly braces}} ?").format(what_we_got),
+                    )
                 )
-            )
-            if exc is not None:
-                raise exc
+                if exc is not None:
+                    raise exc
 

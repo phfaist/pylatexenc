@@ -87,26 +87,36 @@ class LatexGeneralNodesParser(LatexParserBase):
         )
 
         try:
+
             collector.process_tokens()
 
         except LatexWalkerParseError as e:
-            logger.critical("Got Parse error while reading general nodes: %s", e)
+
             # we got an error! Add some info to help with recovery in case
             # we're in tolerant parsing mode, and then raise the issue
             # further up.
-            raise LatexWalkerNodesParseError.new_from(
-                e,
+            #
+            
+            logger.debug("Got Parse error while reading general nodes: %r", e)
+
+            raise LatexWalkerNodesParseError(
+                msg=e.msg,
+                pos=e.pos,
                 recovery_nodes=collector.get_final_nodelist(),
                 recovery_carryover_info=collector.get_parser_carryover_info(),
             )
 
         # check that any required stop condition was met
 
+        stop_token_condition_met = collector.stop_token_condition_met()
+        stop_nodelist_condition_met = collector.stop_nodelist_condition_met()
+
         if ( self.require_stop_condition_met and
+             # if neither condition was met, that's an error -->
              ( ( self.stop_token_condition is not None
-                 and not collector.stop_token_condition_met() )
-               or ( self.stop_nodelist_condition is not None
-                    and not collector.stop_nodelist_condition_met() ) )
+                 and not stop_token_condition_met )
+               and ( self.stop_nodelist_condition is not None
+                    and not stop_nodelist_condition_met ) )
             ):
             #
             message = self.stop_condition_message
@@ -123,14 +133,15 @@ class LatexGeneralNodesParser(LatexParserBase):
             )
             raise exc
 
-        if self.stop_token_condition is not None \
+        if collector.stop_token_condition_met \
            and self.handle_stop_condition_token is not None:
+            stoptoken = collector.stop_token_condition_met_token()
             # do something with the token that caused the stop condition to fire
-            self.handle_stop_condition_token(
-                collector.stop_token_condition_met_token(),
-                token_reader
-            )
-            # and 
+            if stoptoken is not None:
+                self.handle_stop_condition_token(
+                    stoptoken,
+                    token_reader
+                )
 
         # put together the node list & carry on
 
@@ -382,6 +393,10 @@ class LatexMathParser(LatexParserBase):
             )
         )
 
+        # As for the delimited group parser, use cur_pos() so that it includes
+        # the closing math mode delimiter.
+        pos_end = token_reader.cur_pos()
+
         # note that nodelist can be None in case of a parse error
 
         if math_mode_type == 'mathmode_inline':
@@ -398,7 +413,7 @@ class LatexMathParser(LatexParserBase):
             parsing_state=parsing_state,
             delimiters=(math_mode_delimiter, closing_math_mode_delim),
             pos=firsttok.pos,
-            pos_end=nodelist.pos_end if nodelist is not None else None
+            pos_end=pos_end
         )
 
         return node, carryover_info

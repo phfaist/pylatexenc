@@ -29,6 +29,9 @@
 
 from __future__ import print_function, unicode_literals
 
+import logging
+logger = logging.getLogger(__name__)
+
 from ._exctypes import *
 from ._nodetypes import *
 
@@ -167,8 +170,7 @@ class LatexNodesCollector(object):
         Returns the first position of nodes in the collected node list (collected up
         to this point).
         """
-        p = next( ( n.pos for n in self._nodelist if n is not None ),
-                  None )
+        p = next( ( n.pos for n in self._nodelist if n is not None ), None )
         if p is not None:
             return p
         return self._pending_chars_pos
@@ -178,8 +180,7 @@ class LatexNodesCollector(object):
         Returns the position immediately after the last node in the collected node
         list (collected up to this point).
         """
-        lastnode = next( ( n for n in reversed(self._nodelist) if n is not None ),
-                         None )
+        lastnode = next( ( n for n in reversed(self._nodelist) if n is not None ), None )
         if lastnode is None:
             return None
         return lastnode.pos_end
@@ -481,7 +482,7 @@ class LatexNodesCollector(object):
                 # rewind to position immediately after the new token's
                 # pre_space, because we didn't parse that new token yet but we
                 # absorbed its pre_space
-                token_reader.move_to_token(tok)
+                token_reader.move_to_token(tok, rewind_pre_space=False)
                 stop_exc.pos_end = tok.pos
                 raise stop_exc
 
@@ -501,7 +502,7 @@ class LatexNodesCollector(object):
                 # rewind to position immediately after the new token's
                 # pre_space, because we didn't parse that new token yet but we
                 # absorbed its pre_space
-                token_reader.move_to_token(tok)
+                token_reader.move_to_token(tok, rewind_pre_space=False)
                 stop_exc.pos_end = tok.pos
                 raise stop_exc
 
@@ -764,7 +765,7 @@ class LatexNodesCollector(object):
         specials_spec = tok.arg
 
         node_class = LatexSpecialsNode
-        what = 'specials ‘{}’'.format(specials_spec.specials_chars)
+        what = 'specials ‘{}’'.format(getattr(specials_spec, 'specials_chars', '<unkonwn>'))
 
         return self.parse_invocable_token_type(tok, specials_spec, node_class, what)
 
@@ -796,23 +797,32 @@ class LatexNodesCollector(object):
         else:
             node_parser = None
 
-        if node_parser is not None:
+        if node_parser is None:
+
+            exc = latex_walker.check_tolerant_parsing_ignore_error(
+                LatexWalkerParseError(
+                    msg="No parser found for callable token {!r}".format(tok),
+                    pos=tok.pos
+                )
+            )
+            if exc is not None:
+                raise exc
+            result_node = None
+            carryover_info = None
+
+        else:
+
             result_node, carryover_info = latex_walker.parse_content(
                 node_parser,
                 token_reader=token_reader,
                 parsing_state=self.make_child_parsing_state(self.parsing_state, node_class),
                 open_context=(what, tok),
             )
-        else:
-            logger.warning("No parser found for callable token %r", tok)
-            result_node = None
-            carryover_info = None
 
         self.update_state_from_carryover_info(carryover_info)
 
         if result_node is None:
-            logger.warning("Parser %r produced no node (None) for token %r",
-                           node_parser, tok)
+            logger.warning("Parser %r produced no node (None) for token %r", node_parser, tok)
             return
 
         exc = self.push_to_nodelist(result_node)
