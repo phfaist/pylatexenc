@@ -68,25 +68,23 @@ class LatexToken(object):
 
     Additionally, this class stores information about the position of the token
     in the input stream in the field `pos`.  This `pos` is an integer which
-    corresponds to the index in the input string.  The field `len` stores the
-    length of the token in the input string.  This means that this token spans
-    in the input string from `pos` to `pos+len`.
+    corresponds to the index in the input string.  The field `pos_end` stores
+    the position immediately past the token in the input string.  This means
+    that the string length spanned by this token is `pos_end - pos` (without
+    leading whitespace).
 
     Leading whitespace before the token is not returned as a separate
     'char'-type token, but it is given in the `pre_space` field of the token
     which follows.  Pre-space may contain a newline, but not two consecutive
     newlines.  The `pos` position is the position of the first character of the
-    token itself, which immediately follows any leading whitespace.  Similarly,
-    the `len` attribute does not include the leading whitespace's length,
-    meaning that `pos+len` points to the character immediately after the present
-    token.
+    token itself, which immediately follows any leading whitespace.
 
     The `post_space` is only used for 'macro' and 'comment' tokens, and it
     stores any spaces encountered after a macro, or the newline with any
     following spaces that terminates a LaTeX comment.  When we encounter two
     consecutive newlines these are not included in `post_space`.  Contrary to
-    `pre_space`, the length of the `post_space` is included in the attribute
-    `len`.
+    `pre_space`, the `post_space` is accounted for in the attribute `pos_end`,
+    i.e., `pos_end` points immediately after any trailing whitespace.
 
     The `tok` field may be one of:
 
@@ -149,18 +147,24 @@ class LatexToken(object):
         without any lookup in the latex context database.  This is not the case
         for specials.]
     """
-    def __init__(self, tok, arg, pos, len, pre_space, post_space=''):
+    def __init__(self, tok, arg, pos, pos_end, pre_space, post_space=''):
         self.tok = tok
         self.arg = arg
         self.pos = pos
-        self.len = len
+        self.pos_end = pos_end
         self.pre_space = pre_space
         self.post_space = post_space
-        self._fields = ['tok', 'arg', 'pos', 'len', 'pre_space']
+
+        self._fields = ['tok', 'arg', 'pos', 'pos_end', 'pre_space']
         if self.tok in ('macro', 'comment'):
             self._fields.append('post_space')
         super(LatexToken, self).__init__()
 
+    @property
+    def len(self):
+        if self.pos is None or self.pos_end is None:
+            return None
+        return self.pos_end - self.pos
 
     def __unicode__(self):
         return _unicode_from_str(self.__str__())

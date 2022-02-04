@@ -131,16 +131,16 @@ class LatexArgumentsParser(LatexParserBase):
 
         if pos_start is not None and last_arg_node is not None:
             pos = pos_start
-            len_ = last_arg_node.pos + last_arg_node.len - pos_start
+            pos_end = last_arg_node.pos_end
         else:
             pos = pos_start_default
-            len_ = 0
+            pos_end = pos
 
         parsed = ParsedMacroArgs(
             arguments_spec_list=self.arguments_spec_list,
             argnlist=argnlist,
             pos=pos,
-            len=len_
+            pos_end=pos_end
         )
 
         logger.debug("Parsed arguments = %r", parsed)
@@ -172,17 +172,11 @@ class _LegacyPyltxenc2MacroArgsParserWrapper(LatexParserBase):
             (nodeargd, apos, alen) = argsresult
             adic = {}
 
-        pos_end = apos + alen
-        token_reader.move_to_pos_chars(pos_end)
+        apos_end = apos + alen
+        token_reader.move_to_pos_chars(apos_end)
 
         nodeargd.pos = apos
-        nodeargd.len = alen
-
-        # if nodeargd is not None and nodeargd.legacy_nodeoptarg_nodeargs:
-        #     legnodeoptarg = nodeargd.legacy_nodeoptarg_nodeargs[0]
-        #     legnodeargs = nodeargd.legacy_nodeoptarg_nodeargs[1]
-        # else:
-        #     legnodeoptarg, legnodeargs = None, []
+        nodeargd.pos_end = apos_end
 
         new_parsing_state = adic.get('new_parsing_state', None)
         inner_parsing_state = adic.get('inner_parsing_state', None)

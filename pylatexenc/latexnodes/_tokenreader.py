@@ -64,9 +64,9 @@ class LatexTokenReader(LatexTokenReaderBase):
         self._advance_to_pos(new_pos)
 
     def move_past_token(self, tok, fastforward_post_space=True):
-        new_pos = tok.pos + tok.len
+        new_pos = tok.pos_end
 
-        # note tok.len includes post_space, contrary to pre_space (??)
+        # note tok.pos_end already points past post_space (in contrast to pre_space)
         if not fastforward_post_space:
             post_space = getattr(tok, 'post_space', None)
             if post_space:
@@ -119,10 +119,10 @@ class LatexTokenReader(LatexTokenReaderBase):
         Returns the string of whitespace characters that was skipped.
         """
 
-        (space, space_pos, space_len) = \
+        (space, space_pos, space_pos_end) = \
             self.impl_peek_space_chars(self.s, self._pos, self.parsing_state, self)
 
-        self._advance_to_pos(space_pos + space_len)
+        self._advance_to_pos(space_pos_end)
 
         return (space, space_pos, space_len)
 
@@ -137,9 +137,9 @@ class LatexTokenReader(LatexTokenReaderBase):
         len_s = len(s)
         pos = self._pos
 
-        pre_space, space_pos, space_len = self.impl_peek_space_chars(s, pos, parsing_state)
+        pre_space, space_pos, space_pos_end = self.impl_peek_space_chars(s, pos, parsing_state)
 
-        pos = space_pos + space_len
+        pos = space_pos_end
         if pos >= len_s:
             raise LatexWalkerEndOfStream(final_space=pre_space)
 
@@ -155,12 +155,12 @@ class LatexTokenReader(LatexTokenReaderBase):
                         raise_if_not_found=True
                     )
                     return self.make_token(tok='specials', arg=sspec,
-                                           pos=pos, len=2,
+                                           pos=pos, pos_end=pos+2,
                                            pre_space=pre_space)
                 except KeyError:
                     pass
             return self.make_token(tok='char', arg='\n\n',
-                                   pos=pos, len=2,
+                                   pos=pos, pos_end=pos+2,
                                    pre_space=pre_space)
 
         c = s[pos]
@@ -197,10 +197,10 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         if parsing_state.enable_groups:
             if c in parsing_state._latex_group_delimchars_by_open:
-                return self.make_token(tok='brace_open', arg=c, pos=pos, len=1,
+                return self.make_token(tok='brace_open', arg=c, pos=pos, pos_end=pos+1,
                                        pre_space=pre_space)
             if c in parsing_state._latex_group_delimchars_close:
-                return self.make_token(tok='brace_close', arg=c, pos=pos, len=1,
+                return self.make_token(tok='brace_close', arg=c, pos=pos, pos_end=pos+1,
                                        pre_space=pre_space)
 
         if parsing_state.latex_context is not None and parsing_state.enable_specials:
@@ -209,12 +209,12 @@ class LatexTokenReader(LatexTokenReaderBase):
             )
             if sspec is not None:
                 return self.make_token(tok='specials', arg=sspec,
-                                       pos=pos, len=len(sspec.specials_chars),
+                                       pos=pos, pos_end=pos+len(sspec.specials_chars),
                                        pre_space=pre_space)
 
         # otherwise, the token is a normal 'char' type.
 
-        return self.make_token(tok='char', arg=c, pos=pos, len=1, pre_space=pre_space)
+        return self.make_token(tok='char', arg=c, pos=pos, pos_end=pos+1, pre_space=pre_space)
 
 
 
@@ -225,10 +225,10 @@ class LatexTokenReader(LatexTokenReaderBase):
         in order to skip whitespace.  Does not update the internal position
         pointer.
 
-        Return a tuple `(space_string, pos, len)` where `space_string` is the
-        string of whitespace characters that would be skipped at the current
-        position pointer (reported in `pos`).  `len` is the length of the space
-        string.
+        Return a tuple `(space_string, pos, pos_end)` where `space_string` is
+        the string of whitespace characters that would be skipped at the current
+        position pointer (reported in `pos`).  The integer `pos_end` is the
+        position immediately after the space characters.
 
         No exceptions is raised if we encounter the end of the stream, we simply
         stop looking for more spaces.
@@ -256,7 +256,7 @@ class LatexTokenReader(LatexTokenReaderBase):
                 break
 
         # encountered end of space
-        return (space, pos, p2-pos)
+        return (space, pos, p2)
 
 
     def impl_maybe_read_math_mode_delimiter(self, s, pos, parsing_state, pre_space):
@@ -264,12 +264,15 @@ class LatexTokenReader(LatexTokenReaderBase):
         if parsing_state.in_math_mode:
             # looking for closing math mode
             expecting_close = parsing_state._math_expecting_close_delim_info
-            expecting_close_delim = expecting_close['close_delim']
-            expecting_close_tok = expecting_close['tok']
-            if s.startswith(expecting_close_delim, pos):
-                return self.make_token(tok=expecting_close_tok, arg=expecting_close_delim,
-                                       pos=pos, len=len(expecting_close_delim),
-                                       pre_space=pre_space)
+            # expecting_close can be None even in math mode, e.g., inside a math
+            # environment \begin{align} ... \end{align}
+            if expecting_close is not None:
+                expecting_close_delim = expecting_close['close_delim']
+                expecting_close_tok = expecting_close['tok']
+                if s.startswith(expecting_close_delim, pos):
+                    return self.make_token(tok=expecting_close_tok, arg=expecting_close_delim,
+                                           pos=pos, pos_end=pos+len(expecting_close_delim),
+                                           pre_space=pre_space)
 
         # see if we have a math mode delimiter; either an opening delimiter
         # while not in math mode or an unexpected open/close delimiter.  It's
@@ -284,7 +287,7 @@ class LatexTokenReader(LatexTokenReaderBase):
         for delim, tok_type in parsing_state._math_all_delims_by_len:
             if s.startswith(delim, pos):
                 return self.make_token(tok=tok_type, arg=delim,
-                                       pos=pos, len=len(delim),
+                                       pos=pos, pos_end=pos+len(delim),
                                        pre_space=pre_space)
 
         return None
@@ -306,7 +309,7 @@ class LatexTokenReader(LatexTokenReaderBase):
                     tok='char',
                     arg='',
                     pos=pos,
-                    len=0,
+                    pos_end=pos,
                     pre_space=pre_space
                 ),
                 recovery_token_at_pos=len(s)
@@ -317,33 +320,38 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         # following chars part of macro only if all are alphabetical
         isalphamacro = (c in parsing_state.macro_alpha_chars)
-        i = 2
+        posi = pos + 2
         if isalphamacro:
-            while pos + i < len(s) and (s[pos+i] in parsing_state.macro_alpha_chars):
-                macro += s[pos+i]
-                i += 1
+            while posi < len(s) and (s[posi] in parsing_state.macro_alpha_chars):
+                macro += s[posi]
+                posi += 1
 
         # get the following whitespace, and store it in the macro's post_space
         post_space = ''
         if isalphamacro:
-            post_space, post_space_pos, post_space_len = \
-                self.impl_peek_space_chars(s, pos+i, parsing_state)
-            i =  post_space_pos + post_space_len - pos
+            post_space, post_space_pos, post_space_pos_end = \
+                self.impl_peek_space_chars(s, posi, parsing_state)
+            posi = post_space_pos_end
 
         return self.make_token(tok='macro', arg=macro,
-                               pos=pos, len=i,
+                               pos=pos, pos_end=posi,
                                pre_space=pre_space, post_space=post_space)
 
 
     def impl_read_environment(self, s, pos, parsing_state, pre_space):
 
-        if s.startswith('\\begin', pos):
+        if s[pos] != parsing_state.macro_escape_char:
+            raise ValueError(
+                "Internal error, expected ‘\\’ in read_environment()"
+            )
+
+        if s.startswith('begin', pos+1):
             beginend = 'begin'
-        elif s.startswith('\\end', pos):
+        elif s.startswith('end', pos+1):
             beginend = 'end'
         else:
             raise ValueError(
-                "Internal error, expected ‘\\begin’ or ‘\\end’ in read_environment"
+                "Internal error, expected ‘\\begin’ or ‘\\end’ in read_environment()"
             )
 
         pos_envname = pos + 1 + len(beginend)
@@ -352,7 +360,7 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         envmatch = self._rx_environment_name.match(s, pos_envname)
         if envmatch is None:
-            tokarg = '\\'+beginend
+            tokarg = parsing_state.macro_escape_char + beginend
             raise LatexWalkerTokenParseError(
                 msg=r"Bad ‘\{}’ call: expected {{environmentname}}".format(beginend),
                 pos=pos,
@@ -360,7 +368,7 @@ class LatexTokenReader(LatexTokenReaderBase):
                     tok='char',
                     arg=tokarg,
                     pos=pos,
-                    len=len(tokarg),
+                    pos_end=pos+len(tokarg),
                     pre_space=pre_space
                 ),
                 recovery_token_at_pos=pos+len(tokarg),
@@ -370,7 +378,7 @@ class LatexTokenReader(LatexTokenReaderBase):
             tok=(beginend+'_environment'),
             arg=envmatch.group('environmentname'),
             pos=pos,
-            len=envmatch.end()-pos,
+            pos_end=envmatch.end(),
             pre_space=pre_space,
         )
         
@@ -383,22 +391,22 @@ class LatexTokenReader(LatexTokenReaderBase):
         sppos = s.find('\n', pos)
         if sppos == -1:
             # reached end of string
-            comment_content_offset = len(s) - pos
-            comment_with_whitespace_len = comment_content_len
+            comment_pos_end = len(s)
+            comment_with_whitespace_pos_end = len(s)
             post_space = ''
         else:
             # skip whitespace, starting from the first \n that finishes the
             # comment
-            post_space, post_space_pos, post_space_len = \
+            post_space, post_space_pos, post_space_pos_end = \
                 self.impl_peek_space_chars(s, sppos, parsing_state)
-            comment_content_offset = sppos - pos
-            comment_with_whitespace_len = post_space_pos + post_space_len - pos
+            comment_pos_end = sppos
+            comment_with_whitespace_pos_end = post_space_pos_end
 
         return self.make_token(
             tok='comment',
-            arg=s[pos+1:pos+comment_content_offset],
+            arg=s[pos+1:comment_pos_end],
             pos=pos,
-            len=comment_with_whitespace_len,
+            pos_end=comment_with_whitespace_pos_end,
             pre_space=pre_space,
             post_space=post_space
         )

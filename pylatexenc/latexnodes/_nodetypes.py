@@ -92,11 +92,21 @@ class LatexNode(object):
        string can be recovered as `parsing_state.s`, see
        :py:attr:`ParsingState.s`.
 
+    .. py:attribute:: pos_end
+
+       The position in the parsed string that is immediately after the present
+       node.  The parsed string can be recovered as `parsing_state.s`, see
+       :py:attr:`ParsingState.s`.
+
     .. py:attribute:: len
 
-       How many characters in the parsed string this node represents, starting
-       at position `pos`.  The parsed string can be recovered as
-       `parsing_state.s`, see :py:attr:`ParsingState.s`.
+       (Read-only attribute.)  How many characters in the parsed string this
+       node represents, starting at position `pos`.  The parsed string can be
+       recovered as `parsing_state.s`, see :py:attr:`ParsingState.s`.
+
+       Starting from `pylatexenc 3.0`, the `pos_end` attribute is primarily set
+       and used instead of the `len` field.  The `len` field becomes a computed
+       read-only attribute that computes `pos_end - pos`.
 
     .. versionadded:: 2.0
        
@@ -110,11 +120,12 @@ class LatexNode(object):
        .. versionadded:: 3.0
 
           The attribute latex_walker was added in `pylatexenc 3`.
-
     """
     def __init__(self, _fields, _redundant_fields=None,
-                 parsing_state=None, pos=None, len=None, latex_walker=None,
+                 parsing_state=None, pos=None, pos_end=None, latex_walker=None,
                  **kwargs):
+
+        len_ = kwargs.pop('len', None)
 
         # Important: subclasses must specify a list of fields they set in the
         # `_fields` argument.  They should only specify base (non-redundant)
@@ -125,13 +136,17 @@ class LatexNode(object):
         self.parsing_state = parsing_state
         self.latex_walker = latex_walker
         self.pos = pos
-        self.len = len
+        self.pos_end = pos_end
 
-        self._fields = tuple(['pos', 'len'] + list(_fields))
+        if pos_end is None and len_ is not None:
+            self.pos_end = self.pos + len_
+
+        self._fields = tuple(['pos', 'pos_end'] + list(_fields))
         if _redundant_fields is not None:
-            self._redundant_fields = tuple(list(self._fields) + list(_redundant_fields))
+            self._redundant_fields = tuple(list(self._fields) + ['len']
+                                           + list(_redundant_fields))
         else:
-            self._redundant_fields = self._fields
+            self._redundant_fields = tuple(list(self._fields) + ['len'])
 
     def nodeType(self):
         """
@@ -150,16 +165,22 @@ class LatexNode(object):
         """
         return isinstance(self, t)
 
+    @property
+    def len(self):
+        if self.pos is None or self.pos_end is None:
+            return None
+        return self.pos_end - self.pos
+
     def latex_verbatim(self):
         r"""
         Return the chunk of LaTeX code that this node represents.
 
-        This is a shorthand for ``node.parsing_state.s[node.pos:node.pos+node.len]``.
+        This is a shorthand for ``node.parsing_state.s[node.pos:node.pos_end]``.
         """
         if self.parsing_state is None:
             raise TypeError("Can't use latex_verbatim() on node because we don't "
                             "have any parsing_state set")
-        return self.parsing_state.s[self.pos : self.pos+self.len]
+        return self.parsing_state.s[self.pos : self.pos_end]
 
     def __eq__(self, other):
         return other is not None  and  \
@@ -167,7 +188,7 @@ class LatexNode(object):
             other.parsing_state is self.parsing_state and \
             other.latex_walker is self.latex_walker and \
             other.pos == self.pos and \
-            other.len == self.len and \
+            other.pos_end == self.pos_end and \
             all(
                 ( getattr(self, f) == getattr(other, f)  for f in self._fields )
             )
@@ -603,10 +624,18 @@ class LatexNodeList(object):
        that the `nodelist` represents a single continuous sequence of nodes in
        the latex string.
 
+    .. py:attribute:: pos_end
+
+       The position in the parsed string immediately after this node list ends,
+       assuming that the `nodelist` represents a single continuous sequence of
+       nodes in the latex string.
+
+
     .. py:attribute:: len
 
-       The total length spanned by this node list, assuming that the `nodelist`
-       represents a single continuous sequence of nodes in the latex string.
+       (Read-only attribute.)  The total length spanned by this node list,
+       assuming that the `nodelist` represents a single continuous sequence of
+       nodes in the latex string.
     """
     def __init__(self, nodelist, **kwargs):
 
@@ -616,7 +645,7 @@ class LatexNodeList(object):
             self.parsing_state = obj.parsing_state
             self.latex_walker = obj.latex_walker
             self.pos = obj.pos
-            self.len = obj.len
+            self.pos_end = obj.pos_end
             return
 
         self.nodelist = nodelist
@@ -624,11 +653,21 @@ class LatexNodeList(object):
         self.parsing_state = kwargs.pop('parsing_state', None)
         self.latex_walker = kwargs.pop('latex_walker', None)
         self.pos = kwargs.pop('pos', None)
-        self.len = kwargs.pop('len', None)
+        self.pos_end = kwargs.pop('pos_end', None)
 
-        self.pos, self.len = \
-            _update_poslen_from_nodelist(self.pos, self.len, self.nodelist)
+        if kwargs:
+            raise ValueError("Unexpected keyword arguments to LatexNodeList: "
+                             + repr(kwargs))
 
+        self.pos, self.pos_end = \
+            _update_posposend_from_nodelist(self.pos, self.pos_end, self.nodelist)
+
+
+    @property
+    def len(self):
+        if self.pos is None or self.pos_end is None:
+            return None
+        return self.pos_end - self.pos
 
     def __getitem__(self, index):
         if index < 0:
@@ -684,10 +723,11 @@ class LatexNodeList(object):
             make_node = lambda cls, **kwargs: cls(**kwargs)
 
         def chars_to_node(chars, orig_node, rel_pos):
+            pos = orig_node.pos + rel_pos
             return make_node(LatexCharsNode,
                              parsing_state=self.parsing_state,
-                             pos=orig_node.pos + rel_pos,
-                             len=len(chars),
+                             pos=pos,
+                             pos_end=pos + len(chars),
                              chars=chars)
 
         pending_nodes = []
@@ -724,7 +764,7 @@ class LatexNodeList(object):
         return (
             self.nodelist == other.nodelist
             and self.pos == other.pos
-            and self.len == other.len
+            and self.pos_end == other.pos_end
         )
 
 
@@ -733,10 +773,10 @@ class LatexNodeList(object):
 
     def __repr__(self):
         import pprint
-        return 'LatexNodeList({nodelist}, pos={pos!r}, len={len!r})'.format(
+        return 'LatexNodeList({nodelist}, pos={pos!r}, pos_end={pos_end!r})'.format(
             nodelist=pprint.pformat(self.nodelist),
             pos=self.pos,
-            len=self.len
+            pos_end=self.pos_end
         )
 
 
@@ -745,17 +785,14 @@ class LatexNodeList(object):
 # ------------------------------------------------------------------------------
 
 
-def _update_poslen_from_nodelist(pos, len_, nodelist):
+def _update_posposend_from_nodelist(pos, pos_end, nodelist):
 
     if pos is None:
         pos = next( (n.pos for n in nodelist if n is not None),
                     None )
 
-    if len_ is None:
-        end_pos = next( (n.pos+n.len for n in reversed(nodelist)
-                         if n is not None and n.pos is not None and n.len is not None),
+    if pos_end is None:
+        pos_end = next( (n.pos_end for n in reversed(nodelist) if n is not None),
                         None )
-        if end_pos is not None and pos is not None:
-            len_ = end_pos - pos
 
-    return pos, len_
+    return pos, pos_end

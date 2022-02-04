@@ -21,9 +21,10 @@ class TestTokenReaderTokenList(unittest.TestCase):
     def test_reads_tokens(self):
         
         tlist = [
-            LatexToken(tok='char', arg='a', pos=0, len=1, pre_space=''),
-            LatexToken(tok='char', arg='b', pos=1, len=2, pre_space=''),
-            LatexToken(tok='macro', arg='relax', pos=2, len=2+len(r'\relax'), pre_space=''),
+            LatexToken(tok='char', arg='a', pos=0, pos_end=1, pre_space=''),
+            LatexToken(tok='char', arg='b', pos=1, pos_end=1+2, pre_space=''),
+            LatexToken(tok='macro', arg='relax', pos=2, pos_end=2+2+len(r'\relax'),
+                       pre_space='', post_space='\t '),
         ]
 
         tr = LatexTokenListTokenReader(tlist)

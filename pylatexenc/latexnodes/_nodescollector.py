@@ -182,9 +182,7 @@ class LatexNodesCollector(object):
                          None )
         if lastnode is None:
             return None
-        if lastnode.pos is None or lastnode.len is None:
-            return None
-        return lastnode.pos + lastnode.len
+        return lastnode.pos_end
 
 
     def stop_token_condition_met(self):
@@ -288,7 +286,7 @@ class LatexNodesCollector(object):
             parsing_state=self.parsing_state,
             chars=chars,
             pos=charspos,
-            len=len(chars),
+            pos_end=charspos+len(chars),
         )
         return self.push_to_nodelist(strnode)
 
@@ -449,12 +447,13 @@ class LatexNodesCollector(object):
             final_space = getattr(e, 'final_space', None)
             if final_space:
                 # process the final space as an extra char token
+                final_space_pos = token_reader.cur_pos()+len(final_space)
                 tok = token_reader.make_token(
                     tok='char',
                     arg='',
                     pre_space=final_space,
-                    pos=token_reader.cur_pos()+len(final_space),
-                    len=0,
+                    pos=final_space_pos,
+                    pos_end=final_space_pos,
                 )
                 token_reader.move_past_token(tok)
             else:
@@ -496,7 +495,7 @@ class LatexNodesCollector(object):
                                                   parsing_state=self.parsing_state,
                                                   chars=tok.pre_space,
                                                   pos=tok.pos-len(tok.pre_space),
-                                                  len=len(tok.pre_space))
+                                                  pos_end=tok.pos)
             stop_exc = self.push_to_nodelist(spacestrnode)
             if stop_exc is not None:
                 # rewind to position immediately after the new token's
@@ -517,7 +516,7 @@ class LatexNodesCollector(object):
             # leave the token in the input stream if it generated a stopping
             # condition.
             token_reader.move_to_token(tok)
-            stop_exc.pos_end = tok.pos + tok.len
+            stop_exc.pos_end = tok.pos_end
             raise stop_exc
 
         # check for tokens that are illegal in this context
@@ -623,12 +622,12 @@ class LatexNodesCollector(object):
                 comment=tok.arg,
                 comment_post_space=tok.post_space,
                 pos=tok.pos,
-                len=tok.len
+                pos_end=tok.pos_end
         )
 
         stop_exc = self.push_to_nodelist( commentnode )
         if stop_exc is not None:
-            stop_exc.pos_end = tok.pos + tok.len
+            stop_exc.pos_end = tok.pos_end
             raise stop_exc
 
 
@@ -666,7 +665,7 @@ class LatexNodesCollector(object):
 
         stop_exc = self.push_to_nodelist(groupnode)
         if stop_exc is not None:
-            stop_exc.pos_end = groupnode.pos + groupnode.len
+            stop_exc.pos_end = groupnode.pos_end
             raise stop_exc
 
 
@@ -808,14 +807,13 @@ class LatexNodesCollector(object):
         self.update_state_from_carryover_info(carryover_info)
 
         if result_node is None:
+            logger.warning("Parser %s produced no node (None) for token %r",
+                           node_parser.__class__.__name__, tok)
             return
 
         exc = self.push_to_nodelist(result_node)
         if exc is not None:
-            if result_node.pos is not None and result_node.len is not None:
-                exc.pos_end = result_node.pos + result_node.len
-            else:
-                exc.pos_end = None
+            exc.pos_end = result_node.pos_end
             raise exc
 
 
@@ -857,10 +855,11 @@ class LatexNodesCollector(object):
             logger.warning("carryover_info is ignored after parsing a LaTeX math: %r",
                            carryover_info)
 
+        if mathnode is None:
+            logger.warning("Math parser produced no node (None) for token %r", tok)
+            return
+
         stop_exc = self.push_to_nodelist(mathnode)
         if stop_exc is not None:
-            if mathnode is not None and mathnode.pos is not None and mathnode.len is not None:
-                stop_exc.pos_end = mathnode.pos + mathnode.len
-            else:
-                stop_exc.pos_end = None
+            stop_exc.pos_end = mathnode.pos_end
             raise stop_exc

@@ -34,7 +34,7 @@ from .._exctypes import (
     LatexWalkerParseError, LatexWalkerTokenParseError, LatexWalkerEndOfStream
 )
 from .._nodetypes import *
-from .._nodetypes import _update_poslen_from_nodelist
+from .._nodetypes import _update_posposend_from_nodelist
 
 from ._base import LatexParserBase
 from ._generalnodes import LatexDelimitedGroupParser
@@ -73,8 +73,6 @@ class LatexExpressionParser(LatexParserBase):
         expr_parsing_state = parsing_state.sub_context(enable_environments=False)
         
         exprnodes = []
-        # p = None
-        # l = None
         while True:
             try:
                 moreexprnodes = \
@@ -85,33 +83,23 @@ class LatexExpressionParser(LatexParserBase):
                                              **kwargs)
             except _TryAgainWithSkippedCommentNodes as e:
                 exprnodes += e.skipped_comment_nodes
-                # if p is None:
-                #     p = e.pos
                 continue
 
             exprnodes += moreexprnodes
-
-            # if len(moreexprnodes) > 0:
-            #     lastnode = moreexprnodes[len(moreexprnodes)-1]
-            #     pp, ll = lastnode.pos, lastnode.len
-            #     if p is None and pp is not None:
-            #         p = pp
-            #     if p is not None and pp is not None and ll is not None:
-            #         l = pp + ll - p
 
             if len(exprnodes) == 1:
                 thenodelist = exprnodes[0]
             else:
                 # determine (pos,len) automatically please...
-                pos, len_ = _update_poslen_from_nodelist(pos=None, len=None,
-                                                         nodelist=exprnodes)
+                pos, pos_end = _update_pos_posend_from_nodelist(pos=None, pos_end=None,
+                                                                nodelist=exprnodes)
 
                 thenodelist = latex_walker.make_node(
                     LatexGroupNode,
                     nodelist=exprnodes,
                     delimiters=('',''),
                     pos=pos,
-                    len=len_,
+                    pos_end=pos_end,
                 )
 
             return thenodelist, None
@@ -173,7 +161,7 @@ class LatexExpressionParser(LatexParserBase):
                         nodeoptarg=None,
                         nodeargs=None,
                         pos=tok.pos,
-                        len=tok.len
+                        pos_end=tok.pos_end
                     )
                 ]
 
@@ -193,7 +181,7 @@ class LatexExpressionParser(LatexParserBase):
                     nodeoptarg=None,
                     nodeargs=None,
                     pos=tok.pos,
-                    len=tok.len
+                    pos_end=tok.pos_end
                 )
             ]
 
@@ -212,7 +200,7 @@ class LatexExpressionParser(LatexParserBase):
                     spec=specialsspec,
                     nodeargd=None,
                     pos=tok.pos,
-                    len=tok.len
+                    pos_end=tok.pos_end
                 )
             ]
 
@@ -225,7 +213,7 @@ class LatexExpressionParser(LatexParserBase):
                                            comment=tok.arg,
                                            comment_post_space=tok.post_space,
                                            pos=tok.pos,
-                                           len=tok.len)
+                                           pos_end=tok.pos_end)
                 ]
             else:
                 cnodes = []
@@ -261,7 +249,7 @@ class LatexExpressionParser(LatexParserBase):
                                                       parsing_state=parsing_state,
                                                       chars='',
                                                       pos=tok.pos,
-                                                      len=0),
+                                                      pos_end=tok.pos), # not pos_end
                 # don't consume the closing brace if we're trying to recover
                 # from the parse error
                 recovery_at_token=tok
@@ -273,7 +261,7 @@ class LatexExpressionParser(LatexParserBase):
                                             parsing_state=parsing_state,
                                             chars=tok.arg,
                                             pos=tok.pos,
-                                            len=tok.len) ]
+                                            pos_end=tok.pos_end) ]
 
         if tok.tok in ('mathmode_inline', 'mathmode_display'):
             
@@ -291,13 +279,13 @@ class LatexExpressionParser(LatexParserBase):
                                                         nodeargs=None,
                                                         macro_post_space=tok.post_space,
                                                         pos=tok.pos,
-                                                        len=tok.len)
+                                                        pos_end=tok.pos_end)
             else:
                 recovery_nodes = latex_walker.make_node(LatexCharsNode,
                                                         parsing_state=parsing_state,
                                                         chars=tok.arg,
                                                         pos=tok.pos,
-                                                        len=tok.len)
+                                                        pos_end=tok.pos_end)
                 
             raise LatexWalkerNodesParseError(
                 "Unexpected math mode delimiter ‘{}’, was expecting a LaTeX expression"

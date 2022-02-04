@@ -100,7 +100,7 @@ class LatexVerbatimBaseParser(LatexParserBase):
             LatexCharsNode,
             chars=verbatim_string,
             pos=orig_pos,
-            len=pos_end - orig_pos,
+            pos_end=pos_end,
             parsing_state=parsing_state,
         )
 
@@ -187,7 +187,7 @@ class LatexVerbatimDelimParser(LatexVerbatimBaseParser):
             delimiters=self.delimiter_chars,
             nodelist=LatexNodeList(verbatim_node),
             pos=orig_pos,
-            len=verbatim_node.pos + verbatim_node.len + 1 - orig_pos,
+            pos_end=verbatim_node.pos_end + 1, # +1 for closing delimiter
             parsing_state=parsing_state
         )
 

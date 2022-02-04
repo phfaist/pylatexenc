@@ -94,12 +94,12 @@ class LatexWalker(latexnodes.LatexWalkerBase):
     string `s`.  These methods typically accept a `pos` parameter, which must be
     an integer, which defines the position in the string `s` to start parsing.
 
-    These methods, unless otherwise documented, return a tuple `(node, pos,
+    .......... These methods, unless otherwise documented, return a tuple `(node, pos,
     len)`, where node is a :py:class:`LatexNode` describing the parsed content,
     `pos` is the position at which the LaTeX element of iterest was encountered,
     and `len` is the length of the string that is considered to be part of the
     `node`.  That is, the position in the string that is immediately after the
-    node is `pos+len`.
+    node is `pos+len`. .......... changed in pylatexenc 3.......
 
     The following obsolete flag is accepted by the constructor for backwards
     compatibility with `pylatexenc 1.x`:
@@ -484,13 +484,16 @@ class LatexWalker(latexnodes.LatexWalkerBase):
     def make_node(self, node_class, **kwargs):
         r"""
         Create and return a node of type `node_class` which holds a representation
-        of the latex code at position `pos` and of length `len` in the parsed
+        of the latex code between positions `pos` and `pos_end` in the parsed
         string.
 
         The node class should be a :py:class:`LatexNode` subclass.  Keyword
         arguments are supplied directly to the constructor of the node class.
 
-        Mandatory keyword-only arguments are 'pos', 'len', and 'parsing_state'.
+        Mandatory keyword-only arguments are 'pos', 'pos_end', and 'parsing_state'.
+
+        For compatibility with `pylatexenc 2.0`, you can also specify `len=`
+        instead of `pos_end=`.
 
         All nodes produced by :py:meth:`get_latex_nodes()` and friends use this
         method to create node classes.
@@ -498,23 +501,29 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         .. versionadded:: 2.0
         
            This method was introduced in `pylatexenc 2.0`.
+
+        .. versionchanged:: 3.0
+        
+           The mandatory `len=` keyword argument was replaced by the mandatory
+           keyword argument `pos_end=`.  For backwards compatibility, you can
+           still specify `len=` instead of `pos_end=`.
         """
         # mandatory keyword-only arguments:
-        pos, len, parsing_state = \
-            kwargs.pop('pos'), kwargs.pop('len'), kwargs.pop('parsing_state')
+        pos, pos_end, parsing_state = \
+            kwargs.pop('pos'), kwargs.pop('pos_end', None), kwargs.pop('parsing_state')
 
-        node = node_class(pos=pos, len=len, parsing_state=parsing_state,
+        if pos_end is None and pos is not None and 'len' in kwargs:
+            _util.pylatexenc_deprecated_3(
+                "make_node(..., len=..., ...); use ‘pos_end=’ instead of ‘len=’")
+            len_ = kwargs['len']
+            pos_end = pos + len_
+
+        node = node_class(pos=pos, pos_end=pos_end, parsing_state=parsing_state,
                           latex_walker=self, **kwargs)
         if self.debug_nodes:
             logger.debug("New node: %r", node)
         return node
 
-    # def _mknodeposlen(self, nclass, parsing_state, pos, len, **kwargs):
-    #     return (
-    #         self.make_node(nclass, parsing_state=parsing_state, pos=pos, len=len, **kwargs),
-    #         pos,
-    #         len
-    #     )
 
     def pos_to_lineno_colno(self, pos, as_dict=False):
         r"""

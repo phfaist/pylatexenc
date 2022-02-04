@@ -103,7 +103,7 @@ class ParsedMacroArgs(object):
                  #
                  #argspec='',
                  **kwargs):
-        pos, len_ = kwargs.pop('pos', None), kwargs.pop('len', None)
+        pos, pos_end = kwargs.pop('pos', None), kwargs.pop('pos_end', None)
         argspec = kwargs.pop('argspec', None)
         super(ParsedMacroArgs, self).__init__(**kwargs)
 
@@ -114,7 +114,7 @@ class ParsedMacroArgs(object):
 
         self.arguments_spec_list = arguments_spec_list if arguments_spec_list else []
 
-        self.pos, self.len = pos, len_
+        self.pos, self.pos_end = pos, pos_end
 
 
     @property
@@ -126,6 +126,11 @@ class ParsedMacroArgs(object):
             ])
         return self._argspec
 
+    @property
+    def len(self):
+        if self.pos is None or self.pos_end is None:
+            return None
+        return self.pos_end - self.pos
 
     @property
     def legacy_nodeoptarg_nodeargs(self):

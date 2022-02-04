@@ -138,15 +138,13 @@ class _LatexCallableParserBase(LatexParserBase):
             )
 
 
-        len_ = None
+        pos_end = None
 
-        if nodeargd is not None and nodeargd.pos is not None and nodeargd.len is not None:
-            len_ = nodeargd.pos + nodeargd.len - pos_start
+        if nodeargd is not None:
+            pos_end = nodeargd.pos_end
 
-        if body_nodelist is not None and body_nodelist.pos is not None \
-           and body_nodelist.len is not None:
-            #
-            len_ = body_nodelist.pos + body_nodelist.len - pos_start
+        if body_nodelist is not None:
+            pos_end = body_nodelist.pos_end
 
         node_kwargs = dict(self.node_extra_kwargs)
         if self.parse_body:
@@ -159,7 +157,7 @@ class _LatexCallableParserBase(LatexParserBase):
             nodeargd=nodeargd,
             # pos/len:
             pos=pos_start,
-            len=len_,
+            pos_end=pos_end,
             # per-node-type stuff:
             **node_kwargs
         )

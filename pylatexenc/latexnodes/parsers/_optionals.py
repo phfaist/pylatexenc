@@ -100,7 +100,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
                 read_s += tok.arg
                 if read_s == self.chars:
                     match_found = True
-                    pos_end = tok.pos+tok.len
+                    pos_end = tok.pos_end
                     break
                 if not self.chars.startswith(read_s):
                     # mismatched at this point, will not match
@@ -124,7 +124,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
                     parsing_state=parsing_state,
                     chars=self.chars,
                     pos=orig_pos_tok.pos,
-                    len=pos_end-orig_pos_tok.pos,
+                    pos_end=pos_end,
                 )
             ]
 

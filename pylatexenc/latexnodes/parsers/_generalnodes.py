@@ -90,6 +90,7 @@ class LatexGeneralNodesParser(LatexParserBase):
             collector.process_tokens()
 
         except LatexWalkerParseError as e:
+            logger.critical("Got Parse error while reading general nodes: %s", e)
             # we got an error! Add some info to help with recovery in case
             # we're in tolerant parsing mode, and then raise the issue
             # further up.
@@ -243,7 +244,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
             return False
 
         def handle_stop_condition_token(token):
-            assert token.tok == 'brace_close'            
+            assert token.tok == 'brace_close'
             token_reader.move_past_token(token)
 
 
@@ -272,7 +273,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
                                    delimiters=(brace_type, closing_brace),
                                    pos = firsttok.pos,
                                    # use cur_pos() to include the closing brace
-                                   len = token_reader.cur_pos() - firsttok.pos)
+                                   pos_end = token_reader.cur_pos())
 
         return groupnode, None
 
@@ -363,10 +364,14 @@ class LatexMathParser(LatexParserBase):
                 return True
             return False
 
+        def handle_stop_condition_token(token):
+            assert token.tok.startswith('mathmode_')
+            token_reader.move_past_token(token)
+
         nodelist, carryover_info = latex_walker.parse_content(
             LatexGeneralNodesParser(
                 stop_token_condition=stop_token_condition,
-                #child_parsing_state=parsing_state, # ??? why ???
+                handle_stop_condition_token=handle_stop_condition_token,
             ),
             token_reader=token_reader,
             parsing_state=math_parsing_state,
@@ -376,6 +381,8 @@ class LatexMathParser(LatexParserBase):
             )
         )
 
+        # note that nodelist can be None in case of a parse error
+
         if math_mode_type == 'mathmode_inline':
             displaytype = 'inline'
         elif math_mode_type == 'mathmode_display':
@@ -383,18 +390,14 @@ class LatexMathParser(LatexParserBase):
         else:
             displaytype = '<unknown>'
 
-        len_ = None
-        if nodelist is not None and nodelist.pos is not None and nodelist.len is not None:
-            len_ = nodelist.pos + nodelist.len - firsttok.pos
-
         node = latex_walker.make_node(
             LatexMathNode,
             displaytype=displaytype,
             nodelist=nodelist,
             parsing_state=parsing_state,
             delimiters=(math_mode_delimiter, closing_math_mode_delim),
-            pos = firsttok.pos,
-            len = len_
+            pos=firsttok.pos,
+            pos_end=nodelist.pos_end if nodelist is not None else None
         )
 
         return node, carryover_info
