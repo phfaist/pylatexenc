@@ -143,7 +143,7 @@ class LatexStandardArgumentParser(LatexParserBase):
 
         elif arg_spec in ('s', '*'):
 
-            return LatexOptionalCharsMarker(
+            return LatexOptionalCharsMarkerParser(
                 chars='*',
                 do_not_skip_space=self.do_not_skip_space,
             )
@@ -155,7 +155,7 @@ class LatexStandardArgumentParser(LatexParserBase):
                                  "be of the form ‘t<char>’")
             the_char = arg_spec[1]
 
-            return LatexOptionalCharsMarker(
+            return LatexOptionalCharsMarkerParser(
                 chars=the_char,
                 do_not_skip_space=self.do_not_skip_space,
             )

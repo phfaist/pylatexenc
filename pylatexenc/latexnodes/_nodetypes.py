@@ -219,8 +219,10 @@ class LatexNode(object):
         #redundant_fields = getattr(n, '_redundant_fields', n._fields)
         for fld in self._fields:
             if fld == 'spec':
-                d[fld] == repr(self.spec) # TODO: maybe do something smarter here
-            d[fld] = self.__dict__[fld]
+                # TODO: maybe do something smarter here in the future
+                d[fld] = repr(self.spec)
+            else:
+                d[fld] = self.__dict__[fld]
         d.update(latexwalker.pos_to_lineno_colno(self.pos, as_dict=True))
         return d
 

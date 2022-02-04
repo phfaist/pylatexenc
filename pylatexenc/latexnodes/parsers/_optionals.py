@@ -67,7 +67,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
                  include_chars_node_before_following_arg=True,
                  return_none_instead_of_empty=False,
                  **kwargs):
-        super(LatexOptionalCharMarker, self).__init__(**kwargs)
+        super(LatexOptionalCharsMarkerParser, self).__init__(**kwargs)
 
         self.chars = " ".join(chars.strip().split())
         self.following_arg_parser = following_arg_parser
