@@ -13,7 +13,10 @@ from ._parsingstate import (
     ParsingState
 )
 
-from ._parsedargsbase import (
+from ._carryoverinfo import (
+    CarryoverInformation
+)
+from ._parsedargs import (
     ParsedMacroArgs
 )
 
@@ -36,3 +39,4 @@ from ._walkerbase import (
 from ._latexcontextdbbase import (
     LatexContextDbBase
 )
+

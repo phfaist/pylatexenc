@@ -29,10 +29,12 @@
 
 from __future__ import print_function, unicode_literals
 
+import logging
+logger = logging.getLogger(__name__)
 
 from ..latexnodes import CallableSpecBase
 
-from ._argumentsparser import LatexArgumentsParser
+from ._argumentsparser import LatexArgumentsParser, LatexNoArgumentsParser
 from ._macrocallparser import (
     LatexMacroCallParser, LatexEnvironmentCallParser, LatexSpecialsCallParser
 )
@@ -49,22 +51,33 @@ if sys.version_info.major == 2:
 ## End Py2 support code
 
 
+_legacy_pyltxenc2_do = lambda *args: None
 
 
 class _SpecBase(CallableSpecBase):
     def __init__(self, arguments_spec_list=None, make_carryover_info=None, **kwargs):
+
         self.arguments_spec_list = arguments_spec_list
-        self.arguments_parser = LatexArgumentsParser(arguments_spec_list)
+
+        use_legacy_args_parser = _legacy_pyltxenc2_do(
+            'SpecBase_init_from_args_parser', self, arguments_spec_list, kwargs
+        )
+
+        if not use_legacy_args_parser:
+            if self.arguments_spec_list:
+                self.arguments_parser = LatexArgumentsParser(arguments_spec_list)
+            else:
+                self.arguments_parser = LatexNoArgumentsParser()
 
         self._make_carryover_info_fn = make_carryover_info
-
-        _li = getattr(self, '_legacy_pyltxenc2_init_from_args_parser', None)
-        if _li is not None:
-            _li(kwargs)
 
         if kwargs:
             raise ValueError("Unknown argument(s): {!r}".format(kwargs))
     
+    @property
+    def args_parser(self):
+        return self.arguments_parser
+
     def make_carryover_info(self, parsed_node):
         if self._make_carryover_info_fn is not None:
             return self._make_carryover_info_fn(parsed_node)
@@ -220,12 +233,26 @@ class SpecialsSpec(_SpecBase):
 
 from ._argumentsparser import _LegacyPyltxenc2MacroArgsParserWrapper
 
+_legacy_pyltxenc2_do = \
+    lambda what, *args: globals()['_legacy_pyltxenc2_'+what](*args)
 
-def _legacy_pyltxenc2_init_from_args_parser(spec, kwargs):
+
+def _legacy_pyltxenc2_SpecBase_init_from_args_parser(spec, arguments_spec_list, kwargs):
+
+    def _init_with_legacy_wrapper(args_parser):
+        logger.debug("Initializing spec with legacy args parser %r", args_parser)
+        spec.arguments_spec_list = list(args_parser.argspec)
+        spec.arguments_parser = _LegacyPyltxenc2MacroArgsParserWrapper(args_parser, spec)
+        return True
 
     args_parser = kwargs.pop('args_parser', None)
     if args_parser is None:
-        return
+
+        from ._pyltxenc2_argparsers import MacroStandardArgsParser
+        if isinstance(arguments_spec_list, MacroStandardArgsParser):
+            return _init_with_legacy_wrapper(arguments_spec_list)
+
+        return False
 
     # legacy support
     if spec.arguments_spec_list is not None:
@@ -235,15 +262,13 @@ def _legacy_pyltxenc2_init_from_args_parser(spec, kwargs):
         spec.arguments_spec_list = args_parser
         spec.arguments_parser = LatexArgumentsParser(args_parser)
     else:
-        spec.arguments_spec_list = list(args_parser.argspec)
-        spec.arguments_parser = _LegacyPyltxenc2MacroArgsParserWrapper(args_parser, spec)
+        return _init_with_legacy_wrapper(args_parser)
+
+    return False
 
 
-setattr(_SpecBase, '_legacy_pyltxenc2_init_from_args_parser',
-        _legacy_pyltxenc2_init_from_args_parser)
 
-
-def _legacy_pyltxenc2_run_parse_args(spec, w, pos, parsing_state=None):
+def _legacy_pyltxenc2_SpecBase_parse_args(spec, w, pos, parsing_state=None):
     r"""
     .. deprecated:: 3.0
 
@@ -262,7 +287,7 @@ def _legacy_pyltxenc2_run_parse_args(spec, w, pos, parsing_state=None):
 
     return parsed, parsed.pos, parsed.len
 
+_SpecBase.parse_args = _legacy_pyltxenc2_SpecBase_parse_args
 
-setattr(_SpecBase, 'parse_args', _legacy_pyltxenc2_run_parse_args)
 
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE

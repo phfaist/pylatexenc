@@ -23,6 +23,11 @@ from pylatexenc.latexwalker import (
 )
 
 
+from ._helpers_tests import HelperProvideAssertEqualsForLegacyTests
+
+
+
+
 class MyAsserts(object):
     def assertPMAEqual(self, a, b):
 
@@ -48,7 +53,9 @@ class MyAsserts(object):
                 raise
 
 
-class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
+
+class TestMacroStandardArgsParser(HelperProvideAssertEqualsForLegacyTests,
+                                  unittest.TestCase, MyAsserts):
 
     def __init__(self, *args, **kwargs):
         super(TestMacroStandardArgsParser, self).__init__(*args, **kwargs)
@@ -438,7 +445,8 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db.lookup_chain_maps['environments']['eccc'].args_parser.argspec, '*{')
 
         self.assertEqual(db.lookup_chain_maps['specials']['`'].args_parser.argspec, '{')
-        self.assertIsNone(db.lookup_chain_maps['specials']['``'].args_parser)
+
+        self.assertEqual(db.lookup_chain_maps['specials']['``'].args_parser.argspec, '')
 
     def test_freeze_add_category(self):
 

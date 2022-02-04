@@ -9,6 +9,7 @@ from pylatexenc.latexnodes import (
     LatexMacroNode,
     LatexEnvironmentNode,
     LatexSpecialsNode,
+    LatexNode,
     LatexNodeList,
     LatexNodesCollector,
     LatexContextDbBase,
@@ -212,3 +213,123 @@ class DummyLatexContextDb(LatexContextDbBase):
             if s.startswith(spc, pos):
                 return self.specs['specials'][spc]
         return None
+
+
+
+
+
+
+
+class HelperProvideAssertEqualsForLegacyTests(object):
+    
+    def assertEqual(self, a, b, msg=''):
+
+        from pylatexenc import macrospec
+
+        if isinstance(a, LatexNodeList) or isinstance(b, LatexNodeList):
+            return self._assert_lists_equal(a, b)
+        if isinstance(a, LatexNode) or isinstance(b, LatexNode):
+            return self._assert_nodes_equal(a, b)
+        if isinstance(a, macrospec.ParsedMacroArgs) \
+           or isinstance(b, macrospec.ParsedMacroArgs):
+            return self._assert_parsedmacroargs_equal(a, b)
+        if isinstance(a, macrospec.LatexArgumentSpec) \
+           or isinstance(b, macrospec.LatexArgumentSpec):
+            return self._assert_latexargumentspec_equal(a, b)
+        if isinstance(a, list) or isinstance(b, list):
+            return self._assert_lists_equal(a, b)
+        if isinstance(a, tuple) or isinstance(b, tuple):
+            return self._assert_lists_equal(a, b)
+
+        super(HelperProvideAssertEqualsForLegacyTests, self).assertEqual(a, b, msg=msg)
+
+    def _assert_parsedmacroargs_equal(self, a, b, msg=''):
+        for fld in ('arguments_spec_list', 'argnlist'):
+            x, y = getattr(a, fld), getattr(b, fld)
+            try:
+                self.assertEqual(x, y)
+            except AssertionError:
+                print("------------------------------------------------------------")
+                print("In comparing the arguments_spec_list fields of")
+                print("    a = \n", repr(a), sep='')
+                print("    b = \n", repr(b), sep='')
+                print("    a.",fld," = \n", repr(x), sep='')
+                print("    b.",fld," = \n", repr(y), sep='')
+                print("------------------------------------------------------------")
+                raise
+
+    def _assert_latexargumentspec_equal(self, a, b, msg=None):
+
+        from pylatexenc import macrospec
+
+        if isinstance(a, macrospec.LatexArgumentSpec):
+            a = a.parser
+        if isinstance(b, macrospec.LatexArgumentSpec):
+            b = b.parser
+
+        return self.assertEqual(a, b, msg=msg)
+
+    def _assert_nodes_equal(self, a, b, msg=''):
+        if not (a is not None and b is not None
+                and a.isNodeType(b.__class__) and b.isNodeType(a.__class__)):
+            print("------------------------------------------------------------")
+            print("    a = \n", repr(a), sep='')
+            print("    b = \n", repr(b), sep='')
+            print("------------------------------------------------------------")
+            self.fail(msg + "incompatible node types, {at} and {bt}".format(
+                at=a.__class__.__name__ if a is not None else None,
+                bt=b.__class__.__name__ if b is not None else None
+            ))
+        
+        for fld in a._redundant_fields:
+            if fld in ('spec',):
+                # we just skip some fields, at least for now.
+                continue
+
+            x = getattr(a, fld, None)
+            y = getattr(b, fld, None)
+            try:
+                self.assertEqual(x, y)
+            except AssertionError as e:
+                print("------------------------------------------------------------")
+                print("In comparing field", fld, "of node type", a.__class__.__name__)
+                print("    a = \n", repr(a), sep='')
+                print("    b = \n", repr(b), sep='')
+                print("    a.",fld," = \n", repr(x), sep='')
+                print("    b.",fld," = \n", repr(y), sep='')
+                print("    msg =", msg)
+                print("------------------------------------------------------------")
+                raise
+
+    def _assert_lists_equal(self, a, b, msg=''):
+        if isinstance(a, LatexNodeList):
+            a = a.nodelist
+        if isinstance(b, LatexNodeList):
+            b = b.nodelist
+
+        if len(a) != len(b):
+            msg += 'Lists have differing lengths {alen} and {blen}'.format(
+                alen=len(a),
+                blen=len(b),
+            )
+            print("------------------------------------------------------------")
+            print("    a = \n", pprint.pformat(a), sep='')
+            print("    b = \n", pprint.pformat(b), sep='')
+            print("------------------------------------------------------------")
+            self.fail(msg)
+
+        for j, (x, y) in enumerate(zip(a, b)):
+            try:
+                self.assertEqual(x, y)
+            except AssertionError as e:
+                print("------------------------------------------------------------")
+                print("In comparing element {j} of nodelists".format(j=j))
+                print("    a = \n", repr(a), sep='')
+                print("    b = \n", repr(b), sep='')
+                print("    a[",j,"] = \n", repr(x), sep='')
+                print("    b[",j,"] = \n", repr(y), sep='')
+                print("    msg =", msg)
+                print("------------------------------------------------------------")
+                raise
+
+        return 

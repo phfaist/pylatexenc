@@ -2,7 +2,7 @@
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2019 Philippe Faist
+# Copyright (c) 2022 Philippe Faist
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -45,6 +45,24 @@ if sys.version_info.major == 2:
 
 
 
+#
+# --- TODO: think of a more friendly way of accessing arguments ...
+#
+# class ParsedArgument(LatexNodeList):
+#     r"""
+#    
+#     """
+#
+#     ....
+#
+#     def get_main_node() -- skip comments, whitespace chars, etc.
+#
+#     def get_expression_contents() -- the node, or the group's contents, if it's a group
+#
+#
+#
+
+
 class ParsedMacroArgs(object):
     r"""
     Parsed representation of macro arguments.
@@ -83,9 +101,15 @@ class ParsedMacroArgs(object):
 
        The list of latexwalker nodes that was provided to the constructor
 
+    .. py:attribute:: arguments_spec_list
+
+       Argument types, etc. ................
+
     .. py:attribute:: argspec
 
        Argument type specification provided to the constructor
+
+       ......... deprecated, read-only
 
     .. py:attribute:: legacy_nodeoptarg_nodeargs
 
@@ -96,12 +120,16 @@ class ParsedMacroArgs(object):
        This is either `(<1st optional arg node>, <list of remaining args>)` if
        the first argument is optional and all remaining args are mandatory; or
        it is `(None, <list of args>)` for any other argument structure.
+
+       .. deprecated:: 2.0
+
+          The `legacy_nodeoptarg_nodeargs` might be removed in a future version
+          of pylatexenc.
     """
     def __init__(self,
                  argnlist=None,
                  arguments_spec_list=None,
                  #
-                 #argspec='',
                  **kwargs):
         pos, pos_end = kwargs.pop('pos', None), kwargs.pop('pos_end', None)
         argspec = kwargs.pop('argspec', None)
@@ -119,11 +147,8 @@ class ParsedMacroArgs(object):
 
     @property
     def argspec(self):
-        if not hasattr(self, '_argspec'):
-            self._argspec = "".join([
-                arg if isinstance(arg, _basestring) else getattr(arg, 'spec', '?')
-                for arg in self.arguments_spec_list
-            ])
+        if getattr(self, '_argspec', None) is None:
+            self._argspec = _argspec_from_arguments_spec_list(self.arguments_spec_list)
         return self._argspec
 
     @property
@@ -146,7 +171,11 @@ class ParsedMacroArgs(object):
             return (None, argnlist)
 
 
-    # --TODO--
+    # --TODO-- -- some decent API to get arguments!! including skipping over
+    #             pre-comments, etc.
+    #
+    # def get_arg(......)
+    #     ...........
     #
     # def get_arg_node_by_name(self, argname):
     #     ...........
@@ -175,7 +204,6 @@ class ParsedMacroArgs(object):
 
         return dict(
             arguments_spec_list=self.arguments_spec_list,
-            #argspec=self.argspec,
             argnlist=self.argnlist,
         )
 
@@ -183,4 +211,26 @@ class ParsedMacroArgs(object):
         return "{}(arguments_spec_list={!r}, argnlist={!r})".format(
             self.__class__.__name__, self.arguments_spec_list, self.argnlist
         )
+
+
+
+
+
+def _argspec_from_arguments_spec_list(arguments_spec_list):
+
+    def _argspec_char_for_arg(arg):
+        if isinstance(arg, _basestring):
+            return arg
+        parser = getattr(arg, 'parser', None)
+        if parser is not None:
+            if isinstance(parser, _basestring):
+                return parser
+            return getattr(parser, 'arg_spec', '?')
+        return '?'
+
+    return "".join([
+        _argspec_char_for_arg(arg)
+        for arg in arguments_spec_list
+    ])
+
 

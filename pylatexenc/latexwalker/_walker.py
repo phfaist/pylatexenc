@@ -817,17 +817,23 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
         "use LatexWalker.parse_content(LatexExpressionParser(), ...) instead."
     )
 
+    logger.debug("get_latex_expression(): “%s...”",
+                 self.s[pos:pos+50])
+
     parser = LatexExpressionParser(
         include_skipped_comments=False,
         single_token_requiring_arg_is_error=not self.tolerant_parsing,
     )
 
+    token_reader = self.make_token_reader(pos=pos)
+
     try:
         nodes, info = self.parse_content(
             parser,
-            token_reader=self.make_token_reader(pos=pos),
+            token_reader=token_reader,
             parsing_state=parsing_state,
         )
+        logger.debug("nodes = %r, info = %r", nodes, info)
     except LatexWalkerParseError as e:
         # only raise error if we have strict_braces; otherwise leave token in
         # the input stream and let the next call report an error.  (I don't know
@@ -835,6 +841,9 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
         # pylatexenc 2 worked.)
         if getattr(e, '_error_was_unexpected_closing_brace_in_expression', False) \
            and not strict_braces:
+            logger.warning(
+                "Ignoring parse error (strict_braces=False in "
+                "LatexWalker.get_latex_expression)", exc_info=True)
             nodes, info = None, None
         else:
             raise
@@ -843,7 +852,11 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
         logger.warning("Call to get_latex_expression() ignores carryover information "
                        "of parsing state")
 
-    if nodes is None and self.tolerant_parsing or strict_braces is False:
+    if nodes is None and (self.tolerant_parsing or strict_braces is False):
+        logger.warning(
+            "get_latex_expression(): No expression found! creating a dummy chars node."
+        )
+
         nodes = self.make_node(
             LatexCharsNode,
             parsing_state=parsing_state,

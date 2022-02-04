@@ -29,6 +29,9 @@
 
 from __future__ import print_function, unicode_literals
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 from .._exctypes import (
     LatexWalkerParseError,
@@ -90,20 +93,31 @@ class LatexExpressionParser(LatexParserBase):
 
             exprnodes += moreexprnodes
 
-            if len(exprnodes) == 1:
+            if not exprnodes:
+                # happens when end of stream is reached
+                thenodelist = LatexNodeList(
+                    [],
+                    pos=token_reader.cur_pos(),
+                    pos_end=token_reader.cur_pos()
+                )
+            elif len(exprnodes) == 1:
                 thenodelist = exprnodes[0]
             else:
                 # determine (pos,len) automatically please...
-                pos, pos_end = _update_pos_posend_from_nodelist(pos=None, pos_end=None,
-                                                                nodelist=exprnodes)
+                expr_nodelist = LatexNodeList(exprnodes)
+                # pos, pos_end = _update_posposend_from_nodelist(pos=None, pos_end=None,
+                #                                                nodelist=exprnodes)
 
                 thenodelist = latex_walker.make_node(
                     LatexGroupNode,
-                    nodelist=exprnodes,
+                    parsing_state=parsing_state,
+                    nodelist=expr_nodelist,
                     delimiters=('',''),
-                    pos=pos,
-                    pos_end=pos_end,
+                    pos=expr_nodelist.pos,
+                    pos_end=expr_nodelist.pos_end,
                 )
+
+            logger.debug("thenodelist = %r", thenodelist)
 
             return thenodelist, None
 
@@ -233,6 +247,8 @@ class LatexExpressionParser(LatexParserBase):
                 token_reader=token_reader,
                 parsing_state=parsing_state,
             )
+
+            logger.debug("Got groupnode = %r", groupnode)
 
             if carryover_info is not None:
                 logger.warning("Ignoring carryover_info after parsing an expression group!")

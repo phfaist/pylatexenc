@@ -1,8 +1,12 @@
 from __future__ import print_function, unicode_literals
 
 
-from ...latexnodes._nodetypes import *
-from ...latexnodes import ParsedMacroArgs
+from ...latexnodes import (
+    LatexNode,
+    LatexCharsNode,
+    LatexWalkerError,
+    ParsedMacroArgs,
+)
 
 
 # for Py3
@@ -194,7 +198,7 @@ class MacroStandardArgsParser(object):
                 if tok.tok == 'char' and tok.arg.startswith('*'):
                     # has star
                     argnlist.append(
-                        w.make_node(latexwalker_types.LatexCharsNode,
+                        w.make_node(LatexCharsNode,
                                     parsing_state=get_inner_parsing_state(j),
                                     chars='*', pos=tok.pos, len=1)
                     )
@@ -203,7 +207,7 @@ class MacroStandardArgsParser(object):
                     argnlist.append(None)
 
             else:
-                raise latexwalker_types.LatexWalkerError(
+                raise LatexWalkerError(
                     "Unknown macro argument kind for macro: {!r}".format(argt)
                 )
 

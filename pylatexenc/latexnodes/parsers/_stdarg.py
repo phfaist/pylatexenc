@@ -73,6 +73,11 @@ def get_standard_argument_parser(arg_spec, **kwargs):
     return _std_arg_parser_instances[k]
 
 
+#
+# TODO: ALL ARGUMENT TYPES might have a preceding comment!! Not only an
+# expression.
+#
+
 class LatexStandardArgumentParser(LatexParserBase):
     r"""
     Node parser that can parse standard macro argument types, such as a
@@ -93,7 +98,7 @@ class LatexStandardArgumentParser(LatexParserBase):
                  ):
         super(LatexStandardArgumentParser, self).__init__(**kwargs)
 
-        self.arg_spec_s = arg_spec
+        self.arg_spec = arg_spec
 
         self.include_skipped_comments = include_skipped_comments
         self.expression_single_token_requiring_arg_is_error = \
@@ -195,14 +200,15 @@ class LatexStandardArgumentParser(LatexParserBase):
         if self._arg_parsing_state_kwargs is None:
             self._arg_parsing_state_kwargs = self.get_arg_parsing_state_kwargs()
         if self._arg_parser is None:
-            self._arg_parser = self.get_arg_parser_instance(self.arg_spec_s)
+            self._arg_parser = self.get_arg_parser_instance(self.arg_spec)
 
         arg_parsing_state = parsing_state
 
         if self._arg_parsing_state_kwargs:
             arg_parsing_state = parsing_state.sub_context(
-                **self.arg_parsing_state_kwargs
+                **self._arg_parsing_state_kwargs
             )
+            logger.debug("Argument parsing state: %r", arg_parsing_state)
 
         arg_parser = self._arg_parser
 
