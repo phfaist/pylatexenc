@@ -31,8 +31,33 @@ from __future__ import print_function, unicode_literals
 
 
 from ._base import LatexParserBase
-from ._generalnodes import LatexGeneralNodesParser, LatexSingleNodeParser
+from ._generalnodes import (
+    LatexGeneralNodesParser, LatexDelimitedGroupParser, LatexSingleNodeParser
+)
 
+
+
+
+# ------------------------------------------------------------------------------
+
+
+
+class LatexOptionalSquareBracketsParser(LatexDelimitedGroupParser):
+    r"""
+    A shorthand for reading an optional argument placed in square brackets.
+    """
+    def __init__(self, brace_pair=('[',']'), optional=True, **kwargs):
+        super(LatexOptionalGroupParser, self).__init__(
+            require_brace_type=brace_pair[0],
+            include_brace_chars=brace_pair,
+            optional=optional,
+            **kwargs
+        )
+
+
+
+
+# ------------------------------------------------------------------------------
 
 class LatexOptionalCharsMarkerParser(LatexParserBase):
     

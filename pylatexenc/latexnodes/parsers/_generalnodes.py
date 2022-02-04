@@ -281,7 +281,6 @@ class LatexDelimitedGroupParser(LatexParserBase):
 
 
 
-
 # ------------------------------------------------------------------------------
 
 

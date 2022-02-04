@@ -169,9 +169,16 @@ class ParsingState(object):
         self.latex_inline_math_delimiters = [ ('$', '$'), (r'\(', r'\)'), ]
         self.latex_display_math_delimiters = [ ('$$', '$$'), (r'\[', r'\]'), ]
         self.enable_double_newline_paragraphs = True
+        self.enable_macros = True
         self.enable_environments = True
         self.enable_comments = True
+        self.enable_groups = True
+        self.enable_specials = True
+        self.enable_math = True
         self.macro_alpha_chars = _StrictAsciiAlphaChars()
+
+        self.macro_escape_char = '\\' # character that introduces a macro
+        self.comment_char = '%' # character that starts a comment
 
         # set internally by the other fields by _set_fields()
         self._latex_group_delimchars_by_open = {}
@@ -190,9 +197,14 @@ class ParsingState(object):
             'latex_group_delimiters',
             'latex_inline_math_delimiters', 'latex_display_math_delimiters',
             'enable_double_newline_paragraphs',
+            'enable_macros',
             'enable_environments',
             'enable_comments',
+            'enable_specials',
+            'enable_math',
             'macro_alpha_chars',
+            'macro_escape_char',
+            'comment_char',
         )
 
         do_postprocess = kwargs.pop('_do_postprocess', True)

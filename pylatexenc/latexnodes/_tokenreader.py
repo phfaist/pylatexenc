@@ -166,41 +166,44 @@ class LatexTokenReader(LatexTokenReaderBase):
         c = s[pos]
 
         # check if we have a math mode delimiter
-        if c in parsing_state._math_delims_info_startchars:
+        if c in parsing_state._math_delims_info_startchars and parsing_state.enable_math:
             t = self.impl_maybe_read_math_mode_delimiter(s, pos, parsing_state, pre_space)
             if t is not None:
                 return t
             # continue, we have some other token ->
 
-        # check if we have an environment
-        if parsing_state.enable_environments \
-           and s.startswith( ('\\begin', '\\end',) , pos ):
-            # \begin{environment} or \end{environment}
-            return self.impl_read_environment(s=s, pos=pos,
-                                              parsing_state=parsing_state,
-                                              pre_space=pre_space)
+        if c == parsing_state.macro_escape_char:
 
-        # check if we have a macro
-        if c == '\\':
-            return self.impl_read_macro(s=s, pos=pos,
-                                        parsing_state=parsing_state,
-                                        pre_space=pre_space)
+            # check if we have an environment
+            if parsing_state.enable_environments:
+                if s.startswith(('begin', 'end',), pos+1):
+                    # \begin{environment} or \end{environment}
+                    return self.impl_read_environment(s=s, pos=pos,
+                                                      parsing_state=parsing_state,
+                                                      pre_space=pre_space)
+
+            # we must have a macro
+            if parsing_state.enable_macros:
+                return self.impl_read_macro(s=s, pos=pos,
+                                            parsing_state=parsing_state,
+                                            pre_space=pre_space)
 
         # check if we have a latex comment
-        if c == '%' and parsing_state.enable_comments:
+        if c == parsing_state.comment_char and parsing_state.enable_comments:
             return self.impl_read_comment(s=s, pos=pos,
                                           parsing_state=parsing_state,
                                           pre_space=pre_space)
 
 
-        if c in parsing_state._latex_group_delimchars_by_open:
-            return self.make_token(tok='brace_open', arg=c, pos=pos, len=1,
-                                   pre_space=pre_space)
-        if c in parsing_state._latex_group_delimchars_close:
-            return self.make_token(tok='brace_close', arg=c, pos=pos, len=1,
-                                   pre_space=pre_space)
+        if parsing_state.enable_groups:
+            if c in parsing_state._latex_group_delimchars_by_open:
+                return self.make_token(tok='brace_open', arg=c, pos=pos, len=1,
+                                       pre_space=pre_space)
+            if c in parsing_state._latex_group_delimchars_close:
+                return self.make_token(tok='brace_close', arg=c, pos=pos, len=1,
+                                       pre_space=pre_space)
 
-        if parsing_state.latex_context is not None:
+        if parsing_state.latex_context is not None and parsing_state.enable_specials:
             sspec = parsing_state.latex_context.test_for_specials(
                 s, pos, parsing_state=parsing_state
             )

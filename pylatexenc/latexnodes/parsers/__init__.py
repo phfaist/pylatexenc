@@ -38,6 +38,7 @@ from ._expression import (
 )
 
 from ._optionals import (
+    LatexOptionalSquareBracketsParser,
     LatexOptionalCharsMarkerParser,
 )
 

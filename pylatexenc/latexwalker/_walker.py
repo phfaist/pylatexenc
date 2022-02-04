@@ -41,6 +41,7 @@ from ..latexnodes.parsers import (
     LatexGeneralNodesParser,
     LatexSingleNodeParser,
     LatexDelimitedGroupParser,
+    LatexOptionalSquareBracketsParser,
     LatexExpressionParser,
 )
 from ._get_defaultspecs import get_default_latex_context_db
@@ -538,44 +539,6 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
 
 
-    def get_latex_maybe_optional_arg(self, pos, parsing_state=None):
-        r"""
-        Parses the latex content given to the constructor (and stored in `self.s`),
-        starting at position `pos`, to attempt to parse an optional argument.
-
-        Parsing might be influenced by the `parsing_state`. See doc for
-        :py:class:`ParsingState`.  If `parsing_state` is `None`, the default
-        parsing state is used.
-
-        Attempts to parse an optional argument. If this is successful, we return
-        a tuple `(node, pos, len)` if success where `node` is a
-        :py:class:`LatexGroupNode`.  Otherwise, this method returns None.
-
-        .. versionadded:: 2.0
-
-           The `parsing_state` argument was introduced in version 2.0.
-        """
-
-        raise RuntimeError("NEED TO IMPLEMENT LEGACY SUPPORT FUNCTION")
-
-
-        if parsing_state is None:
-            parsing_state = self.make_parsing_state() # get default parsing state
-
-        try:
-            tok = self.get_token(pos, include_brace_chars=[('[', ']')], environments=False,
-                                 parsing_state=parsing_state)
-        except LatexWalkerEndOfStream:
-            # we're at end of stream, simply report no optional arg and let
-            # parents re-detect end of stream when they call again get_token().
-            # Added exception handler to fix issue #57
-            return None
-
-        if tok.tok == 'brace_open' and tok.arg == '[':
-            return self.get_latex_braced_group(pos, brace_type='[',
-                                               parsing_state=parsing_state)
-
-        return None
 
 
 
@@ -585,8 +548,6 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
-
-
 
 def _pyltxenc2_LatexWalker_get_token(
         self, pos, include_brace_chars=None, environments=True,
@@ -1020,6 +981,66 @@ def _pyltxenc2_LatexWalker_get_latex_environment(
     return (envnode, p, l)
     
 LatexWalker.get_latex_environment = _pyltxenc2_LatexWalker_get_latex_environment
+
+def _pyltxenc2_LatexWalker_get_latex_maybe_optional_arg(self, pos, parsing_state=None):
+    r"""
+    Parses the latex content given to the constructor (and stored in `self.s`),
+    starting at position `pos`, to attempt to parse an optional argument.
+
+    Parsing might be influenced by the `parsing_state`. See doc for
+    :py:class:`ParsingState`.  If `parsing_state` is `None`, the default
+    parsing state is used.
+
+    Attempts to parse an optional argument. If this is successful, we return
+    a tuple `(node, pos, len)` if success where `node` is a
+    :py:class:`LatexGroupNode`.  Otherwise, this method returns None.
+
+    .. deprecated:: 3.0
+
+       This method was deprecated in `pylatexenc 3.0`.  You should use the
+       stronger and more flexible parsers mechanism instead, e.g.,
+       ``LatexWalker.parse_content(LatexOptionalSquareBracketsParser(), ...)``
+
+    .. versionadded:: 2.0
+
+       The `parsing_state` argument was introduced in version 2.0.
+    """
+
+    _util.pylatexenc_deprecated_3(
+        "get_latex_maybe_optional_arg(): "
+        "use LatexWalker.parse_content(LatexOptionalSquareBracketsParser(), ...) instead."
+    )
+
+
+    if parsing_state is None:
+        parsing_state = self.make_parsing_state() # get default parsing state
+
+
+    # parse a single node and then we'll verify that it was the correct
+    # environment node
+    parser = LatexOptionalSquareBracketsParser()
+
+    nodes, info = self.parse_content(
+        parser,
+        token_reader=self.make_token_reader(pos=pos),
+        parsing_state=parsing_state,
+    )
+
+    if info is not None:
+        logger.warning("Call to get_latex_maybe_optional_arg() ignores carryover information "
+                       "of parsing state")
+
+
+    if nodes is None:
+        return None
+
+    p, l = nodes.pos, nodes.len
+
+    return (nodes, p, l)
+
+
+LatexWalker.get_latex_maybe_optional_arg = \
+    _pyltxenc2_LatexWalker_get_latex_maybe_optional_arg
 
 
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
