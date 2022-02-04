@@ -147,13 +147,22 @@ class LatexToken(object):
         without any lookup in the latex context database.  This is not the case
         for specials.]
     """
-    def __init__(self, tok, arg, pos, pos_end, pre_space, post_space=''):
+    def __init__(self, tok, arg, pos, pos_end, pre_space, post_space='', **kwargs):
+
+        len_ = kwargs.pop('len', None)
+
         self.tok = tok
         self.arg = arg
         self.pos = pos
         self.pos_end = pos_end
         self.pre_space = pre_space
         self.post_space = post_space
+        
+        if pos_end is None and len_ is not None and pos is not None:
+            self.pos_end = pos + len_
+            
+        if kwargs:
+            raise ValueError("Unexpected arguments to LatexToken(): " + repr(kwargs))
 
         self._fields = ['tok', 'arg', 'pos', 'pos_end', 'pre_space']
         if self.tok in ('macro', 'comment'):

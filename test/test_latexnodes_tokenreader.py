@@ -18,7 +18,145 @@ from pylatexenc.latexnodes import (
 
 class TestLatexTokenReader(unittest.TestCase):
 
-    def test_basic_stuff(self):
+    def test_simple_char(self):
+        latextext = r"Some Chars"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='char', arg='S', pos=0, pos_end=1, pre_space=''))
+
+    def test_simple_char_pre_space(self):
+        pre_space = '   \t\n \t'
+        latextext = pre_space+r"Some Chars"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='char', arg='S',
+                                    pos=len(pre_space), pos_end=len(pre_space)+1,
+                                    pre_space=pre_space))
+
+    def test_macro(self):
+        latextext = r"\somemacro and more stuff"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='macro', arg='somemacro',
+                                    pos=0, pos_end=len(r'\somemacro '),
+                                    pre_space='', post_space=' '))
+
+    def test_macro_pre_space(self):
+        pre_space = '   \t\n \t'
+        latextext = pre_space+r"\somemacro and more stuff"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='macro', arg='somemacro',
+                                    pos=len(pre_space)+0,
+                                    pos_end=len(pre_space)+len(r'\somemacro '),
+                                    pre_space=pre_space, post_space=' '))
+
+    def test_comment(self):
+        latextext = "% Comment here\n  more stuff"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='comment', arg=' Comment here',
+                                    pos=0, pos_end=len('% Comment here\n  '),
+                                    pre_space='', post_space='\n  '))
+
+    def test_comment_with_pre_space(self):
+        pre_space = '   \t\n \t'
+        latextext = pre_space+"% Comment here\n  more stuff"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='comment', arg=' Comment here',
+                                    pos=len(pre_space),
+                                    pos_end=len(pre_space)+len('% Comment here\n  '),
+                                    pre_space=pre_space, post_space='\n  '))
+
+    def test_comment_with_endofinput(self):
+        latextext = "% Comment here" # directly hits end of string
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='comment', arg=' Comment here',
+                                    pos=0, pos_end=len('% Comment here'),
+                                    pre_space='', post_space=''))
+
+    def test_comment_with_par(self):
+        latextext = "% Comment here\n\nBegin new paragraph here"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.next_token(ps),
+                         LatexToken(tok='comment', arg=' Comment here',
+                                    pos=0, pos_end=len('% Comment here'),
+                                    pre_space='', post_space=''))
+
+    def test_group_delimiter_open(self):
+        latextext = "{begin group here"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='brace_open', arg='{',
+                                    pos=0, pos_end=1,
+                                    pre_space=''))
+
+    def test_group_delimiter_open_with_pre_space(self):
+        pre_space = '   \t\n \t'
+        latextext = pre_space+"{begin group here"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='brace_open', arg='{',
+                                    pos=len(pre_space), pos_end=len(pre_space)+1,
+                                    pre_space=pre_space))
+
+    def test_group_delimiter_close(self):
+        latextext = "} a braced group just ended here"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='brace_close', arg='}',
+                                    pos=0, pos_end=1,
+                                    pre_space=''))
+
+    def test_group_delimiter_close_with_pre_space(self):
+        pre_space = '   \t\n \t'
+        latextext = pre_space+"} a braced group just ended here"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='brace_close', arg='}',
+                                    pos=len(pre_space), pos_end=len(pre_space)+1,
+                                    pre_space=pre_space))
+
+
+    def test_multiple_tokens_advances_and_stuff(self):
         
         latextext = \
             r'''Text \`accent and \textbf{bold text} and $\vec b$ vector \& also Fran\c cois
@@ -111,7 +249,7 @@ New paragraph
         self.assertEqual(tr.next_token(ps),
                          LatexToken(tok='char', arg='\n\n', pos=p,
                                     pos_end=p+2, pre_space=''))
-        
+
 
 
     def test_no_environments(self):
