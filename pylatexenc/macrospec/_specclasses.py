@@ -69,7 +69,10 @@ class _SpecBase(CallableSpecBase):
             else:
                 self.arguments_parser = LatexNoArgumentsParser()
 
-        self._make_carryover_info_fn = make_carryover_info
+        if make_carryover_info is not None:
+            # overwrite the default method call by the custom function.  Accepts
+            # (parsed_node) as single (keyword) argument.
+            self.make_carryover_info = make_carryover_info
 
         if kwargs:
             raise ValueError("Unknown argument(s): {!r}".format(kwargs))
@@ -79,14 +82,31 @@ class _SpecBase(CallableSpecBase):
         return self.arguments_parser
 
     def make_carryover_info(self, parsed_node):
-        if self._make_carryover_info_fn is not None:
-            return self._make_carryover_info_fn(parsed_node)
+        r"""
+        If applicable, create a :py:class:`CarryoverInformation` class to convey any
+        changes in the parsing state after completing this callable node.
+        
+        The default implementation returns `None`.  You do not have to override
+        this method.  You can specify a custom callable to
+        `make_carryover_info=...` in the constructor, and the constructor will
+        reassign the attribute `spec.make_carryover_info` to that callable.
+        """
         return None
 
     def needs_arguments(self):
         for arg in self.arguments_spec_list:
             if arg.spec.is_required():
                 return True
+
+    def __repr__(self):
+        return (
+            self.__class__.__name__ + "(" +
+            ", ".join([ "{}={!r}".format(k,v)
+                        for (k,v) in self.__dict__.items()
+                        if not k.startswith("_") ])
+            + ")"
+        )
+    
 
 
 class MacroSpec(_SpecBase):
@@ -111,14 +131,17 @@ class MacroSpec(_SpecBase):
        instance is automatically created.
     """
     def __init__(self, macroname, arguments_spec_list=None, **kwargs):
-        super(MacroSpec, self).__init__(arguments_spec_list=arguments_spec_list, **kwargs)
+        make_carryover_info = kwargs.pop('make_carryover_info', None)
+        super(MacroSpec, self).__init__(arguments_spec_list=arguments_spec_list,
+                                        make_carryover_info=make_carryover_info,
+                                        **kwargs)
 
         self.macroname = macroname
 
-    def __repr__(self):
-        return 'MacroSpec(macroname={!r}, arguments_spec_list={!r})'.format(
-            self.macroname, self.arguments_spec_list
-        )
+    # def __repr__(self):
+    #     return 'MacroSpec(macroname={!r}, arguments_spec_list={!r})'.format(
+    #         self.macroname, self.arguments_spec_list
+    #     )
 
     def get_node_parser(self, token):
         return LatexMacroCallParser(token, self)
@@ -150,10 +173,14 @@ class EnvironmentSpec(_SpecBase):
 
     .. py:attribute:: is_math_mode
 
-       A boolean that indicates whether or not the contents is to be interpreted
-       in Math Mode.  This would be True for environments like
-       ``\begin{equation}``, ``\begin{align}``, etc., but False for
-       ``\begin{figure}``, etc.
+       Indicates if the contents is to be interpreted in Math Mode.  This would
+       be `True` for environments like ``\begin{equation}``, ``\begin{align}``,
+       etc., but is left to `None` for ``\begin{figure}``, etc.
+
+       (In `pylatexenc 2`, this field would be `False` for general environments
+       instead of `None`.  Since `pylatexenc 3`, setting this field to `False`
+       indicates that the environment content is expressedly text/non-math
+       mode.)
 
     .. note::
 
@@ -166,10 +193,15 @@ class EnvironmentSpec(_SpecBase):
        would recognize the expression ``\begin{equation}*`` but not
        ``\begin{equation*}``.
     """
-    def __init__(self, environmentname, arguments_spec_list=None,
-                 is_math_mode=False, body_parser=None, **kwargs):
+    def __init__(self, environmentname, arguments_spec_list=None, **kwargs):
+
+        is_math_mode = kwargs.pop('is_math_mode', False)
+        body_parser = kwargs.pop('body_parser', None)
+        make_carryover_info = kwargs.pop('make_carryover_info', None)
+
         super(EnvironmentSpec, self).__init__(
             arguments_spec_list=arguments_spec_list,
+            make_carryover_info=make_carryover_info,
             **kwargs
         )
 
@@ -178,15 +210,15 @@ class EnvironmentSpec(_SpecBase):
         self.body_parser = body_parser
 
 
-    def __repr__(self):
-        return (
-            'EnvironmentSpec(environmentname={!r}, arguments_spec_list={!r}, '
-            'is_math_mode={!r}, body_parser={!r})'
-            .format(
-                self.environmentname, self.arguments_spec_list,
-                self.is_math_mode, self.body_parser
-            )
-        )
+    # def __repr__(self):
+    #     return (
+    #         'EnvironmentSpec(environmentname={!r}, arguments_spec_list={!r}, '
+    #         'is_math_mode={!r}, body_parser={!r})'
+    #         .format(
+    #             self.environmentname, self.arguments_spec_list,
+    #             self.is_math_mode, self.body_parser
+    #         )
+    #     )
 
     def get_node_parser(self, token):
         return LatexEnvironmentCallParser(token, self)
@@ -239,10 +271,16 @@ _legacy_pyltxenc2_do = \
 
 def _legacy_pyltxenc2_SpecBase_init_from_args_parser(spec, arguments_spec_list, kwargs):
 
+    def _make_carryover_info(parsed_node, spec=spec):
+        carryover_info = getattr(parsed_node.nodeargd, '_legacy_pyltxenc2_set_carryover_info',
+                                 None)
+        return carryover_info
+
     def _init_with_legacy_wrapper(args_parser):
         logger.debug("Initializing spec with legacy args parser %r", args_parser)
         spec.arguments_spec_list = list(args_parser.argspec)
         spec.arguments_parser = _LegacyPyltxenc2MacroArgsParserWrapper(args_parser, spec)
+        spec.make_carryover_info = _make_carryover_info
         return True
 
     args_parser = kwargs.pop('args_parser', None)

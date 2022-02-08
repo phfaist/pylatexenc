@@ -69,7 +69,7 @@ class CarryoverInformation(object):
                  set_parsing_state=None,
                  update_parsing_state_attributes=None,
                  inner_parsing_state=None,
-                 extend_latex_context=None,
+                 # extend_latex_context=None,
                  **kwargs):
 
         self.set_parsing_state = set_parsing_state
@@ -80,10 +80,19 @@ class CarryoverInformation(object):
 
         self.inner_parsing_state = inner_parsing_state
 
-        self.extend_latex_context = extend_latex_context
+        ###--> .extended_with() not in LatexContextDbBase.  See comment there.
+        #
+        # self.extend_latex_context = extend_latex_context
 
-        self.extra_info = dict(kwargs)
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+            #self.extra_info = dict(kwargs)
 
+    def __repr__(self):
+        return self.__class__.__name__ + "(" + ", ".join(
+            "{}={!r}".format(k, v)
+            for k, v in self.__dict__.items() if (k[0:1] != '_' and v is not None)
+        ) + ")"
 
     def get_updated_parsing_state(self, parsing_state):
 
@@ -97,13 +106,13 @@ class CarryoverInformation(object):
                 **self.update_parsing_state_attributes
             )
 
-        if self.extend_latex_context:
-            new_parsing_state = new_parsing_state.sub_context(
-                latex_context=parsing_state.latex_context.extended_with(
-                    category=None,
-                    **self.extend_latex_context
-                )
-            )
+        # if self.extend_latex_context:
+        #     new_parsing_state = new_parsing_state.sub_context(
+        #         latex_context=parsing_state.latex_context.extended_with(
+        #             category=None,
+        #             **self.extend_latex_context
+        #         )
+        #     )
 
         return new_parsing_state
 

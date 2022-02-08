@@ -141,7 +141,8 @@ class LatexNode(object):
         if pos_end is None and len_ is not None:
             self.pos_end = self.pos + len_
 
-        self._fields = tuple(['pos', 'pos_end'] + list(_fields))
+        self._fields = tuple(['pos', 'pos_end', 'parsing_state', 'latex_walker']
+                             + list(_fields))
         if _redundant_fields is not None:
             self._redundant_fields = tuple(list(self._fields) + ['len']
                                            + list(_redundant_fields))
@@ -205,7 +206,6 @@ class LatexNode(object):
     def __repr__(self):
         return (
             self.nodeType().__name__ + "(" +
-            "parsing_state=<parsing state {}>, ".format(id(self.parsing_state)) +
             ", ".join([ "%s=%r"%(k,getattr(self,k))  for k in self._fields ]) +
             ")"
             )
@@ -487,9 +487,9 @@ class LatexEnvironmentNode(LatexNode):
     def __init__(self, environmentname, nodelist, **kwargs):
         nodeargd = kwargs.pop('nodeargd', ParsedMacroArgs())
         spec = kwargs.pop('spec', None)
-        # legacy:
-        optargs = kwargs.pop('optargs', [])
-        args = kwargs.pop('args', [])
+        # # legacy:
+        # optargs = kwargs.pop('optargs', [])
+        # args = kwargs.pop('args', [])
 
         super(LatexEnvironmentNode, self).__init__(
             _fields = ('environmentname','spec','nodelist','nodeargd',),
@@ -501,9 +501,21 @@ class LatexEnvironmentNode(LatexNode):
         self.nodelist = nodelist
         self.nodeargd = nodeargd
         # legacy:
-        self.envname = environmentname
-        self.optargs = optargs
-        self.args = args
+        #self.envname = environmentname
+        #self.optargs = optargs
+        #self.args = args
+
+    @property
+    def envname(self):
+        # Obsolete, don't use.
+        return self.environmentname
+
+    # @property
+    # def optargs(self):
+    #     return None
+    # @property
+    # def args(self):
+    #     return self.nodeargd.argnlist
 
     def nodeType(self):
         return LatexEnvironmentNode
@@ -674,7 +686,8 @@ class LatexNodeList(object):
         return self.pos_end - self.pos
 
     def __getitem__(self, index):
-        if index < 0:
+        # supports slicing, too, and returns a simple list in such cases
+        if isinstance(index, int) and index < 0:
             # do this manually here for potential future use with transcrypt,
             # where negative indexing is not supported.
             index = len(self.nodelist) + index

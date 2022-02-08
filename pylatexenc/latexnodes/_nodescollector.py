@@ -319,8 +319,13 @@ class LatexNodesCollector(object):
         """
 
         if carryover_info is not None:
+            ps = self.parsing_state
+
             self.parsing_state = \
                 carryover_info.get_updated_parsing_state(self.parsing_state)
+
+            logger.debug("Updated parsing state using carryover_info %r: %r →→→ %r",
+                         carryover_info, ps, self.parsing_state)
 
 
 

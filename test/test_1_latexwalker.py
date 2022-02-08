@@ -284,15 +284,21 @@ Indeed thanks to \cite[Lemma 3]{Author}, we know that...
         parsing_state = lw.make_parsing_state()
 
         p = latextext.find(r'\textbf')+len(r'\textbf')
-        self.assertEqual(lw.get_latex_maybe_optional_arg(pos=p, parsing_state=parsing_state), None)
+        self.assertIsNone(lw.get_latex_maybe_optional_arg(pos=p, parsing_state=parsing_state))
+
         p = latextext.find(r'\cite')+len(r'\cite')
-        self.assertEqual(lw.get_latex_maybe_optional_arg(pos=p, parsing_state=parsing_state),
+        gn, gn_pos, gn_len = \
+            lw.get_latex_maybe_optional_arg(pos=p, parsing_state=parsing_state)
+        pssq = gn.nodelist[0].parsing_state
+        self.assertEqual(set(pssq.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
+        self.assertEqual((gn, gn_pos, gn_len),
                          (LatexGroupNode(
-                             parsing_state=parsing_state,
+                             parsing_state=pssq,
                              delimiters=('[', ']'),
                              nodelist=[
                                  LatexCharsNode(
-                                     parsing_state=parsing_state,
+                                     parsing_state=pssq,
                                      chars='Lemma 3',
                                      pos=p+1,
                                      len=len('Lemma 3'),
@@ -346,12 +352,17 @@ Also: {\itshape some italic text}.
         )
 
         p = latextext.find(r'[(i)]')
+        (lbg_nl, lbg_pos, lbg_len) = \
+            lw.get_latex_braced_group(pos=p, brace_type='[', parsing_state=parsing_state)
+        pssq = lbg_nl.parsing_state
+        self.assertEqual(set(pssq.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
         self.assertEqual(
-            lw.get_latex_braced_group(pos=p, brace_type='[', parsing_state=parsing_state),
-            (LatexGroupNode(parsing_state=parsing_state,
+            (lbg_nl, lbg_pos, lbg_len),
+            (LatexGroupNode(parsing_state=pssq,
                             delimiters=('[', ']'),
                             nodelist=[
-                                LatexCharsNode(parsing_state=parsing_state,
+                                LatexCharsNode(parsing_state=pssq,
                                                chars='(i)',
                                                pos=p+1, len=3),
                             ],
@@ -373,6 +384,16 @@ Also: {\itshape some italic text}.
         parsing_state = lw.make_parsing_state()
 
         p = latextext.find(r'\begin{enumerate}')
+        (nl, nlpos, nllen) = \
+            lw.get_latex_environment(pos=p, environmentname='enumerate',
+                                     parsing_state=parsing_state)
+        pssq1 = nl.nodeargd.argnlist[0].parsing_state
+        self.assertEqual(set(pssq1.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
+        pssq2x = nl.nodelist[4].nodeargd.argnlist[0].parsing_state
+        self.assertEqual(set(pssq2x.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
+
         good_parsed_structure = \
             (LatexEnvironmentNode(
                 parsing_state=parsing_state,
@@ -398,10 +419,10 @@ Also: {\itshape some italic text}.
                         macroname='item',
                         nodeargd=macrospec.ParsedMacroArgs(argspec='[', argnlist=[
                             LatexGroupNode(
-                                parsing_state=parsing_state,
+                                parsing_state=pssq2x,
                                 delimiters=('[', ']'),
                                 nodelist=[
-                                    LatexCharsNode(parsing_state=parsing_state,
+                                    LatexCharsNode(parsing_state=pssq2x,
                                                    chars='a',
                                                    pos=p+23+39+7, len=1)
                                 ],
@@ -417,10 +438,10 @@ Also: {\itshape some italic text}.
                 ],
                 nodeargd=macrospec.ParsedMacroArgs(argspec='[', argnlist=[
                     LatexGroupNode(
-                        parsing_state=parsing_state,
+                        parsing_state=pssq1,
                         delimiters=('[', ']'),
                         nodelist=[
-                            LatexCharsNode(parsing_state=parsing_state,
+                            LatexCharsNode(parsing_state=pssq1,
                                            chars='(i)',
                                            pos=p+18,len=21-18)
                         ],
@@ -430,8 +451,7 @@ Also: {\itshape some italic text}.
                 len=latextext.find(r'\end{enumerate}')+len(r'\end{enumerate}')-p
              ), p, latextext.find(r'\end{enumerate}')+len(r'\end{enumerate}')-p)
         self.assertEqual(
-            lw.get_latex_environment(pos=p, environmentname='enumerate',
-                                     parsing_state=parsing_state),
+            (nl, nlpos, nllen),
             good_parsed_structure
         )
         self.assertEqual(
@@ -1228,12 +1248,17 @@ This is it."""
 
         parsing_state = lw.make_parsing_state()
 
-        print("DEBUG")
-        print(lw.get_latex_nodes(pos=0, parsing_state=parsing_state)[0][1])
+        #print("DEBUG")
+        #print(lw.get_latex_nodes(pos=0, parsing_state=parsing_state)[0][1])
 
         p=0
+        nl, nl_pos, nl_len = \
+            lw.get_latex_nodes(pos=p, parsing_state=parsing_state)
+        pssq = nl[1].nodeargd.verbatim_argnlist[0].nodelist[0].parsing_state
+        self.assertEqual(set(pssq.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
         self.assertEqual(
-            lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
+            (nl, nl_pos, nl_len),
             ([
                 LatexCharsNode(parsing_state=parsing_state, pos=0, len=(60-24),
                                chars='Use lstlisting environment for code\n'),
@@ -1257,10 +1282,10 @@ int foo() {
                         verbatim_argspec='[',
                         verbatim_argnlist=[
                             LatexGroupNode(
-                                parsing_state=parsing_state,
+                                parsing_state=pssq,
                                 pos=(60-24)+18, len=30-18,
                                 nodelist=[
-                                    LatexCharsNode(parsing_state=parsing_state,
+                                    LatexCharsNode(parsing_state=pssq,
                                                    pos=(60-24)+19,
                                                    len=29-19,
                                                    chars='language=C')
@@ -1542,7 +1567,7 @@ Use macros: """,
                                                   delimiters=('[', ']'),
                                                   nodelist=[
                                                       LatexCharsNode(
-                                                          parsing_state=parsing_state,
+                                                          parsing_state=stuff_parsing_state,
                                                           chars='stuff',
                                                           pos=1+15,len=20-15),
                                                   ],
@@ -1550,9 +1575,11 @@ Use macros: """,
                                    LatexGroupNode(parsing_state=parsing_state,
                                                   delimiters=('{', '}'),
                                                   nodelist=[
-                                                      LatexCharsNode(parsing_state=parsing_state,
-                                                                     chars='docclass',
-                                                                     pos=1+22,len=30-22),
+                                                      LatexCharsNode(
+                                                          parsing_state=parsing_state,
+                                                          chars='docclass',
+                                                          pos=1+22,len=30-22
+                                                      ),
                                                   ],
                                                   pos=1+21,len=31-21)
                                ]),

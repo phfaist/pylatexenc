@@ -134,7 +134,7 @@ def std_macro(macname, *args, **kwargs):
 
     if kwargs.get('make_environment_spec', False):
         return EnvironmentSpec(macname, argspec,
-                               is_math_mode=kwargs.get('environment_is_math_mode', False))
+                               is_math_mode=kwargs.get('environment_is_math_mode', None))
     return MacroSpec(macname, argspec)
 
 
@@ -142,13 +142,13 @@ def std_environment(envname, *args, **kwargs):
     r"""
     Return an environment specification for the given environment.  Syntax::
 
-      spec = std_environment(envname, argspec, is_math_mode=True|False)
+      spec = std_environment(envname, argspec, is_math_mode=True|False|None)
       #  or
-      spec = std_environment(envname, optarg, numargs, is_math_mode=True|False)
+      spec = std_environment(envname, optarg, numargs, is_math_mode=True|False|None)
       #  or
-      spec = std_environment( (envname, argspec), is_math_mode=True|False)
+      spec = std_environment( (envname, argspec), is_math_mode=True|False|None)
       #  or
-      spec = std_environment( (envname, optarg, numargs), is_math_mode=True|False)
+      spec = std_environment( (envname, optarg, numargs), is_math_mode=True|False|None)
       #  or
       spec = std_environment( spec ) # spec is already a `EnvironmentSpec` -- no-op
 
@@ -195,7 +195,7 @@ def std_environment(envname, *args, **kwargs):
       `is_math_mode` *must* be given as a keyword argument, in contrast to all
       other arguments which must be positional (non-keyword) arguments.
     """
-    is_math_mode = kwargs.pop('is_math_mode', False)
+    is_math_mode = kwargs.pop('is_math_mode', None)
     kwargs2 = dict(kwargs)
     kwargs2.update(make_environment_spec=True,
                    environment_is_math_mode=is_math_mode)

@@ -13,6 +13,7 @@ from pylatexenc.latexnodes import (
     LatexNodeList,
     LatexNodesCollector,
     LatexContextDbBase,
+    CarryoverInformation,
     CallableSpecBase,
     ParsedMacroArgs,
 )
@@ -99,8 +100,9 @@ def dummy_empty_mathmode_parser(latex_walker, token_reader, parsing_state):
 
 
 
-def make_dummy_macro_node_parser(tok, spec):
-    def dummy_macro_node_parser(latex_walker, token_reader, parsing_state, tok=tok, spec=spec):
+def make_dummy_macro_node_parser(tok, spec, _mkcarryoverinfo=None):
+    def dummy_macro_node_parser(latex_walker, token_reader, parsing_state,
+                                tok=tok, spec=spec, _mkcarryoverinfo=_mkcarryoverinfo):
         n = latex_walker.make_node(
             LatexMacroNode,
             parsing_state=parsing_state,
@@ -111,7 +113,10 @@ def make_dummy_macro_node_parser(tok, spec):
             pos=tok.pos,
             pos_end=tok.pos_end
         )
-        return n, None
+        coi = None
+        if _mkcarryoverinfo is not None:
+            coi = _mkcarryoverinfo(parsing_state)
+        return n, coi
 
     return dummy_macro_node_parser
 
@@ -122,6 +127,14 @@ class DummyMacroSpec(CallableSpecBase):
 
     def get_node_parser(self, token):
         return make_dummy_macro_node_parser(token, self)
+
+class DefineMacroZMacroSpec(DummyMacroSpec):
+    def get_node_parser(self, token):
+        def _mkcarryover_info(ps):
+            return CarryoverInformation(
+                set_parsing_state=ps.sub_context(latex_context=DummyLatexContextDb2())
+            )
+        return make_dummy_macro_node_parser(token, self, _mkcarryover_info)
 
 def make_dummy_environment_node_parser(tok, spec):
     def dummy_environment_node_parser(latex_walker, token_reader, parsing_state,
@@ -178,6 +191,7 @@ class DummySpecialsSpec(CallableSpecBase):
         return make_dummy_specials_node_parser(token, self)
 
 
+
 class DummyLatexContextDb(LatexContextDbBase):
     def __init__(self):
         super(DummyLatexContextDb, self).__init__()
@@ -185,6 +199,7 @@ class DummyLatexContextDb(LatexContextDbBase):
             macros={
                 'somemacro': DummyMacroSpec('somemacro'),
                 'yourname': DummyMacroSpec('yourname'),
+                'definemacroZ': DefineMacroZMacroSpec('definemacroZ'),
             },
             environments={
                 'someenv': DummyEnvironmentSpec('someenv'),
@@ -200,13 +215,13 @@ class DummyLatexContextDb(LatexContextDbBase):
         )
 
     def get_macro_spec(self, macroname):
-        return self.specs['macros'][macroname]
+        return self.specs['macros'].get(macroname, None)
 
     def get_environment_spec(self, environmentname):
-        return self.specs['environments'][environmentname]
+        return self.specs['environments'].get(environmentname, None)
 
     def get_specials_spec(self, specials_chars):
-        return self.specs['specials'][specials_chars]
+        return self.specs['specials'].get(specials_chars, None)
 
     def test_for_specials(self, s, pos, parsing_state):
         for spc in self.specials_by_len:
@@ -215,8 +230,10 @@ class DummyLatexContextDb(LatexContextDbBase):
         return None
 
 
-
-
+class DummyLatexContextDb2(DummyLatexContextDb):
+    def __init__(self):
+        super(DummyLatexContextDb2, self).__init__()
+        self.specs['macros']['Z'] = DummyMacroSpec('Z')
 
 
 
@@ -250,7 +267,7 @@ class HelperProvideAssertEqualsForLegacyTests(object):
                 self.assertEqual(x, y)
             except AssertionError:
                 print("------------------------------------------------------------")
-                print("In comparing the arguments_spec_list fields of")
+                print("In comparing the ‘", fld, "’ fields of", sep='')
                 print("    a = \n", repr(a), sep='')
                 print("    b = \n", repr(b), sep='')
                 print("    a.",fld," = \n", repr(x), sep='')
@@ -282,7 +299,7 @@ class HelperProvideAssertEqualsForLegacyTests(object):
             ))
         
         for fld in a._redundant_fields:
-            if fld in ('spec',):
+            if fld in ('spec', 'latex_walker'):
                 # we just skip some fields, at least for now.
                 continue
 

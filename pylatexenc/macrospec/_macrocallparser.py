@@ -127,6 +127,13 @@ class _LatexCallableParserBase(LatexParserBase):
                 **kwargs
             )
         else:
+            if arg_carryover_info is not None:
+                logger.warning(
+                    "Parsing carry-over information (%r) ignored after arguments to %s!",
+                    arg_carryover_info,
+                    self.what
+                )
+
             body_nodelist = None
             body_carryover_info = None
 
@@ -164,7 +171,7 @@ class _LatexCallableParserBase(LatexParserBase):
 
         logger.debug("Parsed macro/env/specials call to node %r", node)
 
-        carryover_info = self.make_carryover_info(node)
+        carryover_info = self.make_carryover_info(parsed_node=node)
 
         return node, carryover_info
 

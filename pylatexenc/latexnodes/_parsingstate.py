@@ -207,6 +207,9 @@ class ParsingState(object):
             'comment_char',
         )
 
+        # Set by sub_context() & only used in repr() for now.
+        self._parent_parsing_state_info = (None, {}) # (parent state object, changed kwargs)
+
         do_postprocess = kwargs.pop('_do_postprocess', True)
 
         self._set_fields(kwargs, do_postprocess=do_postprocess)
@@ -284,6 +287,9 @@ class ParsingState(object):
         """
         p = self.__class__(_do_postprocess=False, **self.get_fields())
 
+        # see constructor; currently this is only used in repr()
+        p._parent_parsing_state_info = (self, kwargs)
+
         p._set_fields(kwargs)
 
         return p
@@ -331,3 +337,37 @@ class ParsingState(object):
                     "in_math_mode is False", self.math_mode_delimiter
                 )
 
+
+    def __repr__(self):
+
+        # To shorten ParsingState representation strings, we only show diffs
+        # with respect to the parent objects, along with object id's.
+
+        pswid = self.__class__.__name__ + "<{}>".format(id(self))
+
+        parent_obj, diff_kwargs = self._parent_parsing_state_info
+
+        if not parent_obj:
+            # no parent, simply show ID. the user already knows this parsing
+            # state because it's the one they provided at the start
+            return pswid
+
+        # show only fields that differ w.r.t. parent.
+        return pswid + "(<{}> → ".format(id(parent_obj))  +  ", ".join(
+            "{}={!r}".format(k, v) for k, v in diff_kwargs.items()
+        ) + ")"
+
+        # return (
+        #     self.__class__.__name__ + "<{}>".format(id(self)) + "("
+        #     + ", ".join(
+        #         [
+        #             "s=" + (repr(self.s)
+        #                     if not self.s or len(self.s) < 40
+        #                     else repr(self.s[:37]+'...'))
+        #         ] +
+        #         [ "{}={!r}".format(k, v)
+        #           for k, v in self.get_fields().items()
+        #           if k not in ('s',)]
+        #     )
+        #     + ")"
+        # )

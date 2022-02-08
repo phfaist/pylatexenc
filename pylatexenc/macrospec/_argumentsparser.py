@@ -280,7 +280,15 @@ class _LegacyPyltxenc2MacroArgsParserWrapper(LatexParserBase):
         else:
             carryover_info = None
 
-        return nodeargd, carryover_info
+        # We can't return carryover_info here, because the carryover info
+        # associated with *argument* (and *body*) parsers of a spec are ignored
+        # by MacroCallParser's and friends.  Instead, we set an internal
+        # attribute on the node, which the spec's overwritten
+        # make_carryover_info() picks up and returns appropriately.
+
+        nodeargd._legacy_pyltxenc2_set_carryover_info = carryover_info
+
+        return nodeargd, None
 
 
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE

@@ -11,6 +11,7 @@ from pylatexenc.latexnodes._nodescollector import (
 )
 
 from pylatexenc.latexnodes import (
+    LatexWalkerParseError,
     LatexTokenReader,
     LatexNodeList,
     LatexCharsNode,
@@ -35,6 +36,11 @@ from ._helpers_tests import (
 
 
 class TestLatexNodesCollector(unittest.TestCase):
+
+    def __init__(self, *args, **kwargs):
+        super(TestLatexNodesCollector, self).__init__(*args, **kwargs)
+
+        self.maxDiff = None
 
     def test_simple_charsnode(self):
         
@@ -399,6 +405,83 @@ class TestLatexNodesCollector(unittest.TestCase):
         self.assertFalse(nc.stop_nodelist_condition_met())
 
 
+
+    def test_macro_simple_unknown(self):
+        
+        latextext = r'''\unknownmacronameshouldraiseexception'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        nc = LatexNodesCollector(latex_walker=lw,
+                                 token_reader=tr,
+                                 parsing_state=ps,
+                                 make_group_parser=None,
+                                 make_math_parser=None,
+                                 )
+
+        with self.assertRaises(LatexWalkerParseError):
+            nc.process_tokens()
+
+
+    def test_macro_simple_state_change(self):
+        
+        latextext = r'''\definemacroZ\Z'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        nc = LatexNodesCollector(latex_walker=lw,
+                                 token_reader=tr,
+                                 parsing_state=ps,
+                                 make_group_parser=None,
+                                 make_math_parser=None,
+                                 )
+
+        nc.process_tokens()
+        
+        nodelist = nc.get_final_nodelist()
+        carryover_info = nc.get_parser_carryover_info()
+
+        ps2 = nodelist[1].parsing_state
+        self.assertIsNot(ps, ps2)
+
+        self.assertIsNone(ps.latex_context.get_macro_spec('Z'))
+        self.assertIsNotNone(ps2.latex_context.get_macro_spec('Z'))
+        
+        self.assertEqual(
+            nodelist[:],
+            LatexNodeList([
+                LatexMacroNode(
+                    parsing_state=ps,
+                    macroname='definemacroZ',
+                    macro_post_space='',
+                    spec=ps.latex_context.get_macro_spec('definemacroZ'),
+                    nodeargd=ParsedMacroArgs(),
+                    pos=0,
+                    pos_end=13,
+                ),
+                LatexMacroNode(
+                    parsing_state=ps2,
+                    macroname='Z',
+                    macro_post_space='',
+                    spec=ps2.latex_context.get_macro_spec('Z'),
+                    nodeargd=ParsedMacroArgs(),
+                    pos=13,
+                    pos_end=15,
+                )
+            ])[:]
+        )
+        self.assertEqual(nc.pos_start(), 0)
+        self.assertEqual(nc.pos_end(), len(latextext))
+        self.assertTrue(nc.reached_end_of_stream())
+        self.assertFalse(nc.stop_token_condition_met())
+        self.assertFalse(nc.stop_nodelist_condition_met())
+
+        self.assertIs(carryover_info.set_parsing_state, ps2)
+        
 
 # ---
 

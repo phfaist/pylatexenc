@@ -56,3 +56,13 @@ class LatexContextDbBase(object):
         `specials_chars`.
         """
         return None
+
+    # ### Too specific to how macrospec's etc are implemented.
+    #
+    # def extended_with(category, **kwargs):
+    #     macros = kwargs.pop('macros', None)
+    #     environments = kwargs.pop('environments', None)
+    #     specials = kwargs.pop('specials', None)
+    #     raise RuntimeError(
+    #         "This LatexContextDbBase instance does not implement extended_with()"
+    #     )
