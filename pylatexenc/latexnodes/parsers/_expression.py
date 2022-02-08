@@ -257,6 +257,10 @@ class LatexExpressionParser(LatexParserBase):
 
         if tok.tok == 'brace_close':
 
+            # put the token back so that it can be processed by whichever group
+            # actually needs it
+            token_reader.move_to_token(tok)
+
             exc = LatexWalkerNodesParseError(
                 msg="Expected LaTeX expression, got closing brace ‘{}’".format(tok.arg),
                 pos=tok.pos,

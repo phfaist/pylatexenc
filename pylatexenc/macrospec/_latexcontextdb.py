@@ -124,6 +124,14 @@ class LatexContextDb(object):
         """
         self.frozen = True
 
+    
+    def __repr__(self):
+        return "<LatexContextDb {:#x}{}>".format(
+            id(self),
+            ("" if self.frozen else " unfrozen")
+        )
+
+
     def add_context_category(self, category, macros=[], environments=[], specials=[],
                              prepend=False, insert_before=None, insert_after=None):
         r"""

@@ -450,6 +450,10 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         if open_context:
             open_context_name, open_context_tok = open_context
 
+        start_pos = token_reader.cur_pos()
+        logger.debug(":: Parsing content (%s @ %r) - %r ::",
+                     open_context_name, start_pos, parser)
+
         with self.new_parsing_open_context(open_context_name, open_context_tok) as pc:
 
             try:
@@ -466,6 +470,9 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
         if pc.recovery_from_exception is not None:
             nodes, info = pc.perform_recovery_nodes_info(token_reader)
+
+        logger.debug(":: PARSED content (%s @ %r) - %r - result %r %r DONE ::",
+                     open_context_name, start_pos, parser, nodes, info)
 
         return nodes, info
 
@@ -549,6 +556,8 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
 
 
+    def __repr__(self):
+        return "<LatexWalker {}>".format(id(self))
 
 
 

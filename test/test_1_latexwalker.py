@@ -454,11 +454,6 @@ Also: {\itshape some italic text}.
             (nl, nlpos, nllen),
             good_parsed_structure
         )
-        self.assertEqual(
-            lw.get_latex_environment(pos=p,
-                                     parsing_state=parsing_state),
-            good_parsed_structure
-        )
 
         with self.assertRaises(LatexWalkerParseError):
             dummy = lw.get_latex_environment(pos=p, environmentname='XYZNFKLD-WRONG',
@@ -1254,7 +1249,7 @@ This is it."""
         p=0
         nl, nl_pos, nl_len = \
             lw.get_latex_nodes(pos=p, parsing_state=parsing_state)
-        pssq = nl[1].nodeargd.verbatim_argnlist[0].nodelist[0].parsing_state
+        pssq = nl[1].nodeargd.argnlist[0].nodelist[0].parsing_state
         self.assertEqual(set(pssq.latex_group_delimiters),
                          set([ ('{','}'), ('[',']'), ]))
         self.assertEqual(
@@ -1365,7 +1360,13 @@ Use macros: \a{} and \b{xxx}{yyy}.
         parsing_state_defa = nodes[1].parsing_state
         parsing_state_defab = nodes[3].parsing_state
 
-        self.assertEqual((npos,nlen), (0,len(latextext)))
+        parsing_state_defa_sqbr = nodes[2].nodeargd.argnlist[2].parsing_state
+        self.assertEqual(set(parsing_state_defa_sqbr.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
+
+
+        self.assertEqual(npos, 0)
+        self.assertEqual(nlen, len(latextext))
         self.assertEqual(
             nodes,
             [
@@ -1410,11 +1411,11 @@ Use macros: \a{} and \b{xxx}{yyy}.
                                            nodeargd=None,
                                        ),
                                        LatexGroupNode(
-                                           parsing_state=parsing_state_defa,
+                                           parsing_state=parsing_state_defa_sqbr,
                                            pos=19+15, len=3, delimiters=('[', ']'),
                                            nodelist=[
                                                LatexCharsNode(
-                                                   parsing_state=parsing_state_defa,
+                                                   parsing_state=parsing_state_defa_sqbr,
                                                    pos=19+16, len=1,
                                                    chars='2'
                                                )

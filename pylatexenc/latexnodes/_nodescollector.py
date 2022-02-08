@@ -333,24 +333,25 @@ class LatexNodesCollector(object):
 
 
     def _check_nodelist_stop_condition(self):
-        #print(f"*** checking for nodelist stopping condition ... {self._nodelist=}")
         stop_nodelist_condition = self.stop_nodelist_condition
         if stop_nodelist_condition is not None:
             stop_data = stop_nodelist_condition(self._nodelist)
             if stop_data:
                 self._stop_nodelist_condition_met = True
-                #print(f"\t\tStopping condition met!")
+                logger.debug("nodes collector reached nodelist stop condition; nodelist = %r",
+                             self._nodelist)
                 return LatexNodesCollector.ReachedStoppingCondition(stop_data=stop_data)
 
     def _check_token_stop_condition(self, tok):
-        #print(f"*** checking for token stopping condition ... {tok=}")
         stop_token_condition = self.stop_token_condition
         if stop_token_condition is not None:
             stop_data = stop_token_condition(tok)
             if stop_data:
                 self._stop_token_condition_met = True
                 self._stop_token_condition_met_token = tok
-                #print(f"\t\tStopping condition met!")
+                logger.debug("nodes collector reached token stop condition; tok = %r, "
+                             "current node list = %r",
+                             tok, self._nodelist)
                 return LatexNodesCollector.ReachedStoppingCondition(stop_data=stop_data)
 
 

@@ -343,7 +343,7 @@ class ParsingState(object):
         # To shorten ParsingState representation strings, we only show diffs
         # with respect to the parent objects, along with object id's.
 
-        pswid = self.__class__.__name__ + "<{}>".format(id(self))
+        pswid = self.__class__.__name__ + "<{:#x}>".format(id(self))
 
         parent_obj, diff_kwargs = self._parent_parsing_state_info
 
@@ -353,7 +353,7 @@ class ParsingState(object):
             return pswid
 
         # show only fields that differ w.r.t. parent.
-        return pswid + "(<{}> → ".format(id(parent_obj))  +  ", ".join(
+        return pswid + "(<{:#x}> → ".format(id(parent_obj))  +  ", ".join(
             "{}={!r}".format(k, v) for k, v in diff_kwargs.items()
         ) + ")"
 

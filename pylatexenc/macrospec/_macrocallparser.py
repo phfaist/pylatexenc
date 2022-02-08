@@ -169,9 +169,10 @@ class _LatexCallableParserBase(LatexParserBase):
             **node_kwargs
         )
 
-        logger.debug("Parsed macro/env/specials call to node %r", node)
-
         carryover_info = self.make_carryover_info(parsed_node=node)
+
+        logger.debug("Parsed macro/env/specials call - node %r - carryover_info %r",
+                     node, carryover_info)
 
         return node, carryover_info
 
