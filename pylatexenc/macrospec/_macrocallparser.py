@@ -143,13 +143,6 @@ class _LatexCallableParserBase(LatexParserBase):
                 body_carryover_info
             )
 
-
-        # pos_end = None
-        # if nodeargd is not None:
-        #     pos_end = nodeargd.pos_end
-        # if body_nodelist is not None:
-        #     pos_end = body_nodelist.pos_end
-
         # use cur_pos() because we want to include stuff like \end{environemnt}.
         pos_end = token_reader.cur_pos()
 
@@ -243,7 +236,7 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
             return parsing_state.sub_context(**kw)
         return parsing_state
 
-    def _handle_stop_condition_token(self, t, token_reader):
+    def _handle_stop_condition_token(self, t, latex_walker, token_reader, parsing_state):
         token_reader.move_past_token(t)
 
     def _parse_body_token_stop_condition(self, t):

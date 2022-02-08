@@ -478,12 +478,11 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
 
     def make_nodes_collector(self,
-                             latex_walker,
                              token_reader,
                              parsing_state,
                              **kwargs):
         return latexnodes.LatexNodesCollector(
-            latex_walker,
+            self,
             token_reader,
             parsing_state,
             **kwargs
@@ -749,7 +748,7 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
 
     # tokens that cause a stop should be absorbed in pos_end (e.g. closing
     # brace, closing math mode delimiter)
-    def handle_stop_condition_token(token, token_reader):
+    def handle_stop_condition_token(token, latex_walker, token_reader, parsing_state):
         logger.debug("moving past token %r", token)
         token_reader.move_past_token(token)
 
@@ -948,8 +947,8 @@ def _pyltxenc2_LatexWalker_get_latex_braced_group(
         include_brace_chars = [ brace_type ]
     
     parser = LatexDelimitedGroupParser(
-        require_brace_type=require_brace_type,
-        include_brace_chars=include_brace_chars,
+        require_delimiter_type=require_brace_type,
+        include_delimiter_chars=include_brace_chars,
     )
 
     nodes, info = self.parse_content(

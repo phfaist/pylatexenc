@@ -46,10 +46,10 @@ class LatexOptionalSquareBracketsParser(LatexDelimitedGroupParser):
     r"""
     A shorthand for reading an optional argument placed in square brackets.
     """
-    def __init__(self, brace_pair=('[',']'), optional=True, **kwargs):
+    def __init__(self, delimiters=('[',']'), optional=True, **kwargs):
         super(LatexOptionalSquareBracketsParser, self).__init__(
-            require_brace_type=brace_pair[0],
-            include_brace_chars=[brace_pair],
+            require_delimiter_type=delimiters[0],
+            include_delimiter_chars=[delimiters],
             optional=optional,
             **kwargs
         )

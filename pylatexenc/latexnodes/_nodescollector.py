@@ -109,6 +109,7 @@ class LatexNodesCollector(object):
         # the token that caused the condition to be met:
         self._stop_token_condition_met_token = None
         self._stop_nodelist_condition_met = False
+        self._stop_condition_stop_data = None
         self._reached_end_of_stream = False
 
         self.make_group_parser = make_group_parser # like "LatexDelimitedGroupParser"
@@ -205,6 +206,13 @@ class LatexNodesCollector(object):
         while processing tokens.
         """
         return self._stop_nodelist_condition_met
+
+    def stop_condition_stop_data(self):
+        r"""
+        If a stopping condition was met, returns whatever the stopping condition
+        callback returned that was non-`None` and caused the processing to stop.
+        """
+        return self._stop_condition_stop_data
 
     def reached_end_of_stream(self):
         r"""
@@ -383,6 +391,7 @@ class LatexNodesCollector(object):
 
         except LatexNodesCollector.ReachedStoppingCondition as e:
             # all good! We finished collecting our node list.
+            self._stop_condition_stop_data = e.stop_data
             return
 
         except LatexNodesCollector.ReachedEndOfStream as e:
@@ -659,7 +668,7 @@ class LatexNodesCollector(object):
         groupnode, carryover_info = \
             self.latex_walker.parse_content(
                 self.make_group_parser(
-                    require_brace_type=tok.arg,
+                    require_delimiter_type=tok.arg,
                 ),
                 token_reader=self.token_reader,
                 parsing_state=self.make_child_parsing_state(self.parsing_state,

@@ -50,5 +50,6 @@ from ._stdarg import (
 
 from ._verbatim import (
     LatexVerbatimBaseParser,
-    LatexVerbatimDelimParser,
+    LatexDelimitedVerbatimParser,
+    LatexVerbatimEnvironmentContentsParser,
 )

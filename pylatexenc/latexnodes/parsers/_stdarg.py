@@ -39,6 +39,7 @@ from ._base import LatexParserBase
 from ._generalnodes import LatexDelimitedGroupParser
 from ._optionals import LatexOptionalCharsMarkerParser
 from ._expression import LatexExpressionParser
+from ._verbatim import LatexDelimitedVerbatimParser
 
 
 
@@ -135,8 +136,8 @@ class LatexStandardArgumentParser(LatexParserBase):
         elif arg_spec in ('o', '['):
 
             return LatexDelimitedGroupParser(
-                require_brace_type='[',
-                include_brace_chars=[('[',']',)],
+                require_delimiter_type='[',
+                include_delimiter_chars=[('[',']',)],
                 optional=True,
                 do_not_skip_space=self.do_not_skip_space,
             )
@@ -169,8 +170,8 @@ class LatexStandardArgumentParser(LatexParserBase):
             close_char = arg_spec[2]
 
             return LatexDelimitedGroupParser(
-                require_brace_type=open_char,
-                include_brace_chars=[(open_char, close_char,)],
+                require_delimiter_type=open_char,
+                include_delimiter_chars=[(open_char, close_char,)],
                 optional=False,
                 do_not_skip_space=self.do_not_skip_space,
             )
@@ -184,10 +185,24 @@ class LatexStandardArgumentParser(LatexParserBase):
             close_char = arg_spec[2]
 
             return LatexDelimitedGroupParser(
-                require_brace_type=open_char,
-                include_brace_chars=[(open_char, close_char,)],
+                require_delimiter_type=open_char,
+                include_delimiter_chars=[(open_char, close_char,)],
                 optional=True,
                 do_not_skip_space=self.do_not_skip_space,
+            )
+
+        elif arg_spec.startswith('v'):
+            # arg_spec = 'v' or 'v<char1><char2>', a verbatim argument with
+            # automatically detected delimiters or specific delimiters
+            if len(arg_spec) == 1:
+                delimiter_chars = None # autodetect
+            elif len(arg_spec) == 3:
+                delimiter_chars = (arg_spec[1], arg_spec[2])
+            else:
+                raise ValueError("arg_spec for a verbatim argument should be either ‘v’ "
+                                 "or ‘v<char1><char2>’")
+            return LatexDelimitedVerbatimParser(
+                delimiter_chars=delimiter_chars
             )
 
         else:
@@ -222,3 +237,113 @@ class LatexStandardArgumentParser(LatexParserBase):
         return nodes, carryover_info
 
             
+
+
+# ----------------------------------------------------------
+
+
+# class LatexVerbatimCommaSeparatedListParser(LatexParserBase):
+#     r"""
+#     """
+#     def __init__(self, comma_char=',', delimiters=('{','}'),
+#                  enable_comments=True, enable_groups=True):
+#         super(LatexVerbatimCommaSeparatedListParser, self).__init__()
+#         self.comma_char = comma_char
+#         self.delimiters = delimiters
+#         self.enable_comments = enable_comments
+#         self.enable_groups = enable_groups
+
+#     def _content_stop_token_condition(self, token):
+#         if token.tok == 'brace_close' and token.arg == self.delimiters[1]:
+#             return True
+#         if token.tok == 'chars' and token.arg == self.comma_char:
+#             return True
+#         return None
+
+#     def get_content_parsing_state(self, parsing_state):
+#         return parsing_state.sub_context(
+#             enable_macros=False,
+#             enable_environments=False,
+#             enable_comments=self.enable_comments,
+#             enable_groups=self.enable_groups,
+#             enable_specials=False,
+#             enable_math=False
+#         )
+
+#     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+
+#         firsttok = token_reader.next_token(parsing_state=this_level_parsing_state)
+#         .......
+#         ...... NEED COMMON CODE FOR DETECTING OPENING DELIMITER & REQUIRING A SPECIFIC ONE  ......... .............
+
+#         content_parsing_state = self.get_content_parsing_state(parsing_state)
+
+#         read_args_state = {
+#             'last_delimiter_token': None,
+#             'read_more': True,
+#         }
+
+#         def _handle_stop_condition_token(token, latex_walker, token_reader, parsing_state):
+#             if token.tok == 'brace_close':
+#                 token_reader.move_to_token(token)
+#                 read_args_state['last_delimiter_token'] = None
+#                 read_args_state['read_more'] = False
+#             else:
+#                 read_args_state['last_delimiter_token'] = token
+#                 read_args_state['read_more'] = True
+
+#         content_parser = LatexGeneralNodesParser(
+#             stop_token_condition=self._content_stop_token_condition,
+#             child_parsing_state=self._make_child_parsing_state,
+#             handle_stop_condition_token=_handle_stop_condition_token
+#         )
+
+#         node_list = []
+
+#         while read_args_state['read_more']:
+        
+#             these_nodes, info = latex_walker.parse_content(
+#                 content_parser,
+#                 token_reader=token_reader,
+#                 parsing_state=parsing_state
+#             )
+
+#             if info is not None:
+#                 logger.warning(
+#                     "Ignoring carryover info %r when parsing comma-separated lists", info
+#                 )
+
+#             last_delimiter_token = read_args_state['last_delimiter_token']
+#             if last_delimiter_token is not None:
+#                 this_close_delim = read_args_state['last_delimiter_token'].arg
+#                 this_pos_end = read_args_state['last_delimiter_token'].pos_end
+#             else:
+#                 this_close_delim = ''
+#                 this_pos_end = token_reader.cur_pos()
+
+#             node_list.append(
+#                 latex_walker.make_node(
+#                     LatexGroupNode,
+#                     nodelist=these_nodes,
+#                     parsing_state=content_parsing_state,
+#                     delimiters=('', this_close_delim),
+#                     pos=these_nodes.pos,
+#                     pos_end=this_pos_end,
+#                 )
+#             )
+
+#         # collect all the elements of the comma-separated list into a single
+#         # group node
+
+#         groupnode = latex_walker.make_node(
+#             LatexGroupNode,
+#             nodelist=these_nodes,
+#             parsing_state=content_parsing_state,
+#             delimiters=('', this_close_delim),
+#             pos=these_nodes.pos,
+#             pos_end=this_pos_end,
+#         )
+
+
+
+#         ...............

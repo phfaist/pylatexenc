@@ -42,7 +42,6 @@ class LatexWalkerBase(object):
         raise RuntimeError("LatexWalkerBase subclasses must reimplement make_node()")
 
     def make_nodes_collector(self,
-                             latex_walker,
                              token_reader,
                              parsing_state,
                              **kwargs):

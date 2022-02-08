@@ -75,6 +75,15 @@ class ParsedVerbatimArgs(ParsedMacroArgs):
        If the verbatim text was specified as an argument to ``\verb$...$``, then
        this is set to a 2-item tuple that specifies the begin and end
        delimiters.  Otherwise, the attribute is `None`.
+
+    .. deprecated:: 3.0
+
+       This class was deprecated in `pylatexenc 3`.  Starting from `pylatexenc
+       3`, the preferred way to parse verbatim arguments is to use a verbatim
+       parser
+       (:py:class:`pylatexenc.latexnodes.parsers.LatexDelimitedVerbatimParser`)
+       as an argument in a :py:class:`pylatexenc.macrospec.LatexArgumentsParser`
+       instance.
     """
     def __init__(self,
                  verbatim_chars_node,

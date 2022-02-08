@@ -242,7 +242,7 @@ class LatexExpressionParser(LatexParserBase):
 
             groupnode, carryover_info = latex_walker.parse_content(
                 LatexDelimitedGroupParser(
-                    require_brace_type=tok.arg
+                    require_delimiter_type=tok.arg
                 ),
                 token_reader=token_reader,
                 parsing_state=parsing_state,

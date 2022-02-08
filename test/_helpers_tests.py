@@ -26,12 +26,11 @@ class DummyWalker(LatexWalkerBase):
         return node_class(**kwargs)
 
     def make_nodes_collector(self,
-                             latex_walker,
                              token_reader,
                              parsing_state,
                              **kwargs):
         return LatexNodesCollector(
-            latex_walker,
+            self,
             token_reader,
             parsing_state,
             **kwargs
