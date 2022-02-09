@@ -48,8 +48,7 @@ class LatexOptionalSquareBracketsParser(LatexDelimitedGroupParser):
     """
     def __init__(self, delimiters=('[',']'), optional=True, **kwargs):
         super(LatexOptionalSquareBracketsParser, self).__init__(
-            require_delimiter_type=delimiters[0],
-            include_delimiter_chars=[delimiters],
+            delimiters=delimiters,
             optional=optional,
             **kwargs
         )

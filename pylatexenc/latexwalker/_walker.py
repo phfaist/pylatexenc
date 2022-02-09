@@ -940,15 +940,17 @@ def _pyltxenc2_LatexWalker_get_latex_braced_group(
     
     brace_type = tuple(brace_type)
 
-    require_brace_type = brace_type[0] # the opening brace
-
-    include_brace_chars = None
-    if brace_type not in parsing_state.latex_group_delimiters:
-        include_brace_chars = [ brace_type ]
+    #require_brace_type = brace_type[0] # the opening brace
+    #
+    # ### This is now done automatically by LatexDelimitedGroupParser
+    #
+    # include_brace_chars = None
+    # if brace_type not in parsing_state.latex_group_delimiters:
+    #     include_brace_chars = [ brace_type ]
     
     parser = LatexDelimitedGroupParser(
-        require_delimiter_type=require_brace_type,
-        include_delimiter_chars=include_brace_chars,
+        delimiters=brace_type,
+        #include_delimiter_chars=include_brace_chars,
     )
 
     nodes, info = self.parse_content(

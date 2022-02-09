@@ -93,7 +93,7 @@ class LatexStandardArgumentParser(LatexParserBase):
                  include_skipped_comments=True,
                  expression_single_token_requiring_arg_is_error=True,
                  is_math_mode=None,
-                 do_not_skip_space=False,
+                 allow_pre_space=True,
                  set_arg_parsing_state_kwargs=None,
                  **kwargs
                  ):
@@ -105,7 +105,7 @@ class LatexStandardArgumentParser(LatexParserBase):
         self.expression_single_token_requiring_arg_is_error = \
             expression_single_token_requiring_arg_is_error
         self.is_math_mode = is_math_mode
-        self.do_not_skip_space = do_not_skip_space
+        self.allow_pre_space = allow_pre_space
         self.set_arg_parsing_state_kwargs = set_arg_parsing_state_kwargs
 
         self._arg_parsing_state_kwargs = None
@@ -136,17 +136,16 @@ class LatexStandardArgumentParser(LatexParserBase):
         elif arg_spec in ('o', '['):
 
             return LatexDelimitedGroupParser(
-                require_delimiter_type='[',
-                include_delimiter_chars=[('[',']',)],
+                delimiters=('[',']',),
                 optional=True,
-                do_not_skip_space=self.do_not_skip_space,
+                allow_pre_space=self.allow_pre_space,
             )
 
         elif arg_spec in ('s', '*'):
 
             return LatexOptionalCharsMarkerParser(
                 chars='*',
-                do_not_skip_space=self.do_not_skip_space,
+                allow_pre_space=self.allow_pre_space,
             )
 
         elif arg_spec.startswith('t'):
@@ -158,7 +157,7 @@ class LatexStandardArgumentParser(LatexParserBase):
 
             return LatexOptionalCharsMarkerParser(
                 chars=the_char,
-                do_not_skip_space=self.do_not_skip_space,
+                allow_pre_space=self.allow_pre_space,
             )
 
         elif arg_spec.startswith('r'):
@@ -170,10 +169,9 @@ class LatexStandardArgumentParser(LatexParserBase):
             close_char = arg_spec[2]
 
             return LatexDelimitedGroupParser(
-                require_delimiter_type=open_char,
-                include_delimiter_chars=[(open_char, close_char,)],
+                delimiters=(open_char, close_char,),
                 optional=False,
-                do_not_skip_space=self.do_not_skip_space,
+                allow_pre_space=self.allow_pre_space,
             )
 
         elif arg_spec.startswith('d'):
@@ -185,10 +183,9 @@ class LatexStandardArgumentParser(LatexParserBase):
             close_char = arg_spec[2]
 
             return LatexDelimitedGroupParser(
-                require_delimiter_type=open_char,
-                include_delimiter_chars=[(open_char, close_char,)],
+                delimiters=(open_char, close_char,),
                 optional=True,
-                do_not_skip_space=self.do_not_skip_space,
+                allow_pre_space=self.allow_pre_space,
             )
 
         elif arg_spec.startswith('v'):

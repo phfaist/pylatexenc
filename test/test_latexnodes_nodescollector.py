@@ -123,8 +123,8 @@ class TestLatexNodesCollector(unittest.TestCase):
         ps = ParsingState(s=latextext)
         lw = DummyWalker()
 
-        def make_dummy_empty_group_parser(require_delimiter_type):
-            self.assertEqual(require_delimiter_type, '{')
+        def make_dummy_empty_group_parser(delimiters):
+            self.assertEqual(delimiters, '{')
             return dummy_empty_group_parser
 
         nc = LatexNodesCollector(latex_walker=lw,
@@ -164,8 +164,8 @@ class TestLatexNodesCollector(unittest.TestCase):
         ps = ParsingState(s=latextext)
         lw = DummyWalker()
 
-        def make_dummy_empty_mathmode_parser(require_math_mode_delimiter):
-            self.assertEqual(require_math_mode_delimiter, r'\(')
+        def make_dummy_empty_mathmode_parser(math_mode_delimiters):
+            self.assertEqual(math_mode_delimiters, r'\(')
             return dummy_empty_mathmode_parser
 
         nc = LatexNodesCollector(latex_walker=lw,
@@ -242,8 +242,8 @@ class TestLatexNodesCollector(unittest.TestCase):
         ps = ParsingState(s=latextext)
         lw = DummyWalker()
 
-        def make_dummy_empty_group_parser(require_delimiter_type):
-            self.assertEqual(require_delimiter_type, '{')
+        def make_dummy_empty_group_parser(delimiters):
+            self.assertEqual(delimiters, '{')
             return dummy_empty_group_parser
 
 

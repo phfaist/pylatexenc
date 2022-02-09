@@ -256,7 +256,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
         super(LatexDelimitedGroupParser, self).__init__(**kwargs)
         self.delimiters = delimiters
         self.optional = optional
-        self.allow_pre_space = skip_space
+        self.allow_pre_space = allow_pre_space
         self.discard_carryover_info = discard_carryover_info
 
         self.acceptable_opening_delimiter_token_types = ('brace_open', )
@@ -279,7 +279,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
             return parsing_state
 
         if isinstance(self.delimiters, _basestring):
-            if self.delimiters not parsing_state._latex_group_delimchars_by_open:
+            if self.delimiters not in parsing_state._latex_group_delimchars_by_open:
                 raise ValueError(
                     "Delimiter ‘{}’ not a valid latex group delimiter ({!r})"
                     .format(self.delimiters, parsing_state.latex_group_delimiters)
@@ -342,13 +342,14 @@ class LatexDelimitedGroupParser(LatexParserBase):
             self.parsing_state = parsing_state
             self.delimiters = delimiters
 
+        def initialize(self):
             # default assignments, for latex groups; can be overridden by subclasses etc.
-            self.contents_parsing_state = contents_parsing_state
-            self.child_parsing_state = child_parsing_state
+            self.contents_parsing_state = self.group_parsing_state
+            self.child_parsing_state = self.parsing_state
             self.parsed_delimiters = self.get_parsed_delimiters()
 
         def stop_token_condition(self, token):
-            if token.tok == 'brace_close' and token.arg == self.delimiters[1]:
+            if token.tok == 'brace_close' and token.arg == self.parsed_delimiters[1]:
                 return True
             return False
         
@@ -393,7 +394,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
             # use cur_pos() to include the closing delimiter
             pos_end = token_reader.cur_pos()
 
-            return latex_walker.make_node(
+            group_node = latex_walker.make_node(
                 LatexGroupNode,
                 nodelist=nodelist,
                 parsing_state=self.group_parsing_state,
@@ -402,19 +403,24 @@ class LatexDelimitedGroupParser(LatexParserBase):
                 pos_end=pos_end
             )
 
+            return group_node, carryover_info
+
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
         group_parsing_state = self.get_group_parsing_state(parsing_state)
 
-        firsttok = token_reader.next_token(parsing_state=group_parsing_state)
+        first_token = token_reader.next_token(parsing_state=group_parsing_state)
         
-        if not self.is_acceptable_opening_delimiter(firsttok):
+        if not self.is_acceptable_opening_delimiter(
+                first_token=first_token,
+                group_parsing_state=group_parsing_state
+        ):
 
             if self.optional:
                 # all ok, the argument was optional and was simply not specified.
-                token_reader.move_to_token(firsttok)
-                return None
+                token_reader.move_to_token(first_token)
+                return None, None
 
             acceptable_delimiters_msg = ", ".join([
                 "‘{}’".format(od)
@@ -423,15 +429,15 @@ class LatexDelimitedGroupParser(LatexParserBase):
             raise LatexWalkerNodesParseError(
                 msg='Expected an opening LaTeX delimiter (%s), got %s/‘%s’%s' %(
                     acceptable_delimiters_msg,
-                    firsttok.tok,
-                    firsttok.arg,
-                    (' with leading whitespace' if firsttok.pre_space else '')
+                    first_token.tok,
+                    first_token.arg,
+                    (' with leading whitespace' if first_token.pre_space else '')
                 ),
                 recovery_nodes=LatexNodeList([]),
-                recovery_at_token=firsttok
+                recovery_at_token=first_token
             )
 
-        if firsttok is None:
+        if first_token is None:
             # All ok, an optional argument was not provided.  (In case
             # `self.optional=False`, an error was already raised by
             # get_opening_token().)
@@ -443,12 +449,13 @@ class LatexDelimitedGroupParser(LatexParserBase):
             first_token=first_token,
             group_parsing_state=group_parsing_state,
             parsing_state=parsing_state,
-            delimiters=self.get_delimiters(first_token)
+            delimiters=self.delimiters,
         )
+        contents_parser_info.initialize()
 
         contents_parser = LatexGeneralNodesParser(
             stop_token_condition=contents_parser_info.stop_token_condition,
-            make_child_parsing_state=contents_parser_info.child_parsing_state,
+            make_child_parsing_state=contents_parser_info.make_child_parsing_state,
             require_stop_condition_met=True,
             handle_stop_condition_token=contents_parser_info.handle_stop_condition_token,
         )
@@ -459,7 +466,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
             parsing_state=contents_parser_info.contents_parsing_state,
             open_context=(
                 'Delimited expression ‘{}…{}’'.format(*contents_parser_info.parsed_delimiters),
-                firsttok
+                first_token
             )
         )
 
@@ -500,7 +507,8 @@ class LatexMathParser(LatexDelimitedGroupParser):
 
         self.acceptable_opening_delimiter_token_types = \
             ('mathmode_inline', 'mathmode_display')
-        self.make_group_contents_info = LatexMathParser.MathContentsParserInfo
+        self.make_group_contents_parser_info = \
+            LatexMathParser.MathContentsParserInfo
 
     def contents_can_be_empty(self):
         return False
@@ -526,26 +534,23 @@ class LatexMathParser(LatexDelimitedGroupParser):
 
     class MathContentsParserInfo(LatexDelimitedGroupParser.GroupContentsParserInfo):
 
-        def __init__(self, first_token, group_parsing_state, parsing_state, delimiters):
+        def initialize(self):
+            # set up all the relevant fields manually:
 
-            super(LatexMathParser.MathContentsParserInfo, self).__init__()
+            self.math_mode_type = self.first_token.tok
+            self.math_mode_delimiter = self.first_token.arg
 
-            # adjust fields:
-
-            self.math_mode_type = firsttok.tok
-            self.math_mode_delimiter = firsttok.arg
-
-            self.math_parsing_state = parsing_state.sub_context(
+            self.math_parsing_state = self.parsing_state.sub_context(
                 in_math_mode=True,
                 math_mode_delimiter=self.math_mode_delimiter
             )
 
-            self.contents_parsing_state = math_parsing_state
-            self.child_parsing_state = math_parsing_state
-            self.parsing_state = parsing_state
+            self.contents_parsing_state = self.math_parsing_state
+            self.child_parsing_state = self.math_parsing_state
+            self.parsed_delimiters = self.get_parsed_delimiters()
 
         def stop_token_condition(self, token):
-            if token.tok == self.math_mode_type and token.arg == self.delimiters[1]:
+            if token.tok == self.math_mode_type and token.arg == self.parsed_delimiters[1]:
                 return True
             return False
 
@@ -562,14 +567,14 @@ class LatexMathParser(LatexDelimitedGroupParser):
 
             # note that nodelist can be None in case of a parse error
 
-            if math_mode_type == 'mathmode_inline':
+            if self.math_mode_type == 'mathmode_inline':
                 displaytype = 'inline'
-            elif math_mode_type == 'mathmode_display':
+            elif self.math_mode_type == 'mathmode_display':
                 displaytype = 'display'
             else:
                 displaytype = '<unknown>'
 
-            return latex_walker.make_node(
+            math_node = latex_walker.make_node(
                 LatexMathNode,
                 displaytype=displaytype,
                 nodelist=nodelist,
@@ -578,3 +583,5 @@ class LatexMathParser(LatexDelimitedGroupParser):
                 pos=self.first_token.pos,
                 pos_end=pos_end,
             )
+
+            return math_node, carryover_info
