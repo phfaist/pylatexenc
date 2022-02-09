@@ -200,6 +200,7 @@ class ParsingState(object):
             'enable_macros',
             'enable_environments',
             'enable_comments',
+            'enable_groups',
             'enable_specials',
             'enable_math',
             'macro_alpha_chars',
