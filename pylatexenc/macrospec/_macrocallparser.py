@@ -33,7 +33,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from ..latexnodes import LatexMacroNode, LatexEnvironmentNode, LatexSpecialsNode
+from ..latexnodes.nodes import LatexMacroNode, LatexEnvironmentNode, LatexSpecialsNode
 from ..latexnodes.parsers import LatexParserBase, LatexGeneralNodesParser
 
 

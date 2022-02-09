@@ -2,10 +2,12 @@ from __future__ import print_function, unicode_literals
 
 
 from ...latexnodes import (
-    LatexNode,
-    LatexCharsNode,
     LatexWalkerError,
     ParsedMacroArgs,
+)
+from ...latexnodes.nodes import (
+    LatexNode,
+    LatexCharsNode,
 )
 
 

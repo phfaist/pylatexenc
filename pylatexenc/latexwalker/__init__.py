@@ -103,7 +103,7 @@ from .. import macrospec
 
 # backwards compatibility with pylatexenc-2
 from ..latexnodes._exctypes import *
-from ..latexnodes._nodetypes import *
+from ..latexnodes.nodes import *
 from ..latexnodes._token import LatexToken
 
 

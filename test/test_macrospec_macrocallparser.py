@@ -11,9 +11,9 @@ from pylatexenc.macrospec._macrocallparser import (
 )
 
 from pylatexenc.latexnodes import (
-    LatexNodeList,
     ParsingState
 )
+from pylatexenc.latexnodes.nodes import *
 
 
 

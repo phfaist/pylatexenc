@@ -13,18 +13,10 @@ from pylatexenc.latexnodes._nodescollector import (
 from pylatexenc.latexnodes import (
     LatexWalkerParseError,
     LatexTokenReader,
-    LatexNodeList,
-    LatexCharsNode,
-    LatexGroupNode,
-    LatexMathNode,
-    LatexCommentNode,
-    LatexMacroNode,
-    LatexEnvironmentNode,
-    LatexSpecialsNode,
     ParsingState,
     ParsedMacroArgs,
 )
-
+from pylatexenc.latexnodes.nodes import *
 
 from ._helpers_tests import (
     DummyWalker,
