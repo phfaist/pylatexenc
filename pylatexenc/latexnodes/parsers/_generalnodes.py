@@ -40,6 +40,17 @@ from .._nodescollector import LatexNodesCollector
 
 from ._base import LatexParserBase
 
+# for Py3
+_basestring = str
+
+## Begin Py2 support code
+import sys
+if sys.version_info.major == 2:
+    # Py2
+    _basestring = basestring
+## End Py2 support code
+
+
 
 # ------------------------------------------------------------------------------
 
@@ -184,124 +195,289 @@ class LatexSingleNodeParser(LatexGeneralNodesParser):
 
 
 class LatexDelimitedGroupParser(LatexParserBase):
+    r"""
+    ............
+
+    In all cases, the first token read (after whitespace) must be a 'brace_open'
+    type.  If `delimiters` is a pair of characters, the parsing state is
+    inspected to ensure that these delimiters are recorded as latex group
+    delimiters, and will add them if necessary for parsing the group contents
+    (but not its parsed children).
+
+    Arguments:
+
+    - `delimiters` can be either:
+
+        * `None` to auto-detect delimiters.  If the first char token is one of the
+          `auto_delimiters`, then the corresponding closing delimiter is
+          determined from the parsing state.
+
+        * A single `<char1>` indicating an opening delimiter.  The corresponding
+          closing delimiter will be obtained by inspecting the parsing state.
+
+        * A pair `(<char1>, <char2>)` of opening and closing delimiters.
+
+          If the delimiters are not defined as LaTeX group delimiters in the
+          parsing state, then a new parsing state is created that includes these
+          delimiters.  The new parsing state is used to parse the group contents
+          but not any child nodes.  This behavior ensures that expressions of
+          the type ``\macro[A[B]]`` and ``\macro[{[}]`` are parsed correctly
+          respectively as an optional argument ``A[B]`` to ``\macro`` and as a
+          single opening bracket as an optional argument to ``\macro``.
+
+    - If `optional` is `True`, then no error is raised if the expected opening
+      delimiter is not present and a `None` node is returned by the parser.  By
+      default, not encountering the expected opening delimiter causes a parse
+      error.
+
+    - If `allow_pre_space` is `True` (by default), any space preceding the group
+      is ignored.  Use `allow_pre_space=False` to inhibit this behavior.  This
+      can be useful for instance in certain edge cases where you'd want an
+      optional argument to immediately follow a command, so that an opening
+      bracket after whitespace doesn't get parsed as an optional argument.  For
+      instance, IIRC AMS redefines the command ``\\`` to require its optional
+      argument (vertical spacing) to immediately follow the ``\\`` without any
+      whitespace so that the code ``A+B=C \\ [A,B] = 0`` doesn't parse ``[A,B]``
+      as an argument to ``\\``.
+
+    - If `discard_carryover_info` is `True`, any carryover information from
+      parsing the content of the group is discarded.  This is the default
+      behavior and mirrors the behavior of (La)TeX that most definitions are
+      local to a group
+
+      .. todo: How do we implement ``\global`` definitions then?
+    """
     def __init__(self,
-                 require_delimiter_type,
-                 include_delimiter_chars=None,
+                 delimiters,
                  optional=False,
-                 do_not_skip_space=False,
+                 allow_pre_space=True,
+                 discard_carryover_info=True,
                  **kwargs):
         super(LatexDelimitedGroupParser, self).__init__(**kwargs)
-        self.require_delimiter_type = require_delimiter_type
-        self.include_delimiter_chars = include_delimiter_chars
+        self.delimiters = delimiters
         self.optional = optional
-        self.do_not_skip_space = do_not_skip_space
+        self.allow_pre_space = skip_space
+        self.discard_carryover_info = discard_carryover_info
 
+        self.acceptable_opening_delimiter_token_types = ('brace_open', )
+        self.make_group_contents_parser_info = \
+            LatexDelimitedGroupParser.GroupContentsParserInfo
 
     def contents_can_be_empty(self):
         return self.optional
 
-    
+
     def get_group_parsing_state(self, parsing_state):
+        r"""
+        ..............
 
-        if self.include_delimiter_chars:
-            return parsing_state.sub_context(
-                latex_group_delimiters= \
-                    parsing_state.latex_group_delimiters + list(self.include_delimiter_chars)
-            )
+        This method assumes that the delimiters are latex group type (e.g., curly
+        brace chars).  If not, then you need to reimplement this function in a
+        subclass.
+        """
+        if self.delimiters is None:
+            return parsing_state
 
-        return parsing_state
+        if isinstance(self.delimiters, _basestring):
+            if self.delimiters not parsing_state._latex_group_delimchars_by_open:
+                raise ValueError(
+                    "Delimiter ‘{}’ not a valid latex group delimiter ({!r})"
+                    .format(self.delimiters, parsing_state.latex_group_delimiters)
+                )
+            return parsing_state
         
-    def get_opening_token(self, token_reader, group_parsing_state):
+        if self.delimiters in parsing_state.latex_group_delimiters:
+            # all ok, they are known group delimiters
+            return parsing_state
 
-        firsttok = token_reader.next_token(parsing_state=group_parsing_state)
+        # add the delimiters to the parsing state's group delimiter list
+        return parsing_state.sub_context(
+            latex_group_delimiters= \
+                parsing_state.latex_group_delimiters + [ self.delimiters ]
+        )
 
-        require_delimiter_type = self.require_delimiter_type
+    def is_acceptable_opening_delimiter(self, first_token, group_parsing_state):
+        if first_token.tok not in self.acceptable_opening_delimiter_token_types:
+            return False
 
-        if require_delimiter_type not in group_parsing_state._latex_group_delimchars_by_open:
-            logger.warning("Required opening delimiter ‘%s’ is not a valid delimiter type; "
-                           "delimiters = %s",
-                           require_delimiter_type,
-                           group_parsing_state.latex_group_delimiters)
-
-        if firsttok.tok != 'brace_open'  \
-           or (require_delimiter_type is not None and firsttok.arg != require_delimiter_type) \
-           or (self.do_not_skip_space and firsttok.pre_space):
-
-            if self.optional:
-                # all ok, the argument was optional and was simply not specified.
-                token_reader.move_to_token(firsttok)
-                return None
-
-            #
-            if require_delimiter_type:
-                acceptable_delimiters = '‘' + require_delimiter_type + '’'
+        if self.delimiters is not None:
+            if isinstance(self.delimiters, _basestring):
+                open_delim = self.delimiters
             else:
-                acceptable_delimiters = ", ".join([
-                    '‘' + od + '’'
-                    for (od, cd) in group_parsing_state.latex_group_delimiters
-                ])
-            raise LatexWalkerNodesParseError(
-                msg='Expected an opening LaTeX delimiter (%s), got %s/‘%s’%s' %(
-                    acceptable_delimiters,
-                    firsttok.tok, firsttok.arg,
-                    ' with leading whitespace' if firsttok.pre_space else ''
-                ),
-                recovery_nodes=LatexNodeList([]),
-                recovery_at_token=firsttok
-            )
+                open_delim = self.delimiters[0]
 
-        return firsttok
+            if first_token.arg != open_delim:
+                return False
+
+        if not self.allow_pre_space and first_token.pre_space:
+            return False
+
+        return True
+
+    def get_acceptable_open_delimiter_list(self, group_parsing_state):
+        r"""
+        ............
+
+        Only used for error messages.
+        """
+        if self.delimiters is not None:
+            if isinstance(self.delimiters, _basestring):
+                return [self.delimiters]
+            else:
+                return [self.delimiters[0]]
+            
+        return [
+            od
+            for (od, cd) in group_parsing_state.latex_group_delimiters
+        ]
+
+    class GroupContentsParserInfo(object):
+
+        def __init__(self, first_token, group_parsing_state, parsing_state, delimiters):
+            super(LatexDelimitedGroupParser.GroupContentsParserInfo, self).__init__()
+
+            # save args
+            self.first_token = first_token
+            self.group_parsing_state = group_parsing_state
+            self.parsing_state = parsing_state
+            self.delimiters = delimiters
+
+            # default assignments, for latex groups; can be overridden by subclasses etc.
+            self.contents_parsing_state = contents_parsing_state
+            self.child_parsing_state = child_parsing_state
+            self.parsed_delimiters = self.get_parsed_delimiters()
+
+        def stop_token_condition(self, token):
+            if token.tok == 'brace_close' and token.arg == self.delimiters[1]:
+                return True
+            return False
+        
+        def handle_stop_condition_token(self, token,
+                                        latex_walker, token_reader, parsing_state):
+            token_reader.move_past_token(token)
+
+        def make_child_parsing_state(self, group_parsing_state, node_class):
+            return self.child_parsing_state
+
+        def get_matching_delimiter(self, opening_delimiter):
+            r"""
+            ..............
+
+            This method assumes that the delimiters are latex group type (e.g., curly
+            brace chars).  If not, then you need to reimplement this function in a
+            subclass.
+            """
+            return self.group_parsing_state._latex_group_delimchars_by_open[opening_delimiter]
+
+        def get_parsed_delimiters(self):
+            r"""
+            ..............
+            """
+
+            first_token = self.first_token
+            delimiters = self.delimiters
+
+            if delimiters is None:
+                delimiters = first_token.arg
+
+            if isinstance(delimiters, _basestring):
+                opening_delimiter = delimiters
+                closing_delimiter = self.get_matching_delimiter(opening_delimiter)
+                return (opening_delimiter, closing_delimiter)
+
+            return delimiters
+
+        def make_group_node_carryover_info(self, latex_walker, token_reader,
+                                           nodelist, carryover_info):
+
+            # use cur_pos() to include the closing delimiter
+            pos_end = token_reader.cur_pos()
+
+            return latex_walker.make_node(
+                LatexGroupNode,
+                nodelist=nodelist,
+                parsing_state=self.group_parsing_state,
+                delimiters=self.parsed_delimiters,
+                pos=self.first_token.pos,
+                pos_end=pos_end
+            )
 
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
         group_parsing_state = self.get_group_parsing_state(parsing_state)
 
-        firsttok = self.get_opening_token(token_reader, group_parsing_state)
+        firsttok = token_reader.next_token(parsing_state=group_parsing_state)
+        
+        if not self.is_acceptable_opening_delimiter(firsttok):
+
+            if self.optional:
+                # all ok, the argument was optional and was simply not specified.
+                token_reader.move_to_token(firsttok)
+                return None
+
+            acceptable_delimiters_msg = ", ".join([
+                "‘{}’".format(od)
+                for od in self.get_acceptable_open_delimiter_list(group_parsing_state)
+            ])
+            raise LatexWalkerNodesParseError(
+                msg='Expected an opening LaTeX delimiter (%s), got %s/‘%s’%s' %(
+                    acceptable_delimiters_msg,
+                    firsttok.tok,
+                    firsttok.arg,
+                    (' with leading whitespace' if firsttok.pre_space else '')
+                ),
+                recovery_nodes=LatexNodeList([]),
+                recovery_at_token=firsttok
+            )
+
         if firsttok is None:
-            # all ok, optional argument not provided
+            # All ok, an optional argument was not provided.  (In case
+            # `self.optional=False`, an error was already raised by
+            # get_opening_token().)
             return None, None
 
-        delimiter_type = firsttok.arg
-        closing_delimiter = group_parsing_state._latex_group_delimchars_by_open[delimiter_type]
-        
-        def stop_token_condition(token):
-            if token.tok == 'brace_close' and token.arg == closing_delimiter:
-                return True
-            return False
+        # now delimiters is either None or a tuple of (open, close)
 
-        def handle_stop_condition_token(token, latex_walker, token_reader, parsing_state):
-            assert token.tok == 'brace_close'
-            token_reader.move_past_token(token)
+        contents_parser_info = self.make_group_contents_parser_info(
+            first_token=first_token,
+            group_parsing_state=group_parsing_state,
+            parsing_state=parsing_state,
+            delimiters=self.get_delimiters(first_token)
+        )
+
+        contents_parser = LatexGeneralNodesParser(
+            stop_token_condition=contents_parser_info.stop_token_condition,
+            make_child_parsing_state=contents_parser_info.child_parsing_state,
+            require_stop_condition_met=True,
+            handle_stop_condition_token=contents_parser_info.handle_stop_condition_token,
+        )
 
         nodelist, carryover_info = latex_walker.parse_content(
-            LatexGeneralNodesParser(
-                stop_token_condition=stop_token_condition,
-                make_child_parsing_state=lambda *args, **kwargs: parsing_state,
-                require_stop_condition_met=True,
-                handle_stop_condition_token=handle_stop_condition_token,
-            ),
+            contents_parser,
             token_reader=token_reader,
-            parsing_state=group_parsing_state,
+            parsing_state=contents_parser_info.contents_parsing_state,
             open_context=(
-                'LaTeX delimited expression ‘{}…{}’'.format(delimiter_type, closing_delimiter),
+                'Delimited expression ‘{}…{}’'.format(*contents_parser_info.parsed_delimiters),
                 firsttok
             )
         )
 
         # can discard the carryover_info since the parsing state gets reset at
         # the end of the group.
+        if self.discard_carryover_info and carryover_info is not None:
+            logger.debug("Discarding carryover information %r after delimited group",
+                         carryover_info)
+            carryover_info = None
 
-        groupnode = \
-            latex_walker.make_node(LatexGroupNode,
-                                   nodelist=nodelist,
-                                   parsing_state=group_parsing_state,
-                                   delimiters=(delimiter_type, closing_delimiter),
-                                   pos = firsttok.pos,
-                                   # use cur_pos() to include the closing delimiter
-                                   pos_end = token_reader.cur_pos())
-
-        return groupnode, None
+        groupnode, carryover_info = contents_parser_info.make_group_node_carryover_info(
+            latex_walker=latex_walker,
+            token_reader=token_reader,
+            nodelist=nodelist,
+            carryover_info=carryover_info,
+        )
+        
+        return groupnode, carryover_info
 
 
 
@@ -313,123 +489,92 @@ class LatexDelimitedGroupParser(LatexParserBase):
 
 
 
-class LatexMathParser(LatexParserBase):
+class LatexMathParser(LatexDelimitedGroupParser):
     def __init__(self,
-                 require_math_mode_delimiter=None,
-                 do_not_skip_space=False,
-                 optional=False,
-                 already_read_firsttok=None,
+                 math_mode_delimiters,
                  **kwargs):
-        super(LatexMathParser, self).__init__(**kwargs)
-        self.require_math_mode_delimiter = require_math_mode_delimiter
-        self.do_not_skip_space = do_not_skip_space
-        self.optional = optional
-        self.already_read_firsttok = already_read_firsttok
+        super(LatexMathParser, self).__init__(
+            delimiters=math_mode_delimiters,
+            discard_carryover_info=False,
+            **kwargs)
 
+        self.acceptable_opening_delimiter_token_types = \
+            ('mathmode_inline', 'mathmode_display')
+        self.make_group_contents_info = LatexMathParser.MathContentsParserInfo
 
     def contents_can_be_empty(self):
-        return self.optional
+        return False
+        
+    def get_group_parsing_state(self, parsing_state):
+        return parsing_state
 
-
-    def get_math_parsing_state(self, parsing_state, math_mode_delimiter):
-        return parsing_state.sub_context(in_math_mode=True,
-                                         math_mode_delimiter=math_mode_delimiter)
-
-
-    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
-
-        if self.already_read_firsttok is not None:
-            firsttok = self.already_read_firsttok
-        else:
-            firsttok = token_reader.next_token(parsing_state=parsing_state)
-
-        require_math_mode_delimiter = self.require_math_mode_delimiter
-
-        if firsttok.tok not in ('mathmode_inline', 'mathmode_display')  \
-           or (require_math_mode_delimiter is not None
-               and firsttok.arg != require_math_mode_delimiter) \
-           or (self.do_not_skip_space and firsttok.pre_space):
-
-            if self.optional:
-                # all ok, the argument was optional and was simply not specified.
-                token_reader.move_to_token(firsttok)
-                return None, None
-
-            #
-            if require_math_mode_delimiter:
-                acceptable_mm = '‘' + require_math_mode_delimiter + '’'
+    def get_acceptable_open_delimiter_list(self, group_parsing_state):
+        if self.delimiters is not None:
+            if isinstance(self.delimiters, _basestring):
+                return [self.delimiters]
             else:
-                acceptable_mm = ", ".join([
-                    '‘' + od + '’'
-                    for (od, cd) in (
-                            parsing_state.latex_inline_math_mode_delimiters
-                            + parsing_state.latex_display_math_mode_delimiters
-                    )
-                ])
-            raise LatexWalkerNodesParseError(
-                msg='Expected a LaTeX math mode opening delimiter (%s), got %s/‘%s’%s' %(
-                    acceptable_mm,
-                    firsttok.tok,
-                    firsttok.arg,
-                    ' with leading whitespace' if firsttok.pre_space else ''
-                ),
-                recovery_nodes=LatexNodeList([]),
-                recovery_at_token=firsttok
+                return [self.delimiters[0]]
+            
+        return [
+            od
+            for (od, cd) in (
+                    group_parsing_state.latex_inline_math_delimiters
+                    + group_parsing_state.latex_display_math_delimiters
+            )
+        ]
+
+
+    class MathContentsParserInfo(LatexDelimitedGroupParser.GroupContentsParserInfo):
+
+        def __init__(self, first_token, group_parsing_state, parsing_state, delimiters):
+
+            super(LatexMathParser.MathContentsParserInfo, self).__init__()
+
+            # adjust fields:
+
+            self.math_mode_type = firsttok.tok
+            self.math_mode_delimiter = firsttok.arg
+
+            self.math_parsing_state = parsing_state.sub_context(
+                in_math_mode=True,
+                math_mode_delimiter=self.math_mode_delimiter
             )
 
-        math_mode_delimiter = firsttok.arg
-        math_mode_type = firsttok.tok
+            self.contents_parsing_state = math_parsing_state
+            self.child_parsing_state = math_parsing_state
+            self.parsing_state = parsing_state
 
-        math_parsing_state = self.get_math_parsing_state(parsing_state, math_mode_delimiter)
-
-        closing_math_mode_delim = \
-            math_parsing_state._math_expecting_close_delim_info['close_delim']
-        
-        def stop_token_condition(token):
-            if token.tok == math_mode_type and token.arg == closing_math_mode_delim:
+        def stop_token_condition(self, token):
+            if token.tok == self.math_mode_type and token.arg == self.delimiters[1]:
                 return True
             return False
 
-        def handle_stop_condition_token(token, latex_walker, token_reader, parsing_state):
-            assert token.tok.startswith('mathmode_')
-            token_reader.move_past_token(token)
+        def get_matching_delimiter(self, opening_delimiter):
+            return self.math_parsing_state._math_expecting_close_delim_info['close_delim']
 
-        nodelist, carryover_info = latex_walker.parse_content(
-            LatexGeneralNodesParser(
-                stop_token_condition=stop_token_condition,
-                handle_stop_condition_token=handle_stop_condition_token,
-            ),
-            token_reader=token_reader,
-            parsing_state=math_parsing_state,
-            open_context=(
-                'LaTeX math ‘{}…{}’'.format(math_mode_delimiter, closing_math_mode_delim),
-                firsttok
+
+        def make_group_node_carryover_info(self, latex_walker, token_reader,
+                                           nodelist, carryover_info):
+
+            # As for the delimited group parser, use cur_pos() so that it includes
+            # the closing math mode delimiter.
+            pos_end = token_reader.cur_pos()
+
+            # note that nodelist can be None in case of a parse error
+
+            if math_mode_type == 'mathmode_inline':
+                displaytype = 'inline'
+            elif math_mode_type == 'mathmode_display':
+                displaytype = 'display'
+            else:
+                displaytype = '<unknown>'
+
+            return latex_walker.make_node(
+                LatexMathNode,
+                displaytype=displaytype,
+                nodelist=nodelist,
+                parsing_state=self.parsing_state,
+                delimiters=self.parsed_delimiters,
+                pos=self.first_token.pos,
+                pos_end=pos_end,
             )
-        )
-
-        # As for the delimited group parser, use cur_pos() so that it includes
-        # the closing math mode delimiter.
-        pos_end = token_reader.cur_pos()
-
-        # note that nodelist can be None in case of a parse error
-
-        if math_mode_type == 'mathmode_inline':
-            displaytype = 'inline'
-        elif math_mode_type == 'mathmode_display':
-            displaytype = 'display'
-        else:
-            displaytype = '<unknown>'
-
-        node = latex_walker.make_node(
-            LatexMathNode,
-            displaytype=displaytype,
-            nodelist=nodelist,
-            parsing_state=parsing_state,
-            delimiters=(math_mode_delimiter, closing_math_mode_delim),
-            pos=firsttok.pos,
-            pos_end=pos_end
-        )
-
-        return node, carryover_info
-
-

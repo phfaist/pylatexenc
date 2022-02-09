@@ -668,7 +668,7 @@ class LatexNodesCollector(object):
         groupnode, carryover_info = \
             self.latex_walker.parse_content(
                 self.make_group_parser(
-                    require_delimiter_type=tok.arg,
+                    delimiters=tok.arg,
                 ),
                 token_reader=self.token_reader,
                 parsing_state=self.make_child_parsing_state(self.parsing_state,
@@ -873,7 +873,7 @@ class LatexNodesCollector(object):
         mathnode, carryover_info = \
             self.latex_walker.parse_content(
                 self.make_math_parser(
-                    require_math_mode_delimiter=tok.arg,
+                    math_mode_delimiters=tok.arg,
                 ),
                 token_reader=self.token_reader,
                 parsing_state=self.make_child_parsing_state(math_parsing_state,

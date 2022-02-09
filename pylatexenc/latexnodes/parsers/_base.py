@@ -51,3 +51,4 @@ class LatexParserBase(object):
         `False` here.
         """
         return True
+
