@@ -156,6 +156,50 @@ class TestLatexTokenReader(unittest.TestCase):
                                     pre_space=pre_space))
 
 
+    def test_beginenviron(self):
+        latextext = r"\begin{environment}"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='begin_environment', arg='environment',
+                                    pos=0, pos_end=len(latextext),
+                                    pre_space=''))
+
+    def test_beginenviron_tokenparseerror(self):
+        latextext = r"\begin<forgot environment name!{z}"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        with self.assertRaises(LatexWalkerTokenParseError):
+            tr.peek_token(ps)
+
+
+    def test_beginmacro_confusing_name(self):
+        latextext = r"\beginMacroWithConfusingName"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='macro', arg='beginMacroWithConfusingName',
+                                    pos=0, pos_end=len(latextext),
+                                    pre_space=''))
+
+    def test_endenviron_simple(self):
+        latextext = r"\end{myenvironment}"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='end_environment', arg='myenvironment',
+                                    pos=0, pos_end=len(latextext),
+                                    pre_space=''))
+
+
     def test_multiple_tokens_advances_and_stuff(self):
         
         latextext = \

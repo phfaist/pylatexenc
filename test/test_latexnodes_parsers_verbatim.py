@@ -209,6 +209,69 @@ verbatim>"""
         )
         
 
+    def test_simple_delimiters_required_delims(self):
+        latextext = r"{verbatim>"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexDelimitedVerbatimParser(delimiters=('{','>'))
+
+        node, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            node,
+            LatexGroupNode(
+                parsing_state=ps,
+                delimiters=('{','>'),
+                nodelist=LatexNodeList([
+                    LatexCharsNode(
+                        parsing_state=ps,
+                        chars='verbatim',
+                        pos=1,
+                        pos_end=9,
+                    )
+                ]),
+                pos=0,
+                pos_end=10,
+            )
+        )
+        
+
+    def test_simple_delimiters_auto_delims(self):
+        latextext = r"`verbatim'"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexDelimitedVerbatimParser(auto_delimiters=[
+            ('{','}'),
+            ('<','>'),
+            ('`','\''),
+        ])
+
+        node, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            node,
+            LatexGroupNode(
+                parsing_state=ps,
+                delimiters=('`','\''),
+                nodelist=LatexNodeList([
+                    LatexCharsNode(
+                        parsing_state=ps,
+                        chars='verbatim',
+                        pos=1,
+                        pos_end=9,
+                    )
+                ]),
+                pos=0,
+                pos_end=10,
+            )
+        )
+        
 
 
 class TestLatexVerbatimEnvironmentContentsParser(unittest.TestCase):

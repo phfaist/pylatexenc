@@ -34,6 +34,7 @@ from ._base import LatexParserBase
 from ._generalnodes import (
     LatexGeneralNodesParser, LatexDelimitedGroupParser, LatexSingleNodeParser
 )
+from ..nodes import LatexNodeList
 
 
 
@@ -65,6 +66,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
                  following_arg_parser=None,
                  include_chars_node_before_following_arg=True,
                  return_none_instead_of_empty=False,
+                 allow_pre_space=True,
                  **kwargs):
         super(LatexOptionalCharsMarkerParser, self).__init__(**kwargs)
 
@@ -73,6 +75,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
         self.include_chars_node_before_following_arg = \
             include_chars_node_before_following_arg
         self.return_none_instead_of_empty = return_none_instead_of_empty
+        self.allow_pre_space = allow_pre_space
 
         if not self.chars:
             raise ValueError(("Invalid chars={!r}, needs to be non-empty "
@@ -85,13 +88,19 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
         
-        orig_pos_tok = token_reader.peek_token()
+        orig_pos_tok = token_reader.peek_token(parsing_state=parsing_state)
         pos_end = None
         read_s = ''
         match_found = False
+        first_token = None
         try:
             while True:
-                tok = token_reader.next_token()
+                tok = token_reader.next_token(parsing_state=parsing_state)
+                if first_token is None:
+                    first_token = tok
+                    if first_token.pre_space and not self.allow_pre_space:
+                        # no pre-space allowed, the optional marker was not provided.
+                        return None, None
                 if tok.tok != 'char':
                     break
                 if read_s and tok.pre_space:

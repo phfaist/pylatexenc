@@ -213,10 +213,10 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
             verbatim_info.parsed_delimiters = self.delimiters
 
             first_char = token_reader.next_chars(1, parsing_state=parsing_state)
-            if first_char != parsed_delimiters[0]:
+            if first_char != verbatim_info.parsed_delimiters[0]:
                 raise LatexWalkerParseError(
                     msg="Expected opening delimiter ‘{}’ for verbatim content".format(
-                        parsed_delimiters[0]
+                        verbatim_info.parsed_delimiters[0]
                     ),
                     pos=pos,
                 )

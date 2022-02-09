@@ -196,11 +196,23 @@ class LatexTokenReader(LatexTokenReaderBase):
 
             # check if we have an environment
             if parsing_state.enable_environments:
-                if s.startswith(('begin', 'end',), pos+1):
-                    # \begin{environment} or \end{environment}
-                    return self.impl_read_environment(s=s, pos=pos,
-                                                      parsing_state=parsing_state,
-                                                      pre_space=pre_space)
+                if s.startswith('begin', pos+1):
+                    beginend = 'begin'
+                elif s.startswith('end', pos+1):
+                    beginend = 'end'
+                else:
+                    beginend = None
+
+                if beginend:
+                    pastbeginendpos = pos+1+len(beginend)
+                    if pastbeginendpos >= len(s) \
+                       or s[pastbeginendpos] not in parsing_state.macro_alpha_chars:
+                        # \begin{environment} and not e.g. \beginmetastate, or
+                        # \end{environment} and not e.g. \endcsname
+                        return self.impl_read_environment(s=s, pos=pos,
+                                                          parsing_state=parsing_state,
+                                                          beginend=beginend,
+                                                          pre_space=pre_space)
 
             # we must have a macro
             if parsing_state.enable_macros:
@@ -358,20 +370,12 @@ class LatexTokenReader(LatexTokenReaderBase):
                                pre_space=pre_space, post_space=post_space)
 
 
-    def impl_read_environment(self, s, pos, parsing_state, pre_space):
+    def impl_read_environment(self, s, pos, parsing_state, beginend, pre_space):
 
-        if s[pos] != parsing_state.macro_escape_char:
+        if s[pos:pos+1+len(beginend)] != parsing_state.macro_escape_char + beginend:
             raise ValueError(
-                "Internal error, expected ‘\\’ in read_environment()"
-            )
-
-        if s.startswith('begin', pos+1):
-            beginend = 'begin'
-        elif s.startswith('end', pos+1):
-            beginend = 'end'
-        else:
-            raise ValueError(
-                "Internal error, expected ‘\\begin’ or ‘\\end’ in read_environment()"
+                "Internal error, expected ‘\\{}’ in read_environment()"
+                .format(beginend)
             )
 
         pos_envname = pos + 1 + len(beginend)
