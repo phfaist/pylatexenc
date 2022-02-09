@@ -173,7 +173,7 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
         
-        token_reader.skip_space_chars()
+        token_reader.skip_space_chars(parsing_state)
 
         orig_pos = token_reader.cur_pos()
 
