@@ -43,7 +43,7 @@ class LatexVerbatimBaseParser(LatexParserBase):
     """
     
     def __init__(self, **kwargs):
-        super(LatexVerbatimParser, self).__init__(**kwargs)
+        super(LatexVerbatimBaseParser, self).__init__(**kwargs)
 
     def new_char_check_stop_condition(self, char, verbatim_string, parsing_state):
         r"""

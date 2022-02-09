@@ -333,10 +333,12 @@ class LatexDelimitedGroupParser(LatexParserBase):
 
     class GroupContentsParserInfo(object):
 
-        def __init__(self, first_token, group_parsing_state, parsing_state, delimiters):
+        def __init__(self, delimited_group_parser, first_token,
+                     group_parsing_state, parsing_state, delimiters):
             super(LatexDelimitedGroupParser.GroupContentsParserInfo, self).__init__()
 
             # save args
+            self.delimited_group_parser = delimited_group_parser
             self.first_token = first_token
             self.group_parsing_state = group_parsing_state
             self.parsing_state = parsing_state
@@ -388,6 +390,28 @@ class LatexDelimitedGroupParser(LatexParserBase):
 
             return delimiters
 
+        def parse_content(self, latex_walker, token_reader):
+
+            contents_parser = LatexGeneralNodesParser(
+                stop_token_condition=self.stop_token_condition,
+                make_child_parsing_state=self.make_child_parsing_state,
+                require_stop_condition_met=True,
+                handle_stop_condition_token=self.handle_stop_condition_token,
+            )
+
+            nodelist, carryover_info = latex_walker.parse_content(
+                contents_parser,
+                token_reader=token_reader,
+                parsing_state=self.contents_parsing_state,
+                open_context=(
+                    'Delimited expression ‘{}…{}’'
+                    .format(*self.parsed_delimiters),
+                    self.first_token
+                )
+            )
+
+            return nodelist, carryover_info
+
         def make_group_node_carryover_info(self, latex_walker, token_reader,
                                            nodelist, carryover_info):
 
@@ -404,7 +428,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
             )
 
             return group_node, carryover_info
-
+        
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
@@ -446,6 +470,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
         # now delimiters is either None or a tuple of (open, close)
 
         contents_parser_info = self.make_group_contents_parser_info(
+            self,
             first_token=first_token,
             group_parsing_state=group_parsing_state,
             parsing_state=parsing_state,
@@ -453,21 +478,9 @@ class LatexDelimitedGroupParser(LatexParserBase):
         )
         contents_parser_info.initialize()
 
-        contents_parser = LatexGeneralNodesParser(
-            stop_token_condition=contents_parser_info.stop_token_condition,
-            make_child_parsing_state=contents_parser_info.make_child_parsing_state,
-            require_stop_condition_met=True,
-            handle_stop_condition_token=contents_parser_info.handle_stop_condition_token,
-        )
-
-        nodelist, carryover_info = latex_walker.parse_content(
-            contents_parser,
-            token_reader=token_reader,
-            parsing_state=contents_parser_info.contents_parsing_state,
-            open_context=(
-                'Delimited expression ‘{}…{}’'.format(*contents_parser_info.parsed_delimiters),
-                first_token
-            )
+        nodelist, carryover_info = contents_parser_info.parse_content(
+            latex_walker=latex_walker,
+            token_reader=token_reader
         )
 
         # can discard the carryover_info since the parsing state gets reset at
