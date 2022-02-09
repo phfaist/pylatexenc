@@ -122,7 +122,7 @@ class LatexTokenReader(LatexTokenReaderBase):
         """
 
         (space, space_pos, space_pos_end) = \
-            self.impl_peek_space_chars(self.s, self._pos, self.parsing_state, self)
+            self.impl_peek_space_chars(self.s, self._pos, parsing_state)
 
         self._advance_to_pos(space_pos_end)
 
