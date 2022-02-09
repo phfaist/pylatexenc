@@ -126,7 +126,7 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         self._advance_to_pos(space_pos_end)
 
-        return (space, space_pos, space_len)
+        return (space, space_pos, space_pos_end)
 
     def peek_space_chars(self, parsing_state):
         return self.impl_peek_space_chars(self.s, self._pos, parsing_state)
