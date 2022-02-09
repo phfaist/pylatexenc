@@ -34,3 +34,9 @@ A couple things to look out for
     # unknown macros and environemnts are now accepted and are assumed
     # not to take any arguments
     #
+
+- Node lists are now encapsulated in a :py:class:`LatexNodeList`.  It behaves
+  very much like a list in all respects (indexing, slicing, etc.), except that
+  it does not satisfy ``isinstance(nodelist, list)``.  If you relied on such
+  tests, you'll need to update them to the liking of ``isinstance(nodelist,
+  (LatexNodeList, list))``.

@@ -45,6 +45,8 @@ from ._optionals import (
 from ._stdarg import (
     LatexStandardArgumentParser,
     get_standard_argument_parser,
+    LatexCharsCommaSeparatedListParser,
+    LatexCharsGroupParser,
 )
 
 
