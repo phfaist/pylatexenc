@@ -95,6 +95,7 @@ class LatexNodesCollector(object):
                  stop_token_condition=None,
                  stop_nodelist_condition=None,
                  make_child_parsing_state=None,
+                 include_stop_token_pre_space_chars=True,
                  ):
 
         super(LatexNodesCollector, self).__init__()
@@ -104,6 +105,8 @@ class LatexNodesCollector(object):
 
         self.stop_token_condition = stop_token_condition
         self.stop_nodelist_condition = stop_nodelist_condition
+
+        self.include_stop_token_pre_space_chars = include_stop_token_pre_space_chars
 
         self._stop_token_condition_met = False
         # the token that caused the condition to be met:
@@ -458,6 +461,7 @@ class LatexNodesCollector(object):
         try:
 
             tok = token_reader.next_token(parsing_state=self.parsing_state)
+            logger.debug("nodes collector read token %r", tok)
 
         except LatexWalkerEndOfStream as e:
             final_space = getattr(e, 'final_space', None)
@@ -478,6 +482,26 @@ class LatexNodesCollector(object):
                 exc.pos_end = token_reader.cur_pos()
                 raise exc
 
+
+        # first, let's check if a token-based stopping condition is met.
+        
+        stop_exc = self._check_token_stop_condition(tok)
+        if stop_exc is not None:
+            if self.include_stop_token_pre_space_chars:
+                # quickly push the pre_space whitespace into the pending chars
+                # so they get included into the content, as well
+                self.push_pending_chars(
+                    chars=tok.pre_space,
+                    pos=tok.pos - len(tok.pre_space),
+                )
+                rewind_pre_space=False
+            else:
+                rewind_pre_space=True
+            # leave the token in the input stream if it generated a stopping
+            # condition.
+            token_reader.move_to_token(tok, rewind_pre_space=rewind_pre_space)
+            stop_exc.pos_end = tok.pos_end
+            raise stop_exc
 
         # if it's a char, just append it to the stream of last "pending"
         # characters.
@@ -523,17 +547,6 @@ class LatexNodesCollector(object):
 
         # now, process the encountered token `tok`, keeping in mind that the
         # pre_space has already been dealt with.
-
-
-        # first, let's check if a token-based stopping condition is met.
-        
-        stop_exc = self._check_token_stop_condition(tok)
-        if stop_exc is not None:
-            # leave the token in the input stream if it generated a stopping
-            # condition.
-            token_reader.move_to_token(tok)
-            stop_exc.pos_end = tok.pos_end
-            raise stop_exc
 
         # check for tokens that are illegal in this context
 
@@ -662,6 +675,8 @@ class LatexNodesCollector(object):
         the node list with a call to :py:meth:`push_to_nodelist()` (refer to
         that method's doc).
         """
+
+        logger.debug("nodes collector is now parsing a latex group, %r", tok)
 
         self.token_reader.move_to_token(tok)
 

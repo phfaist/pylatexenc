@@ -6,6 +6,8 @@ import logging
 from pylatexenc.latexnodes.parsers._stdarg import (
     get_standard_argument_parser,
     LatexStandardArgumentParser,
+    LatexCharsCommaSeparatedListParser,
+    LatexCharsGroupParser,
 )
 
 from pylatexenc.latexnodes import (
@@ -255,6 +257,177 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
                 pos_end=20,
             )
         )
+
+
+
+
+
+class TestLatexCharsCommaSeparatedListParser(unittest.TestCase):
+
+    def test_stuff(self):
+        latextext = "{a;b}"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexCharsCommaSeparatedListParser(
+            comma_char=';',
+            enable_groups=True,
+            enable_comments=True,
+        )
+
+        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        cps = nodes.nodelist[0].parsing_state
+        self.assertFalse(cps.enable_macros)
+        self.assertFalse(cps.enable_environments)
+        self.assertTrue(cps.enable_groups)
+        self.assertTrue(cps.enable_comments)
+
+        self.assertEqual(
+            nodes,
+            LatexGroupNode(
+                parsing_state=ps,
+                nodelist=LatexNodeList(
+                    [
+                        LatexGroupNode(
+                            parsing_state=cps,
+                            nodelist=LatexNodeList(
+                                [
+                                    LatexCharsNode(
+                                        parsing_state=cps,
+                                        chars='a',
+                                        pos=1,
+                                        pos_end=2,
+                                    )
+                                ],
+                                pos=1,
+                                pos_end=2,
+                            ),
+                            delimiters=('',';'),
+                            pos=1,
+                            pos_end=3,
+                        ),
+                        LatexGroupNode(
+                            parsing_state=cps,
+                            nodelist=LatexNodeList(
+                                [
+                                    LatexCharsNode(
+                                        parsing_state=cps,
+                                        chars='b',
+                                        pos=3,
+                                        pos_end=4,
+                                    )
+                                ],
+                                pos=3,
+                                pos_end=4,
+                            ),
+                            delimiters=('',''),
+                            pos=3,
+                            pos_end=4,
+                        ),
+                    ],
+                    pos=1,
+                    pos_end=4,
+                ),
+                delimiters=('{','}'),
+                pos=0,
+                pos_end=5,
+            )
+        )
+
+
+    def test_zmore_stuff(self):
+        latextext = r"""{d{zz};% ;comment;
+}"""
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexCharsCommaSeparatedListParser(
+            comma_char=';',
+            enable_groups=True,
+            enable_comments=True,
+        )
+
+        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        cps = nodes.nodelist[0].parsing_state
+        self.assertFalse(cps.enable_macros)
+        self.assertFalse(cps.enable_environments)
+        self.assertTrue(cps.enable_groups)
+        self.assertTrue(cps.enable_comments)
+
+
+        self.assertEqual(
+            nodes,
+            LatexGroupNode(
+                parsing_state=ps,
+                nodelist=LatexNodeList(
+                    [
+                        LatexGroupNode(
+                            parsing_state=cps,
+                            nodelist=LatexNodeList(
+                                [
+                                    LatexCharsNode(
+                                        parsing_state=cps,
+                                        chars='d',
+                                        pos=1,
+                                        pos_end=2,
+                                    ),
+                                    LatexGroupNode(
+                                        parsing_state=ps,
+                                        nodelist=LatexNodeList([
+                                            LatexCharsNode(
+                                                parsing_state=ps,
+                                                chars='zz',
+                                                pos=3,
+                                                pos_end=5,
+                                            )
+                                            ], pos=3, pos_end=5),
+                                        delimiters=('{','}'),
+                                        pos=2,
+                                        pos_end=6,
+                                    )
+                                ],
+                                pos=1,
+                                pos_end=6,
+                            ),
+                            delimiters=('',';'),
+                            pos=1,
+                            pos_end=7,
+                        ),
+                        LatexGroupNode(
+                            parsing_state=cps,
+                            nodelist=LatexNodeList(
+                                [
+                                    LatexCommentNode(
+                                        parsing_state=cps,
+                                        comment=' ;comment;',
+                                        comment_post_space='\n',
+                                        pos=7,
+                                        pos_end=19,
+                                    )
+                                ],
+                                pos=7,
+                                pos_end=19,
+                            ),
+                            delimiters=('',''),
+                            pos=7,
+                            pos_end=19,
+                        ),
+                    ],
+                    pos=1,
+                    pos_end=19,
+                ),
+                delimiters=('{','}'),
+                pos=0,
+                pos_end=20,
+            )
+        )
+
 
 
 

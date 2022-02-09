@@ -62,6 +62,7 @@ class LatexGeneralNodesParser(LatexParserBase):
                  stop_condition_message=None,
                  make_child_parsing_state=None,
                  handle_stop_condition_token=None,
+                 include_stop_token_pre_space_chars=True,
                  handle_stop_data=None,
                  **kwargs):
         super(LatexGeneralNodesParser, self).__init__(**kwargs)
@@ -76,6 +77,8 @@ class LatexGeneralNodesParser(LatexParserBase):
         self.handle_stop_condition_token = handle_stop_condition_token
         self.handle_stop_data = handle_stop_data
 
+        self.include_stop_token_pre_space_chars = include_stop_token_pre_space_chars
+
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
@@ -87,6 +90,7 @@ class LatexGeneralNodesParser(LatexParserBase):
             stop_token_condition=self.stop_token_condition,
             stop_nodelist_condition=self.stop_nodelist_condition,
             make_child_parsing_state=self.make_child_parsing_state,
+            include_stop_token_pre_space_chars=self.include_stop_token_pre_space_chars,
         )
 
         try:

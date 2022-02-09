@@ -213,6 +213,7 @@ class LatexTokenReader(LatexTokenReaderBase):
                                                           parsing_state=parsing_state,
                                                           beginend=beginend,
                                                           pre_space=pre_space)
+                # otherwise we have a macro ->
 
             # we must have a macro
             if parsing_state.enable_macros:
@@ -380,8 +381,6 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         pos_envname = pos + 1 + len(beginend)
 
-        #print("MATCHING ENV NAME TO: ", repr(s[pos_envname:]))
-
         envmatch = self._rx_environment_name.match(s, pos_envname)
         if envmatch is None:
             tokarg = parsing_state.macro_escape_char + beginend
@@ -398,14 +397,15 @@ class LatexTokenReader(LatexTokenReaderBase):
                 recovery_token_at_pos=pos+len(tokarg),
             )
 
-        return self.make_token(
+        env_token = self.make_token(
             tok=(beginend+'_environment'),
             arg=envmatch.group('environmentname'),
             pos=pos,
             pos_end=envmatch.end(),
             pre_space=pre_space,
         )
-        
+        logger.debug("read environment token %r", env_token)
+        return env_token
 
     def impl_read_comment(self, s, pos, parsing_state, pre_space):
 

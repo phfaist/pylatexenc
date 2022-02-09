@@ -34,9 +34,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 from .._exctypes import LatexWalkerParseError, LatexWalkerTokenParseError
+from ..nodes import *
 
 from ._base import LatexParserBase
-from ._generalnodes import LatexDelimitedGroupParser
+from ._generalnodes import LatexGeneralNodesParser, LatexDelimitedGroupParser
 from ._optionals import LatexOptionalCharsMarkerParser
 from ._expression import LatexExpressionParser
 from ._verbatim import LatexDelimitedVerbatimParser
@@ -236,4 +237,147 @@ class LatexStandardArgumentParser(LatexParserBase):
             
 
 
-# ----------------------------------------------------------
+# --------------------------------------------------------------------
+
+
+
+class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
+    r"""
+    """
+    def __init__(self, comma_char=',', delimiters=('{','}'),
+                 enable_comments=True, enable_groups=True):
+        super(LatexCharsCommaSeparatedListParser, self).__init__(delimiters=delimiters)
+        self.comma_char = comma_char
+        self.enable_comments = enable_comments
+        self.enable_groups = enable_groups
+
+        self.make_group_contents_parser_info = \
+            LatexCharsCommaSeparatedListParser.CommaSepContentsParserInfo
+
+
+    class CommaSepContentsParserInfo(
+            LatexDelimitedGroupParser.GroupContentsParserInfo
+    ):
+        def initialize(self):
+            self.comma_char = self.delimited_group_parser.comma_char
+
+            self.contents_parsing_state = self.group_parsing_state.sub_context(
+                enable_macros=False,
+                enable_environments=False,
+                enable_comments=self.delimited_group_parser.enable_comments,
+                enable_groups=self.delimited_group_parser.enable_groups,
+                enable_specials=False,
+                enable_math=False
+            )
+            self.child_parsing_state = self.parsing_state
+
+            self.current_parsing_state = self.contents_parsing_state
+
+            self.parsed_delimiters = self.get_parsed_delimiters()
+
+            logger.debug("Initialized CommaSepContentsParserInfo; %r", self.__dict__)
+
+        def stop_token_condition(self, token):
+            logger.debug("stop_token_condition: %r", token)
+            if token.tok == 'brace_close' and token.arg == self.parsed_delimiters[1]:
+                return True
+            if token.tok == 'char' and token.arg == self.comma_char:
+                return True
+            return None
+
+        def handle_stop_condition_token(self, token,
+                                        latex_walker, token_reader, parsing_state):
+            token_reader.move_past_token(token)
+            if token.tok == 'brace_close':
+                # final element of a comma-separated list
+                self._last_delimiter_token = None
+                self._last_element_pos_end = token.pos
+                self._parse_more = False
+            else:
+                self._last_delimiter_token = token
+                self._last_element_pos_end = token.pos_end
+                self._parse_more = True
+
+        def parse_content(self, latex_walker, token_reader):
+
+            logger.debug("parse_content! token pos is %r", token_reader.cur_pos())
+
+            self._comma_sep_arg_list = []
+            self._carryover_info = None
+
+            self._contents_parser = LatexGeneralNodesParser(
+                stop_token_condition=self.stop_token_condition,
+                make_child_parsing_state=self.make_child_parsing_state,
+                require_stop_condition_met=True,
+                handle_stop_condition_token=self.handle_stop_condition_token,
+            )
+
+            self._parse_more = True
+            while self._parse_more:
+
+                self._parse_one_commasep_arg(latex_walker, token_reader)
+
+                if self._parse_more and self._carryover_info is not None:
+                    # merge any carry over info into the current parsing state
+                    self.current_parsing_state = \
+                        self._carryover_info.get_updated_parsing_state(
+                            self.current_parsing_state
+                        )
+
+            return LatexNodeList(self._comma_sep_arg_list), self._carryover_info
+                    
+
+        def _parse_one_commasep_arg(self, latex_walker, token_reader):
+
+            logger.debug("_parse_one_commasep_arg() !")
+
+            nodelist, carryover_info = latex_walker.parse_content(
+                self._contents_parser,
+                token_reader=token_reader,
+                parsing_state=self.current_parsing_state,
+                open_context=(
+                    'Element {} of list separated by ‘{}’'.format(
+                        len(self._comma_sep_arg_list),
+                        self.comma_char
+                    ),
+                    self.first_token
+                )
+            )
+
+            # set in the stopping condition handler
+            pos_end = self._last_element_pos_end
+
+            if self._last_delimiter_token is None:
+                this_close_delim = ''
+            else:
+                this_close_delim = self._last_delimiter_token.arg
+
+            this_group_node = latex_walker.make_node(
+                LatexGroupNode,
+                nodelist=nodelist,
+                parsing_state=self.contents_parsing_state,
+                delimiters=('', this_close_delim),
+                pos=nodelist.pos,
+                pos_end=pos_end
+            )
+            
+            self._comma_sep_arg_list.append(this_group_node)
+
+            self._carryover_info = carryover_info
+
+            logger.debug("_parse_one_commasep_arg(), list is now %r",
+                         self._comma_sep_arg_list)
+
+
+
+class LatexCharsGroupParser(LatexCharsCommaSeparatedListParser):
+    r"""
+    ....................
+
+    Very similar to a verbatim parser, but works with tokens instead of chars.
+    You can use comments and recursive groups, too.
+    """
+    def __init__(self, delimiters=('{','}'),
+                 enable_comments=True, enable_groups=True, **kwargs):
+        super(LatexCharsGroupParser, self).__init__(comma_char=None, **kwargs)
+
