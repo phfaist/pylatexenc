@@ -63,6 +63,8 @@ class _SpecBase(CallableSpecBase):
             'SpecBase_init_from_args_parser', self, arguments_spec_list, kwargs
         )
 
+        super(_SpecBase, self).__init__(**kwargs)
+
         if not use_legacy_args_parser:
             if self.arguments_spec_list:
                 self.arguments_parser = LatexArgumentsParser(arguments_spec_list)
@@ -74,8 +76,6 @@ class _SpecBase(CallableSpecBase):
             # (parsed_node) as single (keyword) argument.
             self.make_carryover_info = make_carryover_info
 
-        if kwargs:
-            raise ValueError("Unknown argument(s): {!r}".format(kwargs))
     
     @property
     def args_parser(self):

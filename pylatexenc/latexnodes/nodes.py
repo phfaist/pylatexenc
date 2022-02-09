@@ -726,6 +726,9 @@ class LatexNodeList(object):
             split_node_lists = nodelist.split_at_chars(rx_space.split)
         """
         
+
+        # untested code !
+
         split_node_lists = []
         
         if callable(sep_chars):
