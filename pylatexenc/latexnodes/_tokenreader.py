@@ -83,7 +83,7 @@ class LatexTokenReader(LatexTokenReaderBase):
     def peek_chars(self, num_chars, parsing_state):
         if self._pos >= len(self.s):
             raise LatexWalkerEndOfStream()
-        return self.s[self._pos, self._pos+num_chars]
+        return self.s[self._pos:self._pos+num_chars]
 
     def next_chars(self, num_chars, parsing_state):
         chars = self.peek_chars(num_chars, parsing_state)

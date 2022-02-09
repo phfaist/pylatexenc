@@ -3,8 +3,6 @@ from ._exctypes import *
 
 from ._token import LatexToken
 
-from ._nodetypes import *
-
 from ._nodescollector import (
     LatexNodesCollector
 )

@@ -33,7 +33,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from ._exctypes import *
-from ._nodetypes import *
+from .nodes import *
 
 
 from ._carryoverinfo import CarryoverInformation

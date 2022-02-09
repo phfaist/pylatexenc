@@ -31,7 +31,7 @@ from __future__ import print_function, unicode_literals
 
 
 from .._exctypes import *
-from .._nodetypes import *
+from ..nodes import *
 
 from ._base import LatexParserBase
 
@@ -45,7 +45,12 @@ class LatexVerbatimBaseParser(LatexParserBase):
     def __init__(self, **kwargs):
         super(LatexVerbatimBaseParser, self).__init__(**kwargs)
 
-    def new_char_check_stop_condition(self, char, verbatim_string, parsing_state):
+    class VerbatimInfo(object):
+        def __init__(self):
+            super(LatexVerbatimBaseParser.VerbatimInfo, self).__init__()
+
+    def new_char_check_stop_condition(self, char, verbatim_string, verbatim_info,
+                                      parsing_state):
         r"""
         The default implementation in this base class is to read a single verbatim
         char.  Reimplement this method in a subclass for more advanced behavior.
@@ -54,7 +59,7 @@ class LatexVerbatimBaseParser(LatexParserBase):
             return True # or dict like { 'put_back_char': True }
         return False
 
-    def error_end_of_stream(self, pos, recovery_nodes, latex_walker):
+    def error_end_of_stream(self, pos, recovery_nodes, latex_walker, verbatim_info):
         raise LatexWalkerNodesParseError(
             msg="End of stream reached while reading verbatim content",
             pos=pos,
@@ -62,22 +67,29 @@ class LatexVerbatimBaseParser(LatexParserBase):
         )
         
 
-    def finalize_verbatim_string(self, verbatim_string):
+    def finalize_verbatim_string(self, verbatim_string, verbatim_info):
         r"""
-        Return a pair `(verbatim_string, offset_length)` of the string to include in
-        the verbatim chars node and the relative offset_length where to send the
-        end position of the node, counted from the beginning of the
-        `verbatim_string`.
+        Return the string to include in the verbatim chars node.
+
+        Also, this method should assign the fields `pos_start` and `pos_end` in
+        `verbatim_info` to set the start and the end positions of the node.
         """
-        return verbatim_string, len(verbatim_string)
+        verbatim_info.pos_start = verbatim_info.content_pos_start
+        verbatim_info.pos_end = verbatim_info.content_pos_start + len(verbatim_string)
+        return verbatim_string
 
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
-        
-        return self.read_verbatim_content(latex_walker, token_reader, parsing_state, **kwargs)
+
+        verbatim_info = LatexVerbatimBaseParser.VerbatimInfo()
+        verbatim_info.original_pos = token_reader.cur_pos()
+
+        return self.read_verbatim_content(latex_walker, token_reader, parsing_state,
+                                          verbatim_info=verbatim_info, **kwargs)
 
 
-    def read_verbatim_content(self, latex_walker, token_reader, parsing_state, **kwargs):
+    def read_verbatim_content(self, latex_walker, token_reader, parsing_state,
+                              verbatim_info, **kwargs):
         r"""
         ....
         
@@ -88,35 +100,38 @@ class LatexVerbatimBaseParser(LatexParserBase):
         verbatim_string = ''
         stop_condition_met = False
 
-        orig_pos = token_reader.cur_pos()
-
         ended_with_eos = False
+        
+        verbatim_info.content_pos_start = token_reader.cur_pos()
 
         try:
             while not stop_condition_met:
-                char = token_readers.next_chars(1, parsing_state=parsing_state)
+                char = token_reader.next_chars(1, parsing_state=parsing_state)
 
                 stopinfo = \
-                    self.new_char_check_stop_condition(char, verbatim_string, parsing_state)
+                    self.new_char_check_stop_condition(char, verbatim_string, verbatim_info,
+                                                       parsing_state)
                 if stopinfo:
                     # stop condition met
                     stop_condition_met = True
                     if stopinfo is not True and stopinfo['put_back_char']:
-                        token_readers.move_to_pos_chars( token_reader.cur_pos() - 1 )
+                        token_reader.move_to_pos_chars( token_reader.cur_pos() - 1 )
                 else:
                     verbatim_string += char
 
         except LatexWalkerEndOfStream:
             ended_with_eos = True
 
-        verbatim_string, offset_length = self.finalize_verbatim_string(verbatim_string)
+        verbatim_string = \
+            self.finalize_verbatim_string(verbatim_string, verbatim_info)
 
-        pos_end = orig_pos + offset_length
+        pos_start = verbatim_info.pos_start
+        pos_end = verbatim_info.pos_end
 
         nodes = latex_walker.make_node(
             LatexCharsNode,
             chars=verbatim_string,
-            pos=orig_pos,
+            pos=pos_start,
             pos_end=pos_end,
             parsing_state=parsing_state,
         )
@@ -124,7 +139,8 @@ class LatexVerbatimBaseParser(LatexParserBase):
         if ended_with_eos:
             return self.error_end_of_stream( pos=pos_end,
                                              recovery_nodes=nodes,
-                                             latex_walker=latex_walker )
+                                             latex_walker=latex_walker,
+                                             verbatim_info=verbatim_info )
         
         return nodes, None
 
@@ -133,17 +149,17 @@ class LatexVerbatimBaseParser(LatexParserBase):
 
 class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
     def __init__(self,
-                 delimiter_chars=None,
-                 auto_delimiter_chars=None,
+                 delimiters=None,
+                 auto_delimiters=None,
                  **kwargs):
         super(LatexDelimitedVerbatimParser, self).__init__(**kwargs)
 
-        self.delimiter_chars = delimiter_chars
+        self.delimiters = delimiters
 
-        if auto_delimiter_chars is not None:
-            self.auto_delimiter_chars = dict(auto_delimiter_chars)
+        if auto_delimiters is not None:
+            self.auto_delimiters = dict(auto_delimiters)
         else:
-            self.auto_delimiter_chars = {
+            self.auto_delimiters = {
                 '{': '}',
                 '[': ']',
                 '<': '>',
@@ -152,19 +168,23 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
 
         self.depth_counter = 1
 
+        # will be determined upon encountering the open delimiter
+        self.parsed_delimiters = None
 
-    def new_char_check_stop_condition(self, char, verbatim_string, parsing_state):
+
+    def new_char_check_stop_condition(self, char, verbatim_string, verbatim_info,
+                                      parsing_state):
         r"""
         The default implementation in this base class is to read a single verbatim
         char.  Reimplement this method in a subclass for more advanced behavior.
         """
-        if char == self.delimiter_chars[1]:
+        if char == verbatim_info.parsed_delimiters[1]:
             # closing delimiter
             self.depth_counter -= 1
             if self.depth_counter <= 0:
                 # final closing delimiter
                 return True
-        elif char == self.delimiter_chars[0]:
+        elif char == verbatim_info.parsed_delimiters[0]:
             # opening delimiter, if not the same as the closing delimiter
             self.depth_counter += 1
 
@@ -173,41 +193,44 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
         
+        verbatim_info = LatexVerbatimBaseParser.VerbatimInfo()
+
         token_reader.skip_space_chars(parsing_state)
 
-        orig_pos = token_reader.cur_pos()
+        verbatim_info.original_pos = token_reader.cur_pos()
 
-        if self.delimiter_chars is None:
+        if self.delimiters is None:
             # read the delimiter character
 
             open_delim_char = token_reader.next_chars(1, parsing_state=parsing_state)
             
-            close_delim_char = self.auto_delimiter_chars.get(open_delim_char, open_delim_char)
+            close_delim_char = self.auto_delimiters.get(open_delim_char, open_delim_char)
 
-            delimiter_chars = (open_delim_char, close_delim_char)
+            verbatim_info.parsed_delimiters = (open_delim_char, close_delim_char)
 
         else:
             
-            delimiter_chars = self.delimiter_chars
+            verbatim_info.parsed_delimiters = self.delimiters
 
             first_char = token_reader.next_chars(1, parsing_state=parsing_state)
-            if first_char != delimiter_chars[0]:
+            if first_char != parsed_delimiters[0]:
                 raise LatexWalkerParseError(
                     msg="Expected opening delimiter ‘{}’ for verbatim content".format(
-                        delimiter_chars[0]
+                        parsed_delimiters[0]
                     ),
                     pos=pos,
                 )
             
         verbatim_node, _ = \
-            self.read_verbatim_content(latex_walker, token_reader, parsing_state, **kwargs)
+            self.read_verbatim_content(latex_walker, token_reader, parsing_state,
+                                       verbatim_info=verbatim_info, **kwargs)
 
         nodes = latex_walker.make_node(
             LatexGroupNode,
-            delimiters=delimiter_chars,
+            delimiters=verbatim_info.parsed_delimiters,
             nodelist=LatexNodeList([verbatim_node]),
-            pos=orig_pos,
-            pos_end=verbatim_node.pos_end + 1, # +1 for closing delimiter
+            pos=verbatim_info.original_pos,
+            pos_end=verbatim_node.pos_end + len(verbatim_info.parsed_delimiters[1]),
             parsing_state=parsing_state
         )
 
@@ -216,30 +239,50 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
 
 
 class LatexVerbatimEnvironmentContentsParser(LatexVerbatimBaseParser):
-    def __init__(self, environment_name, **kwargs):
+    def __init__(self, environment_name='verbatim', **kwargs):
         super(LatexVerbatimEnvironmentContentsParser, self).__init__(**kwargs)
         self.environment_name = environment_name
 
-    def new_char_check_stop_condition(self, char, verbatim_string, parsing_state):
-        end_environment_code = \
-            parsing_state.macro_escape_char + 'end{'+environment_name+'}'
-        if verbatim_string.endswith( end_environment_code ):
+    def new_char_check_stop_condition(self, char, verbatim_string, verbatim_info,
+                                      parsing_state):
+
+        if verbatim_string.endswith( verbatim_info.end_environment_code ):
             return {'put_back_char': True}
         return False
 
-    def finalize_verbatim_string(self, verbatim_string):
-        end_environment_code = \
-            parsing_state.macro_escape_char + 'end{'+environment_name+'}'
+    def finalize_verbatim_string(self, verbatim_string, verbatim_info):
+
+        end_environment_code = verbatim_info.end_environment_code
         assert( verbatim_string.endswith(end_environment_code) )
+
         verbatim_string = verbatim_string[:-len(end_environment_code)]
-        return verbatim_string, len(verbatim_string)
+
+        pos_start = verbatim_info.original_pos
+
+        if verbatim_string.startswith('\n'):
+            # gobble a single newline at the beginning of the verbatim content,
+            # i.e., the newline that immediately follows \begin{verbatim}
+            verbatim_string = verbatim_string[1:]
+            pos_start += 1
+
+        verbatim_info.pos_start = pos_start
+        verbatim_info.pos_end = pos_start + len(verbatim_string)
+        return verbatim_string
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
-        
-        verbatim_chars_node, _ = \
-            self.read_verbatim_content(latex_walker, token_reader, parsing_state, **kwargs)
 
-        nodes = LatexNodeList([ verbatim_node ])
+        verbatim_info = LatexVerbatimBaseParser.VerbatimInfo()
+        verbatim_info.original_pos = token_reader.cur_pos()
+
+        verbatim_info.end_environment_code = \
+            parsing_state.macro_escape_char + 'end{'+self.environment_name+'}'
+
+
+        verbatim_chars_node, _ = \
+            self.read_verbatim_content(latex_walker, token_reader, parsing_state,
+                                       verbatim_info, **kwargs)
+
+        nodes = LatexNodeList([ verbatim_chars_node ])
 
         # the pos_end of the environment node itself will use the current
         # token_reader position, which is set correctly at this point.

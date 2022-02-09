@@ -31,7 +31,7 @@ from __future__ import print_function, unicode_literals
 
 
 from ...latexnodes import _exctypes as latexnodes_exctypes
-from ...latexnodes import _nodetypes as latexnodes_nodetypes
+from ...latexnodes import nodes as latexnodes_nodes
 from ...latexnodes import ParsedMacroArgs
 
 
@@ -243,7 +243,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             len_ = endverbpos-pos
 
             argd = self.verbatim_parsed_args_class(
-                verbatim_chars_node=w.make_node(latexnodes_nodetypes.LatexCharsNode,
+                verbatim_chars_node=w.make_node(latexnodes_nodes.LatexCharsNode,
                                                 parsing_state=parsing_state,
                                                 chars=w.s[pos:pos+len_],
                                                 pos=pos,
@@ -269,7 +269,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             verbarg = w.s[pos:endpos]
 
             argd = self.verbatim_parsed_args_class(
-                verbatim_chars_node=w.make_node(latexnodes_nodetypes.LatexCharsNode,
+                verbatim_chars_node=w.make_node(latexnodes_nodes.LatexCharsNode,
                                                 parsing_state=parsing_state,
                                                 chars=verbarg,
                                                 pos=pos,
@@ -307,7 +307,7 @@ class VerbatimArgsParser(MacroStandardArgsParser):
             verbarg = w.s[beginpos:endpos]
 
             argd = self.verbatim_parsed_args_class(
-                verbatim_chars_node=w.make_node(latexnodes_nodetypes.LatexCharsNode,
+                verbatim_chars_node=w.make_node(latexnodes_nodes.LatexCharsNode,
                                                 parsing_state=parsing_state,
                                                 chars=verbarg,
                                                 pos=beginpos,

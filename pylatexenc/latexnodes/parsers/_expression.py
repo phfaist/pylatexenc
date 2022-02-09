@@ -39,8 +39,8 @@ from .._exctypes import (
     LatexWalkerNodesParseError,
     LatexWalkerEndOfStream
 )
-from .._nodetypes import *
-from .._nodetypes import _update_posposend_from_nodelist
+from ..nodes import *
+from ..nodes import _update_posposend_from_nodelist
 
 from ._base import LatexParserBase
 from ._generalnodes import LatexDelimitedGroupParser

@@ -36,7 +36,7 @@ from .. import latexnodes
 from .. import macrospec
 
 from ..latexnodes._exctypes import *
-from ..latexnodes._nodetypes import *
+from ..latexnodes.nodes import *
 from ..latexnodes.parsers import (
     LatexGeneralNodesParser,
     LatexSingleNodeParser,

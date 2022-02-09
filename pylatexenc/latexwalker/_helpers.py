@@ -48,7 +48,7 @@ if sys.version_info.major == 2:
 from .. import macrospec
 
 from ..latexnodes._exctypes import *
-from ..latexnodes._nodetypes import *
+from ..latexnodes.nodes import *
 
 
 
