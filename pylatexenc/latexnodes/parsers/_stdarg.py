@@ -331,6 +331,9 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
 
             logger.debug("_parse_one_commasep_arg() !")
 
+            self._last_element_pos_end = None
+            self._last_delimiter_token = None
+
             nodelist, carryover_info = latex_walker.parse_content(
                 self._contents_parser,
                 token_reader=token_reader,
@@ -346,6 +349,9 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
 
             # set in the stopping condition handler
             pos_end = self._last_element_pos_end
+            if pos_end is None:
+                pos_end = token_reader.final_pos()
+                self._parse_more = False
 
             if self._last_delimiter_token is None:
                 this_close_delim = ''

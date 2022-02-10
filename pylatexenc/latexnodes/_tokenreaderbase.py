@@ -73,6 +73,9 @@ class LatexTokenReaderBase(object):
     def cur_pos(self):
         raise RuntimeError("LatexTokenReaderBase subclasses must reimplement cur_pos()")
 
+    def final_pos(self):
+        raise RuntimeError("LatexTokenReaderBase subclasses must reimplement final_pos()")
+
     def skip_space_chars(self, parsing_state):
         raise RuntimeError("This token reader does not support character-level access")
 
@@ -131,6 +134,9 @@ class LatexTokenListTokenReader(LatexTokenReaderBase):
 
     def cur_pos(self):
         return self.peek_token(None).pos
+
+    def final_pos(self):
+        return self.token_list[len(self.token_list)-1].pos_end
 
 
 

@@ -95,6 +95,9 @@ class LatexTokenReader(LatexTokenReaderBase):
     def cur_pos(self):
         return self._pos
 
+    def final_pos(self):
+        return len(self.s)
+
     def move_to_pos_chars(self, pos):
         self._advance_to_pos(pos)
 
