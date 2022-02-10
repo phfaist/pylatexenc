@@ -104,7 +104,7 @@ class LatexGeneralNodesParser(LatexParserBase):
             # further up.
             #
             
-            logger.debug("Got Parse error while reading general nodes: %r", e)
+            logger.debug("Got parse error while reading general nodes: %r", e)
 
             raise LatexWalkerNodesParseError(
                 msg=e.msg,
@@ -118,13 +118,30 @@ class LatexGeneralNodesParser(LatexParserBase):
         stop_token_condition_met = collector.stop_token_condition_met()
         stop_nodelist_condition_met = collector.stop_nodelist_condition_met()
 
-        if ( self.require_stop_condition_met and
-             # if neither condition was met, that's an error -->
-             ( ( self.stop_token_condition is not None
-                 and not stop_token_condition_met )
-               and ( self.stop_nodelist_condition is not None
-                    and not stop_nodelist_condition_met ) )
-            ):
+        logger.debug("finished parsing general nodes; "
+                     "self.require_stop_condition_met=%r, "
+                     "stop_token_condition=%r, stop_token_condition_met=%r, "
+                     "stop_nodelist_condition=%r, stop_nodelist_condition_met=%r",
+                     self.require_stop_condition_met,
+                     self.stop_token_condition, stop_token_condition_met,
+                     self.stop_nodelist_condition, stop_nodelist_condition_met)
+
+        met_a_required_stop_condition = False
+        if not self.require_stop_condition_met:
+            # no condition to meet
+            met_a_required_stop_condition = True
+        else:
+            if self.stop_token_condition is not None:
+                if stop_token_condition_met:
+                    met_a_required_stop_condition = True
+            elif self.stop_nodelist_condition is not None:
+                if stop_nodelist_condition_met:
+                    met_a_required_stop_condition = True
+            else:
+                # there were no stopping conditions set
+                met_a_required_stop_condition = True
+
+        if not met_a_required_stop_condition:
             #
             message = self.stop_condition_message
             if message is None:
@@ -356,12 +373,20 @@ class LatexDelimitedGroupParser(LatexParserBase):
 
         def stop_token_condition(self, token):
             if token.tok == 'brace_close' and token.arg == self.parsed_delimiters[1]:
+                logger.debug(
+                    "LatexDelimitedGroupParser encountered the expected closing brace %r",
+                    token
+                )
                 return True
             return False
         
         def handle_stop_condition_token(self, token,
                                         latex_walker, token_reader, parsing_state):
             token_reader.move_past_token(token)
+            logger.debug(
+                "LatexDelimitedGroupParser moved token reader past token %r",
+                token
+            )
 
         def make_child_parsing_state(self, group_parsing_state, node_class):
             return self.child_parsing_state

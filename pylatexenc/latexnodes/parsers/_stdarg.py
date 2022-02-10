@@ -329,7 +329,7 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
 
         def _parse_one_commasep_arg(self, latex_walker, token_reader):
 
-            logger.debug("_parse_one_commasep_arg() !")
+            logger.debug("_parse_one_commasep_arg()")
 
             self._last_element_pos_end = None
             self._last_delimiter_token = None
@@ -347,9 +347,13 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
                 )
             )
 
+            logger.debug("_parse_one_commasep_arg(): nodelist = %r", nodelist)
+
             # set in the stopping condition handler
             pos_end = self._last_element_pos_end
             if pos_end is None:
+                logger.debug("_parse_one_commasep_arg(): STOP CONDITION DID NOT FIRE")
+
                 pos_end = token_reader.final_pos()
                 self._parse_more = False
 

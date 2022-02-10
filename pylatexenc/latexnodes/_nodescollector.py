@@ -395,12 +395,14 @@ class LatexNodesCollector(object):
         except LatexNodesCollector.ReachedStoppingCondition as e:
             # all good! We finished collecting our node list.
             self._stop_condition_stop_data = e.stop_data
+            logger.debug("nodes collector process_tokens() reached stop condition")
             return
 
         except LatexNodesCollector.ReachedEndOfStream as e:
             # all good!  We reached the end of the input.  Note that any final
             # space has already been included into a chars node in the nodelist.
             self._reached_end_of_stream = True
+            logger.debug("nodes collector process_tokens() reached end of stream")
             return
 
         except LatexWalkerError as e:
@@ -698,6 +700,8 @@ class LatexNodesCollector(object):
         if stop_exc is not None:
             stop_exc.pos_end = groupnode.pos_end
             raise stop_exc
+
+        logger.debug("nodes collector finished parsing group → %r", groupnode)
 
 
     def parse_macro(self, tok):

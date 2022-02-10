@@ -11,7 +11,7 @@ from pylatexenc.latexnodes.parsers._stdarg import (
 )
 
 from pylatexenc.latexnodes import (
-    LatexWalkerTokenParseError,
+    LatexWalkerNodesParseError,
     LatexTokenReader,
     LatexToken,
     ParsingState,
@@ -427,6 +427,26 @@ class TestLatexCharsCommaSeparatedListParser(unittest.TestCase):
                 pos_end=20,
             )
         )
+
+
+    def test_missing_brace(self):
+        latextext = "{a;b{z}"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexCharsCommaSeparatedListParser(
+            comma_char=';',
+            enable_groups=True,
+            enable_comments=True,
+        )
+
+        with self.assertRaises(LatexWalkerNodesParseError):
+            nodes, carryover_info = lw.parse_content(parser, token_reader=tr,
+                                                     parsing_state=ps)
+
+
 
 
 

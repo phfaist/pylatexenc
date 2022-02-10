@@ -35,16 +35,18 @@ class DummyWalker(LatexWalkerBase):
 
         if open_context is not None:
             what, tok = open_context
-            logger.debug("Parsing content -- %s -- %r / @ char pos %d",
-                         what, tok, token_reader.cur_pos())
         else:
-            logger.debug("Parsing content (%s) ...", parser.__class__.__name__)
+            what, tok = None, None
+        logger.debug(":: Parsing content (%s) @ pos %d -- %s -- %r / ::",
+                     parser.__class__.__name__, token_reader.cur_pos(), what, tok)
+
 
         nodes, carryover_info = parser(latex_walker=self,
                                        token_reader=token_reader,
                                        parsing_state=parsing_state)
 
-        logger.debug("Parsing content done (%s).", parser.__class__.__name__)
+        logger.debug(":: Parsing content DONE (%s) @ pos %d -- %s -- %r / ::",
+                     parser.__class__.__name__, token_reader.cur_pos(), what, tok)
 
         return nodes, carryover_info
 
