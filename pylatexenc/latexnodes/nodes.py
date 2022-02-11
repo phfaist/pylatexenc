@@ -697,6 +697,20 @@ class LatexNodeList(object):
         return len(self.nodelist)
     
     
+    def latex_verbatim(self):
+        r"""
+        Return the chunk of LaTeX code that this node represents.
+
+        This is a shorthand for concatenating all the `latex_verbatim()`
+        representation of all the nodes in the list.
+        """
+        return "".join([
+            n.latex_verbatim()
+            for n in self.nodelist
+            if n is not None
+        ])
+
+
     def split_at_chars(self, sep_chars):
         r"""
         Split the node list into multiple node lists corresponding to chunks

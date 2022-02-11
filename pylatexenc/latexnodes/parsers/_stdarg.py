@@ -241,12 +241,65 @@ class LatexStandardArgumentParser(LatexParserBase):
 
 
 
+
+class LatexCharsGroupParser(LatexDelimitedGroupParser):
+    r"""
+    ....................
+
+    Very similar to a verbatim parser, but works with tokens instead of chars.
+    You can use comments and recursive groups, too.
+    """
+    def __init__(self, delimiters=('{','}'),
+                 enable_comments=True, enable_groups=True, **kwargs):
+        super(LatexCharsGroupParser, self).__init__(delimiters=delimiters, **kwargs)
+        self.enable_comments = enable_comments
+        self.enable_groups = enable_groups
+
+        self.make_group_contents_parser_info = \
+            LatexCharsGroupParser.CharsContentsParserInfo
+
+    class CharsContentsParserInfo(
+            LatexDelimitedGroupParser.GroupContentsParserInfo
+    ):
+        def initialize(self):
+            self.contents_parsing_state = self.group_parsing_state.sub_context(
+                enable_macros=False,
+                enable_environments=False,
+                enable_comments=self.delimited_group_parser.enable_comments,
+                enable_groups=self.delimited_group_parser.enable_groups,
+                enable_specials=False,
+                enable_math=False
+            )
+            self.child_parsing_state = self.parsing_state
+
+            self.current_parsing_state = self.contents_parsing_state
+
+            self.parsed_delimiters = self.get_parsed_delimiters()
+
+            logger.debug("Initialized CharsContentsParserInfo; %r", self.__dict__)
+
+        def stop_token_condition(self, token):
+            logger.debug("stop_token_condition: %r", token)
+            if token.tok == 'brace_close' and token.arg == self.parsed_delimiters[1]:
+                return True
+            # in case we set enable_groups=False, the token is reported as a 'char' token
+            if token.tok == 'char' and token.arg == self.parsed_delimiters[1]:
+                return True
+            return None
+
+
+
+
 class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
     r"""
     """
     def __init__(self, comma_char=',', delimiters=('{','}'),
-                 enable_comments=True, enable_groups=True):
-        super(LatexCharsCommaSeparatedListParser, self).__init__(delimiters=delimiters)
+                 enable_comments=True, enable_groups=True, **kwargs):
+        super(LatexCharsCommaSeparatedListParser, self).__init__(
+            delimiters=delimiters,
+            **kwargs
+        )
+
         self.comma_char = comma_char
         self.enable_comments = enable_comments
         self.enable_groups = enable_groups
@@ -280,6 +333,8 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
         def stop_token_condition(self, token):
             logger.debug("stop_token_condition: %r", token)
             if token.tok == 'brace_close' and token.arg == self.parsed_delimiters[1]:
+                return True
+            if token.tok == 'char' and token.arg == self.parsed_delimiters[1]:
                 return True
             if token.tok == 'char' and token.arg == self.comma_char:
                 return True
@@ -377,17 +432,4 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
 
             logger.debug("_parse_one_commasep_arg(), list is now %r",
                          self._comma_sep_arg_list)
-
-
-
-class LatexCharsGroupParser(LatexCharsCommaSeparatedListParser):
-    r"""
-    ....................
-
-    Very similar to a verbatim parser, but works with tokens instead of chars.
-    You can use comments and recursive groups, too.
-    """
-    def __init__(self, delimiters=('{','}'),
-                 enable_comments=True, enable_groups=True, **kwargs):
-        super(LatexCharsGroupParser, self).__init__(comma_char=None, **kwargs)
 

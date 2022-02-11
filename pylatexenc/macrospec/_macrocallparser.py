@@ -75,29 +75,23 @@ class _LatexCallableParserBase(LatexParserBase):
         )
         return nodeargd, carryover_info
 
-    def make_body_parser(self, nodeargd, arg_carryover_info):
+    def make_body_parser_and_parsing_state(self, nodeargd, arg_carryover_info, parsing_state):
         raise RuntimeError(
-            "No default implementation of make_body_parser() in base class")
-
-    def make_body_parsing_state(self, nodeargd, arg_carryover_info, parsing_state):
-        raise RuntimeError(
-            "No default implementation of make_body_parsing_state() in base class")
+            "No default implementation of make_body_parser_and_parsing_state() in base class")
 
     def parse_call_body(self, nodeargd, arg_carryover_info,
                         latex_walker, token_reader, parsing_state, **kwargs):
 
-        body_parser = self.make_body_parser(nodeargd, arg_carryover_info)
-
-        parsing_state = \
-            self.make_body_parsing_state(nodeargd, arg_carryover_info, parsing_state)
+        body_parser, body_parsing_state = \
+            self.make_body_parser_and_parsing_state(nodeargd, arg_carryover_info, parsing_state)
 
         nodelist, carryover_info = latex_walker.parse_content(
             body_parser,
             token_reader,
-            parsing_state,
+            body_parsing_state,
             # open_context=(
-            #     "Body of {}".format(what),
-            #     token_reader.cur_pos()
+            #     "Body of {}".format(self.what),
+            #     token_reader.peek_token()
             # )
             **kwargs
         )
@@ -203,7 +197,7 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
         )
         self.environmentname = environmentname
 
-    def make_body_parser(self, nodeargd, arg_carryover_info):
+    def make_body_parser_and_parsing_state(self, nodeargd, arg_carryover_info, parsing_state):
         if arg_carryover_info is not None:
             logger.warning(
                 "Parsing carry-over information (%r) ignored after arguments to %s!",
@@ -214,12 +208,17 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
         if self.spec_object.body_parser is not None:
             return self.spec_object.body_parser
 
-        # can't cache parser instance because the stop condition depends on the
-        # environment name
-        return LatexGeneralNodesParser(
+        # can't cache parser instance outside class instance because the stop
+        # condition depends on the environment name
+        parser = LatexGeneralNodesParser(
             stop_token_condition=self._parse_body_token_stop_condition,
             handle_stop_condition_token=self._handle_stop_condition_token,
         )
+
+        body_parsing_state = \
+            self.make_body_parsing_state(nodeargd, arg_carryover_info, parsing_state)
+
+        return parser, body_parsing_state
 
     def make_body_parsing_state(self, nodeargd, arg_carryover_info, parsing_state):
 
