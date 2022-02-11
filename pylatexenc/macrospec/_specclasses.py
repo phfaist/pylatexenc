@@ -138,11 +138,6 @@ class MacroSpec(_SpecBase):
 
         self.macroname = macroname
 
-    # def __repr__(self):
-    #     return 'MacroSpec(macroname={!r}, arguments_spec_list={!r})'.format(
-    #         self.macroname, self.arguments_spec_list
-    #     )
-
     def get_node_parser(self, token):
         return LatexMacroCallParser(token, self)
 
@@ -208,17 +203,6 @@ class EnvironmentSpec(_SpecBase):
         self.environmentname = environmentname
         self.is_math_mode = is_math_mode
         self.body_parser = body_parser
-
-
-    # def __repr__(self):
-    #     return (
-    #         'EnvironmentSpec(environmentname={!r}, arguments_spec_list={!r}, '
-    #         'is_math_mode={!r}, body_parser={!r})'
-    #         .format(
-    #             self.environmentname, self.arguments_spec_list,
-    #             self.is_math_mode, self.body_parser
-    #         )
-    #     )
 
     def get_node_parser(self, token):
         return LatexEnvironmentCallParser(token, self)

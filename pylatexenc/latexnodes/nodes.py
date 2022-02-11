@@ -711,6 +711,32 @@ class LatexNodeList(object):
         ])
 
 
+    def split_at_node(self, node_predicate_fn, skip_none=True, keep_separators=False,
+                      max_split=None):
+
+        nodelists_list = [ [] ]
+
+        if max_split is not None and max_split == 0:
+            no_more_splits = True
+        else:
+            no_more_splits = False
+
+        for n in self.nodelist:
+            if skip_none and n is None:
+                continue
+            if not no_more_splits and node_predicate_fn(n):
+                if keep_separators:
+                    nodelists_list.append([n])
+                else:
+                    nodelists_list.append([])
+                    
+                if max_split is not None and len(nodelists_list) >= max_split:
+                    no_more_splits = True
+            else:
+                nodelists_list[len(nodelists_list)-1].append(n)
+        
+        return [ LatexNodeList(nl) for nl in nodelists_list ]
+
     def split_at_chars(self, sep_chars):
         r"""
         Split the node list into multiple node lists corresponding to chunks
@@ -793,6 +819,8 @@ class LatexNodeList(object):
 
         return split_node_lists
         
+
+
 
     def __eq__(self, other):
         return (

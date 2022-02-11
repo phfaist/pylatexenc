@@ -206,14 +206,14 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
             )
 
         if self.spec_object.body_parser is not None:
-            return self.spec_object.body_parser
-
-        # can't cache parser instance outside class instance because the stop
-        # condition depends on the environment name
-        parser = LatexGeneralNodesParser(
-            stop_token_condition=self._parse_body_token_stop_condition,
-            handle_stop_condition_token=self._handle_stop_condition_token,
-        )
+            parser = self.spec_object.body_parser
+        else:
+            # can't cache parser instance outside class instance because the stop
+            # condition depends on the environment name
+            parser = LatexGeneralNodesParser(
+                stop_token_condition=self._parse_body_token_stop_condition,
+                handle_stop_condition_token=self._handle_stop_condition_token,
+            )
 
         body_parsing_state = \
             self.make_body_parsing_state(nodeargd, arg_carryover_info, parsing_state)
