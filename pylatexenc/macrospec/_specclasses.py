@@ -55,7 +55,8 @@ _legacy_pyltxenc2_do = lambda *args: None
 
 
 class _SpecBase(CallableSpecBase):
-    def __init__(self, arguments_spec_list=None, make_carryover_info=None, **kwargs):
+    def __init__(self, arguments_spec_list=None, make_carryover_info=None,
+                 finalize_node=None, **kwargs):
 
         self.arguments_spec_list = arguments_spec_list
 
@@ -76,6 +77,9 @@ class _SpecBase(CallableSpecBase):
             # (parsed_node) as single (keyword) argument.
             self.make_carryover_info = make_carryover_info
 
+        if finalize_node is not None:
+            self.finalize_node = finalize_node
+
     
     @property
     def args_parser(self):
@@ -92,6 +96,9 @@ class _SpecBase(CallableSpecBase):
         reassign the attribute `spec.make_carryover_info` to that callable.
         """
         return None
+
+    def finalize_node(self, node):
+        return node
 
     def needs_arguments(self):
         for arg in self.arguments_spec_list:

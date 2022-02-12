@@ -54,11 +54,11 @@ class _LatexCallableParserBase(LatexParserBase):
         self.node_class = node_class
         self.node_extra_kwargs = node_extra_kwargs
 
-        self.arguments_parser = spec_object.arguments_parser
+        self.arguments_parser = self.spec_object.arguments_parser
 
         self.parse_body = parse_body
 
-        self.make_carryover_info = spec_object.make_carryover_info
+        self.make_carryover_info = self.spec_object.make_carryover_info
 
 
     def parse_call_arguments(self, latex_walker, token_reader, parsing_state, **kwargs):
@@ -156,6 +156,10 @@ class _LatexCallableParserBase(LatexParserBase):
             **node_kwargs
         )
 
+        # in case any subclasses would like to tweak the node, register
+        # additional information, etc.
+        self.spec_object.finalize_node(node)
+
         carryover_info = self.make_carryover_info(parsed_node=node)
 
         logger.debug("Parsed macro/env/specials call - node %r - carryover_info %r",
@@ -177,7 +181,7 @@ class LatexMacroCallParser(_LatexCallableParserBase):
             what="macro call (\{})".format(macroname),
             node_class=LatexMacroNode,
             node_extra_kwargs=dict(macroname=macroname,
-                                   macro_post_space=macro_post_space)
+                                   macro_post_space=macro_post_space),
         )
         self.macroname = macroname
         self.macro_post_space = macro_post_space
