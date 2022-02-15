@@ -93,33 +93,33 @@ def nodelist_to_latex(nodelist):
     for n in nodelist:
         if n is None:
             continue
-        if n.isNodeType(LatexCharsNode):
+        if isinstance(n, LatexCharsNode):
             latex += n.chars
             continue
 
-        if n.isNodeType(LatexMacroNode):
+        if isinstance(n, LatexMacroNode):
             latex += r'\%s%s%s' %(n.macroname, n.macro_post_space, add_args(n.nodeargd))
             continue
 
-        if n.isNodeType(LatexSpecialsNode):
+        if isinstance(n, LatexSpecialsNode):
             latex += r'%s%s' %(n.specials_chars, add_args(n.nodeargd))
             continue
         
-        if n.isNodeType(LatexCommentNode):
+        if isinstance(n, LatexCommentNode):
             latex += '%'+n.comment+n.comment_post_space
             continue
         
-        if n.isNodeType(LatexGroupNode):
+        if isinstance(n, LatexGroupNode):
             latex += n.delimiters[0] + nodelist_to_latex(n.nodelist) + n.delimiters[1]
             continue
         
-        if n.isNodeType(LatexEnvironmentNode):
+        if isinstance(n, LatexEnvironmentNode):
             latex += r'\begin{%s}%s' %(n.envname, add_args(n.nodeargd))
             latex += nodelist_to_latex(n.nodelist)
             latex += r'\end{%s}' %(n.envname)
             continue
         
-        if n.isNodeType(LatexMathNode):
+        if isinstance(n, LatexMathNode):
             latex += n.delimiters[0] + nodelist_to_latex(n.nodelist) + n.delimiters[1]
             continue
         
@@ -171,28 +171,28 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
 
     if n is None:
         title = '<None>'
-    elif n.isNodeType(LatexCharsNode):
+    elif isinstance(n, LatexCharsNode):
         title = repr(n.chars)
-    elif n.isNodeType(LatexMacroNode):
+    elif isinstance(n, LatexMacroNode):
         title = '\\'+n.macroname
         add_args()
-    elif n.isNodeType(LatexSpecialsNode):
+    elif isinstance(n, LatexSpecialsNode):
         title = n.specials_chars + ' (specials)'
         add_args()
-    elif n.isNodeType(LatexCommentNode):
+    elif isinstance(n, LatexCommentNode):
         title = '%' + n.comment.strip()
-    elif n.isNodeType(LatexGroupNode):
+    elif isinstance(n, LatexGroupNode):
         if (skip_group):
             for nn in n.arg:
                 disp_node(nn, indent=indent, context=context)
             return
         title = 'Group: '
         iterchildren.append(('* ', n.nodelist, False))
-    elif n.isNodeType(LatexEnvironmentNode):
+    elif isinstance(n, LatexEnvironmentNode):
         title = '\\begin{%s}' %(n.environmentname)
         add_args()
         iterchildren.append(('* ', n.nodelist, False))
-    elif n.isNodeType(LatexMathNode):
+    elif isinstance(n, LatexMathNode):
         title = n.delimiters[0]+n.displaytype+' math'+n.delimiters[1]
         iterchildren.append(('* ', n.nodelist, False))
     else:

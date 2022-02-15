@@ -51,7 +51,7 @@ Simple example usage::
     nodeargd=ParsedMacroArgs(argnlist=[LatexGroupNode(pos=8, len=11,
     nodelist=[LatexCharsNode(pos=9, len=9, chars='Hi there!')],
     delimiters=('{', '}'))], argspec='{'), macro_post_space='')
-    >>> nodelist[5].isNodeType(LatexEnvironmentNode)
+    >>> isinstance(nodelist[5], LatexEnvironmentNode)
     True
     >>> nodelist[5].environmentname
     'enumerate'

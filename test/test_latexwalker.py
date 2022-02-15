@@ -1279,9 +1279,9 @@ int foo() {
                 (argd, npos, nlen) = super(MySimpleNewcommandArgsParser, self).parse_args(
                     w=w, pos=pos, parsing_state=parsing_state, **kwargs
                 )
-                if argd.argnlist[1].isNodeType(LatexGroupNode):
+                if isinstance(argd.argnlist[1], LatexGroupNode):
                     argd.argnlist[1] = argd.argnlist[1].nodelist[0] # {\command} -> \command
-                assert argd.argnlist[1].isNodeType(LatexMacroNode)
+                assert isinstance(argd.argnlist[1], LatexMacroNode)
                 argd.argnlist[1].nodeargd = None # hmmm, we should really have a
                                                  # custom parser here to read a
                                                  # single token

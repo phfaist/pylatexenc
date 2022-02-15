@@ -31,6 +31,8 @@ from __future__ import print_function, unicode_literals
 
 from ..macrospec import _parsedargs as macrospec_parsedargs
 
+import warnings
+
 
 # for Py3
 _basestring = str
@@ -283,7 +285,7 @@ class LatexNode(object):
     Represents an abstract 'node' of the latex document.
 
     Use :py:meth:`nodeType()` to figure out what type of node this is, and
-    :py:meth:`isNodeType()` to test whether it is of a given type.
+    :py:meth:`isinstance()` to test whether it is of a given type.
 
     You should use :py:meth:`LatexWalker.make_node()` to create nodes, so that
     the latex walker has the opportunity to do some additional setting up.
@@ -350,6 +352,11 @@ class LatexNode(object):
         must be a Python class such as,
         e.g. :py:class:`~pylatexenc.latexwalker.LatexGroupNode`.
         """
+        warnings.warn(
+            # Feb 2022
+            "isNodeType() is deprecated. Use the built-in isinstance(node, class)",
+            DeprecationWarning
+        )
         return isinstance(self, t)
 
     def latex_verbatim(self):
