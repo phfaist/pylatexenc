@@ -123,7 +123,7 @@ def nodelist_to_latex(nodelist):
             latex += n.delimiters[0] + nodelist_to_latex(n.nodelist) + n.delimiters[1]
             continue
         
-        latex += "<[UNKNOWN LATEX NODE: \'%s\']>"%(n.nodeType().__name__)
+        latex += "<[UNKNOWN LATEX NODE: \'%s\']>"%(type(n).__name__)
 
     return latex
     
@@ -196,7 +196,7 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
         title = n.delimiters[0]+n.displaytype+' math'+n.delimiters[1]
         iterchildren.append(('* ', n.nodelist, False))
     else:
-        print("UNKNOWN NODE TYPE: %s"%(n.nodeType().__name__))
+        print("UNKNOWN NODE TYPE: %s"%(type(n).__name__))
 
     print(' '*indent + context + title + '  '+comment)
 
