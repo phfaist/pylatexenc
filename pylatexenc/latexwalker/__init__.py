@@ -101,11 +101,11 @@ from .. import macrospec
 # ------------------------------------------------------------------------------
 
 
-# backwards compatibility with pylatexenc-2
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 from ..latexnodes._exctypes import *
 from ..latexnodes.nodes import *
 from ..latexnodes._token import LatexToken
-
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
 
 
@@ -114,9 +114,12 @@ from ..latexnodes import ParsingState
 from ._walker import LatexWalker
 
 
+### BEGIN_PYLATEXENC_GET_DEFAULT_SPECS_FN
 from ._get_defaultspecs import get_default_latex_context_db
+### END_PYLATEXENC_GET_DEFAULT_SPECS_FN
 
 
+### BEGIN_PYLATEXENC1_LEGACY_SUPPORT_CODE
 from ._legacy_py1x import (
     MacrosDef,
     default_macro_dict,
@@ -127,6 +130,7 @@ from ._legacy_py1x import (
     get_latex_environment,
     get_latex_nodes,
 )
+### END_PYLATEXENC1_LEGACY_SUPPORT_CODE
 
 
 

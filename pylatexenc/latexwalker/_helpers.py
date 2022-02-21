@@ -23,10 +23,8 @@
 # THE SOFTWARE.
 #
 
-
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
-
 
 from __future__ import print_function, unicode_literals
 
@@ -35,26 +33,23 @@ from __future__ import print_function, unicode_literals
 _basestring = str
 _unicode_from_str = lambda x: x
 
-
-## Begin Py2 support code
+### BEGIN_PYTHON2_SUPPORT_CODE
 import sys
 if sys.version_info.major == 2:
     # Py2
     _basestring = basestring
     _unicode_from_str = lambda x: x.decode('utf-8')
-## End Py support code
+### END_PYTHON2_SUPPORT_CODE
 
 
 from .. import macrospec
+
 
 from ..latexnodes._exctypes import *
 from ..latexnodes.nodes import *
 
 
-
-
 import json
-
 
 
 #

@@ -33,12 +33,12 @@ from __future__ import print_function, unicode_literals
 # for Py3
 _basestring = str
 
-## Begin Py2 support code
+### BEGIN_PYTHON2_SUPPORT_CODE
 import sys
 if sys.version_info.major == 2:
     # Py2
     _basestring = basestring
-## End Py2 support code
+### END_PYTHON2_SUPPORT_CODE
 
 
 
@@ -157,6 +157,8 @@ class ParsedMacroArgs(object):
             return None
         return self.pos_end - self.pos
 
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
     @property
     def legacy_nodeoptarg_nodeargs(self):
         argspec = self.argspec
@@ -169,6 +171,8 @@ class ParsedMacroArgs(object):
             return ( argnlist[nskip], argnlist[nskip+1:] )
         else:
             return (None, argnlist)
+
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
 
     # --TODO-- -- some decent API to get arguments!! including skipping over

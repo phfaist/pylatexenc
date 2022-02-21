@@ -35,12 +35,12 @@ from ._parsedargs import ParsedMacroArgs
 # for Py3
 _unicode_from_str = lambda x: x
 
-## Begin Py2 support code
+### BEGIN_PYTHON2_SUPPORT_CODE
 import sys
 if sys.version_info.major == 2:
-    # Py2
     _unicode_from_str = lambda x: x.decode('utf-8')
-## End Py2 support code
+### END_PYTHON2_SUPPORT_CODE
+
 
 
 
@@ -399,8 +399,8 @@ class LatexMacroNode(LatexNode):
     def nodeType(self):
         return LatexMacroNode
 
-    #
 
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
     @property
     def nodeoptarg(self):
         if not hasattr(self, '_nodeoptarg'):
@@ -415,6 +415,7 @@ class LatexMacroNode(LatexNode):
                 getattr(self.nodeargd, 'legacy_nodeoptarg_nodeargs', (None,None))
         return self._nodeargs
 
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
 
 

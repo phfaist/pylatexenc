@@ -44,7 +44,15 @@ from ..latexnodes.parsers import (
     LatexOptionalSquareBracketsParser,
     LatexExpressionParser,
 )
+
+
+# fallback to empty context if PYLATEXENC_GET_DEFAULT_SPECS_FN block removed
+get_default_latex_context_db = macrospec.LatexContextDb
+
+### BEGIN_PYLATEXENC_GET_DEFAULT_SPECS_FN
 from ._get_defaultspecs import get_default_latex_context_db
+### END_PYLATEXENC_GET_DEFAULT_SPECS_FN
+
 from ..latexnodes import ParsingState
 
 

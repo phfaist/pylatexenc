@@ -37,13 +37,13 @@ logger = logging.getLogger(__name__)
 _basestring = str
 _unicode_from_str = lambda x: x
 
-## Begin Py2 support code
+### BEGIN_PYTHON2_SUPPORT_CODE
 import sys
 if sys.version_info.major == 2:
     # Py2
     _basestring = basestring
     _unicode_from_str = lambda x: x.decode('utf-8')
-## End Py2 support code
+### END_PYTHON2_SUPPORT_CODE
 
 
 

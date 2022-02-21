@@ -43,12 +43,11 @@ from ._macrocallparser import (
 # for Py3
 _basestring = str
 
-## Begin Py2 support code
+### BEGIN_PYTHON2_SUPPORT_CODE
 import sys
 if sys.version_info.major == 2:
-    # Py2
     _basestring = basestring
-## End Py2 support code
+### END_PYTHON2_SUPPORT_CODE
 
 
 _legacy_pyltxenc2_do = lambda *args: None
@@ -80,10 +79,15 @@ class _SpecBase(CallableSpecBase):
         if finalize_node is not None:
             self.finalize_node = finalize_node
 
-    
+
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
     @property
     def args_parser(self):
         return self.arguments_parser
+
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
 
     def make_carryover_info(self, parsed_node):
         r"""

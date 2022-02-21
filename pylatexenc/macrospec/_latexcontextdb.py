@@ -23,7 +23,6 @@
 # THE SOFTWARE.
 #
 
-
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 

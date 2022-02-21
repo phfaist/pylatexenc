@@ -2,7 +2,7 @@
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2019 Philippe Faist
+# Copyright (c) 2022 Philippe Faist
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -37,10 +37,12 @@ macros and environments, specifying how they should be parsed by
 
 from ._specclasses import MacroSpec, EnvironmentSpec, SpecialsSpec
 
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 from ._spechelpers import std_macro, std_environment, std_specials
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
 
 from ._latexcontextdb import LatexContextDb
-
 
 
 from ._argumentsparser import (
@@ -55,8 +57,14 @@ from ._macrocallparser import (
 )
 
 
-# compatibility with pylatexenc 2
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 from ..latexnodes import ParsedMacroArgs
-from ._pyltxenc2_argparsers import MacroStandardArgsParser, \
-    ParsedVerbatimArgs, VerbatimArgsParser, ParsedLstListingArgs, LstListingArgsParser
+from ._pyltxenc2_argparsers import (
+    MacroStandardArgsParser,
+    ParsedVerbatimArgs,
+    VerbatimArgsParser,
+    ParsedLstListingArgs,
+    LstListingArgsParser,
+)
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 

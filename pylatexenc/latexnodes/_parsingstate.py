@@ -2,7 +2,7 @@
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2021 Philippe Faist
+# Copyright (c) 2022 Philippe Faist
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,6 @@
 # time and without notice.
 
 from __future__ import print_function, unicode_literals
-
 
 
 import logging
@@ -357,18 +356,3 @@ class ParsingState(object):
         return pswid + "(<{:#x}> → ".format(id(parent_obj))  +  ", ".join(
             "{}={!r}".format(k, v) for k, v in diff_kwargs.items()
         ) + ")"
-
-        # return (
-        #     self.__class__.__name__ + "<{}>".format(id(self)) + "("
-        #     + ", ".join(
-        #         [
-        #             "s=" + (repr(self.s)
-        #                     if not self.s or len(self.s) < 40
-        #                     else repr(self.s[:37]+'...'))
-        #         ] +
-        #         [ "{}={!r}".format(k, v)
-        #           for k, v in self.get_fields().items()
-        #           if k not in ('s',)]
-        #     )
-        #     + ")"
-        # )

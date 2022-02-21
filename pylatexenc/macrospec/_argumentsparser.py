@@ -23,7 +23,6 @@
 # THE SOFTWARE.
 #
 
-
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
@@ -42,12 +41,13 @@ from ..latexnodes import (
 # for Py3
 _basestring = str
 
-## Begin Py2 support code
+### BEGIN_PYTHON2_SUPPORT_CODE
 import sys
 if sys.version_info.major == 2:
     # Py2
     _basestring = basestring
-## End Py2 support code
+### END_PYTHON2_SUPPORT_CODE
+
 
 
 
