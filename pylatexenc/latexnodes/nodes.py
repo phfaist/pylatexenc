@@ -206,7 +206,7 @@ class LatexNode(object):
     def __repr__(self):
         return (
             self.nodeType().__name__ + "(" +
-            ", ".join([ "%s=%r"%(k,getattr(self,k))  for k in self._fields ]) +
+            ", ".join([ "{}={!r}".format(k,getattr(self,k))  for k in self._fields ]) +
             ")"
             )
 
@@ -835,9 +835,8 @@ class LatexNodeList(object):
         return self.nodelist
 
     def __repr__(self):
-        import pprint
-        return 'LatexNodeList({nodelist}, pos={pos!r}, pos_end={pos_end!r})'.format(
-            nodelist=pprint.pformat(self.nodelist),
+        return 'LatexNodeList({nodelist!r}, pos={pos!r}, pos_end={pos_end!r})'.format(
+            nodelist=self.nodelist,
             pos=self.pos,
             pos_end=self.pos_end
         )

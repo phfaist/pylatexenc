@@ -56,7 +56,8 @@ class LatexTokenReader(LatexTokenReaderBase):
         self.tolerant_parsing = kwargs.pop('tolerant_parsing', False)
         
         if kwargs:
-            raise ValueError("Invalid argument(s) to LatexTokenReader: %r", kwargs)
+            raise ValueError("Invalid argument(s) to LatexTokenReader: {!r}"
+                             .format(kwargs))
 
         self._pos = 0
 
@@ -110,7 +111,8 @@ class LatexTokenReader(LatexTokenReaderBase):
     def rewind_to_pos(self, pos):
         if pos > self._pos:
             raise ValueError("Internal error, rewind_to_pos() requires a position that is "
-                             "*before* the current position, got %d > %d" % (pos, self._pos))
+                             "*before* the current position, got {} > {}"
+                             .format(pos, self._pos))
         self._advance_to_pos(pos)
 
 

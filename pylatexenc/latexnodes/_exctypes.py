@@ -116,7 +116,7 @@ class LatexWalkerParseError(LatexWalkerError):
         msg = self.msg
         if self.input_source:
             msg += '  in {}'.format(self.input_source)
-        disp = msg + " %s"%(self._fmt_pos(self.pos, self.lineno, self.colno))
+        disp = msg + " {}".format(self._fmt_pos(self.pos, self.lineno, self.colno))
         if self.open_contexts:
             disp += '\nOpen LaTeX blocks:\n'
             for context in reversed(self.open_contexts):
@@ -129,10 +129,10 @@ class LatexWalkerParseError(LatexWalkerError):
     def _fmt_pos(self, pos, lineno, colno):
         if lineno is not None:
             if colno is not None:
-                return '@(%d,%d)'%(lineno, colno)
-            return '@%d'%(lineno)
+                return '@({},{})'.format(lineno, colno)
+            return '@{}'.format(lineno)
         if pos is not None:
-            return '@ char pos %d'%(pos)
+            return '@ char pos {}'.format(pos)
         return '@ <unknown>'
 
     def __str__(self):

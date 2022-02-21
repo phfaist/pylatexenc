@@ -29,7 +29,6 @@
 
 
 import bisect
-bisect_right_nodupl = bisect.bisect_right
 
 
 # ------------------------------------------------------------------------------
@@ -72,7 +71,7 @@ class LineNumbersCalculator(object):
         # find line number in list
 
         # line_no is the index of the last item in self._pos_new_lines that is <= pos.
-        line_no = bisect_right_nodupl(self._pos_new_lines, pos)-1
+        line_no = bisect.bisect_right(self._pos_new_lines, pos)-1
         assert line_no >= 0 and line_no < len(self._pos_new_lines)
 
         col_no = pos - self._pos_new_lines[line_no]
@@ -110,15 +109,24 @@ class PushPropOverride(object):
 
 try:
     from collections import ChainMap
-except:
+except ImportError:
+    pass
+### BEGIN_PYTHON2_SUPPORT_CODE
     from chainmap import ChainMap
+### END_PYTHON2_SUPPORT_CODE
 
 
 
 # ------------------------------------------------------------------------------
 
 
-# (import these symbols for re-export)
+
+pylatexenc_deprecated_ver = lambda *args: None
+pylatexenc_deprecated_2 = lambda *args: None
+pylatexenc_deprecated_3 = lambda *args: None
+LazyDict = None
+
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
 from ._util_support import (   # lgtm [py/unused-import]
     pylatexenc_deprecated_ver,
@@ -128,3 +136,4 @@ from ._util_support import (   # lgtm [py/unused-import]
     LazyDict
 )
 
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE

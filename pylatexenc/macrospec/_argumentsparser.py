@@ -167,10 +167,12 @@ class LatexArgumentsParser(LatexParserBase):
             for arg in arguments_spec_list
         ]
 
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
     @property
     def argspec(self):
         from ..latexnodes._parsedargs import _argspec_from_arguments_spec_list
         return _argspec_from_arguments_spec_list(self.arguments_spec_list)
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 

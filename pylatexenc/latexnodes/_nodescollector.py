@@ -352,6 +352,7 @@ class LatexNodesCollector(object):
                 logger.debug("nodes collector reached nodelist stop condition; nodelist = %r",
                              self._nodelist)
                 return LatexNodesCollector.ReachedStoppingCondition(stop_data=stop_data)
+        return None
 
     def _check_token_stop_condition(self, tok):
         stop_token_condition = self.stop_token_condition
@@ -364,6 +365,7 @@ class LatexNodesCollector(object):
                              "current node list = %r",
                              tok, self._nodelist)
                 return LatexNodesCollector.ReachedStoppingCondition(stop_data=stop_data)
+        return None
 
 
     def process_tokens(self):
@@ -826,7 +828,7 @@ class LatexNodesCollector(object):
         latex_walker = self.latex_walker
         token_reader = self.token_reader
 
-        if spec is not None:
+        if hasattr(spec, 'get_node_parser'):
             node_parser = spec.get_node_parser(tok)
         else:
             node_parser = None

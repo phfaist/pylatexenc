@@ -2,7 +2,7 @@
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2019 Philippe Faist
+# Copyright (c) 2022 Philippe Faist
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -35,12 +35,11 @@ from ._parsedargs import ParsedMacroArgs
 # for Py3
 _unicode_from_str = lambda x: x
 
-## Begin Py2 support code
+### BEGIN_PYTHON2_SUPPORT_CODE
 import sys
 if sys.version_info.major == 2:
-    # Py2
     _unicode_from_str = lambda x: x.decode('utf-8')
-## End Py2 support code
+### END_PYTHON2_SUPPORT_CODE
 
 
 
@@ -181,7 +180,7 @@ class LatexToken(object):
     def __repr__(self):
         return (
             "LatexToken(" +
-            ", ".join([ "%s=%r"%(k,getattr(self,k))
+            ", ".join([ "{}={!r}".format(k,getattr(self,k))
                         for k in self._fields ]) +
             ")"
             )

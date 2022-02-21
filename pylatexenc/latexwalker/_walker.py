@@ -944,7 +944,8 @@ def _pyltxenc2_LatexWalker_get_latex_braced_group(
     elif len(brace_type) == 2:
         pass
     else:
-        raise ValueError("Invalid brace type for get_latex_braced_group(): %s" %(brace_type))
+        raise ValueError("Invalid brace type for get_latex_braced_group(): {}"
+                         .format(brace_type))
     
     brace_type = tuple(brace_type)
 

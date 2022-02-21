@@ -134,11 +134,11 @@ from ._legacy_py1x import (
 
 
 
-
+### BEGIN_LATEXWALKER_HELPERS
 from ._helpers import (
     nodelist_to_latex,
     put_in_braces,
     disp_node,
     make_json_encoder,
 )
-
+### END_LATEXWALKER_HELPERS

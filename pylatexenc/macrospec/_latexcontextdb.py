@@ -29,9 +29,7 @@
 from __future__ import print_function, unicode_literals
 
 
-from .._util import ChainMap
-
-from .._util import pylatexenc_deprecated_3
+from .. import _util
 
 
 
@@ -98,9 +96,9 @@ class LatexContextDb(object):
 
         # these chainmaps' list of maps mirror the category_list item for item.
         self.lookup_chain_maps = {
-            'macros': ChainMap({}),
-            'environments': ChainMap({}),
-            'specials': ChainMap({}),
+            'macros': _util.ChainMap({}),
+            'environments': _util.ChainMap({}),
+            'specials': _util.ChainMap({}),
         }
 
         self.unknown_macro_spec = None
@@ -430,8 +428,8 @@ class LatexContextDb(object):
            The `filter_context()` method was renamed `filtered_context()`.  The
            method signature is unchanged.
         """
-        pylatexenc_deprecated_3("`LatexContextDb.filter_context()` was renamed to "
-                                "`filtered_context()`.")
+        _util.pylatexenc_deprecated_3("`LatexContextDb.filter_context()` was renamed to "
+                                      "`filtered_context()`.")
         return self.filtered_context(*args, **kwargs)
 
 
@@ -556,12 +554,18 @@ class LatexContextDb(object):
             dd[cat] = d_cat
             new_context.d = dd
             new_context.lookup_chain_maps = {
-                'macros': ChainMap(d_cat['macros'],
-                                   *self.lookup_chain_maps['macros'].maps[1:]),
-                'environments': ChainMap(d_cat['environments'],
-                                         *self.lookup_chain_maps['environments'].maps[1:]),
-                'specials': ChainMap(d_cat['specials'],
-                                     *self.lookup_chain_maps['specials'].maps[1:]),
+                'macros': _util.ChainMap(
+                    d_cat['macros'],
+                    *self.lookup_chain_maps['macros'].maps[1:]
+                ),
+                'environments': _util.ChainMap(
+                    d_cat['environments'],
+                    *self.lookup_chain_maps['environments'].maps[1:]
+                ),
+                'specials': _util.ChainMap(
+                    d_cat['specials'],
+                    *self.lookup_chain_maps['specials'].maps[1:]
+                ),
             }
             new_context._autogen_category_counter = self._autogen_category_counter
             
