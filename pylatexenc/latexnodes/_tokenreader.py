@@ -61,8 +61,11 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         self._pos = 0
 
+        # don't use '\w' for alphanumeric char, can get surprises especially if
+        # we try to run our code on other platforms (eg brython) where the
+        # environment name might otherwise not be matched correctly
         self._rx_environment_name = \
-            re.compile(r'\s*\{(?P<environmentname>[\w* ._-]+)\}')
+            re.compile(r'\s*\{(?P<environmentname>[A-Za-z0-9* ._-]+)\}')
 
     def move_to_token(self, tok, rewind_pre_space=True):
         if rewind_pre_space:
@@ -156,6 +159,8 @@ class LatexTokenReader(LatexTokenReaderBase):
 
     def impl_peek_token(self, parsing_state):
 
+        logger.debug("impl_peek_token(): parsing_state = %r", parsing_state);
+
         # shorthands (& to avoid repeated lookups)
         s = self.s
         len_s = len(s)
@@ -192,6 +197,8 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         c = s[pos]
 
+        logger.debug("Char at %d: %r", pos, c)
+
         # check if we have a math mode delimiter
         if c in parsing_state._math_delims_info_startchars and parsing_state.enable_math:
             t = self.impl_maybe_read_math_mode_delimiter(s, pos, parsing_state, pre_space)
@@ -209,6 +216,9 @@ class LatexTokenReader(LatexTokenReaderBase):
                     beginend = 'end'
                 else:
                     beginend = None
+
+                logger.debug("beginend=%r; s.startswith('begin',pos+1)=%r; s[pos+1:pos+7]=%r",
+                             beginend, s.startswith('begin', pos+1), s[pos+1:pos+7])
 
                 if beginend:
                     pastbeginendpos = pos+1+len(beginend)
@@ -389,6 +399,14 @@ class LatexTokenReader(LatexTokenReaderBase):
         pos_envname = pos + 1 + len(beginend)
 
         envmatch = self._rx_environment_name.match(s, pos_envname)
+
+        logger.debug("Getting environment name (using %r) at %r -> %r, is {align}?=%r",
+                     self._rx_environment_name.pattern,
+                     '...'+s[pos_envname:pos_envname+20]+'?...',
+                     envmatch,
+                     (s[pos_envname:pos_envname+len('{align}')] == '{align}')
+                     )
+
         if envmatch is None:
             tokarg = parsing_state.macro_escape_char + beginend
             raise LatexWalkerTokenParseError(
@@ -416,8 +434,9 @@ class LatexTokenReader(LatexTokenReaderBase):
 
     def impl_read_comment(self, s, pos, parsing_state, pre_space):
 
-        if s[pos] != '%':
-            raise ValueError("Internal error, expected ‘%’ in read_comment()")
+        if s[pos] != parsing_state.comment_char:
+            raise ValueError("Internal error, expected comment char ‘{}’ in read_comment()"
+                             .format(parsing_state.comment_char))
 
         sppos = s.find('\n', pos)
         if sppos == -1:

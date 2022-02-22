@@ -176,6 +176,8 @@ class ParsingState(object):
         self.enable_math = True
         self.macro_alpha_chars = _StrictAsciiAlphaChars()
 
+        # !!! at various places in LatexTokenReader, both of these are assumed
+        # !!! to be single characters.
         self.macro_escape_char = '\\' # character that introduces a macro
         self.comment_char = '%' # character that starts a comment
 

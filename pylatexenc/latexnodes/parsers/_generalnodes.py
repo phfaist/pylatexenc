@@ -388,7 +388,8 @@ class LatexDelimitedGroupParser(LatexParserBase):
                 token
             )
 
-        def make_child_parsing_state(self, group_parsing_state, node_class):
+        def make_child_parsing_state(self, parsing_state, node_class):
+            # parsing_state is group_parsing_state
             return self.child_parsing_state
 
         def get_matching_delimiter(self, opening_delimiter):

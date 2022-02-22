@@ -31,6 +31,8 @@ from __future__ import print_function, unicode_literals
 
 from .. import _util
 
+import logging
+logger = logging.getLogger(__name__)
 
 
 
@@ -187,6 +189,8 @@ class LatexContextDb(object):
             'environments': dict( (e.environmentname, e) for e in environments ),
             'specials': dict( (s.specials_chars, s) for s in specials ),
         }
+
+        logger.debug("Adding category context in db: %r", category_dicts)
 
         if prepend:
             insert_fn = lambda listobj, item: listobj.insert(0, item)

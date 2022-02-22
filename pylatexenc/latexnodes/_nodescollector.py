@@ -136,7 +136,9 @@ class LatexNodesCollector(object):
 
         # override custom function to make the child parsing state
         if make_child_parsing_state is not None:
-            self.make_child_parsing_state = make_child_parsing_state
+            self._make_child_parsing_state_fn = make_child_parsing_state
+        else:
+            self._make_child_parsing_state_fn = None
 
 
 
@@ -632,6 +634,9 @@ class LatexNodesCollector(object):
         You can reimplement this method to customize the parsing state of child
         nodes.
         """
+        if self._make_child_parsing_state_fn is not None:
+            return self._make_child_parsing_state_fn(parsing_state=parsing_state,
+                                                     node_class=node_class)
         return self.parsing_state
 
 
@@ -828,7 +833,7 @@ class LatexNodesCollector(object):
         latex_walker = self.latex_walker
         token_reader = self.token_reader
 
-        if hasattr(spec, 'get_node_parser'):
+        if spec is not None:
             node_parser = spec.get_node_parser(tok)
         else:
             node_parser = None
