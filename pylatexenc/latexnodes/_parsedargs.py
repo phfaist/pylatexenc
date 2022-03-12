@@ -145,6 +145,7 @@ class ParsedMacroArgs(object):
         self.pos, self.pos_end = pos, pos_end
 
 
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
     @property
     def argspec(self):
         if getattr(self, '_argspec', None) is None:
@@ -156,8 +157,9 @@ class ParsedMacroArgs(object):
         if self.pos is None or self.pos_end is None:
             return None
         return self.pos_end - self.pos
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
-### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+### BEGIN_PYLATEXENC1_LEGACY_SUPPORT_CODE
 
     @property
     def legacy_nodeoptarg_nodeargs(self):
@@ -172,7 +174,7 @@ class ParsedMacroArgs(object):
         else:
             return (None, argnlist)
 
-### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
+### END_PYLATEXENC1_LEGACY_SUPPORT_CODE
 
 
     # --TODO-- -- some decent API to get arguments!! including skipping over
@@ -220,6 +222,9 @@ class ParsedMacroArgs(object):
 
 
 
+
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
 def _argspec_from_arguments_spec_list(arguments_spec_list):
 
     def _argspec_char_for_arg(arg):
@@ -237,4 +242,4 @@ def _argspec_from_arguments_spec_list(arguments_spec_list):
         for arg in arguments_spec_list
     ])
 
-
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE

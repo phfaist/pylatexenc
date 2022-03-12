@@ -39,6 +39,28 @@ from ._token import LatexToken
 from ._tokenreaderbase import LatexTokenReaderBase
 
 
+
+# don't use '\w' for alphanumeric char, can get surprises especially if
+# we try to run our code on other platforms (eg brython) where the
+# environment name might otherwise not be matched correctly
+_rx_environment_name = \
+    re.compile(r'\s*\{(?P<environmentname>[A-Za-z0-9* ._-]+)\}')
+
+def _parse_latex_environment_name(s, pos, beginend, pos_envname):
+
+    # I might want to pass this code into transcrypt (->Javascript), where
+    # rx.match(s, pos) is not supported ...
+    envmatch = _rx_environment_name.match(s[pos_envname:]) #s, pos_envname)
+    if envmatch is None:
+        return None, None
+
+    envmatch_end_pos = pos_envname + envmatch.end()
+
+    return envmatch.group('environmentname'), envmatch_end_pos
+
+
+
+
 class LatexTokenReader(LatexTokenReaderBase):
     r"""
     Parse tokens from an input string.
@@ -61,11 +83,8 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         self._pos = 0
 
-        # don't use '\w' for alphanumeric char, can get surprises especially if
-        # we try to run our code on other platforms (eg brython) where the
-        # environment name might otherwise not be matched correctly
-        self._rx_environment_name = \
-            re.compile(r'\s*\{(?P<environmentname>[A-Za-z0-9* ._-]+)\}')
+        # can be patched if necessary...
+        self._parse_latex_environment_name = _parse_latex_environment_name
 
     def move_to_token(self, tok, rewind_pre_space=True):
         if rewind_pre_space:
@@ -398,16 +417,16 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         pos_envname = pos + 1 + len(beginend)
 
-        envmatch = self._rx_environment_name.match(s, pos_envname)
+        environment_name, environment_pos_end = \
+            self._parse_latex_environment_name(s, pos, beginend, pos_envname)
 
-        logger.debug("Getting environment name (using %r) at %r -> %r, is {align}?=%r",
-                     self._rx_environment_name.pattern,
-                     '...'+s[pos_envname:pos_envname+20]+'?...',
-                     envmatch,
+        logger.debug("Getting environment name at %r -> %r, is {align}?=%r",
+                     '...|'+s[pos_envname:pos_envname+35]+'|...',
+                     environment_pos_end,
                      (s[pos_envname:pos_envname+len('{align}')] == '{align}')
                      )
 
-        if envmatch is None:
+        if environment_name is None:
             tokarg = parsing_state.macro_escape_char + beginend
             raise LatexWalkerTokenParseError(
                 msg=r"Bad ‘\{}’ call: expected {{environmentname}}".format(beginend),
@@ -424,9 +443,9 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         env_token = self.make_token(
             tok=(beginend+'_environment'),
-            arg=envmatch.group('environmentname'),
+            arg=environment_name,
             pos=pos,
-            pos_end=envmatch.end(),
+            pos_end=environment_pos_end,
             pre_space=pre_space,
         )
         logger.debug("read environment token %r", env_token)

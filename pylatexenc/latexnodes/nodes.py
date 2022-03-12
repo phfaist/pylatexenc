@@ -185,7 +185,7 @@ class LatexNode(object):
 
     def __eq__(self, other):
         return other is not None  and  \
-            self.nodeType() == other.nodeType()  and  \
+            self.nodeType() is other.nodeType()  and  \
             other.parsing_state is self.parsing_state and \
             other.latex_walker is self.latex_walker and \
             other.pos == self.pos and \
@@ -850,11 +850,19 @@ class LatexNodeList(object):
 def _update_posposend_from_nodelist(pos, pos_end, nodelist):
 
     if pos is None:
-        pos = next( (n.pos for n in nodelist if n is not None),
-                    None )
+        for n in nodelist:
+            if n is not None:
+                pos = n.pos
+                break
+        else:
+            pos = None
 
     if pos_end is None:
-        pos_end = next( (n.pos_end for n in reversed(nodelist) if n is not None),
-                        None )
+        for n in reversed(nodelist):
+            if n is not None:
+                pos_end = n.pos_end
+                break
+        else:
+            pos_end = None
 
     return pos, pos_end
