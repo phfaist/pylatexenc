@@ -29,7 +29,11 @@ from ._base import LatexParserBase
 from ._generalnodes import (
     LatexGeneralNodesParser,
     LatexSingleNodeParser,
+)
+from ._delimitedgroup import (
     LatexDelimitedGroupParser,
+)
+from ._math import (
     LatexMathParser,
 )
 

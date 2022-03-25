@@ -37,7 +37,8 @@ from .._exctypes import LatexWalkerParseError, LatexWalkerTokenParseError
 from ..nodes import *
 
 from ._base import LatexParserBase
-from ._generalnodes import LatexGeneralNodesParser, LatexDelimitedGroupParser
+from ._generalnodes import LatexGeneralNodesParser
+from ._delimitedgroup import LatexDelimitedGroupParser
 from ._optionals import LatexOptionalCharsMarkerParser
 from ._expression import LatexExpressionParser
 from ._verbatim import LatexDelimitedVerbatimParser

@@ -9,6 +9,7 @@ from pylatexenc.latexnodes.parsers._stdarg import (
     LatexCharsCommaSeparatedListParser,
     LatexCharsGroupParser,
 )
+from pylatexenc.latexnodes import parsers
 
 from pylatexenc.latexnodes import (
     LatexWalkerNodesParseError,
@@ -19,13 +20,16 @@ from pylatexenc.latexnodes import (
 )
 from pylatexenc.latexnodes.nodes import *
 
-
 from ._helpers_tests import (
     DummyWalker,
-    dummy_empty_group_parser,
-    dummy_empty_mathmode_parser,
     DummyLatexContextDb,
 )
+
+
+class DummyWalkerWithGroupsAndMath(DummyWalker):
+    make_latex_group_parser = parsers.LatexDelimitedGroupParser
+    make_latex_math_parser = parsers.LatexMathParser
+
 
 
 class TestLatexStandardArgumentParser(unittest.TestCase):
@@ -35,7 +39,7 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
-        lw = DummyWalker()
+        lw = DummyWalkerWithGroupsAndMath()
 
         parser = LatexStandardArgumentParser(arg_spec='m')
 
@@ -68,7 +72,7 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
-        lw = DummyWalker()
+        lw = DummyWalkerWithGroupsAndMath()
 
         parser = LatexStandardArgumentParser(arg_spec='{')
 
@@ -103,7 +107,7 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
-        lw = DummyWalker()
+        lw = DummyWalkerWithGroupsAndMath()
 
         parser = LatexStandardArgumentParser(arg_spec='m', include_skipped_comments=False)
 
@@ -137,7 +141,7 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
-        lw = DummyWalker()
+        lw = DummyWalkerWithGroupsAndMath()
 
         parser = LatexStandardArgumentParser(arg_spec='m') # i.e. include_skipped_comments=True
 
@@ -189,7 +193,7 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
-        lw = DummyWalker()
+        lw = DummyWalkerWithGroupsAndMath()
 
         parser = LatexStandardArgumentParser(arg_spec='m',
                                              is_math_mode=True)
@@ -226,7 +230,7 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
-        lw = DummyWalker()
+        lw = DummyWalkerWithGroupsAndMath()
 
         parser = LatexStandardArgumentParser(arg_spec='m',
                                              is_math_mode=False)
@@ -269,7 +273,7 @@ class TestLatexCharsCommaSeparatedListParser(unittest.TestCase):
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
-        lw = DummyWalker()
+        lw = DummyWalkerWithGroupsAndMath()
 
         parser = LatexCharsCommaSeparatedListParser(
             comma_char=';',
@@ -344,7 +348,7 @@ class TestLatexCharsCommaSeparatedListParser(unittest.TestCase):
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
-        lw = DummyWalker()
+        lw = DummyWalkerWithGroupsAndMath()
 
         parser = LatexCharsCommaSeparatedListParser(
             comma_char=';',
@@ -434,7 +438,7 @@ class TestLatexCharsCommaSeparatedListParser(unittest.TestCase):
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
-        lw = DummyWalker()
+        lw = DummyWalkerWithGroupsAndMath()
 
         parser = LatexCharsCommaSeparatedListParser(
             comma_char=';',

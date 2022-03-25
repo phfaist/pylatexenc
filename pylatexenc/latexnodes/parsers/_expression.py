@@ -43,7 +43,7 @@ from ..nodes import *
 from ..nodes import _update_posposend_from_nodelist
 
 from ._base import LatexParserBase
-from ._generalnodes import LatexDelimitedGroupParser
+from ._delimitedgroup import LatexDelimitedGroupParser
 
 
 

@@ -6,8 +6,6 @@ import logging
 from pylatexenc.latexnodes.parsers._generalnodes import (
     LatexGeneralNodesParser,
     LatexSingleNodeParser,
-    LatexDelimitedGroupParser,
-    LatexMathParser,
 )
 
 from pylatexenc.latexnodes import (
@@ -22,8 +20,6 @@ from pylatexenc.latexnodes.nodes import *
 
 from ._helpers_tests import (
     DummyWalker,
-    dummy_empty_group_parser,
-    dummy_empty_mathmode_parser,
     DummyLatexContextDb,
 )
 
@@ -34,7 +30,7 @@ from ._helpers_tests import (
 class TestGeneralNodesParser(unittest.TestCase):
 
     def test_gets_nodes_with_stuff(self):
-        latextext = r'''Hello there, \yourname. What's that about {A}?'''
+        latextext = r'''Hello there, \yourname. What's that about {}?'''
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
@@ -71,22 +67,26 @@ class TestGeneralNodesParser(unittest.TestCase):
                 LatexGroupNode(
                     parsing_state=ps,
                     delimiters=('{','}'),
-                    nodelist=LatexNodeList([
-                        LatexCharsNode(
-                            parsing_state=ps,
-                            chars="A",
-                            pos=67-24,
-                            pos_end=68-24,
-                        ),
-                    ]),
+                    nodelist=LatexNodeList(
+                        [
+                            # LatexCharsNode(
+                            #     parsing_state=ps,
+                            #     chars="A",
+                            #     pos=67-24,
+                            #     pos_end=68-24,
+                            # ),
+                        ],
+                        pos='<POS>',
+                        pos_end='<POS_END>',
+                    ),
                     pos=66-24,
-                    pos_end=69-24,
+                    pos_end=68-24,
                 ),
                 LatexCharsNode(
                     parsing_state=ps,
                     chars="?",
-                    pos=69-24,
-                    pos_end=70-24,
+                    pos=68-24,
+                    pos_end=69-24,
                 ),
             ])
         )
@@ -96,7 +96,7 @@ class TestGeneralNodesParser(unittest.TestCase):
 
 class TestSingleNodeParser(unittest.TestCase):
     def test_simple(self):
-        latextext = r'''Hello there, \yourname. What's that about {A}?'''
+        latextext = r'''Hello there, \yourname. What's that about {}?'''
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
@@ -120,7 +120,7 @@ class TestSingleNodeParser(unittest.TestCase):
 
     def test_simple_get_comment(self):
         latextext = r'''% comment here.
-Hello there, \yourname. What's that about {A}?'''
+Hello there, \yourname. What's that about {}?'''
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
@@ -146,7 +146,7 @@ Hello there, \yourname. What's that about {A}?'''
 
     def test_simple_skip_comment(self):
         latextext = r'''% comment here.
-Hello there, \yourname. What's that about {A}?'''
+Hello there, \yourname. What's that about {}?'''
 
         tr = LatexTokenReader(latextext)
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
@@ -178,16 +178,6 @@ Hello there, \yourname. What's that about {A}?'''
 
 
 
-# ------------------------------------------------------------------------------
-
-
-
-class TestDelimitedGroupParser(unittest.TestCase):
-
-    def test_simple(self):
-        
-        # WRITE ME
-        self.assertTrue( False )
 
 
 

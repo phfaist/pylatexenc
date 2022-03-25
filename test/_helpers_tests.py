@@ -20,6 +20,10 @@ from pylatexenc.latexnodes.nodes import *
 
 
 class DummyWalker(LatexWalkerBase):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.mkgroup_assert_delimiters_equals = None
+        self.mkmath_assert_delimiters_equals = None
 
     def make_node(self, node_class, **kwargs):
         return node_class(**kwargs)
@@ -34,6 +38,18 @@ class DummyWalker(LatexWalkerBase):
             parsing_state,
             **kwargs
         )
+
+    def make_latex_group_parser(self, delimiters):
+        # dummy group parser
+        if self.mkgroup_assert_delimiters_equals is not None:
+            assert delimiters == self.mkgroup_assert_delimiters_equals
+        return dummy_empty_group_parser
+
+    def make_latex_math_parser(self, math_mode_delimiters):
+        # dummy group parser
+        if self.mkmath_assert_delimiters_equals is not None:
+            assert math_mode_delimiters == self.mkmath_assert_delimiters_equals
+        return dummy_empty_mathmode_parser
 
     def parse_content(self, parser, token_reader=None, parsing_state=None,
                       open_context=None):

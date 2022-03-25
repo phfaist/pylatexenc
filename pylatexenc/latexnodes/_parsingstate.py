@@ -261,15 +261,14 @@ class ParsingState(object):
         ])
         if not self.in_math_mode:
             self._math_expecting_close_delim_info = None
+        elif self.math_mode_delimiter in self._math_delims_info_by_open:
+            self._math_expecting_close_delim_info = self._math_delims_info_by_open[
+                self.math_mode_delimiter
+            ]
         else:
-            try:
-                self._math_expecting_close_delim_info = self._math_delims_info_by_open[
-                    self.math_mode_delimiter
-                ]
-            except KeyError as e:
-                # Normal, can happen in math environments delimited by
-                # e.g. \begin{align}...\end{align}
-                self._math_expecting_close_delim_info = None
+            # Normal, can happen in math environments delimited by
+            # e.g. \begin{align}...\end{align}
+            self._math_expecting_close_delim_info = None
 
 
 

@@ -90,8 +90,6 @@ class LatexNodesCollector(object):
                  latex_walker,
                  token_reader,
                  parsing_state,
-                 make_group_parser,
-                 make_math_parser,
                  stop_token_condition=None,
                  stop_nodelist_condition=None,
                  make_child_parsing_state=None,
@@ -114,9 +112,6 @@ class LatexNodesCollector(object):
         self._stop_nodelist_condition_met = False
         self._stop_condition_stop_data = None
         self._reached_end_of_stream = False
-
-        self.make_group_parser = make_group_parser # like "LatexDelimitedGroupParser"
-        self.make_math_parser = make_math_parser # like "LatexMathParser"
 
         # current parsing state. This attribute might change as we parse tokens
         # and nodes.
@@ -672,9 +667,9 @@ class LatexNodesCollector(object):
         token `tok` is of type ``tok.tok == 'brace_open'`` according to the
         current parsing state.
 
-        The default implementation uses the `make_group_parser` specified to the
-        constructor to parse the group node, and pushes the resulting node onto
-        the node list.
+        The default implementation uses the `make_latex_group_parser` provided
+        by the LatexWalker instance to parse the group node, and pushes the
+        resulting node onto the node list.
 
         This method can be reimplemented to customize its behavior.
         Implementations should create the relevant node(s) and push them onto
@@ -688,7 +683,7 @@ class LatexNodesCollector(object):
 
         groupnode, carryover_info = \
             self.latex_walker.parse_content(
-                self.make_group_parser(
+                self.latex_walker.make_latex_group_parser(
                     delimiters=tok.arg,
                 ),
                 token_reader=self.token_reader,
@@ -875,9 +870,9 @@ class LatexNodesCollector(object):
         ... \]``). The token `tok` is of type ``tok.tok in ('mathmode_inline',
         'mathmode_display')`` according to the current parsing state.
 
-        The default implementation uses the `make_math_parser` specified to the
-        constructor to parse the group node, and pushes the resulting node onto
-        the node list.
+        The default implementation uses the `make_latex_math_parser()` provided
+        by the latex walker to parse the group node, and pushes the resulting
+        node onto the node list.
 
         This method can be reimplemented to customize its behavior.
         Implementations should create the relevant node(s) and push them onto
@@ -895,7 +890,7 @@ class LatexNodesCollector(object):
         # a math inline or display environment
         mathnode, carryover_info = \
             self.latex_walker.parse_content(
-                self.make_math_parser(
+                self.latex_walker.make_latex_math_parser(
                     math_mode_delimiters=tok.arg,
                 ),
                 token_reader=self.token_reader,

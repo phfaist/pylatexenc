@@ -48,6 +48,13 @@ class LatexWalkerBase(object):
         raise RuntimeError(
             "LatexWalkerBase subclasses must reimplement make_nodes_collector()")
 
+    def make_latex_group_parser(self, delimiters):
+        raise RuntimeError(
+            "LatexWalkerBase subclasses must reimplement make_latex_group_parser()")
+        
+    def make_latex_math_parser(self, math_mode_delimiters):
+        raise RuntimeError(
+            "LatexWalkerBase subclasses must reimplement make_latex_math_parser()")
 
     def check_tolerant_parsing_ignore_error(self, exc):
         r"""

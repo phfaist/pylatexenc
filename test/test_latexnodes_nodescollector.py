@@ -20,8 +20,6 @@ from pylatexenc.latexnodes.nodes import *
 
 from ._helpers_tests import (
     DummyWalker,
-    dummy_empty_group_parser,
-    dummy_empty_mathmode_parser,
     DummyLatexContextDb,
 )
 
@@ -46,8 +44,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  )
 
         nc.process_tokens()
@@ -82,8 +78,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  )
 
         nc.process_tokens()
@@ -116,15 +110,11 @@ class TestLatexNodesCollector(unittest.TestCase):
         ps = ParsingState(s=latextext)
         lw = DummyWalker()
 
-        def make_dummy_empty_group_parser(delimiters):
-            self.assertEqual(delimiters, '{')
-            return dummy_empty_group_parser
+        lw.mkgroup_assert_delimiters_equals = '{'
 
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=make_dummy_empty_group_parser,
-                                 make_math_parser=None,
                                  )
 
         nc.process_tokens()
@@ -157,15 +147,11 @@ class TestLatexNodesCollector(unittest.TestCase):
         ps = ParsingState(s=latextext)
         lw = DummyWalker()
 
-        def make_dummy_empty_mathmode_parser(math_mode_delimiters):
-            self.assertEqual(math_mode_delimiters, r'\(')
-            return dummy_empty_mathmode_parser
+        lw.mkmath_assert_delimiters_equals = '\('
 
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=make_dummy_empty_mathmode_parser,
                                  )
 
         nc.process_tokens()
@@ -202,8 +188,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  )
 
         nc.process_tokens()
@@ -235,16 +219,11 @@ class TestLatexNodesCollector(unittest.TestCase):
         ps = ParsingState(s=latextext)
         lw = DummyWalker()
 
-        def make_dummy_empty_group_parser(delimiters):
-            self.assertEqual(delimiters, '{')
-            return dummy_empty_group_parser
-
+        lw.mkgroup_assert_delimiters_equals = '{'
 
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=make_dummy_empty_group_parser,
-                                 make_math_parser=None,
                                  )
 
         nc.process_tokens()
@@ -291,8 +270,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  )
 
         nc.process_tokens()
@@ -330,8 +307,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  )
 
         nc.process_tokens()
@@ -370,8 +345,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  )
 
         nc.process_tokens()
@@ -410,8 +383,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  )
 
         with self.assertRaises(LatexWalkerParseError):
@@ -429,8 +400,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  )
 
         nc.process_tokens()
@@ -495,8 +464,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  stop_token_condition=my_stop_token_condition,
                                  )
 
@@ -532,14 +499,12 @@ class TestLatexNodesCollector(unittest.TestCase):
         def my_stop_token_condition(token):
             if token.tok == 'char' and token.arg in ('s', ' ', '\t', '\n'):
                 # stop upon 's'
-                return {'stop_char': token.arg}
+                return token.arg
             return False
 
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  stop_token_condition=my_stop_token_condition,
                                  )
 
@@ -564,8 +529,7 @@ class TestLatexNodesCollector(unittest.TestCase):
         self.assertTrue(nc.stop_token_condition_met())
         self.assertFalse(nc.stop_nodelist_condition_met())
 
-        self.assertEqual(nc.stop_condition_stop_data(),
-                         {'stop_char': 's'})
+        self.assertEqual(nc.stop_condition_stop_data(), 's')
 
     def test_stops_on_token_condition_withprespacechars(self):
 
@@ -584,8 +548,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  stop_token_condition=my_stop_token_condition,
                                  )
 
@@ -627,8 +589,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  stop_token_condition=my_stop_token_condition,
                                  include_stop_token_pre_space_chars=False,
                                  )
@@ -672,8 +632,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  stop_nodelist_condition=my_stop_nodelist_condition,
                                  )
 
@@ -728,15 +686,11 @@ class TestLatexNodesCollector(unittest.TestCase):
                 return child_ps
             self.assertTrue(False) # Didn't expect this node class with our latex input code
 
-        def make_dummy_empty_group_parser(delimiters):
-            self.assertEqual(delimiters, '{')
-            return dummy_empty_group_parser
+        lw.mkgroup_assert_delimiters_equals = '{'
 
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=make_dummy_empty_group_parser,
-                                 make_math_parser=None,
                                  make_child_parsing_state=my_make_child_parsing_state,
                                  )
 
@@ -790,8 +744,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  make_child_parsing_state=my_make_child_parsing_state,
                                  )
 
@@ -847,8 +799,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  make_child_parsing_state=my_make_child_parsing_state,
                                  )
 
@@ -904,8 +854,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=None,
                                  make_child_parsing_state=my_make_child_parsing_state,
                                  )
 
@@ -960,15 +908,11 @@ class TestLatexNodesCollector(unittest.TestCase):
                 return child_ps
             self.assertTrue(False) # Didn't expect this node class with our latex input code
 
-        def make_dummy_empty_mathmode_parser(math_mode_delimiters):
-            self.assertEqual(math_mode_delimiters, r'\(')
-            return dummy_empty_mathmode_parser
+        lw.mkmath_assert_delimiters_equals = '\('
 
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
                                  parsing_state=ps,
-                                 make_group_parser=None,
-                                 make_math_parser=make_dummy_empty_mathmode_parser,
                                  make_child_parsing_state=my_make_child_parsing_state,
                                  )
 

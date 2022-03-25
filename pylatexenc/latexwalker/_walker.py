@@ -37,13 +37,7 @@ from .. import macrospec
 
 from ..latexnodes._exctypes import *
 from ..latexnodes.nodes import *
-from ..latexnodes.parsers import (
-    LatexGeneralNodesParser,
-    LatexSingleNodeParser,
-    LatexDelimitedGroupParser,
-    LatexOptionalSquareBracketsParser,
-    LatexExpressionParser,
-)
+from ..latexnodes import parsers
 
 
 # fallback to empty context if PYLATEXENC_GET_DEFAULT_SPECS_FN block removed
@@ -224,6 +218,11 @@ class LatexWalker(latexnodes.LatexWalkerBase):
             logger.warning("LatexWalker(): Unknown flag(s) encountered: %r", kwargs.keys())
 
         super(LatexWalker, self).__init__()
+
+
+    make_latex_group_parser = parsers.LatexDelimitedGroupParser
+
+    make_latex_math_parser = parsers.LatexMathParser
 
 
     def make_parsing_state(self, **kwargs):
@@ -760,7 +759,7 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
         logger.debug("moving past token %r", token)
         token_reader.move_past_token(token)
 
-    parser = LatexGeneralNodesParser(
+    parser = parsers.LatexGeneralNodesParser(
         stop_token_condition=stop_token_condition,
         stop_nodelist_condition=stop_nodelist_condition,
         require_stop_condition_met=require_stop_condition_met,
@@ -836,7 +835,7 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
     logger.debug("get_latex_expression(): “%s...”",
                  self.s[pos:pos+50])
 
-    parser = LatexExpressionParser(
+    parser = parsers.LatexExpressionParser(
         include_skipped_comments=False,
         single_token_requiring_arg_is_error=not self.tolerant_parsing,
     )
@@ -957,7 +956,7 @@ def _pyltxenc2_LatexWalker_get_latex_braced_group(
     # if brace_type not in parsing_state.latex_group_delimiters:
     #     include_brace_chars = [ brace_type ]
     
-    parser = LatexDelimitedGroupParser(
+    parser = parsers.LatexDelimitedGroupParser(
         delimiters=brace_type,
         #include_delimiter_chars=include_brace_chars,
     )
@@ -1035,7 +1034,7 @@ def _pyltxenc2_LatexWalker_get_latex_environment(
 
     # parse a single node and then we'll verify that it was the correct
     # environment node
-    parser = LatexSingleNodeParser()
+    parser = parsers.LatexSingleNodeParser()
 
     nodes, info = self.parse_content(
         parser,
@@ -1102,7 +1101,7 @@ def _pyltxenc2_LatexWalker_get_latex_maybe_optional_arg(self, pos, parsing_state
 
     # parse a single node and then we'll verify that it was the correct
     # environment node
-    parser = LatexOptionalSquareBracketsParser()
+    parser = parsers.LatexOptionalSquareBracketsParser()
 
     nodes, info = self.parse_content(
         parser,

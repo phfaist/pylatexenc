@@ -336,6 +336,7 @@ class LatexTokenReader(LatexTokenReaderBase):
             # expecting_close can be None even in math mode, e.g., inside a math
             # environment \begin{align} ... \end{align}
             if expecting_close is not None:
+                logger.debug("expecting close math mode delimiter = %r", expecting_close)
                 expecting_close_delim = expecting_close['close_delim']
                 expecting_close_tok = expecting_close['tok']
                 if s.startswith(expecting_close_delim, pos):

@@ -32,7 +32,10 @@ from __future__ import print_function, unicode_literals
 
 from ._base import LatexParserBase
 from ._generalnodes import (
-    LatexGeneralNodesParser, LatexDelimitedGroupParser, LatexSingleNodeParser
+    LatexGeneralNodesParser, LatexSingleNodeParser,
+)
+from ._delimitedgroup import (
+    LatexDelimitedGroupParser,
 )
 from ..nodes import (
     LatexNodeList,
