@@ -29,7 +29,6 @@
 
 from __future__ import print_function, unicode_literals
 
-
 from .._exctypes import *
 from ..nodes import *
 

@@ -338,7 +338,7 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
                 return True
             if token.tok == 'char' and token.arg == self.comma_char:
                 return True
-            return None
+            return False
 
         def handle_stop_condition_token(self, token,
                                         latex_walker, token_reader, parsing_state):

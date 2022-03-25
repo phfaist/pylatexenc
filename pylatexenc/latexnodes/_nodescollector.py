@@ -135,10 +135,7 @@ class LatexNodesCollector(object):
         self._finalized = False
 
         # override custom function to make the child parsing state
-        if make_child_parsing_state is not None:
-            self._make_child_parsing_state_fn = make_child_parsing_state
-        else:
-            self._make_child_parsing_state_fn = None
+        self._make_child_parsing_state_fn = make_child_parsing_state
 
 
 

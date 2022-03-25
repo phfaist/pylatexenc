@@ -28,6 +28,9 @@ from ._helpers_tests import (
 )
 
 
+# ------------------------------------------------------------------------------
+
+
 class TestGeneralNodesParser(unittest.TestCase):
 
     def test_gets_nodes_with_stuff(self):
@@ -87,6 +90,107 @@ class TestGeneralNodesParser(unittest.TestCase):
                 ),
             ])
         )
+
+
+# ------------------------------------------------------------------------------
+
+class TestSingleNodeParser(unittest.TestCase):
+    def test_simple(self):
+        latextext = r'''Hello there, \yourname. What's that about {A}?'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexSingleNodeParser()
+
+        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            nodes,
+            LatexNodeList([
+                LatexCharsNode(
+                    parsing_state=ps,
+                    chars='Hello there, ',
+                    pos=0,
+                    pos_end=37-24,
+                ),
+            ])
+        )
+
+    def test_simple_get_comment(self):
+        latextext = r'''% comment here.
+Hello there, \yourname. What's that about {A}?'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexSingleNodeParser() #stop_on_comment=True
+
+        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            nodes,
+            LatexNodeList([
+                LatexCommentNode(
+                    parsing_state=ps,
+                    comment=' comment here.',
+                    comment_post_space='\n',
+                    pos=0,
+                    pos_end=40-24,
+                ),
+            ])
+        )
+        
+
+    def test_simple_skip_comment(self):
+        latextext = r'''% comment here.
+Hello there, \yourname. What's that about {A}?'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexSingleNodeParser(stop_on_comment=False)
+
+        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            nodes,
+            LatexNodeList([
+                LatexCommentNode(
+                    parsing_state=ps,
+                    comment=' comment here.',
+                    comment_post_space='\n',
+                    pos=0,
+                    pos_end=40-24,
+                ),
+                LatexCharsNode(
+                    parsing_state=ps,
+                    chars='Hello there, ',
+                    pos=16,
+                    pos_end=16+13,
+                ),
+            ])
+        )
+        
+
+
+
+# ------------------------------------------------------------------------------
+
+
+
+class TestDelimitedGroupParser(unittest.TestCase):
+
+    def test_simple(self):
+        
+        # WRITE ME
+        self.assertTrue( False )
+
+
+
 
 
 

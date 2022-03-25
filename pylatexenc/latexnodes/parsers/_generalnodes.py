@@ -55,6 +55,54 @@ if sys.version_info.major == 2:
 # ------------------------------------------------------------------------------
 
 class LatexGeneralNodesParser(LatexParserBase):
+    r"""
+    Parse general nodes, either until a stopping condition is met, or until the
+    end of stream is reached.
+
+    This is the general-purpose parser that parses the bulk of LaTeX content.
+    It will parse content, using a nodes collector instance, where the latter
+    will instantiate specialized parsers whenever specific constructs (such as
+    macros, environments, arguments, etc.) are identified.
+
+    Nodes are parsed with a `LatexNodesCollector` instance provided by the latex
+    walker instance (see `LatexWalker.make_nodes_collector()`).  This class can
+    be seen as a thin wrapper around a `LatexNodesCollector` instance to provide
+    a `LatexParserBase` interface.
+
+    Arguments:
+
+      - `stop_token_condition`, `stop_nodelist_condition`,
+        `make_child_parsing_state`, `include_stop_token_pre_space_chars` are
+        passed on directly to create a nodes collector instance (see also
+        :py:meth:`__call__()`)
+
+      - If `require_stop_condition_met` is `True` (the default), then any
+        stopping condition must be eventually met; a parse error is raised if
+        the end of stream is reached.  This option has no effect if no stopping
+        conditions are specified.
+
+      - The `stop_condition_message` argument can be used to specify a more
+        human-friendly error message to report in case a specified stopping
+        condition is not met. E.g., "expected ‘}’ after ..." is probably more
+        illuminating than the default message "stopping condition not met...".
+
+      - The `handle_stop_condition_token` argument accepts a callable.  When a
+        token stopping condition is met, the given callable is invoked as
+        `handle_stop_condition_token(token, latex_walker=latex_walker,
+        token_reader=token_reader, parsing_state=parsing_state)`, where `token`
+        is the token that caused the token stop condition to fire.  This
+        callback is typically used to set the `tokenreader`'s position
+        appropriately (e.g., past the token that ends a group).
+
+      - The `handle_stop_data` argument accepts a callable.  After a stopping
+        condition is met (whether token or nodelist), this callable is invoked
+        with the return value of the stop callback function (`stop_data`) as
+        argument.  This enables the stop condition callback to specify more
+        detailed information about what caused the processing to stop.  The
+        callback is invoked with the syntax `handle_stop_data(stop_data,
+        latex_walker=latex_walker, token_reader=token_reader,
+        parsing_state=parsing_state)`.
+    """
     def __init__(self,
                  stop_token_condition=None,
                  stop_nodelist_condition=None,
@@ -80,9 +128,11 @@ class LatexGeneralNodesParser(LatexParserBase):
         self.include_stop_token_pre_space_chars = include_stop_token_pre_space_chars
 
 
-    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
-
-        collector = latex_walker.make_nodes_collector(
+    def make_nodes_collector(self, latex_walker, token_reader, parsing_state):
+        r"""
+        Create the nodes collector instance that will do the main parsing.
+        """
+        return latex_walker.make_nodes_collector(
             token_reader=token_reader,
             parsing_state=parsing_state,
             make_group_parser=LatexDelimitedGroupParser,
@@ -92,6 +142,17 @@ class LatexGeneralNodesParser(LatexParserBase):
             make_child_parsing_state=self.make_child_parsing_state,
             include_stop_token_pre_space_chars=self.include_stop_token_pre_space_chars,
         )
+
+    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+        r"""
+        The main parsing routine.  The nodes collector instance is created using
+        `self.make_nodes_collector()`.
+
+        We check that stop conditions are met, if applicable, and call the
+        relevant handlers.
+        """
+
+        collector = self.make_nodes_collector(latex_walker, token_reader, parsing_state)
 
         try:
 
@@ -118,14 +179,6 @@ class LatexGeneralNodesParser(LatexParserBase):
         stop_token_condition_met = collector.stop_token_condition_met()
         stop_nodelist_condition_met = collector.stop_nodelist_condition_met()
 
-        logger.debug("finished parsing general nodes; "
-                     "self.require_stop_condition_met=%r, "
-                     "stop_token_condition=%r, stop_token_condition_met=%r, "
-                     "stop_nodelist_condition=%r, stop_nodelist_condition_met=%r",
-                     self.require_stop_condition_met,
-                     self.stop_token_condition, stop_token_condition_met,
-                     self.stop_nodelist_condition, stop_nodelist_condition_met)
-
         met_a_required_stop_condition = False
         if not self.require_stop_condition_met:
             # no condition to meet
@@ -140,6 +193,16 @@ class LatexGeneralNodesParser(LatexParserBase):
             else:
                 # there were no stopping conditions set
                 met_a_required_stop_condition = True
+
+        logger.debug("finished parsing general nodes; "
+                     "self.require_stop_condition_met=%r, "
+                     "stop_token_condition=%r, stop_token_condition_met=%r, "
+                     "stop_nodelist_condition=%r, stop_nodelist_condition_met=%r;"
+                     "met_a_required_stop_condition=%r",
+                     self.require_stop_condition_met,
+                     self.stop_token_condition, stop_token_condition_met,
+                     self.stop_nodelist_condition, stop_nodelist_condition_met,
+                     met_a_required_stop_condition)
 
         if not met_a_required_stop_condition:
             #
@@ -181,6 +244,8 @@ class LatexGeneralNodesParser(LatexParserBase):
         nodelist = collector.get_final_nodelist()
         carryover_info = collector.get_parser_carryover_info()
 
+        logger.debug("parser - we got final nodelist - %r", nodelist)
+
         return nodelist, carryover_info
 
 
@@ -189,29 +254,53 @@ class LatexGeneralNodesParser(LatexParserBase):
 
 
 class LatexSingleNodeParser(LatexGeneralNodesParser):
-    def __init__(self, stop_after_comment=True, **kwargs):
+    r"""
+    A parser that collects a single logical node.
+
+    This class is a simple `LatexGeneralNodesParser` where the stopping
+    condition is set to whenever the node list reaches one node.  (If
+    `stop_on_comment` is `False`, then we don't count comment nodes).
+
+    The parser always returns a node list, and never a single node instance.
+
+    If the end of stream is reached, an empty node list is returned.
+
+    Arguments:
+    
+      - `stop_on_comment`: If `True`, then a single comment node will count as a
+        single node read.  If `False`, then processing will continue until a
+        non-comment node is reached.
+    """
+    def __init__(self, stop_on_comment=True, **kwargs):
         super(LatexSingleNodeParser, self).__init__(
             stop_nodelist_condition=self._stop_nodelist_condition,
             require_stop_condition_met=False,
             **kwargs
         )
-        self.stop_after_comment = stop_after_comment
+        self.stop_on_comment = stop_on_comment
         
     def _stop_nodelist_condition(self, nodelist):
         nl = nodelist
-        if not self.stop_after_comment:
+        if not self.stop_on_comment:
             nl = [n for n in nl if not n.isNodeType(LatexCommentNode)]
         if len(nl) >= 1:
             return True
         return False
 
-
     def contents_can_be_empty(self):
         return False
 
 
+
+
+
 # ------------------------------------------------------------------------------
 
+
+#
+# THESE DEFINITIONS MUST BE KEPT IN THIS FILE, BECAUSE LatexDelimitedGroupParser
+# REFERS TO LatexGeneralNodes AND VICE VERSA!
+#
 
 
 
@@ -219,11 +308,11 @@ class LatexDelimitedGroupParser(LatexParserBase):
     r"""
     ............
 
-    In all cases, the first token read (after whitespace) must be a 'brace_open'
-    type.  If `delimiters` is a pair of characters, the parsing state is
-    inspected to ensure that these delimiters are recorded as latex group
-    delimiters, and will add them if necessary for parsing the group contents
-    (but not its parsed children).
+    In all cases, the first token read (after possible whitespace) must be a
+    'brace_open' type.  If `delimiters` is a pair of characters, the parsing
+    state is inspected to ensure that these delimiters are recorded as latex
+    group delimiters, and will add them if necessary for parsing the group
+    contents (but not its parsed children).
 
     Arguments:
 
@@ -248,7 +337,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
 
     - If `optional` is `True`, then no error is raised if the expected opening
       delimiter is not present and a `None` node is returned by the parser.  By
-      default, not encountering the expected opening delimiter causes a parse
+      default, not encountering an expected opening delimiter causes a parse
       error.
 
     - If `allow_pre_space` is `True` (by default), any space preceding the group
@@ -266,7 +355,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
       behavior and mirrors the behavior of (La)TeX that most definitions are
       local to a group
 
-      .. todo: How do we implement ``\global`` definitions then?
+      .. todo: How could we think about implementing ``\global`` definitions then?
     """
     def __init__(self,
                  delimiters,
@@ -276,8 +365,8 @@ class LatexDelimitedGroupParser(LatexParserBase):
                  **kwargs):
         super(LatexDelimitedGroupParser, self).__init__(**kwargs)
         self.delimiters = delimiters
-        self.optional = optional
-        self.allow_pre_space = allow_pre_space
+        self.optional = optional # DO AWAY WITH OPTIONAL ?? --> separate LatexOptionalParser(NextParser...) ?
+        self.allow_pre_space = allow_pre_space # DO AWAY WITH PRE_SPACE ?? --> separate LatexSkipSpaceParser(NextParser...) ?
         self.discard_carryover_info = discard_carryover_info
 
         self.acceptable_opening_delimiter_token_types = ('brace_open', )
@@ -286,7 +375,6 @@ class LatexDelimitedGroupParser(LatexParserBase):
 
     def contents_can_be_empty(self):
         return self.optional
-
 
     def get_group_parsing_state(self, parsing_state):
         r"""
@@ -318,6 +406,7 @@ class LatexDelimitedGroupParser(LatexParserBase):
         )
 
     def is_acceptable_opening_delimiter(self, first_token, group_parsing_state):
+
         if first_token.tok not in self.acceptable_opening_delimiter_token_types:
             return False
 
@@ -353,6 +442,9 @@ class LatexDelimitedGroupParser(LatexParserBase):
         ]
 
     class GroupContentsParserInfo(object):
+        r"""
+        ..
+        """
 
         def __init__(self, delimited_group_parser, first_token,
                      group_parsing_state, parsing_state, delimiters):
