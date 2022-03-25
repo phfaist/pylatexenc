@@ -958,6 +958,7 @@ def _pyltxenc2_LatexWalker_get_latex_braced_group(
     
     parser = parsers.LatexDelimitedGroupParser(
         delimiters=brace_type,
+        allow_pre_space=True,
         #include_delimiter_chars=include_brace_chars,
     )
 

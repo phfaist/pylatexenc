@@ -514,6 +514,7 @@ class LatexNodesCollector(object):
         # before we do anything else (include the present token's pre_space)
         if self._pending_chars:
             self._pending_chars += tok.pre_space
+            tok.pre_space = ''
             stop_exc = self.flush_pending_chars()
             if stop_exc is not None:
                 # rewind to position immediately after the new token's
@@ -534,6 +535,7 @@ class LatexNodesCollector(object):
                                                   chars=tok.pre_space,
                                                   pos=tok.pos-len(tok.pre_space),
                                                   pos_end=tok.pos)
+            tok.pre_space = ''
             stop_exc = self.push_to_nodelist(spacestrnode)
             if stop_exc is not None:
                 # rewind to position immediately after the new token's
@@ -679,7 +681,7 @@ class LatexNodesCollector(object):
 
         logger.debug("nodes collector is now parsing a latex group, %r", tok)
 
-        self.token_reader.move_to_token(tok)
+        self.token_reader.move_to_token(tok, rewind_pre_space=False)
 
         groupnode, carryover_info = \
             self.latex_walker.parse_content(
@@ -880,7 +882,7 @@ class LatexNodesCollector(object):
         that method's doc).
         """
 
-        self.token_reader.move_to_token(tok)
+        self.token_reader.move_to_token(tok, rewind_pre_space=False)
 
         math_parsing_state = self.parsing_state.sub_context(
             in_math_mode=True,
