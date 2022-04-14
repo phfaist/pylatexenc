@@ -271,8 +271,8 @@ class LatexCharsGroupParser(LatexDelimitedGroupParser):
             self.contents_parsing_state = self.group_parsing_state.sub_context(
                 enable_macros=False,
                 enable_environments=False,
-                enable_comments=self.delimited_group_parser.enable_comments,
-                enable_groups=self.delimited_group_parser.enable_groups,
+                enable_comments=self.delimited_expression_parser.enable_comments,
+                enable_groups=self.delimited_expression_parser.enable_groups,
                 enable_specials=False,
                 enable_math=False
             )
