@@ -38,7 +38,11 @@ from ..nodes import *
 
 from ._base import LatexParserBase
 from ._generalnodes import LatexGeneralNodesParser
-from ._delimitedgroup import LatexDelimitedGroupParser
+from ._delimitedgroup import (
+    LatexDelimitedExpressionParserInfo,
+    LatexDelimitedGroupParserInfo,
+    LatexDelimitedGroupParser,
+)
 from ._optionals import LatexOptionalCharsMarkerParser
 from ._expression import LatexExpressionParser
 from ._verbatim import LatexDelimitedVerbatimParser
@@ -252,16 +256,17 @@ class LatexCharsGroupParser(LatexDelimitedGroupParser):
     """
     def __init__(self, delimiters=('{','}'),
                  enable_comments=True, enable_groups=True, **kwargs):
-        super(LatexCharsGroupParser, self).__init__(delimiters=delimiters, **kwargs)
+        super(LatexCharsGroupParser, self).__init__(
+            delimiters=delimiters,
+            delimited_expression_parser_info_class=
+                LatexCharsGroupParser.CharsContentsParserInfo,
+            **kwargs
+        )
         self.enable_comments = enable_comments
         self.enable_groups = enable_groups
+            
 
-        self.make_group_contents_parser_info = \
-            LatexCharsGroupParser.CharsContentsParserInfo
-
-    class CharsContentsParserInfo(
-            LatexDelimitedGroupParser.GroupContentsParserInfo
-    ):
+    class CharsContentsParserInfo(LatexDelimitedGroupParserInfo):
         def initialize(self):
             self.contents_parsing_state = self.group_parsing_state.sub_context(
                 enable_macros=False,
@@ -298,6 +303,8 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
                  enable_comments=True, enable_groups=True, **kwargs):
         super(LatexCharsCommaSeparatedListParser, self).__init__(
             delimiters=delimiters,
+            delimited_expression_parser_info_class=
+                LatexCharsCommaSeparatedListParser.CommaSepContentsParserInfo,
             **kwargs
         )
 
@@ -305,21 +312,16 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
         self.enable_comments = enable_comments
         self.enable_groups = enable_groups
 
-        self.make_group_contents_parser_info = \
-            LatexCharsCommaSeparatedListParser.CommaSepContentsParserInfo
 
-
-    class CommaSepContentsParserInfo(
-            LatexDelimitedGroupParser.GroupContentsParserInfo
-    ):
+    class CommaSepContentsParserInfo(LatexDelimitedGroupParserInfo):
         def initialize(self):
-            self.comma_char = self.delimited_group_parser.comma_char
+            self.comma_char = self.delimited_expression_parser.comma_char
 
             self.contents_parsing_state = self.group_parsing_state.sub_context(
                 enable_macros=False,
                 enable_environments=False,
-                enable_comments=self.delimited_group_parser.enable_comments,
-                enable_groups=self.delimited_group_parser.enable_groups,
+                enable_comments=self.delimited_expression_parser.enable_comments,
+                enable_groups=self.delimited_expression_parser.enable_groups,
                 enable_specials=False,
                 enable_math=False
             )
