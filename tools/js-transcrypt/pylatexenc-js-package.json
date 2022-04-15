@@ -1,0 +1,7 @@
+{
+    "name": "pylatexenc-js",
+    "version": "3.0alpha00001",
+    "description": "Automatically translated javascript version of a subset of pylatexenc",
+    "type": "module",
+    "private": true
+}

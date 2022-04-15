@@ -37,7 +37,7 @@ simply imports the subset of the `pylatexenc` library that we'll be compiling to
 JavaScript.  Run:
 
     > poetry run transcrypt import_pylatexenc_modules.py --dassert --dext --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -xp 'libpatches' -od pylatexenc-js
-    > echo '{"type":"module"}' >pylatexenc-js/package.json
+    > cp pylatexenc-js-package.json pylatexenc-js/package.json
     
 The JavaScript files are output in the `pylatexenc-js` folder.  Now you can try:
 
