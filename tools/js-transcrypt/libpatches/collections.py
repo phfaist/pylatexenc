@@ -34,14 +34,14 @@ class ChainMap:
         return None
 
     def __getitem__(self, key):
-        logger.debug("Getting item %r", key)
+        #logger.debug("Getting item %r", key)
         for mapping in self.maps:
-            logger.debug("\ttrying mapping: %r", mapping)
+            #logger.debug("\ttrying mapping: %r", mapping)
             if key not in mapping:
                 continue
-            logger.debug("\tfound - %r", mapping[key])
+            #logger.debug("\tfound - %r", mapping[key])
             return mapping[key]             # can't use 'key in mapping' with defaultdict
-        print("\tnot found  :(")
+        #logger.debug("\tnot found  :(")
         return self.__missing__(key)            # support subclasses that define __missing__
 
     def get(self, key, default=None):

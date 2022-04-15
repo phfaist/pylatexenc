@@ -351,11 +351,7 @@ class ParsingState(object):
         # To shorten ParsingState representation strings, we only show diffs
         # with respect to the parent objects, along with object id's.
 
-        try:
-            # self.__class__.__name__ doesn't work in transcrypt
-            clsname = self.__class__.__name__
-        except Exception:
-            clsname = "ParsingState"
+        clsname = self.__class__.__name__
         pswid = "{}<{:#x}>".format(clsname, fn_unique_object_id(self))
 
         parent_obj, diff_kwargs = self._parent_parsing_state_info

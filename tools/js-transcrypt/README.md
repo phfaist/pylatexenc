@@ -26,22 +26,39 @@ We can also run a few tests to see that the preprocessed lib works as intended:
     > PYTHONPATH
 
 
-## Example build with transcrypt command
+## Generate the JS pylatexenc subset library
 
-Note that we need to enable a lot of features in transcrypt, some of which are
-disabled by default.  Here's an example compilation line that will convert the
-script called `my_test_script.py`, along with the relevant `pylatexenc` modules,
-into a folder named `__target__`:
+We need to enable a lot of features in transcrypt, some of which are disabled by
+default.  Follow the following commands.
 
-    > poetry run transcrypt my_test_script.py --dassert --dext --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -xp 'libpatches' -od 'target_js_output'
-    > echo '{"type":"module"}' >>target_js_output/package.json
+
+We'll direct *transcrypt* to the `import_pylatexenc_modules.py` module, which
+simply imports the subset of the `pylatexenc` library that we'll be compiling to
+JavaScript.  Run:
+
+    > poetry run transcrypt import_pylatexenc_modules.py --dassert --dext --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -xp 'libpatches' -od pylatexenc-js
+    > echo '{"type":"module"}' >pylatexenc-js/package.json
+    
+The JavaScript files are output in the `pylatexenc-js` folder.  Now you can try:
+
+Test run with:
+
+    > cd mytestjscode
+    > node my_test_js_code.js
+    
+
+
+## Compile a single Python script with transcrypt along with pylatexenc dependencies
+
+Try:
+
+    > poetry run transcrypt my_test_script.py --dassert --dext --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -xp 'libpatches' -od target_js_output
+    > echo '{"type":"module"}' >target_js_output/package.json
     
 Test run with:
 
     > node target_js_output/my_test_script.js
     
-
-
 
 ## Example build tests runner
 
@@ -52,7 +69,7 @@ First need to preprocess the tests as well as the lib:
 Then we need to transcrypt the main `runtests` test runner script:
 
     > poetry run transcrypt runtests.py --dassert --dext --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -xp 'libpatches$test' -od 'tests_js_output'
-    > echo '{"type":"module"}' >>tests_js_output/package.json
+    > echo '{"type":"module"}' >tests_js_output/package.json
 
 Then try to run the tests with:
 

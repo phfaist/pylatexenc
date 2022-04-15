@@ -1,3 +1,17 @@
-*_js_output
+#
+# additional git ignores
+#
+
+
+#
+# preprocessed python source code output
+#
 pylatexenc
 test
+
+#
+# output folders
+#
+*_js_output
+pylatexenc-js
+

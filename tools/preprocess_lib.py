@@ -171,14 +171,69 @@ _rx_frozenset = re.compile(
 )
 
 
+
+_rx_logger_debug = re.compile(
+    r"""
+    # initial line indent
+    ^
+    (?P<orig_indent>[ \t]*)
+
+    # "logger.debug("
+    logger \s* [.] \s* debug \s* \(
+
+    # up till the end of the line
+    .*$
+
+    # include any number of lines that are indented by more than the initial
+    # line
+    (
+      \n
+      (?P=orig_indent)[ \t]+
+      .*
+      $
+    )*
+
+    # possibly include a single line that is indented like the original line, as
+    # long as it only contains closing parentheses or stuff like that
+    (
+      \n
+      (?P=orig_indent)
+      [\)\]\}, \t]*
+      $
+    )?
+    """,
+    re.MULTILINE | re.VERBOSE
+)
+# horrible heuristic
+
+
 # ------------------------------------------------------------------------------
 
 
-def _comment_out_text(text):
+_rx_initial_or_nl_indent = re.compile( r'(?P<newline>^|\n)(?P<indent>[ \t]*)' )
+
+def _comment_out_text(text, *, place_expression=None):
+    def subfn(m):
+        if not m.group('newline') and place_expression:
+            # initial indent & we want to place a custom statement (e.g. "pass")
+            return (
+                m.group('indent') + place_expression + '\n'
+                + m.group('indent') + '###> '
+            )
+        return m.group('newline') + m.group('indent') + '###> '
+    text2 = _rx_initial_or_nl_indent.sub(subfn, text)
+    if not text2.endswith('\n'):
+        text2 += '\n'
+    return text2
+
+def _comment_out_match(m, **kwargs):
+    return _comment_out_text(m.group(), **kwargs)
+
+def _comment_out_text_full_lines(text):
     return '###> ' + text.replace('\n', '\n###> ') + '\n'
 
-def _comment_out_match(m):
-    return '###> ' + m.group().replace('\n', '\n###> ') + '\n'
+def _comment_out_match_full_lines(m, **kwargs):
+    return _comment_out_text_full_lines(m.group(), **kwargs)
 
 
 
@@ -284,6 +339,7 @@ class Preprocess:
         self.process_super(mod)
         self.process_dict_generator(mod)
         self.process_frozenset(mod)
+        self.process_logger_debug(mod)
 
     def process_add_comment_header(self, mod):
         mod.source_content = (
@@ -304,7 +360,7 @@ class Preprocess:
         def _process_guard(m):
             if enabled_guards.get(m.group('guard_name'), True):
                 return m.group() # no change, guard is enabled
-            return _comment_out_match(m)
+            return _comment_out_match_full_lines(m)
 
         mod.source_content = _rx_guards.sub(_process_guard, mod.source_content)
 
@@ -343,7 +399,7 @@ class Preprocess:
             logger.debug(f"Found import: ‘{group}’")
 
             def _comment_out():
-                return _comment_out_text(group)
+                return _comment_out_text_full_lines(group)
 
             if pkg_where == '__future__':
                 # special '__future__' import, leave it out unless feature is set
@@ -480,7 +536,7 @@ class Preprocess:
 
     def process_super(self, mod):
         if self.enabled_features.get('keep_super_arguments', True):
-            return;
+            return
 
         # super(SuperClass, self)  -->  super()
         mod.source_content = _rx_super_with_args.sub(
@@ -490,11 +546,21 @@ class Preprocess:
 
     def process_frozenset(self, mod):
         if self.enabled_features.get('keep_frozenset', True):
-            return;
+            return
 
         # frozenset -> set
         mod.source_content = _rx_frozenset.sub(
             'set',
+            mod.source_content
+        )
+
+    def process_logger_debug(self, mod):
+        if self.enabled_features.get('keep_logger_debug', True):
+            return
+
+        # logger.debug -> comment out instruction
+        mod.source_content = _rx_logger_debug.sub(
+            lambda m: _comment_out_match(m, place_expression='pass'),
             mod.source_content
         )
 

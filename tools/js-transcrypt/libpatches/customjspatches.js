@@ -16,4 +16,3 @@ export function custom_apply_patches() {
     };
 
 };
-

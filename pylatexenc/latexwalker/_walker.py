@@ -58,6 +58,12 @@ _maketuple = lambda *args: tuple(args)
 
 
 
+### BEGINPATCH_UNIQUE_OBJECT_ID
+fn_unique_object_id = id
+### ENDPATCH_UNIQUE_OBJECT_ID
+
+
+
 # ------------------------------------------------------------------------------
 
 
@@ -563,7 +569,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
 
     def __repr__(self):
-        return "<LatexWalker {}>".format(id(self))
+        return "<LatexWalker {}>".format(fn_unique_object_id(self))
 
 
 

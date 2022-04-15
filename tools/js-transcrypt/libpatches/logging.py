@@ -26,9 +26,10 @@ class MinimalLogger:
         self._emit("debug --- ", args)
 
 
-def getLogger(*args, **kwargs):
-    return MinimalLogger()
+single_logger_instance = MinimalLogger()
 
+def getLogger(*args, **kwargs):
+    return single_logger_instance
 
 
 def basicConfig(*args, **kwargs):
