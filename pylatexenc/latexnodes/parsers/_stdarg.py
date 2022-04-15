@@ -38,7 +38,7 @@ from ..nodes import *
 
 from ._base import LatexParserBase
 from ._generalnodes import LatexGeneralNodesParser
-from ._delimitedgroup import (
+from ._delimited import (
     LatexDelimitedExpressionParserInfo,
     LatexDelimitedGroupParserInfo,
     LatexDelimitedGroupParser,
@@ -295,6 +295,9 @@ class LatexCharsGroupParser(LatexDelimitedGroupParser):
 
 
 
+# --------------------------------------------------------------------
+
+
 
 class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
     r"""
@@ -304,7 +307,7 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
         super(LatexCharsCommaSeparatedListParser, self).__init__(
             delimiters=delimiters,
             delimited_expression_parser_info_class=
-                LatexCharsCommaSeparatedListParser.CommaSepContentsParserInfo,
+                LatexCharsCommaSeparatedListParser.CommaSepParserInfo,
             **kwargs
         )
 
@@ -312,8 +315,7 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
         self.enable_comments = enable_comments
         self.enable_groups = enable_groups
 
-
-    class CommaSepContentsParserInfo(LatexDelimitedGroupParserInfo):
+    class CommaSepParserInfo(LatexDelimitedGroupParserInfo):
         def initialize(self):
             self.comma_char = self.delimited_expression_parser.comma_char
 
@@ -327,112 +329,128 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
             )
             self.child_parsing_state = self.parsing_state
 
-            self.current_parsing_state = self.contents_parsing_state
-
             self.parsed_delimiters = self.get_parsed_delimiters()
 
             logger.debug("Initialized CommaSepContentsParserInfo; %r", self.__dict__)
 
-        def stop_token_condition(self, token):
-            logger.debug("stop_token_condition: %r", token)
-            if token.tok == 'brace_close' and token.arg == self.parsed_delimiters[1]:
+        def make_content_parser(self, latex_walker, token_reader):
+            return _CommaSepContentCustomParser(self)
+
+
+class _CommaSepContentCustomParser(LatexParserBase):
+    def __init__(self, contents_parser_info):
+        super(_CommaSepContentCustomParser, self).__init__()
+        self.contents_parser_info = contents_parser_info
+        self.main_content_parser = LatexGeneralNodesParser(
+            stop_token_condition=self.stop_token_condition,
+            make_child_parsing_state=contents_parser_info.make_child_parsing_state,
+            require_stop_condition_met=True,
+            handle_stop_condition_token=self.handle_stop_condition_token,
+        )
+        # A specific parser instance of this type cannot be re-used
+        # reliably !  (Nor will it ever be.)
+        self.current_parsing_state = self.contents_parser_info.contents_parsing_state
+        self.comma_sep_arg_list = []
+        self.carryover_info = None
+        self.parse_more = True
+        self.last_delimiter_token = None
+        self.last_element_pos_end = None
+
+    def stop_token_condition(self, token):
+        logger.debug("stop_token_condition: %r", token)
+        if token.tok == 'brace_close' \
+           and token.arg == self.contents_parser_info.parsed_delimiters[1]:
+            return True
+        if token.tok == 'char':
+            if token.arg == self.contents_parser_info.parsed_delimiters[1]:
                 return True
-            if token.tok == 'char' and token.arg == self.parsed_delimiters[1]:
-                return True
-            if token.tok == 'char' and token.arg == self.comma_char:
+            elif token.arg == self.contents_parser_info.comma_char:
                 return True
             return False
+        return False
 
-        def handle_stop_condition_token(self, token,
-                                        latex_walker, token_reader, parsing_state):
-            token_reader.move_past_token(token)
-            if token.tok == 'brace_close':
-                # final element of a comma-separated list
-                self._last_delimiter_token = None
-                self._last_element_pos_end = token.pos
-                self._parse_more = False
-            else:
-                self._last_delimiter_token = token
-                self._last_element_pos_end = token.pos_end
-                self._parse_more = True
+    def handle_stop_condition_token(self, token,
+                                    latex_walker, token_reader, parsing_state):
+        token_reader.move_past_token(token)
+        if token.tok == 'brace_close':
+            # final element of a comma-separated list
+            self.last_delimiter_token = None
+            self.last_element_pos_end = token.pos
+            self.parse_more = False
+        else:
+            self.last_delimiter_token = token
+            self.last_element_pos_end = token.pos_end
+            self.parse_more = True
 
-        def parse_content(self, latex_walker, token_reader):
 
-            logger.debug("parse_content! token pos is %r", token_reader.cur_pos())
+    def __call__(self, latex_walker, token_reader, parsing_state):
 
-            self._comma_sep_arg_list = []
-            self._carryover_info = None
+        logger.debug("parse_content! token pos is %r", token_reader.cur_pos())
 
-            self._contents_parser = LatexGeneralNodesParser(
-                stop_token_condition=self.stop_token_condition,
-                make_child_parsing_state=self.make_child_parsing_state,
-                require_stop_condition_met=True,
-                handle_stop_condition_token=self.handle_stop_condition_token,
+        self.parse_more = True
+        while self.parse_more:
+
+            self._parse_one_commasep_arg(latex_walker, token_reader)
+
+            if self.parse_more and self.carryover_info is not None:
+                # merge any carry over info into the current parsing state
+                self.current_parsing_state = \
+                    self.carryover_info.get_updated_parsing_state(
+                        self.current_parsing_state
+                    )
+
+        return LatexNodeList(self.comma_sep_arg_list), self.carryover_info
+
+
+    def _parse_one_commasep_arg(self, latex_walker, token_reader):
+
+        logger.debug("_parse_one_commasep_arg()")
+
+        self.last_element_pos_end = None
+        self.last_delimiter_token = None
+
+        nodelist, carryover_info = latex_walker.parse_content(
+            self.main_content_parser,
+            token_reader=token_reader,
+            parsing_state=self.current_parsing_state,
+            open_context=(
+                'Element {} of list separated by ‘{}’'.format(
+                    len(self.comma_sep_arg_list),
+                    self.contents_parser_info.comma_char
+                ),
+                self.contents_parser_info.first_token
             )
+        )
 
-            self._parse_more = True
-            while self._parse_more:
+        logger.debug("_parse_one_commasep_arg(): nodelist = %r", nodelist)
 
-                self._parse_one_commasep_arg(latex_walker, token_reader)
+        # set in the stopping condition handler
+        pos_end = self.last_element_pos_end
+        if pos_end is None:
+            logger.debug("_parse_one_commasep_arg(): STOP CONDITION DID NOT FIRE")
 
-                if self._parse_more and self._carryover_info is not None:
-                    # merge any carry over info into the current parsing state
-                    self.current_parsing_state = \
-                        self._carryover_info.get_updated_parsing_state(
-                            self.current_parsing_state
-                        )
+            pos_end = token_reader.final_pos()
+            self.parse_more = False
 
-            return LatexNodeList(self._comma_sep_arg_list), self._carryover_info
-                    
+        if self.last_delimiter_token is None:
+            this_close_delim = ''
+        else:
+            this_close_delim = self.last_delimiter_token.arg
 
-        def _parse_one_commasep_arg(self, latex_walker, token_reader):
+        this_group_node = latex_walker.make_node(
+            LatexGroupNode,
+            nodelist=nodelist,
+            parsing_state=self.current_parsing_state,
+            delimiters=('', this_close_delim),
+            pos=nodelist.pos,
+            pos_end=pos_end
+        )
 
-            logger.debug("_parse_one_commasep_arg()")
+        self.comma_sep_arg_list.append(this_group_node)
 
-            self._last_element_pos_end = None
-            self._last_delimiter_token = None
+        self.carryover_info = carryover_info
 
-            nodelist, carryover_info = latex_walker.parse_content(
-                self._contents_parser,
-                token_reader=token_reader,
-                parsing_state=self.current_parsing_state,
-                open_context=(
-                    'Element {} of list separated by ‘{}’'.format(
-                        len(self._comma_sep_arg_list),
-                        self.comma_char
-                    ),
-                    self.first_token
-                )
-            )
+        logger.debug("_parse_one_commasep_arg(), list is now %r",
+                     self.comma_sep_arg_list)
 
-            logger.debug("_parse_one_commasep_arg(): nodelist = %r", nodelist)
-
-            # set in the stopping condition handler
-            pos_end = self._last_element_pos_end
-            if pos_end is None:
-                logger.debug("_parse_one_commasep_arg(): STOP CONDITION DID NOT FIRE")
-
-                pos_end = token_reader.final_pos()
-                self._parse_more = False
-
-            if self._last_delimiter_token is None:
-                this_close_delim = ''
-            else:
-                this_close_delim = self._last_delimiter_token.arg
-
-            this_group_node = latex_walker.make_node(
-                LatexGroupNode,
-                nodelist=nodelist,
-                parsing_state=self.contents_parsing_state,
-                delimiters=('', this_close_delim),
-                pos=nodelist.pos,
-                pos_end=pos_end
-            )
-            
-            self._comma_sep_arg_list.append(this_group_node)
-
-            self._carryover_info = carryover_info
-
-            logger.debug("_parse_one_commasep_arg(), list is now %r",
-                         self._comma_sep_arg_list)
 

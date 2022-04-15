@@ -56,6 +56,22 @@ if sys.version_info.major == 2:
 
 
 
+class LatexDelimitedExpressionParserOpeningDelimiterNotFound(Exception):
+    r"""
+    Exception class used by a :py:class:`LatexDelimitedExpressionParserInfo`
+    object to communicate to the associated `LatexDelimitedExpressionParser`
+    instance that the initial delimiter was not found.
+
+    You won't need to worry about handling this exception unless you are writing
+    a very customized subclass of
+    :py:class:`LatexDelimitedExpressionParserInfo`, see doc there.
+    """
+    def __init__(self, first_tokens, msg, **kwargs):
+        super(LatexDelimitedExpressionParserOpeningDelimiterNotFound, self).__init__(**kwargs)
+        self.first_tokens = first_tokens
+        self.msg = msg
+
+
 # LatexDelimitedGroupContentsParserInfo
 
 
@@ -113,6 +129,12 @@ class LatexDelimitedExpressionParserInfo(object):
       This parsing state is used when the contents recurses down to create
       children nodes, e.g., groups within the group content.
 
+      This attribute is only used by the default implementation of
+      :py:meth:`make_child_parsing_state()`.  I.e., if you reimplement
+      `make_child_parsing_state()` with custom behavior, it's up to you to
+      either inspect and use the `child_parsing_state` attribute or to ignore it
+      entirely and use your own mechanism to determine the child parsing state.
+
     - `parsed_delimiters` — This object is also responsible for actually
       determining which delimiters were used (if they weren't predetermined
       exactly).  Subclasses can use `get_parsed_delimiters()`, along with a
@@ -134,17 +156,87 @@ class LatexDelimitedExpressionParserInfo(object):
       to place the token reader past that token, should be sufficient in
       most cases).
 
-    - Dispatch parsing content to the relevant parser.  See
-      :py:meth:`parse_content()`.  The default implementation should suffice
-      in most cases.
+    - Create a relevant parser to parse the contents of the delimited
+      expression.  See :py:meth:`make_content_parser()`.  The default
+      implementation should suffice in most cases.
 
     - :py:meth:`make_group_node_carryover_info()` — prepare the carryover
       information that will be left over after the group is fully parsed.
+
+
+    Here are some attributes that are set on the object instance:
+
+    .. py:attribute:: delimited_expression_parser
+
+       A pointer to the main parser instance class, provided for convenience.
+       E.g., methods can use this object pointer to look up any custom
+       attributes that were set on the main parser instance.
+
+    .. py:attribute:: opening_delimiter_tokens
+
+       The tokens associated with the opening delimiter.  This is the list
+       returned by :py:meth:`parse_initial()`.
+
+    .. py:attribute:: first_token
+
+       This attribute holds the first token in `opening_delimiter_tokens`.  The
+       first token is used at a couple places, such as for determining the
+       initial position of the final group node, or for reporting the token
+       associated with the open parser context representing this delimited
+       expression.  (Subclasses may choose to set this attribute to something
+       else in their `initialize()` method, but I wouldn't see why that is
+       necessary.)
+
+    .. py::attribute:: delimiters
+
+       Mirrors the `delimiters` argument of the main parser object.  Recall that
+       this is a constraint on what type of delimiters we are required to
+       encounter.  This value may either be `None` (no constraint), a single
+       string (constraint on the opening delimiter, closing delimiter to be
+       deduced automatically), or a 2-item tuple (specify opening and closing
+       delimiter).  See also :py:attr:`parsed_delimiters`.
+
+    .. py:attribute:: parsed_delimiters
+
+       A 2-item tuple of the actual delimiters that are applicable to this
+       particular delimited expression that we are parsing.  Normally this
+       attribute is set in `initialize()`, possibly using the help of
+       `get_parsed_delimiters()`, because once we know the opening delimiter we
+       also know what closing delimiter to expect.  See doc for
+       :py:meth:`get_parsed_delimiters()`, :py:meth:`initialize()`, and
+       :py:meth:`make_group_node_carryover_info()` for more info on if the
+       closing delimiter can't be deduced from the opening delimiter.
+
+       This attribute is set in the constructor to the placeholder tuple `(None,
+       None)`, and should be set to an appropriate value in `initialize()`.
+
+    .. py:attribute:: group_parsing_state
+
+       The parsing state returned by :py:meth:`get_group_parsing_state()`
+
+    .. py:attribute:: contents_parsing_state
+
+       The parsing state to use for parsing the contents of the delimited
+       expression.  Defaults to `group_parsing_state`; can be set by subclasses
+       in their `initialize()` reimplementation.
+
+    .. py:attribute:: child_parsing_state
+
+       The parsing state to use for parsing children (LaTeX groups, macro
+       arguments, environments, etc.) encountered within the delimited
+       expression that is being parsed.  Defaults to `group_parsing_state`; can
+       be set by subclasses in their `initialize()` reimplementation.
+
+    .. py:attribute:: parsing_state
+
+       The original parsing_state in which the delimited expression main parser
+       instance was asked to operate in.  This is the parsing state that was
+       provided as an argument to :py:meth:`get_group_parsing_state()`.
     """
 
 
     @classmethod
-    def get_group_parsing_state(cls, delimiters, parsing_state):
+    def get_group_parsing_state(cls, parsing_state, delimiters, delimited_expression_parser):
         r"""
         Return the parsing state object to use for the overall group.  This is the
         parsing state that will be attached to the resulting
@@ -157,15 +249,104 @@ class LatexDelimitedExpressionParserInfo(object):
 
 
     @classmethod
-    def get_acceptable_open_delimiter_list(cls, delimiters, group_parsing_state):
+    def get_acceptable_open_delimiter_list(cls, delimiters, group_parsing_state,
+                                           delimited_expression_parser):
         r"""
-        Only to be used for error messages.
+        Return a list of strings representing acceptable opening delimiters.
+
+        The result is only used for error messages; this method's return value
+        does not influence parsing behavior or the final node structure.
         """
         return []
 
 
     @classmethod
-    def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state):
+    def parse_initial(cls, delimiters, allow_pre_space,
+                      latex_walker, token_reader, group_parsing_state,
+                      delimited_expression_parser):
+        r"""
+        Attempt to parse the beginning of the delimited group.
+
+        This method is responsible for inspecting new tokens using
+        `token_reader` to to ensure that the first token (or first few tokens)
+        indeed correspond to an opening delimiter of the type of expression this
+        parser info is meant to handle.
+
+        If an opening delimiter is successfully encountered, then this method
+        should return a list of tokens that are associated with the opening
+        delimiter that was read.  (Generally this is a single token, like a '{'
+        char.)  The returned list will serve as argument to the constructor's
+        `opening_delimiter_tokens` argument.  The token reader's position should
+        be left *after* the initial delimiter tokens, so that the contents can
+        immediately be read without having to move the token reader's position.
+
+        If an opening delimiter is not successfully encountered, or the opening
+        delimiter has space and `allow_pre_space` is not set, then the
+        :py:exc:`LatexDelimitedExpressionParserOpeningDelimiterNotFound` should
+        be raised, with relevant information for error messages and recovery.
+        It is not necessary to reset the token reader's position, but it is
+        important to set the `first_tokens` argument of that exception class to
+        those tokens that were read so far, because it is used to reset the
+        token reader correctly if the delimited expression was in fact optional
+        or if we are trying to recover from a parse error.
+
+        The default implementation of `parse_initial()` provided here inspects a
+        single token and uses the `is_opening_delimiter()` class function to
+        determine whether or not the token that was read is a valid opening
+        delimiter.  You may reimplement this function to customize this
+        behavior, e.g., if you need to inspect multiple tokens.  The default
+        implementation uses :py:meth:`get_acceptable_open_delimiter_list()` to
+        help generate a human-friendly error message in case an opening
+        delimiter is not successfully parsed.
+        """
+
+        first_token = token_reader.next_token(parsing_state=group_parsing_state)
+        
+        ok = True
+        if not allow_pre_space and first_token.pre_space:
+            ok = False
+        elif not cls.is_opening_delimiter(
+                delimiters=delimiters,
+                first_token=first_token,
+                group_parsing_state=group_parsing_state,
+                delimited_expression_parser=delimited_expression_parser,
+        ):
+            ok = False
+
+        if not ok:
+
+            # prepare a human-friendly error message and raise it
+
+            acceptable_opening_delimiters = \
+                cls.get_acceptable_open_delimiter_list(
+                    delimiters=delimiters,
+                    group_parsing_state=group_parsing_state,
+                    delimited_expression_parser=delimited_expression_parser,
+                )
+            if not acceptable_opening_delimiters:
+                acceptable_delimiters_msg = '??'
+            else:
+                acceptable_delimiters_msg = ", ".join([
+                    "‘{}’".format(od)
+                    for od in acceptable_opening_delimiters
+                ])
+
+            raise LatexDelimitedExpressionParserOpeningDelimiterNotFound(
+                msg='Expected an opening LaTeX delimiter (%s), got %s/‘%s’%s' %(
+                    acceptable_delimiters_msg,
+                    first_token.tok,
+                    first_token.arg,
+                    (' with leading whitespace' if first_token.pre_space else '')
+                ),
+                first_tokens=[first_token],
+            )
+            
+        return [first_token]
+
+
+    @classmethod
+    def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
+                             delimited_expression_parser):
         r"""
         Return `True` if the token `first_token` that was just read does indeed
         correspond to an opening delimiter that this parser is intended to read,
@@ -204,13 +385,14 @@ class LatexDelimitedExpressionParserInfo(object):
 
     # ---
 
-    def __init__(self, delimited_expression_parser, first_token,
+    def __init__(self, delimited_expression_parser, opening_delimiter_tokens,
                  group_parsing_state, parsing_state, delimiters):
         super(LatexDelimitedExpressionParserInfo, self).__init__()
 
         # save args
         self.delimited_expression_parser = delimited_expression_parser
-        self.first_token = first_token
+        self.opening_delimiter_tokens = opening_delimiter_tokens
+        self.first_token = opening_delimiter_tokens[0]
         self.group_parsing_state = group_parsing_state
         self.parsing_state = parsing_state
         self.delimiters = delimiters
@@ -259,9 +441,16 @@ class LatexDelimitedExpressionParserInfo(object):
         expression's internal node collector's `make_child_parsing_state()`
         handler.
 
-        You shouldn't have to reimplement this function.  By default, we return
-        the `child_parsing_state` attribute, which was set precisely for that
-        purpose.
+        In normal circumstances you shouldn't have to reimplement this function.
+        By default, we return the `child_parsing_state` attribute, which was set
+        precisely for that purpose.
+
+        You may reimplement this method if you need a more detailed mechanism
+        for determining what parsing state the child parser should be initiated
+        with, e.g., if the parsing state should vary according to what type of
+        child is encountered.  In this case it's up to you to take into account
+        the value of the `child_parsing_state` attribute, if appropriate, or to
+        decide to ignore that attribute entirely.
         """
         return self.child_parsing_state
 
@@ -309,8 +498,8 @@ class LatexDelimitedExpressionParserInfo(object):
         delimiter here, or reimplement `initialize()` to assign a temporary
         placeholder value to the `parsed_delimiters` attribute.  This attribute
         is only used for information messages anyway before the final
-        `make_group_node_and_carryover_info()` anyways.  However, you need to
-        either reimplement `make_group_node_and_carryover_info()`, or to set the
+        `make_group_node_carryover_info()` anyways.  However, you need to
+        either reimplement `make_group_node_carryover_info()`, or to set the
         property `parsed_delimiters` correctly before that method gets called.
         """
         first_token = self.first_token
@@ -326,33 +515,39 @@ class LatexDelimitedExpressionParserInfo(object):
 
         return delimiters
 
-    def parse_content(self, latex_walker, token_reader):
+    def make_content_parser(self, latex_walker, token_reader):
         r"""
-        The main parsing procedure.  This method is responsible for creating a
-        relevant parser and parsing the expression contents.  You should not
-        have to reimplement this method, it's better to use instead the other
-        helper methods.
-        """
+        This method is responsible for creating a relevant parser to parse the
+        contents of the delimited expression.
 
-        contents_parser = LatexGeneralNodesParser(
+        The default implementation creates a `LatexGeneralNodesParser` instance
+        that is properly initialized call the :py:meth:`stop_token_condition`,
+        :py:meth:`handle_stop_condition_token`, and
+        :py:meth:`make_child_parsing_state` callbacks on this instance object.
+
+        You should only need to reimplement this method if you need more
+        detailed control over the contents parser, e.g., if you need a stopping
+        condition on the node list instead of the token only
+        (`stop_nodelist_condition`).
+        """
+        return LatexGeneralNodesParser(
             stop_token_condition=self.stop_token_condition,
             make_child_parsing_state=self.make_child_parsing_state,
             require_stop_condition_met=True,
             handle_stop_condition_token=self.handle_stop_condition_token,
         )
 
-        nodelist, carryover_info = latex_walker.parse_content(
-            contents_parser,
-            token_reader=token_reader,
-            parsing_state=self.contents_parsing_state,
-            open_context=(
-                'Delimited expression ‘{}…{}’'
-                .format(*self.parsed_delimiters),
-                self.first_token
-            )
+    def get_open_context_description(self):
+        r"""
+        Return a 2-item tuple `(msg, token)` or `None`.  The value must be suitable
+        for passing as an argument to the `open_context` parameter of
+        :py:meth:`LatexWalkerBase.parse_content()`.
+        """
+        return (
+            'Delimited expression ‘{}…{}’'.format(*self.parsed_delimiters)
+            ,
+            self.first_token
         )
-
-        return nodelist, carryover_info
 
     def make_group_node_carryover_info(self, latex_walker, token_reader,
                                        nodelist, carryover_info):
@@ -452,49 +647,46 @@ class LatexDelimitedExpressionParser(LatexParserBase):
 
         group_parsing_state = \
             self.delimited_expression_parser_info_class.get_group_parsing_state(
-                self.delimiters,
-                parsing_state
+                parsing_state=parsing_state,
+                delimiters=self.delimiters,
+                delimited_expression_parser=self,
             )
 
-        first_token = token_reader.next_token(parsing_state=group_parsing_state)
-        
-        if ( ( not self.allow_pre_space and first_token.pre_space )
-             or
-             ( not self.delimited_expression_parser_info_class.is_opening_delimiter(
-                 delimiters=self.delimiters,
-                 first_token=first_token,
-                 group_parsing_state=group_parsing_state
-             ) )
-            ):
+        opening_delimiter_tokens = None
+
+        try:
+            opening_delimiter_tokens = \
+                self.delimited_expression_parser_info_class.parse_initial(
+                    delimiters=self.delimiters,
+                    allow_pre_space=self.allow_pre_space,
+                    latex_walker=latex_walker,
+                    token_reader=token_reader,
+                    group_parsing_state=group_parsing_state,
+                    delimited_expression_parser=self,
+                )
+        except LatexDelimitedExpressionParserOpeningDelimiterNotFound as e:
+            
+            recovery_token = None
+            if e.first_tokens:
+                recovery_token = e.first_tokens[0]
 
             if self.optional:
                 # all ok, the argument was optional and was simply not specified.
-                token_reader.move_to_token(first_token)
+                if e.first_tokens:
+                    token_reader.move_to_token(recovery_token)
                 return None, None
 
-            acceptable_opening_delimiters = \
-                self.delimited_expression_parser_info_class.get_acceptable_open_delimiter_list(
-                    self.delimiters,
-                    group_parsing_state
-                )
-            acceptable_delimiters_msg = ", ".join([
-                "‘{}’".format(od)
-                for od in acceptable_opening_delimiters
-            ])
+            # raise a parse error
             raise LatexWalkerNodesParseError(
-                msg='Expected an opening LaTeX delimiter (%s), got %s/‘%s’%s' %(
-                    acceptable_delimiters_msg,
-                    first_token.tok,
-                    first_token.arg,
-                    (' with leading whitespace' if first_token.pre_space else '')
-                ),
+                msg=e.msg,
                 recovery_nodes=nodes.LatexNodeList([]),
-                recovery_at_token=first_token
+                recovery_at_token=recovery_token
             )
+
 
         contents_parser_info = self.delimited_expression_parser_info_class(
             self,
-            first_token=first_token,
+            opening_delimiter_tokens=opening_delimiter_tokens,
             group_parsing_state=group_parsing_state,
             parsing_state=parsing_state,
             delimiters=self.delimiters,
@@ -502,9 +694,14 @@ class LatexDelimitedExpressionParser(LatexParserBase):
 
         contents_parser_info.initialize()
 
-        nodelist, carryover_info = contents_parser_info.parse_content(
-            latex_walker=latex_walker,
-            token_reader=token_reader
+
+        contents_parser = contents_parser_info.make_content_parser(latex_walker, token_reader)
+
+        nodelist, carryover_info = latex_walker.parse_content(
+            contents_parser,
+            token_reader=token_reader,
+            parsing_state=contents_parser_info.contents_parsing_state,
+            open_context=contents_parser_info.get_open_context_description()
         )
 
         # can discard the carryover_info since the parsing state gets reset at
@@ -535,7 +732,7 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
 
 
     @classmethod
-    def get_group_parsing_state(cls, delimiters, parsing_state):
+    def get_group_parsing_state(cls, parsing_state, delimiters, delimited_expression_parser):
         r"""
         Return the parsing state object to use for the overall group.  This is the
         parsing state that will be attached to the resulting
@@ -583,7 +780,8 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
 
 
     @classmethod
-    def get_acceptable_open_delimiter_list(cls, delimiters, group_parsing_state):
+    def get_acceptable_open_delimiter_list(cls, delimiters, group_parsing_state,
+                                           delimited_expression_parser):
         r"""
         Only to be used for error messages.
         """
@@ -599,7 +797,8 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
         ]
 
     @classmethod
-    def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state):
+    def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
+                             delimited_expression_parser):
 
         if first_token.tok != 'brace_open':
             return False

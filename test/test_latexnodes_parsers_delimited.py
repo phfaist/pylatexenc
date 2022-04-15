@@ -3,7 +3,7 @@ import sys
 import logging
 
 
-from pylatexenc.latexnodes.parsers._delimitedgroup import (
+from pylatexenc.latexnodes.parsers._delimited import (
     LatexDelimitedExpressionParserInfo,
     LatexDelimitedExpressionParser,
     LatexDelimitedGroupParser,
@@ -31,8 +31,49 @@ from _helpers_tests import (
 
 class TestLatexDelimitedExpressionParserInfo(unittest.TestCase):
     
-    def test_are_the_tests_complete(self):
-        return self.assertTrue(False)
+    def test_default_impl_get_group_parsing_state_returns_identity(self):
+        
+        ps = ParsingState(s='?')
+
+        self.assertEqual(
+            LatexDelimitedExpressionParserInfo.get_group_parsing_state(ps, None, None),
+            ps
+        )
+
+    def test_check_opening_delimiter_1(self):
+        
+        self.assertTrue(
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( None, '{' )
+        )
+
+        self.assertTrue(
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( '{', '{' )
+        )
+        self.assertFalse(
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( '[', '{' )
+        )
+        self.assertFalse(
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( '<<', '<' )
+        )
+        self.assertFalse(
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( '', '{' )
+        )
+
+        self.assertTrue(
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('{','}'), '{' )
+        )
+        self.assertTrue(
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ['{','}'], '{' )
+        )
+        self.assertTrue(
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('<!--','-->'), '<!--' )
+        )
+        self.assertFalse(
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('[',']'), '{' )
+        )
+        self.assertFalse(
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('[[',']'), '[' )
+        )
 
 
 
@@ -43,11 +84,12 @@ class TestLatexDelimitedExpressionParserInfo(unittest.TestCase):
 
 class MyHelperTestDEPInfo(LatexDelimitedExpressionParserInfo):
     @classmethod
-    def get_group_parsing_state(cls, delimiters, parsing_state):
+    def get_group_parsing_state(cls, delimiters, parsing_state, delimited_expression_parser):
         # simple test for a different parsing state
         return parsing_state.sub_context(enable_comments=False)
     @classmethod
-    def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state):
+    def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
+                             delimited_expression_parser):
         if not ( first_token.tok == 'char' and first_token.arg == '<' ):
             logger.debug("is_opening_delimiter: not a '<' char token")
             return False
@@ -86,15 +128,18 @@ def helper_make_log_calls_expression_parser_info_class(BaseClass):
 
     class LogDEPInfo(BaseClass):
         @classmethod
-        def get_group_parsing_state(cls, delimiters, parsing_state):
+        def get_group_parsing_state(cls, delimiters, parsing_state,
+                                    delimited_expression_parser):
             d['get_group_parsing_state'] = True
             # simple test for a different parsing state
-            return BaseClass.get_group_parsing_state(delimiters, parsing_state)
+            return BaseClass.get_group_parsing_state(delimiters, parsing_state,
+                                                     delimited_expression_parser)
         @classmethod
-        def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state):
+        def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
+                                 delimited_expression_parser):
             d['is_opening_delimiter'] = {'first_token': first_token}
             return BaseClass.is_opening_delimiter(
-                delimiters, first_token, group_parsing_state
+                delimiters, first_token, group_parsing_state, delimited_expression_parser
             )
 
         def initialize(self):
@@ -121,9 +166,9 @@ def helper_make_log_calls_expression_parser_info_class(BaseClass):
                                              node_class is LatexGroupNode}
             return super(LogDEPInfo, self).make_child_parsing_state(parsing_state, node_class)
 
-        def parse_content(self, latex_walker, token_reader):
-            d['parse_content'] = True
-            return super(LogDEPInfo, self).parse_content(latex_walker, token_reader)
+        def make_content_parser(self, latex_walker, token_reader):
+            d['make_content_parser'] = True
+            return super(LogDEPInfo, self).make_content_parser(latex_walker, token_reader)
 
         def make_group_node_carryover_info(self, latex_walker, token_reader,
                                            nodelist, carryover_info):
@@ -171,7 +216,7 @@ class TestLatexDelimitedExpressionParser(unittest.TestCase):
         self.assertEqual(d['handle_stop_condition_token']['token'],
                          d['stop_token_condition']['token'])
         self.assertTrue(d['make_child_parsing_state']['node_class_is_group_node'])
-        self.assertTrue(d['parse_content'])
+        self.assertTrue(d['make_content_parser'])
         self.assertTrue(d['make_group_node_carryover_info']['node'].isNodeType(
             LatexGroupNode
         ))

@@ -36,7 +36,7 @@ from .._exctypes import *
 from .. import nodes
 
 from ._generalnodes import LatexGeneralNodesParser
-from ._delimitedgroup import (
+from ._delimited import (
     LatexDelimitedExpressionParserInfo,
     LatexDelimitedExpressionParser,
 )
@@ -59,11 +59,8 @@ if sys.version_info.major == 2:
 class LatexMathParserInfo(LatexDelimitedExpressionParserInfo):
 
     @classmethod
-    def get_group_parsing_state(cls, delimiters, parsing_state):
-        return parsing_state
-
-    @classmethod
-    def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state):
+    def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
+                             delimited_expression_parser):
 
         if first_token.tok not in ('mathmode_inline', 'mathmode_display'):
             return False
@@ -74,7 +71,8 @@ class LatexMathParserInfo(LatexDelimitedExpressionParserInfo):
         return True
 
     @classmethod
-    def get_acceptable_open_delimiter_list(cls, delimiters, group_parsing_state):
+    def get_acceptable_open_delimiter_list(cls, delimiters, group_parsing_state,
+                                           delimited_expression_parser):
         if delimiters is not None:
             if isinstance(delimiters, _basestring):
                 return [delimiters]

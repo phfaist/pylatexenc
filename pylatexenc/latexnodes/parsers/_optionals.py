@@ -34,7 +34,7 @@ from ._base import LatexParserBase
 from ._generalnodes import (
     LatexGeneralNodesParser, LatexSingleNodeParser,
 )
-from ._delimitedgroup import (
+from ._delimited import (
     LatexDelimitedGroupParser,
 )
 from ..nodes import (

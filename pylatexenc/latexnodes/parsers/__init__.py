@@ -30,7 +30,10 @@ from ._generalnodes import (
     LatexGeneralNodesParser,
     LatexSingleNodeParser,
 )
-from ._delimitedgroup import (
+from ._delimited import (
+    LatexDelimitedExpressionParserInfo,
+    LatexDelimitedExpressionParser,
+    LatexDelimitedGroupParserInfo,
     LatexDelimitedGroupParser,
 )
 from ._math import (
