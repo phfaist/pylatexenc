@@ -1,0 +1,26 @@
+# output directory -- will create a pylatexenc/ subfolder
+target_dir: .
+
+# which modules to preprocess
+module_list:
+  - 'pylatexenc.latexnodes'
+  - 'pylatexenc.macrospec'
+  - 'pylatexenc.latexwalker'
+
+# features
+enabled_features:
+  keep_future_statements: False
+  keep_relative_imports: False
+  keep_super_arguments: False
+  keep_dict_with_generator: False
+  keep_frozenset: False
+  guards:
+    PYTHON2_SUPPORT_CODE: False
+    PYLATEXENC1_LEGACY_SUPPORT_CODE: False
+    PYLATEXENC2_LEGACY_SUPPORT_CODE: False
+    PYLATEXENC_GET_DEFAULT_SPECS_FN: False
+    LATEXWALKER_HELPERS: False
+  patches:
+    UNIQUE_OBJECT_ID: |
+      import unique_object_id
+      fn_unique_object_id = unique_object_id.fn_unique_object_id

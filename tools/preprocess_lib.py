@@ -4,53 +4,17 @@ import os.path
 import sys
 
 import logging
-
-
 logger = logging.getLogger(__name__)
 
+import glob
+import argparse
 
-options = {
+import yaml
 
-    'enabled_features': {
-        'keep_future_statements': False,
-        'keep_relative_imports': False,
-        'keep_super_arguments': False,
-        'keep_dict_with_generator': False,
-        'keep_frozenset': False,
-        'guards': {
-            'PYTHON2_SUPPORT_CODE': False,
-            'PYLATEXENC1_LEGACY_SUPPORT_CODE': False,
-            'PYLATEXENC2_LEGACY_SUPPORT_CODE': False,
-            'PYLATEXENC_GET_DEFAULT_SPECS_FN': False,
-            'LATEXWALKER_HELPERS': False,
-        },
-        'patches': {
-#             'TUPLE_EQ_SUPPORT': r"""
-# class tuple_eq:
-#   def __init__(self, t):
-#     super().__init__()
-#     self.t = t
-#   def __eq__(self, other):
-#     for j in range(len(self.t)):
-#       if self.t[j] != other[j]:
-#         return False
-#     return True
-# """,
-        }
-    },
 
-    'source_dir': os.path.join(os.path.dirname(__file__), '..'),
+default_source_dir = os.path.join(os.path.dirname(__file__), '..')
 
-    'target_dir': os.path.join(os.path.dirname(__file__), 'transcryptable_output'),
-
-    # which modules to preprocess
-    'module_list': [
-        'pylatexenc.latexnodes',
-        'pylatexenc.macrospec',
-        'pylatexenc.latexwalker',
-    ],
-}
-
+# see js-transcrypt/preprocesslib.config.yaml for an example YAML config
 
 
 # ------------------------------------------------------------------------------
@@ -236,7 +200,28 @@ class Preprocess:
         self.enabled_features = enabled_features
         self.module_list = module_list
 
-        self.modules_to_preprocess = set(module_list)
+        # process and glob patterns in module_list
+        new_module_list = []
+        for m in module_list:
+            if not ('*' in m or '?' in m):
+                new_module_list.append(m)
+                continue
+            # process pattern
+            fn_pattern = m.replace('.', '/') + '.py'
+            try:
+                mycwd = os.getcwd()
+                os.chdir(self.source_dir)
+                matches = glob.glob( fn_pattern )
+            finally:
+                os.chdir(mycwd)
+            for mm in matches:
+                assert mm.endswith('.py')
+                mm = mm[:-3]
+                new_module_list.append( mm.replace('/', '.') )
+
+        logging.info(f"Final module list is {new_module_list}")
+
+        self.modules_to_preprocess = set(new_module_list)
         self.modules_preprocessed = set()
 
         self._preprocess()
@@ -292,6 +277,7 @@ class Preprocess:
 
     def preprocess_module(self, mod):
 
+        self.process_add_comment_header(mod)
         self.process_guards(mod)
         self.process_patches(mod)
         self.process_imports(mod)
@@ -299,13 +285,24 @@ class Preprocess:
         self.process_dict_generator(mod)
         self.process_frozenset(mod)
 
+    def process_add_comment_header(self, mod):
+        mod.source_content = (
+            """\
+############################################################
+### THE CONTENTS OF THIS MODULE WAS PROCESSED USING A    ###
+### CUSTOM SCRIPT `preprocess_lib.py`.  THIS IS NOT THE  ###
+### ORIGINAL MODULE SOURCE.  DON'T EDIT!                 ###
+############################################################
+"""
+            + mod.source_content
+        )
 
     def process_guards(self, mod):
 
-        enabled_guards = self.enabled_features['guards']
+        enabled_guards = self.enabled_features.get('guards', {})
 
         def _process_guard(m):
-            if enabled_guards[m.group('guard_name')]:
+            if enabled_guards.get(m.group('guard_name'), True):
                 return m.group() # no change, guard is enabled
             return _comment_out_match(m)
 
@@ -314,7 +311,7 @@ class Preprocess:
 
     def process_patches(self, mod):
 
-        enabled_patches = self.enabled_features['patches']
+        enabled_patches = self.enabled_features.get('patches', {})
 
         def _process_patch(m):
             patch_name = m.group('patch_name')
@@ -322,7 +319,7 @@ class Preprocess:
                 return m.group() # no change, patch is disabled
             return (
                 f'\n###<BEGIN PATCH:{patch_name}>\n'
-                + enabled_patches[m.group('patch_name')]
+                + enabled_patches[patch_name]
                 + f'\n###<END PATCH:{patch_name}>\n'
             )
 
@@ -350,7 +347,7 @@ class Preprocess:
 
             if pkg_where == '__future__':
                 # special '__future__' import, leave it out unless feature is set
-                if self.enabled_features['keep_future_statements']:
+                if self.enabled_features.get('keep_future_statements', True):
                     return m.group()
                 else:
                     return _comment_out()
@@ -426,7 +423,7 @@ class Preprocess:
                          f"if not done so already")
             self.modules_to_preprocess.add( mod_dotname )
 
-            if self.enabled_features['keep_relative_imports']:
+            if self.enabled_features.get('keep_relative_imports', True):
                 # return original from...import... statement as-is if we want to
                 # keep relative imports
                 return m.group()
@@ -454,7 +451,7 @@ class Preprocess:
 
 
     def process_dict_generator(self, mod):
-        if self.enabled_features['keep_dict_with_generator']:
+        if self.enabled_features.get('keep_dict_with_generator', True):
             return
 
         def _repl_dict_generator(m):
@@ -482,7 +479,7 @@ class Preprocess:
 
 
     def process_super(self, mod):
-        if self.enabled_features['keep_super_arguments']:
+        if self.enabled_features.get('keep_super_arguments', True):
             return;
 
         # super(SuperClass, self)  -->  super()
@@ -492,7 +489,7 @@ class Preprocess:
         )
 
     def process_frozenset(self, mod):
-        if self.enabled_features['keep_frozenset']:
+        if self.enabled_features.get('keep_frozenset', True):
             return;
 
         # frozenset -> set
@@ -542,7 +539,23 @@ def setup_logging(level):
 if __name__ == '__main__':
     try:
         setup_logging(level=logging.INFO) #.DEBUG) #INFO)
+
+        argparser = argparse.ArgumentParser()
+        argparser.add_argument("config", nargs='?', default=None)
+
+        args = argparser.parse_args()
+
+        if args.config:
+            with open(args.config, 'r', encoding='utf-8') as f:
+                options = yaml.safe_load(f)
+        else:
+            options = default_options
+
+        if 'source_dir' not in options:
+            options['source_dir'] = default_source_dir
+
         Preprocess(**options)
+
         logger.info("*** Done.")
     except Exception as e:
         logger.error(f"Exception: {e}", exc_info=True)

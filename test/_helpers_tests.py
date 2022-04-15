@@ -18,10 +18,16 @@ from pylatexenc.latexnodes import (
 from pylatexenc.latexnodes.nodes import *
 
 
+def _class_name(x):
+    if hasattr(x, '__class__'):
+        return x.__class__.__name__
+    return str(x)
+
+
 
 class DummyWalker(LatexWalkerBase):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super(DummyWalker, self).__init__(**kwargs)
         self.mkgroup_assert_delimiters_equals = None
         self.mkmath_assert_delimiters_equals = None
 
@@ -59,7 +65,7 @@ class DummyWalker(LatexWalkerBase):
         else:
             what, tok = None, None
         logger.debug(":: Parsing content (%s) @ pos %d -- %s -- %r / ::",
-                     parser.__class__.__name__, token_reader.cur_pos(), what, tok)
+                     _class_name(parser), token_reader.cur_pos(), what, tok)
 
 
         nodes, carryover_info = parser(latex_walker=self,
@@ -67,7 +73,7 @@ class DummyWalker(LatexWalkerBase):
                                        parsing_state=parsing_state)
 
         logger.debug(":: Parsing content DONE (%s) @ pos %d -- %s -- %r / ::",
-                     parser.__class__.__name__, token_reader.cur_pos(), what, tok)
+                     _class_name(parser), token_reader.cur_pos(), what, tok)
 
         return nodes, carryover_info
 
@@ -118,8 +124,7 @@ def dummy_empty_mathmode_parser(latex_walker, token_reader, parsing_state):
 
 
 def make_dummy_macro_node_parser(tok, spec, _mkcarryoverinfo=None):
-    def dummy_macro_node_parser(latex_walker, token_reader, parsing_state,
-                                tok=tok, spec=spec, _mkcarryoverinfo=_mkcarryoverinfo):
+    def dummy_macro_node_parser(latex_walker, token_reader, parsing_state):
         n = latex_walker.make_node(
             LatexMacroNode,
             parsing_state=parsing_state,
@@ -154,8 +159,7 @@ class DefineMacroZMacroSpec(DummyMacroSpec):
         return make_dummy_macro_node_parser(token, self, _mkcarryover_info)
 
 def make_dummy_environment_node_parser(tok, spec):
-    def dummy_environment_node_parser(latex_walker, token_reader, parsing_state,
-                                      tok=tok, spec=spec,):
+    def dummy_environment_node_parser(latex_walker, token_reader, parsing_state):
         next_token = token_reader.next_token(parsing_state)
         if next_token.tok != 'end_environment' or next_token.arg != tok.arg:
             raise RuntimeError(
@@ -184,8 +188,7 @@ class DummyEnvironmentSpec(CallableSpecBase):
         return make_dummy_environment_node_parser(token, self)
 
 def make_dummy_specials_node_parser(tok, spec):
-    def dummy_specials_node_parser(latex_walker, token_reader, parsing_state,
-                                   tok=tok, spec=spec):
+    def dummy_specials_node_parser(latex_walker, token_reader, parsing_state):
         n = latex_walker.make_node(
             LatexSpecialsNode,
             parsing_state=parsing_state,
@@ -247,11 +250,16 @@ class DummyLatexContextDb(LatexContextDbBase):
         return None
 
 
+
 class DummyLatexContextDb2(DummyLatexContextDb):
     def __init__(self):
         super(DummyLatexContextDb2, self).__init__()
         self.specs['macros']['Z'] = DummyMacroSpec('Z')
 
+
+
+
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
 
 class HelperProvideAssertEqualsForLegacyTests(object):
@@ -304,15 +312,14 @@ class HelperProvideAssertEqualsForLegacyTests(object):
         return self.assertEqual(a, b, msg=msg)
 
     def _assert_nodes_equal(self, a, b, msg=''):
-        if not (a is not None and b is not None
-                and a.isNodeType(b.__class__) and b.isNodeType(a.__class__)):
+        if not (a is not None and b is not None and a.nodeType() is b.nodeType()):
             print("------------------------------------------------------------")
             print("    a = \n", repr(a), sep='')
             print("    b = \n", repr(b), sep='')
             print("------------------------------------------------------------")
             self.fail(msg + "incompatible node types, {at} and {bt}".format(
-                at=a.__class__.__name__ if a is not None else None,
-                bt=b.__class__.__name__ if b is not None else None
+                at=_class_name(a) if a is not None else None,
+                bt=_class_name(b) if b is not None else None
             ))
         
         for fld in a._redundant_fields:
@@ -326,7 +333,7 @@ class HelperProvideAssertEqualsForLegacyTests(object):
                 self.assertEqual(x, y)
             except AssertionError as e:
                 print("------------------------------------------------------------")
-                print("In comparing field", fld, "of node type", a.__class__.__name__)
+                print("In comparing field", fld, "of node type", _class_name(a))
                 print("    a = \n", repr(a), sep='')
                 print("    b = \n", repr(b), sep='')
                 print("    a.",fld," = \n", repr(x), sep='')
@@ -367,3 +374,6 @@ class HelperProvideAssertEqualsForLegacyTests(object):
                 raise
 
         return 
+
+
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
