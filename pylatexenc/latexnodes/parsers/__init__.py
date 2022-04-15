@@ -35,6 +35,7 @@ from ._delimited import (
     LatexDelimitedExpressionParser,
     LatexDelimitedGroupParserInfo,
     LatexDelimitedGroupParser,
+    LatexDelimitedExpressionParserOpeningDelimiterNotFound,
 )
 from ._math import (
     LatexMathParser,

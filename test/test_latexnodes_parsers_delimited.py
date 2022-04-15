@@ -4,6 +4,7 @@ import logging
 
 
 from pylatexenc.latexnodes.parsers._delimited import (
+    LatexDelimitedExpressionParserOpeningDelimiterNotFound,
     LatexDelimitedExpressionParserInfo,
     LatexDelimitedExpressionParser,
     LatexDelimitedGroupParser,
@@ -66,13 +67,105 @@ class TestLatexDelimitedExpressionParserInfo(unittest.TestCase):
             LatexDelimitedExpressionParserInfo.check_opening_delimiter( ['{','}'], '{' )
         )
         self.assertTrue(
-            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('<!--','-->'), '<!--' )
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('<!--','-->'),
+                                                                        '<!--' )
         )
         self.assertFalse(
             LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('[',']'), '{' )
         )
         self.assertFalse(
             LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('[[',']'), '[' )
+        )
+
+    def test_parse_initial_1(self):
+
+        latextext = r'''<Hello t{}here>'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        d = {}
+
+        class XyzDEPInfo(LatexDelimitedExpressionParserInfo):
+            @classmethod
+            def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
+                                     delimited_expression_parser):
+                d['_checked_is_opening_delimiter_token'] = first_token
+                return True # dummy
+
+        self.assertEqual(
+            XyzDEPInfo.parse_initial(None, False,
+                                     lw, tr, ps,
+                                     None),
+            [
+                LatexToken(tok='char',
+                           arg='<',
+                           pos=0,
+                           pos_end=1,)
+            ]
+        )
+        self.assertEqual(
+            d['_checked_is_opening_delimiter_token'],
+            LatexToken(tok='char',
+                       arg='<',
+                       pos=0,
+                       pos_end=1,)
+        )
+
+        # check that token reader is indeed advanced past the "opening delimiter token"
+        self.assertEqual( tr.cur_pos(), 1 )
+
+    def test_parse_initial_no_skip_pre_space(self):
+
+        latextext = r'''  <Hello t{}here>'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        d = {}
+
+        class XyzDEPInfo(LatexDelimitedExpressionParserInfo):
+            @classmethod
+            def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
+                                     delimited_expression_parser):
+                d['_checked_is_opening_delimiter_token'] = first_token
+                return True # dummy
+
+        with self.assertRaises(LatexDelimitedExpressionParserOpeningDelimiterNotFound):
+            XyzDEPInfo.parse_initial(None, False,
+                                     lw, tr, ps,
+                                     None)
+
+    def test_parse_initial_relays_error(self):
+
+        latextext = r'''<Hello t{}here>'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        d = {}
+
+        class XyzDEPInfo(LatexDelimitedExpressionParserInfo):
+            @classmethod
+            def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
+                                     delimited_expression_parser):
+                d['_checked_is_opening_delimiter_token'] = first_token
+                return False # NO, it's not an opening delimiter
+
+        with self.assertRaises(LatexDelimitedExpressionParserOpeningDelimiterNotFound):
+            XyzDEPInfo.parse_initial(None, False,
+                                     lw, tr, ps,
+                                     None),
+
+        self.assertEqual(
+            d['_checked_is_opening_delimiter_token'],
+            LatexToken(tok='char',
+                       arg='<',
+                       pos=0,
+                       pos_end=1,)
         )
 
 
@@ -272,12 +365,6 @@ class TestLatexDelimitedExpressionParser(unittest.TestCase):
 
 
 
-
-
-    def test_are_these_tests_really_complete(self):
-        
-        # WRITE ME
-        self.assertTrue( False )
 
 
 
