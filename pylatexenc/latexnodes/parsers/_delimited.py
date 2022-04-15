@@ -52,6 +52,7 @@ if sys.version_info.major == 2:
 
 
 
+
 # ------------------------------------------------------------------------------
 
 
@@ -768,14 +769,20 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
                 )
             return parsing_state
         
-        if tuple(delimiters) in parsing_state.latex_group_delimiters:
-            # all ok, they are known group delimiters
-            return parsing_state
+        delimiters_t = tuple(delimiters)
+        ### doesn't work with transcrypt ... :/
+        # if delimiters_te in parsing_state.latex_group_delimiters:
+        #     # all ok, they are known group delimiters
+        #     return parsing_state
+        for odcd in parsing_state.latex_group_delimiters:
+            if delimiters_t == odcd:
+                # all ok, they are known group delimiters
+                return parsing_state
 
-        # add the delimiters to the parsing state's group delimiter list
+        # otherwise, add the delimiters to the parsing state's group delimiter list
         return parsing_state.sub_context(
-            latex_group_delimiters= \
-                parsing_state.latex_group_delimiters + [ delimiters ]
+            latex_group_delimiters = \
+                parsing_state.latex_group_delimiters + [ delimiters_t ]
         )
 
 

@@ -23,6 +23,19 @@ options = {
             'PYLATEXENC2_LEGACY_SUPPORT_CODE': False,
             'PYLATEXENC_GET_DEFAULT_SPECS_FN': False,
             'LATEXWALKER_HELPERS': False,
+        },
+        'patches': {
+#             'TUPLE_EQ_SUPPORT': r"""
+# class tuple_eq:
+#   def __init__(self, t):
+#     super().__init__()
+#     self.t = t
+#   def __eq__(self, other):
+#     for j in range(len(self.t)):
+#       if self.t[j] != other[j]:
+#         return False
+#     return True
+# """,
         }
     },
 
@@ -64,6 +77,31 @@ _rx_guards = re.compile(
     # guard end instruction, on its own line
     #
     ^\#\#\#\s*END_(?P=guard_name)[ \t]*$
+    """
+    ,
+    flags=re.MULTILINE | re.VERBOSE
+)
+_rx_patches = re.compile(
+    r"""
+    #
+    # guard begin instruction, on its own line
+    #
+    ^\#\#\#\s*BEGINPATCH_(?P<patch_name>[A-Za-z0-9_]+)[ \t]*\n
+
+    #
+    # contents. look at lines one by one, making sure they do not
+    # start with ### (BEGIN|END)
+    #
+    (?P<contents>
+      (^
+        (?!\#\#\#).*
+      \n) *
+    )
+
+    #
+    # guard end instruction, on its own line
+    #
+    ^\#\#\#\s*ENDPATCH_(?P=patch_name)[ \t]*$
     """
     ,
     flags=re.MULTILINE | re.VERBOSE
@@ -255,6 +293,7 @@ class Preprocess:
     def preprocess_module(self, mod):
 
         self.process_guards(mod)
+        self.process_patches(mod)
         self.process_imports(mod)
         self.process_super(mod)
         self.process_dict_generator(mod)
@@ -271,6 +310,23 @@ class Preprocess:
             return _comment_out_match(m)
 
         mod.source_content = _rx_guards.sub(_process_guard, mod.source_content)
+
+
+    def process_patches(self, mod):
+
+        enabled_patches = self.enabled_features['patches']
+
+        def _process_patch(m):
+            patch_name = m.group('patch_name')
+            if patch_name not in enabled_patches or not enabled_patches[patch_name]:
+                return m.group() # no change, patch is disabled
+            return (
+                f'\n###<BEGIN PATCH:{patch_name}>\n'
+                + enabled_patches[m.group('patch_name')]
+                + f'\n###<END PATCH:{patch_name}>\n'
+            )
+
+        mod.source_content = _rx_patches.sub(_process_patch, mod.source_content)
 
 
     def process_imports(self, mod):
