@@ -532,10 +532,12 @@ class LatexDelimitedExpressionParserInfo(object):
         (`stop_nodelist_condition`).
         """
         return LatexGeneralNodesParser(
-            stop_token_condition=self.stop_token_condition,
             make_child_parsing_state=self.make_child_parsing_state,
+            stop_token_condition=self.stop_token_condition,
             require_stop_condition_met=True,
             handle_stop_condition_token=self.handle_stop_condition_token,
+            stop_condition_message=
+            "Expected end of delimited expression ‘{}…{}’".format(*self.parsed_delimiters)
         )
 
     def get_open_context_description(self):

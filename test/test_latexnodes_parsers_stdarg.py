@@ -342,6 +342,34 @@ class TestLatexCharsCommaSeparatedListParser(unittest.TestCase):
         )
 
 
+    def test_empty_argument(self):
+        latextext = "{}"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalkerWithGroupsAndMath()
+
+        parser = LatexCharsCommaSeparatedListParser(
+            comma_char=',',
+            enable_groups=True,
+            enable_comments=True,
+        )
+
+        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        print(nodes)
+        self.assertEqual(
+            nodes,
+            LatexGroupNode(
+                parsing_state=ps,
+                nodelist=LatexNodeList([], pos=1, pos_end=1),
+                delimiters=('{','}'),
+                pos=0,
+                pos_end=2,
+            )
+        )
+
+
     def test_zmore_stuff(self):
         latextext = r"""{d{zz};% ;comment;
 }"""

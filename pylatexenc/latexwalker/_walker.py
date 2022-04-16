@@ -770,6 +770,7 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
         stop_nodelist_condition=stop_nodelist_condition,
         require_stop_condition_met=require_stop_condition_met,
         handle_stop_condition_token=handle_stop_condition_token,
+        stop_condition_message=stop_condition_message,
     )
 
     token_reader = self.make_token_reader(pos=pos)

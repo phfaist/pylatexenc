@@ -336,12 +336,18 @@ class LatexTokenReader(LatexTokenReaderBase):
             # expecting_close can be None even in math mode, e.g., inside a math
             # environment \begin{align} ... \end{align}
             if expecting_close is not None:
-                logger.debug("expecting close math mode delimiter = %r", expecting_close)
                 expecting_close_delim = expecting_close['close_delim']
                 expecting_close_tok = expecting_close['tok']
+                logger.debug("expecting close math mode delimiter: delim %r, tok %r",
+                             expecting_close_delim, expecting_close_tok)
                 if s.startswith(expecting_close_delim, pos):
-                    return self.make_token(tok=expecting_close_tok, arg=expecting_close_delim,
-                                           pos=pos, pos_end=pos+len(expecting_close_delim),
+                    logger.debug("we did encounter that expected delim & tok at pos = %r;"
+                                 "we have s[pos:pos+10]=%r",
+                                 pos, s[pos:pos+10])
+                    return self.make_token(tok=expecting_close_tok,
+                                           arg=expecting_close_delim,
+                                           pos=pos,
+                                           pos_end=pos+len(expecting_close_delim),
                                            pre_space=pre_space)
 
         # see if we have a math mode delimiter; either an opening delimiter
@@ -350,12 +356,14 @@ class LatexTokenReader(LatexTokenReaderBase):
         # delimiter and let the parsers report syntax errors.  We do need some
         # minimal logic to choose between different possible delimiters, though,
         # like matching the expected closing delimiter above.
-        #
 
         #print(f"{parsing_state._math_all_delims_by_len=}")
 
         for delim, tok_type in parsing_state._math_all_delims_by_len:
             if s.startswith(delim, pos):
+                logger.debug("Encountered opening math delim %r (tok %r) at pos = %r;"
+                             "we have s[pos:pos+10]=%r",
+                             delim, tok_type, pos, s[pos:pos+10])
                 return self.make_token(tok=tok_type, arg=delim,
                                        pos=pos, pos_end=pos+len(delim),
                                        pre_space=pre_space)

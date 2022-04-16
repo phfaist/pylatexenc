@@ -303,7 +303,8 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
     r"""
     """
     def __init__(self, comma_char=',', delimiters=('{','}'),
-                 enable_comments=True, enable_groups=True, **kwargs):
+                 enable_comments=True, enable_groups=True,
+                 keep_empty_parts=False, **kwargs):
         super(LatexCharsCommaSeparatedListParser, self).__init__(
             delimiters=delimiters,
             delimited_expression_parser_info_class=
@@ -314,6 +315,7 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
         self.comma_char = comma_char
         self.enable_comments = enable_comments
         self.enable_groups = enable_groups
+        self.keep_empty_parts = keep_empty_parts
 
     class CommaSepParserInfo(LatexDelimitedGroupParserInfo):
         def initialize(self):
@@ -346,6 +348,10 @@ class _CommaSepContentCustomParser(LatexParserBase):
             make_child_parsing_state=contents_parser_info.make_child_parsing_state,
             require_stop_condition_met=True,
             handle_stop_condition_token=self.handle_stop_condition_token,
+            stop_condition_message=(
+                f"Expected ending of ‘{self.contents_parser_info.comma_char}’-separated "
+                f"group contents"
+            ),
         )
         # A specific parser instance of this type cannot be re-used
         # reliably !  (Nor will it ever be.)
@@ -353,6 +359,9 @@ class _CommaSepContentCustomParser(LatexParserBase):
         self.comma_sep_arg_list = []
         self.carryover_info = None
         self.parse_more = True
+        self.pos_start = None
+        self.is_very_first_element = True # true up to the first comma char
+        self.last_element_pos_start = None
         self.last_delimiter_token = None
         self.last_element_pos_end = None
 
@@ -387,6 +396,8 @@ class _CommaSepContentCustomParser(LatexParserBase):
 
         logger.debug("parse_content! token pos is %r", token_reader.cur_pos())
 
+        self.pos_start = token_reader.cur_pos()
+
         self.parse_more = True
         while self.parse_more:
 
@@ -399,12 +410,20 @@ class _CommaSepContentCustomParser(LatexParserBase):
                         self.current_parsing_state
                     )
 
-        return LatexNodeList(self.comma_sep_arg_list), self.carryover_info
+        final_node_list = LatexNodeList(
+            self.comma_sep_arg_list,
+            pos=self.pos_start,
+            pos_end=self.last_element_pos_end,
+        )
+
+        return final_node_list, self.carryover_info
 
 
     def _parse_one_commasep_arg(self, latex_walker, token_reader):
 
         logger.debug("_parse_one_commasep_arg()")
+
+        self.last_element_pos_start = token_reader.cur_pos()
 
         self.last_element_pos_end = None
         self.last_delimiter_token = None
@@ -428,7 +447,6 @@ class _CommaSepContentCustomParser(LatexParserBase):
         pos_end = self.last_element_pos_end
         if pos_end is None:
             logger.debug("_parse_one_commasep_arg(): STOP CONDITION DID NOT FIRE")
-
             pos_end = token_reader.final_pos()
             self.parse_more = False
 
@@ -442,13 +460,30 @@ class _CommaSepContentCustomParser(LatexParserBase):
             nodelist=nodelist,
             parsing_state=self.current_parsing_state,
             delimiters=('', this_close_delim),
-            pos=nodelist.pos,
+            pos=self.last_element_pos_start,
             pos_end=pos_end
         )
 
-        self.comma_sep_arg_list.append(this_group_node)
+        add_group_node = True
+        if not len(nodelist):
+            if self.is_very_first_element and self.last_delimiter_token is None:
+                # this would have been the very first comma-sep argument element
+                # and it's also the last one (encountered final '}' delimiter).
+                # I.e., we have an empty {} argument.  The empty argument {}
+                # should not generate any group node, even if keep_empty_parts
+                # is set.
+                add_group_node = False
+            elif self.keep_empty_parts:
+                add_group_node = True
+            else:
+                add_group_node = False
+
+        if add_group_node:
+            self.comma_sep_arg_list.append(this_group_node)
 
         self.carryover_info = carryover_info
+
+        self.is_very_first_element = False
 
         logger.debug("_parse_one_commasep_arg(), list is now %r",
                      self.comma_sep_arg_list)

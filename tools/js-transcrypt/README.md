@@ -36,7 +36,7 @@ We'll direct *transcrypt* to the `import_pylatexenc_modules.py` module, which
 simply imports the subset of the `pylatexenc` library that we'll be compiling to
 JavaScript.  Run:
 
-    > poetry run transcrypt import_pylatexenc_modules.py --dassert --dext --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -xp 'libpatches' -od pylatexenc-js
+    > poetry run transcrypt import_pylatexenc_modules.py --dassert --dext --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -u .auto -xp 'libpatches' -od pylatexenc-js
     > cp pylatexenc-js-package.json pylatexenc-js/package.json
     
 The JavaScript files are output in the `pylatexenc-js` folder.  Now you can try:
@@ -52,7 +52,7 @@ Test run with:
 
 Try:
 
-    > poetry run transcrypt my_test_script.py --dassert --dext --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -xp 'libpatches' -od target_js_output
+    > poetry run transcrypt my_test_script.py --dassert --dext --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -u .auto -xp 'libpatches' -od target_js_output
     > echo '{"type":"module"}' >target_js_output/package.json
     
 Test run with:
@@ -68,7 +68,7 @@ First need to preprocess the tests as well as the lib:
     
 Then we need to transcrypt the main `runtests` test runner script:
 
-    > poetry run transcrypt runtests.py --dassert --dext --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -xp 'libpatches$test' -od 'tests_js_output'
+    > poetry run transcrypt runtests.py --dassert --dext --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -u .auto -xp 'libpatches$test' -od 'tests_js_output'
     > echo '{"type":"module"}' >tests_js_output/package.json
 
 Then try to run the tests with:

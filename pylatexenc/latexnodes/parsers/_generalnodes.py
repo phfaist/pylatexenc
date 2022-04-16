@@ -175,11 +175,11 @@ class LatexGeneralNodesParser(LatexParserBase):
         stop_token_condition_met = collector.stop_token_condition_met()
         stop_nodelist_condition_met = collector.stop_nodelist_condition_met()
 
-        met_a_required_stop_condition = False
         if not self.require_stop_condition_met:
             # no condition to meet
             met_a_required_stop_condition = True
         else:
+            met_a_required_stop_condition = False
             if self.stop_token_condition is not None:
                 if stop_token_condition_met:
                     met_a_required_stop_condition = True
@@ -206,7 +206,7 @@ class LatexGeneralNodesParser(LatexParserBase):
             if message is None:
                 message = (
                     'End of stream encountered while parsing nodes without '
-                    'stop condition being met'
+                    'stop condition being met [reporting starting position]'
                 )
             exc = LatexWalkerNodesParseError(
                 msg=message,
