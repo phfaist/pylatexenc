@@ -29,6 +29,7 @@
 
 
 import bisect
+bisect_right = bisect.bisect_right
 
 
 # ------------------------------------------------------------------------------
@@ -71,7 +72,7 @@ class LineNumbersCalculator(object):
         # find line number in list
 
         # line_no is the index of the last item in self._pos_new_lines that is <= pos.
-        line_no = bisect.bisect_right(self._pos_new_lines, pos)-1
+        line_no = bisect_right(self._pos_new_lines, pos)-1
         assert line_no >= 0 and line_no < len(self._pos_new_lines)
 
         col_no = pos - self._pos_new_lines[line_no]
