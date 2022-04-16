@@ -110,9 +110,9 @@ class LatexWalkerParseError(LatexWalkerError):
             raise ValueError("Unexpected keyword argument(s) to LatexWalkerParseError(): "
                              + repr(kwargs))
 
-        super(LatexWalkerParseError, self).__init__(self.dispstr())
+        super(LatexWalkerParseError, self).__init__(self.display_string())
 
-    def dispstr(self):
+    def display_string(self):
         msg = self.msg
         if self.input_source:
             msg += '  in {}'.format(self.input_source)
@@ -136,7 +136,7 @@ class LatexWalkerParseError(LatexWalkerError):
         return '@ <unknown>'
 
     def __str__(self):
-        return self.dispstr()
+        return self.display_string()
 
     #
     # ### Problem: other_exception might have properties (e.g., from a
