@@ -34,6 +34,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+_unisafe_arrow_s = '→'
+### BEGIN_PYTHON2_SUPPORT_CODE
+import sys
+if sys.version_info.major == 2:
+    _unisafe_arrow_s = '->'
+### END_PYTHON2_SUPPORT_CODE
+
+
+
 class _StrictAsciiAlphaChars(object):
     def __str__(self):
         return "".join([
@@ -363,9 +372,12 @@ class ParsingState(object):
             return pswid
 
         # show only fields that differ w.r.t. parent.
-        return pswid + "(<{:#x}> → ".format(fn_unique_object_id(parent_obj))  +  ", ".join(
-            "{}={!r}".format(k, v) for k, v in diff_kwargs.items()
-        ) + ")"
+        return (
+            pswid + "(<{:#x}> {} ".format(fn_unique_object_id(parent_obj), _unisafe_arrow_s)
+            +  ", ".join(
+                "{}={!r}".format(k, v) for k, v in diff_kwargs.items()
+            ) + ")"
+        )
 
 
     def to_json_object(self):

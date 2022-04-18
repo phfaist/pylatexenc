@@ -27,6 +27,8 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
+from __future__ import print_function, unicode_literals
+
 
 try:
     # Python >= 3.3

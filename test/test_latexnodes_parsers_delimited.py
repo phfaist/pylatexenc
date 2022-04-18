@@ -237,20 +237,17 @@ def helper_make_log_calls_expression_parser_info_class(BaseClass):
 
         def initialize(self):
             d['initialize'] = True
-            return super(#LogDEPInfo, self
-            ).initialize()
+            return super(LogDEPInfo, self).initialize()
 
         def stop_token_condition(self, token):
-            if super(#LogDEPInfo, self
-            ).stop_token_condition(token):
+            if super(LogDEPInfo, self).stop_token_condition(token):
                 d['stop_token_condition'] = {'token': token}
                 return True
             return False
 
         def handle_stop_condition_token(self, token,
                                         latex_walker, token_reader, parsing_state):
-            super(#LogDEPInfo, self
-            ).handle_stop_condition_token(
+            super(LogDEPInfo, self).handle_stop_condition_token(
                 token,
                 latex_walker, token_reader, parsing_state
             )
@@ -260,18 +257,15 @@ def helper_make_log_calls_expression_parser_info_class(BaseClass):
         def make_child_parsing_state(self, parsing_state, node_class):
             d['make_child_parsing_state'] = {'node_class_is_group_node':
                                              node_class is LatexGroupNode}
-            return super(#LogDEPInfo, self
-            ).make_child_parsing_state(parsing_state, node_class)
+            return super(LogDEPInfo, self).make_child_parsing_state(parsing_state, node_class)
 
         def make_content_parser(self, latex_walker, token_reader):
             d['make_content_parser'] = True
-            return super(#LogDEPInfo, self
-            ).make_content_parser(latex_walker, token_reader)
+            return super(LogDEPInfo, self).make_content_parser(latex_walker, token_reader)
 
         def make_group_node_carryover_info(self, latex_walker, token_reader,
                                            nodelist, carryover_info):
-            node, carryover_info = super(#LogDEPInfo, self
-            ).make_group_node_carryover_info(
+            node, carryover_info = super(LogDEPInfo, self).make_group_node_carryover_info(
                 latex_walker, token_reader,
                 nodelist, carryover_info
             )
@@ -284,10 +278,6 @@ def helper_make_log_calls_expression_parser_info_class(BaseClass):
 
 
 class TestLatexDelimitedExpressionParser(unittest.TestCase):
-
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     self.maxDiff = None
 
     def test_parser_calls_info_important_methods(self):
 

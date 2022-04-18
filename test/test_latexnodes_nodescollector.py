@@ -28,8 +28,7 @@ from ._helpers_tests import (
 class TestLatexNodesCollector(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
-        super(#TestLatexNodesCollector, self
-        ).__init__(*args, **kwargs)
+        super(TestLatexNodesCollector, self).__init__(*args, **kwargs)
 
         self.maxDiff = None
 
