@@ -757,6 +757,7 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
             "Was expecting ‘{}’".format(stop_upon_closing_mathmode)
 
     else:
+        stop_condition_message = None
         require_stop_condition_met = False
 
     # tokens that cause a stop should be absorbed in pos_end (e.g. closing

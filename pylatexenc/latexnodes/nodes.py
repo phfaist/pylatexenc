@@ -221,8 +221,11 @@ class LatexNode(object):
             if fld == 'spec':
                 # TODO: maybe do something smarter here in the future
                 d[fld] = repr(self.spec)
+            elif fld == 'latex_walker':
+                # skip
+                pass
             else:
-                d[fld] = self.__dict__[fld]
+                d[fld] = getattr(self, fld)
         d.update(latexwalker.pos_to_lineno_colno(self.pos, as_dict=True))
         return d
 

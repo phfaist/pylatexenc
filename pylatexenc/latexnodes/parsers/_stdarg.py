@@ -349,8 +349,12 @@ class _CommaSepContentCustomParser(LatexParserBase):
             require_stop_condition_met=True,
             handle_stop_condition_token=self.handle_stop_condition_token,
             stop_condition_message=(
-                f"Expected ending of ‘{self.contents_parser_info.comma_char}’-separated "
-                f"group contents"
+                "Expected matching ‘{}’ of ‘{}’-separated group initiated by ‘{}’"
+                .format(
+                    contents_parser_info.parsed_delimiters[1],
+                    self.contents_parser_info.comma_char,
+                    contents_parser_info.parsed_delimiters[0],
+                )
             ),
         )
         # A specific parser instance of this type cannot be re-used

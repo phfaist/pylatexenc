@@ -168,7 +168,11 @@ class LatexNodesCollector(object):
         Returns the first position of nodes in the collected node list (collected up
         to this point).
         """
-        p = next( ( n.pos for n in self._nodelist if n is not None ), None )
+        try:
+            # transcrypt doesn't seem to support default value in next(iter, default)
+            p = next( ( n.pos for n in self._nodelist if n is not None ) )
+        except StopIteration:
+            p = None
         if p is not None:
             return p
         return self._pending_chars_pos
@@ -178,7 +182,11 @@ class LatexNodesCollector(object):
         Returns the position immediately after the last node in the collected node
         list (collected up to this point).
         """
-        lastnode = next( ( n for n in reversed(self._nodelist) if n is not None ), None )
+        try:
+            # transcrypt doesn't seem to support default value in next(iter, default)
+            lastnode = next( ( n for n in reversed(self._nodelist) if n is not None ) )
+        except StopIteration:
+            lastnode = None
         if lastnode is None:
             return None
         return lastnode.pos_end
@@ -384,7 +392,6 @@ class LatexNodesCollector(object):
         """
 
         try:
-
             while True:
                 self.process_one_token()
 

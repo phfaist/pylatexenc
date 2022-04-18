@@ -531,13 +531,17 @@ class LatexDelimitedExpressionParserInfo(object):
         condition on the node list instead of the token only
         (`stop_nodelist_condition`).
         """
+        if self.parsed_delimiters[1]:
+            expected_matching = "matching ‘{}’".format(self.parsed_delimiters[1])
+        else:
+            expected_matching = "matching closing delimiter"
         return LatexGeneralNodesParser(
             make_child_parsing_state=self.make_child_parsing_state,
             stop_token_condition=self.stop_token_condition,
             require_stop_condition_met=True,
             handle_stop_condition_token=self.handle_stop_condition_token,
             stop_condition_message=
-            "Expected end of delimited expression ‘{}…{}’".format(*self.parsed_delimiters)
+            "Expected {} after ‘{}’".format(expected_matching, self.parsed_delimiters[0])
         )
 
     def get_open_context_description(self):

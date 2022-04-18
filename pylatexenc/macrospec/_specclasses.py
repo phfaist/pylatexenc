@@ -71,13 +71,8 @@ class _SpecBase(CallableSpecBase):
             else:
                 self.arguments_parser = LatexNoArgumentsParser()
 
-        if make_carryover_info is not None:
-            # overwrite the default method call by the custom function.  Accepts
-            # (parsed_node) as single (keyword) argument.
-            self.make_carryover_info = make_carryover_info
-
-        if finalize_node is not None:
-            self.finalize_node = finalize_node
+        self._fn_make_carryover_info = make_carryover_info
+        self._fn_finalize_node = finalize_node
 
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
@@ -89,6 +84,23 @@ class _SpecBase(CallableSpecBase):
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
 
+    def finalize_node(self, node):
+        r"""
+        ................
+
+        MUST RETURN the new node instance.
+
+        This is called from the LatexMacroCallParser instance, i.e., this
+        function won't be called by default if you override get_node_parser()
+        and return a different parser instance.
+        """
+
+        if self._fn_finalize_node is not None:
+            return self._fn_finalize_node(node)
+
+        return node
+
+
     def make_carryover_info(self, parsed_node):
         r"""
         If applicable, create a :py:class:`CarryoverInformation` class to convey any
@@ -98,16 +110,25 @@ class _SpecBase(CallableSpecBase):
         this method.  You can specify a custom callable to
         `make_carryover_info=...` in the constructor, and the constructor will
         reassign the attribute `spec.make_carryover_info` to that callable.
+
+
+        This is called from the LatexMacroCallParser instance, i.e., this
+        function won't be called by default if you override get_node_parser()
+        and return a different parser instance.
+
         """
+
+        if self._fn_make_carryover_info is not None:
+            return self._fn_make_carryover_info(parsed_node)
+
         return None
 
-    def finalize_node(self, node):
-        return node
 
     def needs_arguments(self):
         for arg in self.arguments_spec_list:
             if arg.spec.is_required():
                 return True
+        return False
 
     def __repr__(self):
         return (

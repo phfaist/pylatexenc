@@ -120,9 +120,10 @@ class LatexTokenListTokenReader(LatexTokenReaderBase):
         return tok
 
     def _find_tok_idx(self, tok, methname):
-        i = next( (j for j, t in enumerate(self.token_list) if t is tok),
-                  None )
-        if i is None:
+        try:
+            # transcrypt doesn't seem to support default value in next(iter, default)
+            i = next( (j for j, t in enumerate(self.token_list) if t is tok) )
+        except StopIteration:
             raise IndexError("{}({!r}): no such token in list".format(methname, tok))
         return i
 

@@ -50,7 +50,8 @@ class _StrictAsciiAlphaChars(object):
             or
             (65 <= n <= 90) # 65, 90 == ord('A'), ord('Z')
         )
-
+    def to_json_object(self):
+        return self.__str__()
 
 
 ### BEGINPATCH_UNIQUE_OBJECT_ID
@@ -365,3 +366,9 @@ class ParsingState(object):
         return pswid + "(<{:#x}> → ".format(fn_unique_object_id(parent_obj))  +  ", ".join(
             "{}={!r}".format(k, v) for k, v in diff_kwargs.items()
         ) + ")"
+
+
+    def to_json_object(self):
+        return { k: v
+                 for k, v in self.get_fields().items()
+                 if k not in ('latex_context',) }

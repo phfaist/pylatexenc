@@ -54,6 +54,7 @@ if sys.version_info.major == 2:
 __all__ = [
     'LatexWalkerError',
     'LatexWalkerParseError',
+    'LatexWalkerParseErrorFormatter',
     'LatexWalkerNodesParseError',
     'LatexWalkerTokenParseError',
     'LatexWalkerEndOfStream',
@@ -110,33 +111,12 @@ class LatexWalkerParseError(LatexWalkerError):
             raise ValueError("Unexpected keyword argument(s) to LatexWalkerParseError(): "
                              + repr(kwargs))
 
-        super(LatexWalkerParseError, self).__init__(self.display_string())
-
-    def display_string(self):
-        msg = self.msg
-        if self.input_source:
-            msg += '  in {}'.format(self.input_source)
-        disp = msg + " {}".format(self._fmt_pos(self.pos, self.lineno, self.colno))
-        if self.open_contexts:
-            disp += '\nOpen LaTeX blocks:\n'
-            for context in reversed(self.open_contexts):
-                what, pos, lineno, colno = context
-                disp += '{empty:8}{loc:>10}  {what}\n'.format(empty='',
-                                                        loc=self._fmt_pos(pos,lineno,colno),
-                                                        what=what)
-        return disp
-
-    def _fmt_pos(self, pos, lineno, colno):
-        if lineno is not None:
-            if colno is not None:
-                return '@({},{})'.format(lineno, colno)
-            return '@{}'.format(lineno)
-        if pos is not None:
-            return '@ char pos {}'.format(pos)
-        return '@ <unknown>'
+        super(LatexWalkerParseError, self).__init__(
+            LatexWalkerParseErrorFormatter(self).to_display_string()
+        )
 
     def __str__(self):
-        return self.display_string()
+        return LatexWalkerParseErrorFormatter(self).to_display_string()
 
     #
     # ### Problem: other_exception might have properties (e.g., from a
@@ -158,6 +138,43 @@ class LatexWalkerParseError(LatexWalkerError):
     #               if not k.startswith('_')])
     #     d.update(kwargs)
     #     return Cls(**d)
+
+
+
+
+class LatexWalkerParseErrorFormatter(object):
+    def __init__(self, exc):
+        super(LatexWalkerParseErrorFormatter, self).__init__()
+        self.exc = exc
+        
+    def to_display_string(self):
+        exc = self.exc
+
+        msg = exc.msg
+        if exc.input_source:
+            msg += '  in {}'.format(exc.input_source)
+        disp = msg + " {}".format(self.format_pos(exc.pos, exc.lineno, exc.colno))
+        if exc.open_contexts:
+            disp += '\nOpen LaTeX blocks:\n'
+            for context in reversed(exc.open_contexts):
+                what, pos, lineno, colno = context
+                disp += '{empty:4}{loc:<18}  {what}\n'.format(
+                    empty='',
+                    loc=self.format_pos(pos,lineno,colno),
+                    what=what
+                )
+        return disp
+
+    def format_pos(self, pos, lineno, colno):
+        if lineno is not None:
+            if colno is not None:
+                return '@ (line {}, col {})'.format(lineno, colno)
+            return '@ line {}'.format(lineno)
+        if pos is not None:
+            return '@ char pos {}'.format(pos)
+        return '@ <unknown>'
+
+
 
 
 class LatexWalkerTokenParseError(LatexWalkerParseError):

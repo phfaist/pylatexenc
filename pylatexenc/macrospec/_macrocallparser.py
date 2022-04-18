@@ -157,7 +157,7 @@ class _LatexCallableParserBase(LatexParserBase):
 
         # in case any subclasses would like to tweak the node, register
         # additional information, etc.
-        self.spec_object.finalize_node(node)
+        node = self.spec_object.finalize_node(node)
 
         carryover_info = self.make_carryover_info(parsed_node=node)
 
@@ -193,7 +193,7 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
         super(LatexEnvironmentCallParser, self).__init__(
             token_call=token_call,
             spec_object=environmentspec,
-            what="environment {{{}}}".format(environmentname),
+            what="environment {}{}{}".format('{',environmentname,'}'),
             parse_body=True,
             node_class=LatexEnvironmentNode,
             node_extra_kwargs=dict(environmentname=environmentname)
@@ -216,6 +216,10 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
             parser = LatexGeneralNodesParser(
                 stop_token_condition=self._parse_body_token_stop_condition,
                 handle_stop_condition_token=self._handle_stop_condition_token,
+                stop_condition_message=(
+                    "Expected \\end{}{}{} after \\begin{}{}{}"
+                    .format('{',self.environmentname,'}', '{', self.environmentname, '}')
+                ),
             )
 
         body_parsing_state = \
