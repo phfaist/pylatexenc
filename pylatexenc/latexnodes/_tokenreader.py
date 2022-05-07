@@ -332,6 +332,10 @@ class LatexTokenReader(LatexTokenReaderBase):
                 s=self.s,
                 pos=pos+1,
                 msg="Character is forbidden here: ‘{}’ ({:#x})".format(c, ord(c)),
+                error_type_info={
+                    'what': 'token_forbidden_character',
+                    'forbidden_character': c
+                },
                 recovery_token_placeholder=self.make_token(
                     tok='char',
                     arg=c,
@@ -399,6 +403,9 @@ class LatexTokenReader(LatexTokenReaderBase):
                 s=s,
                 pos=pos+1,
                 msg="Expected macro name after ‘\\’ escape character",
+                error_type_info={
+                    'what': 'token_end_of_stream_immediately_after_escape_character',
+                },
                 recovery_token_placeholder=self.make_token(
                     tok='char',
                     arg='',
@@ -457,6 +464,11 @@ class LatexTokenReader(LatexTokenReaderBase):
                 s=s,
                 msg=r"Bad ‘\{}’ call: expected {{environmentname}}".format(beginend),
                 pos=pos,
+                error_type_info={
+                    'what': 'token_error_parse_beginend_environment_name',
+                    'beginend': beginend,
+                    'macro_beginend': tokarg,
+                },
                 recovery_token_placeholder=LatexToken(
                     tok='char',
                     arg=tokarg,

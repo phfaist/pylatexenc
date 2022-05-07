@@ -97,14 +97,32 @@ class LatexWalkerParseError(LatexWalkerError):
        The column number where the error occurred in the line `lineno`, starting
        at 1.
 
+    .. py:attribute:: error_type_info
+
+       Specify additional information about the error so that specific
+       applications can interpret the error and provide more meaningful messages
+       to the user.  For instance, the message "Character is forbidden: '%'"
+       might be cryptic to a user, whereas an application might be able to parse
+       the `error_type_info` to see that the error is of the type of a forbidden
+       character, and issue a message like "LaTeX comments are not permitted
+       ('%' char forbidden), use '\\%' for a literal percent sign."
+
+       The `error_type_info` attribute is a dictionary with at least one key
+       named `what`.  The `what` key should reflect the type of error that
+       occurred, e.g., `token_forbidden_character`.  Other keys might give
+       additional information about the error (e.g., which character was
+       encountered and was forbidden).
     """
-    def __init__(self, msg, s=None, pos=None, lineno=None, colno=None, **kwargs):
+    def __init__(self, msg, s=None, pos=None, lineno=None, colno=None,
+                 error_type_info=None,
+                 **kwargs):
         self.input_source = kwargs.pop('input_source', None)
         self.msg = msg
         self.s = s
         self.pos = pos
         self.lineno = lineno
         self.colno = colno
+        self.error_type_info = error_type_info
         self.open_contexts = kwargs.pop('open_contexts', [])
 
         if kwargs:

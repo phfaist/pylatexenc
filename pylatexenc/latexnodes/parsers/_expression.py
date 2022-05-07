@@ -143,7 +143,11 @@ class LatexExpressionParser(LatexParserBase):
             exc = latex_walker.check_tolerant_parsing_ignore_error(
                 LatexWalkerParseError(
                     r"End of input encountered but we expected an expression",
-                    pos=token_reader.cur_pos()
+                    pos=token_reader.cur_pos(),
+                    error_type_info={
+                        'what': 'expression_required_got_unexpected',
+                        'unexpected': 'end_of_stream',
+                    },
                 )
             )
             if exc is not None:
@@ -160,7 +164,12 @@ class LatexExpressionParser(LatexParserBase):
                 exc = latex_walker.check_tolerant_parsing_ignore_error(
                     LatexWalkerParseError(
                         r"Expected expression, got \{}".format(macroname),
-                        pos=tok.pos
+                        pos=tok.pos,
+                        error_type_info={
+                            'what': 'expression_required_got_unexpected',
+                            'unexpected': 'beginend',
+                            'beginend': macroname,
+                        },
                     )
                 )
                 if exc is not None:
@@ -271,7 +280,12 @@ class LatexExpressionParser(LatexParserBase):
                                                       pos_end=tok.pos), # not pos_end
                 # don't consume the closing brace if we're trying to recover
                 # from the parse error
-                recovery_at_token=tok
+                recovery_at_token=tok,
+                error_type_info={
+                    'what': 'expression_required_got_unexpected',
+                    'unexpected': 'closing_latex_group',
+                    'delimiter': tok.arg,
+                },
             )
             # internal, to aid pylatexenc2 compatibility code
             exc._error_was_unexpected_closing_brace_in_expression = True
@@ -313,6 +327,12 @@ class LatexExpressionParser(LatexParserBase):
                 pos=tok.pos,
                 recovery_nodes=recovery_nodes,
                 recovery_past_token=tok,
+                error_type_info={
+                    'what': 'expression_required_got_unexpected',
+                    'unexpected': 'math_mode_delimiter',
+                    'mathmode_type': tok.tok,
+                    'delimiter': tok.arg,
+                },
             )
 
         raise LatexWalkerParseError(
@@ -335,6 +355,12 @@ class LatexExpressionParser(LatexParserBase):
                         (r"Expected a LaTeX expression but got {} which "
                          r"expects arguments; did you mean to provide an expression "
                          r"in {{curly braces}} ?").format(what_we_got),
+                        pos=got_token.pos,
+                        error_type_info={
+                            'what': 'expression_required_got_unexpected',
+                            'unexpected': 'callable_with_mandatory_arguments',
+                            'callable_token': got_token,
+                        },
                     )
                 )
                 if exc is not None:

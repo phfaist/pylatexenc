@@ -167,6 +167,7 @@ class LatexGeneralNodesParser(LatexParserBase):
                 msg=e.msg,
                 pos=e.pos,
                 open_contexts=e.open_contexts,
+                error_type_info=e.error_type_info,
                 recovery_nodes=collector.get_final_nodelist(),
                 recovery_carryover_info=collector.get_parser_carryover_info(),
             )
@@ -214,6 +215,10 @@ class LatexGeneralNodesParser(LatexParserBase):
                 pos=collector.pos_start(),
                 recovery_nodes=collector.get_final_nodelist(),
                 recovery_carryover_info=collector.get_parser_carryover_info(),
+                error_type_info={
+                    'what': 'nodes_generalnodes_required_stop_condition_not_met',
+                    'stop_condition_message': self.stop_condition_message
+                },
             )
             raise exc
 

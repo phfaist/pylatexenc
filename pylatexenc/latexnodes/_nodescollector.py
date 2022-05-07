@@ -562,6 +562,10 @@ class LatexNodesCollector(object):
                 msg=("Unexpected mismatching closing delimiter ‘{}’".format(tok.arg)),
                 pos=tok.pos,
                 recovery_past_token=tok,
+                error_type_info={
+                    'what': 'nodes_unexpected_closing_group_delimiter',
+                    'delimiter': tok.arg,
+                },
             )
 
         if tok.tok == 'end_environment':
@@ -569,6 +573,10 @@ class LatexNodesCollector(object):
                 msg=("Unexpected closing environment: ‘{}’".format(tok.arg)),
                 pos=tok.pos,
                 recovery_past_token=tok,
+                error_type_info={
+                    'what': 'nodes_unexpected_end_environment',
+                    'environmentname': tok.arg,
+                },
             )
 
         if tok.tok in ('mathmode_inline', 'mathmode_display') \
@@ -580,6 +588,11 @@ class LatexNodesCollector(object):
                 ),
                 pos=tok.pos,
                 recovery_past_token=tok,
+                error_type_info={
+                    'what': 'nodes_unexpected_closing_math_delimiter',
+                    'mathmode_type': tok.tok,
+                    'delimiter': tok.arg,
+                },
             )
 
         # now we can start parsing the token and taking the appropriate action.
@@ -737,7 +750,11 @@ class LatexNodesCollector(object):
             exc = self.latex_walker.check_tolerant_parsing_ignore_error(
                 LatexWalkerParseError(
                     msg=r"Encountered unknown macro ‘\{}’".format(macroname),
-                    pos=tok.pos
+                    pos=tok.pos,
+                    error_type_info={
+                        'what': 'nodes_unknown_macro_name',
+                        'macroname': macroname,
+                    },
                 )
             )
             if exc is not None:
@@ -778,7 +795,11 @@ class LatexNodesCollector(object):
             exc = latex_walker.check_tolerant_parsing_ignore_error(
                 LatexWalkerParseError(
                     msg=r"Encountered unknown environment ‘{{{}}}’".format(environmentname),
-                    pos=tok.pos
+                    pos=tok.pos,
+                    error_type_info={
+                        'what': 'nodes_unknown_environment_name',
+                        'environmentname': environmentname,
+                    },
                 )
             )
             if exc is not None:
@@ -844,7 +865,7 @@ class LatexNodesCollector(object):
             exc = latex_walker.check_tolerant_parsing_ignore_error(
                 LatexWalkerParseError(
                     msg="No parser found for callable token {!r}".format(tok),
-                    pos=tok.pos
+                    pos=tok.pos,
                 )
             )
             if exc is not None:

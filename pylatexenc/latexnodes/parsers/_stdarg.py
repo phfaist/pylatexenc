@@ -33,7 +33,7 @@ from __future__ import print_function, unicode_literals
 import logging
 logger = logging.getLogger(__name__)
 
-from .._exctypes import LatexWalkerParseError, LatexWalkerTokenParseError
+#from .._exctypes import LatexWalkerParseError, LatexWalkerTokenParseError
 from ..nodes import *
 
 from ._base import LatexParserBase

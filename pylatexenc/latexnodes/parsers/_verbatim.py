@@ -47,6 +47,7 @@ class LatexVerbatimBaseParser(LatexParserBase):
     class VerbatimInfo(object):
         def __init__(self):
             super(LatexVerbatimBaseParser.VerbatimInfo, self).__init__()
+            self.parsed_delimiters = (None, None)
 
     def new_char_check_stop_condition(self, char, verbatim_string, verbatim_info,
                                       parsing_state):
@@ -62,7 +63,11 @@ class LatexVerbatimBaseParser(LatexParserBase):
         raise LatexWalkerNodesParseError(
             msg="End of stream reached while reading verbatim content",
             pos=pos,
-            recovery_nodes=recovery_nodes
+            recovery_nodes=recovery_nodes,
+            error_type_info={
+                'what': 'verbatim_unexpected_end_of_stream',
+                'verbatim_delimiters': verbatim_info.parsed_delimiters,
+            },
         )
         
 
@@ -218,6 +223,10 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
                         verbatim_info.parsed_delimiters[0]
                     ),
                     pos=pos,
+                    error_type_info={
+                        'what': 'verbatim_expected_opening_delimiter_not_found',
+                        'expected_delimiters': verbatim_info.parsed_delimiters,
+                    },
                 )
             
         verbatim_node, _ = \
