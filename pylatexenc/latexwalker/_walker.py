@@ -64,6 +64,10 @@ fn_unique_object_id = id
 
 
 
+_legacy_pyltxenc1_do = lambda *args: None
+
+
+
 # ------------------------------------------------------------------------------
 
 
@@ -161,28 +165,12 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         self.debug_nodes = False
 
         if latex_context is None:
-            if 'macro_dict' in kwargs:
-                # LEGACY -- build a latex context using the given macro_dict
-                _util.pylatexenc_deprecated_2(
-                    "The `macro_dict=...` option in LatexWalker() is obsolete since "
-                    "pylatexenc 2.  It'll still work, but please consider using instead "
-                    "the more versatile option `latex_context=...`."
-                )
 
-                macro_dict = kwargs.pop('macro_dict', None)
+            latex_context = _legacy_pyltxenc1_do(
+                'LatexWalker_init_from_macro_dict', self, kwargs
+            )
 
-                default_latex_context = get_default_latex_context_db()
-
-                latex_context = default_latex_context.filter_context(
-                    keep_which=['environments'], # no specials
-                )
-                latex_context.add_context_category(
-                    'custom',
-                    macro_dict.values(),
-                    default_latex_context.iter_environment_specs()
-                )
-
-            else:
+            if latex_context is None:
                 # default -- use default
                 latex_context = get_default_latex_context_db()
 
@@ -197,12 +185,16 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         # We don't store the latex_context in an attribute, because we always
         # access it via the current parsing_state
 
-        latex_context.freeze() # prevent future changes to the latex context db
+        if latex_context is not None:
+            latex_context.freeze() # prevent future changes to the latex context db
+            self.default_parsing_state = ParsingState(
+                s=self.s,
+                latex_context=latex_context,
+            )
 
-        self.default_parsing_state = ParsingState(
-            s=self.s,
-            latex_context=latex_context,
-        )
+        else:
+            # the user must promise to set a meaningful default_parsing_state !
+            self.default_parsing_state = None
 
 
         #
@@ -237,7 +229,8 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         that we are parsing (`s` provided to the constructor) and the current
         latex context (`latex_context` provided to the constructor).
 
-        If no arguments are provided, this returns the default parsing state.
+        If no arguments are provided, this returns (a copy of) the default
+        parsing state.
 
         If keyword arguments are provided, then they can override fields from
         the default parsing state.  For instance, if we enter math mode, you
@@ -576,6 +569,40 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
 
 
+
+### BEGIN_PYLATEXENC1_LEGACY_SUPPORT_CODE
+
+_legacy_pyltxenc1_do = \
+    lambda what, *args: globals()['_legacy_pyltxenc1_'+what](*args)
+
+def _legacy_pyltxenc1_LatexWalker_init_from_macro_dict(walker, kwargs):
+
+    if 'macro_dict' not in kwargs:
+        return None
+
+    # LEGACY -- build a latex context using the given macro_dict
+    _util.pylatexenc_deprecated_2(
+        "The `macro_dict=...` option in LatexWalker() is obsolete since "
+        "pylatexenc 2.  It'll still work, but please consider using instead "
+        "the more versatile option `latex_context=...`."
+    )
+
+    macro_dict = kwargs.pop('macro_dict', None)
+
+    default_latex_context = get_default_latex_context_db()
+
+    latex_context = default_latex_context.filter_context(
+        keep_which=['environments'], # no specials
+    )
+    latex_context.add_context_category(
+        'custom',
+        macro_dict.values(),
+        default_latex_context.iter_environment_specs()
+    )
+
+    return latex_context
+
+### END_PYLATEXENC1_LEGACY_SUPPORT_CODE
 
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE

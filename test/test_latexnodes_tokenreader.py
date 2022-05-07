@@ -389,6 +389,17 @@ New paragraph
                                     pre_space='', post_space=' '))
         
 
+    def test_forbidden_chars(self):
+
+        latextext = r"% Here is a forbidden character."
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(enable_comments=False, forbidden_characters='%$')
+
+        with self.assertRaises(LatexWalkerTokenParseError):
+            tok = tr.peek_token(ps)
+
+
     def test_stuff_mathmodes(self):
         
         latextext = r"""

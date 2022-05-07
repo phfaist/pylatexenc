@@ -178,7 +178,7 @@ class LatexTokenReader(LatexTokenReaderBase):
 
     def impl_peek_token(self, parsing_state):
 
-        logger.debug("impl_peek_token(): parsing_state = %r", parsing_state);
+        logger.debug("impl_peek_token(): parsing_state = %r", parsing_state)
 
         # shorthands (& to avoid repeated lookups)
         s = self.s
@@ -283,9 +283,7 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         # otherwise, the token is a normal 'char' type.
 
-        return self.make_token(tok='char', arg=c, pos=pos, pos_end=pos+1, pre_space=pre_space)
-
-
+        return self.impl_char_token(c, pos, pos+1, parsing_state, pre_space)
 
 
     def impl_peek_space_chars(self, s, pos, parsing_state):
@@ -326,6 +324,24 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         # encountered end of space
         return (space, pos, p2)
+
+
+    def impl_char_token(self, c, pos, pos_end, parsing_state, pre_space):
+        if c in parsing_state.forbidden_characters:
+            raise LatexWalkerTokenParseError(
+                s=self.s,
+                pos=pos+1,
+                msg="Character is forbidden here: ‘{}’ ({:#x})".format(c, ord(c)),
+                recovery_token_placeholder=self.make_token(
+                    tok='char',
+                    arg=c,
+                    pos=pos,
+                    pos_end=pos_end,
+                    pre_space=pre_space
+                ),
+                recovery_token_at_pos=pos_end,
+            )
+        return self.make_token(tok='char', arg=c, pos=pos, pos_end=pos_end, pre_space=pre_space)
 
 
     def impl_maybe_read_math_mode_delimiter(self, s, pos, parsing_state, pre_space):
@@ -438,6 +454,7 @@ class LatexTokenReader(LatexTokenReaderBase):
         if environment_name is None:
             tokarg = parsing_state.macro_escape_char + beginend
             raise LatexWalkerTokenParseError(
+                s=s,
                 msg=r"Bad ‘\{}’ call: expected {{environmentname}}".format(beginend),
                 pos=pos,
                 recovery_token_placeholder=LatexToken(

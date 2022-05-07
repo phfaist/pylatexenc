@@ -91,6 +91,17 @@ class ParsingState(object):
 
        The string that is parsed by the :py:class:`LatexWalker`
 
+       .. deprecated:: 3.0
+
+          The `s` attribute is deprecated starting in `pylatexenc 3`.  If you
+          have access to a node instance (cf. :py:class:`LatexNode`) and would
+          like to find out the original string that was parsed, use
+          `node.latex_walker.s` instead of querying the parsing state.
+
+          (The rationale of removing the `s` attribute from the parsing state is
+          for parsing state objects to have a meaning of their own independently
+          of any string being parsed or any latex walker instance.)
+
     .. py:attribute:: latex_context
 
        The latex context (with macros/environments specifications) that was used
@@ -149,6 +160,18 @@ class ParsingState(object):
 
        ............
 
+    .. py:attribute:: forbidden_characters
+
+       Characters that are simply forbidden to occur as regular characters.  You
+       can use this for instance if you'd like to disable some LaTeX-like
+       features but cause the corresponding character to raise an error. For
+       instance, you can force inline math to be typed as ``\(...\)`` and not as
+       ``$...$``, and yet still force users to type ``\$`` for a dollar sign by
+       including '$' in the list of forbidden characters.
+
+       The `forbidden_characters` can be a string, or a list of single-character
+       strings; this attribute will be used with the syntax ``if (c in
+       forbidden_characters): ...``
 
     .. versionadded:: 2.0
  
@@ -167,8 +190,8 @@ class ParsingState(object):
 
        The attributes `latex_group_delimiters`, `latex_inline_math_delimiters`,
        `latex_display_math_delimiters`, `enable_double_newline_paragraphs`,
-       `enable_environments`, `enable_comments`, and `macro_alpha_chars` were
-       introduced in version 3.
+       `enable_environments`, `enable_comments`, `macro_alpha_chars`, and
+       `forbidden_characters` were introduced in version 3.
     """
     def __init__(self, **kwargs):
         super(ParsingState, self).__init__()
@@ -198,6 +221,8 @@ class ParsingState(object):
         self.macro_escape_char = '\\' # character that introduces a macro
         self.comment_char = '%' # character that starts a comment
 
+        self.forbidden_characters = ''
+
         # set internally by the other fields by _set_fields()
         self._latex_group_delimchars_by_open = {}
         self._latex_group_delimchars_close = frozenset()
@@ -224,6 +249,7 @@ class ParsingState(object):
             'macro_alpha_chars',
             'macro_escape_char',
             'comment_char',
+            'forbidden_characters',
         )
 
         # Set by sub_context() & only used in repr() for now.
@@ -383,4 +409,4 @@ class ParsingState(object):
     def to_json_object(self):
         return { k: v
                  for k, v in self.get_fields().items()
-                 if k not in ('latex_context',) }
+                 if k not in ('latex_context','s',) }
