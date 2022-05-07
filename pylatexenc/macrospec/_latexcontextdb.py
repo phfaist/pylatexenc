@@ -502,7 +502,7 @@ class LatexContextDb(object):
         assert( category not in self.category_list )
         return (self._autogen_category_counter, category)
 
-    def extended_with(self, category, macros=[], environments=[], specials=[],
+    def extended_with(self, category=None, macros=None, environments=None, specials=None,
                       create_class=None, **kwargs):
         r"""
         Creates a new context category by adding a new category before all others.
@@ -537,75 +537,84 @@ class LatexContextDb(object):
         new_context.unknown_specials_spec = \
             kwargs.pop('unknown_specials_spec', self.unknown_specials_spec)
 
-        new_category_dicts = {
-            'macros': dict( (m.macroname, m) for m in macros ),
-            'environments': dict( (e.environmentname, e) for e in environments ),
-            'specials': dict( (s.specials_chars, s) for s in specials ),
-        }
-
-        if category is None and self.category_list \
-           and self.category_list[0].startswith(_autogen_category_prefix):
-            # no need to create new category, can merge with our current
-            # internally-named one.
-            cat = self.category_list[0]
-            dd = dict(self.d)
-            d_cat = dd[cat]
-            d_cat = dict(
-                macros=dict(d_cat['macros'],
-                            **new_category_dicts['macros']),
-                environments=dict(d_cat['environments'],
-                                  **new_category_dicts['environments']),
-                specials=dict(d_cat['specials'],
-                              **new_category_dicts['specials']),
-            )
-            dd[cat] = d_cat
-            new_context.d = dd
-            new_context.lookup_chain_maps = {
-                'macros': _util.ChainMap(
-                    d_cat['macros'],
-                    *self.lookup_chain_maps['macros'].maps[1:]
-                ),
-                'environments': _util.ChainMap(
-                    d_cat['environments'],
-                    *self.lookup_chain_maps['environments'].maps[1:]
-                ),
-                'specials': _util.ChainMap(
-                    d_cat['specials'],
-                    *self.lookup_chain_maps['specials'].maps[1:]
-                ),
-            }
-            new_context._autogen_category_counter = self._autogen_category_counter
+        if macros is not None or environments is not None or specials is not None:
             
-            # need to be frozen to prevent edits here affecting edits in the original object
-            self.frozen = True 
-            return new_context
+            if macros is None: macros = []
+            if environments is None: environments = []
+            if specials is None: specials = []
 
-        if category is None:
-            a, category = self._get_new_autogen_category()
-            new_context._autogen_category_counter = a + 1
-        else:
-            new_context._autogen_category_counter = self._autogen_category_counter
+            new_category_dicts = {
+                'macros': dict( (m.macroname, m) for m in macros ),
+                'environments': dict( (e.environmentname, e) for e in environments ),
+                'specials': dict( (s.specials_chars, s) for s in specials ),
+            }
 
-        # creating new category
-        dd = dict(self.d)
-        dd[category] = new_category_dicts
+            # actual changes in macros/environments/specials, not only
+            # unknown_macro_spec=...
 
-        new_context.category_list = [category] + self.category_list
+            if category is None and self.category_list \
+               and self.category_list[0].startswith(_autogen_category_prefix):
+                # no need to create new category, can merge with our current
+                # internally-named one.
+                cat = self.category_list[0]
+                dd = dict(self.d)
+                d_cat = dd[cat]
+                d_cat = dict(
+                    macros=dict(d_cat['macros'],
+                                **new_category_dicts['macros']),
+                    environments=dict(d_cat['environments'],
+                                      **new_category_dicts['environments']),
+                    specials=dict(d_cat['specials'],
+                                  **new_category_dicts['specials']),
+                )
+                dd[cat] = d_cat
+                new_context.d = dd
+                new_context.lookup_chain_maps = {
+                    'macros': _util.ChainMap(
+                        d_cat['macros'],
+                        *self.lookup_chain_maps['macros'].maps[1:]
+                    ),
+                    'environments': _util.ChainMap(
+                        d_cat['environments'],
+                        *self.lookup_chain_maps['environments'].maps[1:]
+                    ),
+                    'specials': _util.ChainMap(
+                        d_cat['specials'],
+                        *self.lookup_chain_maps['specials'].maps[1:]
+                    ),
+                }
+                new_context._autogen_category_counter = self._autogen_category_counter
 
-        new_context.d = dd
+                # need to be frozen to prevent edits here affecting edits in the original object
+                self.frozen = True 
+                return new_context
 
-        # these chainmaps' list of maps mirror the category_list item for item.
-        new_context.lookup_chain_maps = {
-            'macros':
-                self.lookup_chain_maps['macros']
-                .new_child(new_category_dicts['macros']),
-            'environments':
-                self.lookup_chain_maps['environments']
-                .new_child(new_category_dicts['environments']),
-            'specials':
-                self.lookup_chain_maps['specials']
-                .new_child(new_category_dicts['specials']),
-        }
+            if category is None:
+                a, category = self._get_new_autogen_category()
+                new_context._autogen_category_counter = a + 1
+            else:
+                new_context._autogen_category_counter = self._autogen_category_counter
+
+            # creating new category
+            dd = dict(self.d)
+            dd[category] = new_category_dicts
+
+            new_context.category_list = [category] + self.category_list
+
+            new_context.d = dd
+
+            # these chainmaps' list of maps mirror the category_list item for item.
+            new_context.lookup_chain_maps = {
+                'macros':
+                    self.lookup_chain_maps['macros']
+                    .new_child(new_category_dicts['macros']),
+                'environments':
+                    self.lookup_chain_maps['environments']
+                    .new_child(new_category_dicts['environments']),
+                'specials':
+                    self.lookup_chain_maps['specials']
+                    .new_child(new_category_dicts['specials']),
+            }
 
         new_context.frozen = True
         return new_context
@@ -616,6 +625,8 @@ class LatexContextDb(object):
 
 class ParsingStateDeltaExtendLatexContextDb(ParsingStateDelta):
     r"""
+    In addition to setting attributes, this parsing state delta object can also
+    extend the latex context.
 
     .. py:attribute::  extend_latex_context
 
@@ -624,12 +635,11 @@ class ParsingStateDeltaExtendLatexContextDb(ParsingStateDelta):
         
        Can be used along with set_parsing_state; in which case definitions are
        added on top of the parsing state change.
-
     """
     def __init__(self, extend_latex_context, **kwargs):
         super(ParsingStateDeltaExtendLatexContextDb, self).__init__(**kwargs)
         self.extend_latex_context = extend_latex_context
-        self._fields = ('extend_latex_context',)
+        self._fields = ('extend_latex_context', 'set_attributes',)
 
     def get_updated_parsing_state(self, parsing_state):
 
@@ -638,7 +648,12 @@ class ParsingStateDeltaExtendLatexContextDb(ParsingStateDelta):
                 latex_context=parsing_state.latex_context.extended_with(
                     category=None,
                     **self.extend_latex_context
-                )
+                ),
+                **self.set_attributes
+            )
+        elif self.set_attributes:
+            return parsing_state.sub_context(
+                **self.set_attributes
             )
 
         return parsing_state
