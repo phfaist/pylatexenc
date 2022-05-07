@@ -169,7 +169,7 @@ class LatexGeneralNodesParser(LatexParserBase):
                 open_contexts=e.open_contexts,
                 error_type_info=e.error_type_info,
                 recovery_nodes=collector.get_final_nodelist(),
-                recovery_carryover_info=collector.get_parser_carryover_info(),
+                recovery_parsing_state_delta=collector.get_parser_parsing_state_delta(),
             )
 
         # check that any required stop condition was met
@@ -214,7 +214,7 @@ class LatexGeneralNodesParser(LatexParserBase):
                 msg=message,
                 pos=collector.pos_start(),
                 recovery_nodes=collector.get_final_nodelist(),
-                recovery_carryover_info=collector.get_parser_carryover_info(),
+                recovery_parsing_state_delta=collector.get_parser_parsing_state_delta(),
                 error_type_info={
                     'what': 'nodes_generalnodes_required_stop_condition_not_met',
                     'stop_condition_message': self.stop_condition_message
@@ -244,11 +244,11 @@ class LatexGeneralNodesParser(LatexParserBase):
         # put together the node list & carry on
 
         nodelist = collector.get_final_nodelist()
-        carryover_info = collector.get_parser_carryover_info()
+        parsing_state_delta = collector.get_parser_parsing_state_delta()
 
         logger.debug("parser - we got final nodelist - %r", nodelist)
 
-        return nodelist, carryover_info
+        return nodelist, parsing_state_delta
 
 
 

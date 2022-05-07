@@ -404,7 +404,7 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc.process_tokens()
         
         nodelist = nc.get_final_nodelist()
-        carryover_info = nc.get_parser_carryover_info()
+        parsing_state_delta = nc.get_parser_parsing_state_delta()
 
         ps2 = nodelist[1].parsing_state
         self.assertIsNot(ps, ps2)
@@ -441,7 +441,7 @@ class TestLatexNodesCollector(unittest.TestCase):
         self.assertFalse(nc.stop_token_condition_met())
         self.assertFalse(nc.stop_nodelist_condition_met())
 
-        self.assertIs(carryover_info.set_parsing_state, ps2)
+        self.assertIs(parsing_state_delta.set_parsing_state, ps2)
         
 
     # ---------- stop conditions -----------------

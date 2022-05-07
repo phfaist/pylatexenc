@@ -230,14 +230,14 @@ class LatexStandardArgumentParser(LatexParserBase):
 
         arg_parser = self._arg_parser
 
-        nodes, carryover_info = latex_walker.parse_content(
+        nodes, parsing_state_delta = latex_walker.parse_content(
             arg_parser,
             token_reader=token_reader,
             parsing_state=arg_parsing_state,
             **kwargs
         )
 
-        return nodes, carryover_info
+        return nodes, parsing_state_delta
 
             
 
@@ -361,7 +361,7 @@ class _CommaSepContentCustomParser(LatexParserBase):
         # reliably !  (Nor will it ever be.)
         self.current_parsing_state = self.contents_parser_info.contents_parsing_state
         self.comma_sep_arg_list = []
-        self.carryover_info = None
+        self.parsing_state_delta = None
         self.parse_more = True
         self.pos_start = None
         self.is_very_first_element = True # true up to the first comma char
@@ -407,10 +407,10 @@ class _CommaSepContentCustomParser(LatexParserBase):
 
             self._parse_one_commasep_arg(latex_walker, token_reader)
 
-            if self.parse_more and self.carryover_info is not None:
+            if self.parse_more and self.parsing_state_delta is not None:
                 # merge any carry over info into the current parsing state
                 self.current_parsing_state = \
-                    self.carryover_info.get_updated_parsing_state(
+                    self.parsing_state_delta.get_updated_parsing_state(
                         self.current_parsing_state
                     )
 
@@ -420,7 +420,7 @@ class _CommaSepContentCustomParser(LatexParserBase):
             pos_end=self.last_element_pos_end,
         )
 
-        return final_node_list, self.carryover_info
+        return final_node_list, self.parsing_state_delta
 
 
     def _parse_one_commasep_arg(self, latex_walker, token_reader):
@@ -432,7 +432,7 @@ class _CommaSepContentCustomParser(LatexParserBase):
         self.last_element_pos_end = None
         self.last_delimiter_token = None
 
-        nodelist, carryover_info = latex_walker.parse_content(
+        nodelist, parsing_state_delta = latex_walker.parse_content(
             self.main_content_parser,
             token_reader=token_reader,
             parsing_state=self.current_parsing_state,
@@ -485,7 +485,7 @@ class _CommaSepContentCustomParser(LatexParserBase):
         if add_group_node:
             self.comma_sep_arg_list.append(this_group_node)
 
-        self.carryover_info = carryover_info
+        self.parsing_state_delta = parsing_state_delta
 
         self.is_very_first_element = False
 

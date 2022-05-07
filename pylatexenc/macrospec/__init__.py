@@ -42,7 +42,10 @@ from ._spechelpers import std_macro, std_environment, std_specials
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
 
-from ._latexcontextdb import LatexContextDb
+from ._latexcontextdb import (
+    LatexContextDb,
+    ParsingStateDeltaExtendLatexContextDb,
+)
 
 
 from ._argumentsparser import (

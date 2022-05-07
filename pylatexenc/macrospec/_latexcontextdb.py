@@ -31,6 +31,9 @@ from __future__ import print_function, unicode_literals
 
 from .. import _util
 
+from ..latexnodes import ParsingStateDelta
+
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -606,3 +609,37 @@ class LatexContextDb(object):
 
         new_context.frozen = True
         return new_context
+
+
+
+
+
+class ParsingStateDeltaExtendLatexContextDb(ParsingStateDelta):
+    r"""
+
+    .. py:attribute::  extend_latex_context
+
+       A dictionary with keys 'macros', 'environments', 'specials', as accepted
+       by :py:meth:`LatexContextDb.add_context_category()`.
+        
+       Can be used along with set_parsing_state; in which case definitions are
+       added on top of the parsing state change.
+
+    """
+    def __init__(self, extend_latex_context, **kwargs):
+        super(ParsingStateDeltaExtendLatexContextDb, self).__init__(**kwargs)
+        self.extend_latex_context = extend_latex_context
+        self._fields = ('extend_latex_context',)
+
+    def get_updated_parsing_state(self, parsing_state):
+
+        if self.extend_latex_context:
+            return parsing_state.sub_context(
+                latex_context=parsing_state.latex_context.extended_with(
+                    category=None,
+                    **self.extend_latex_context
+                )
+            )
+
+        return parsing_state
+

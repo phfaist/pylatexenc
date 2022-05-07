@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 from .._exctypes import *
 from .. import nodes
+from .._parsingstatedelta import get_updated_parsing_state_from_delta
 
 from ._generalnodes import LatexGeneralNodesParser
 from ._delimited import (
@@ -60,19 +61,24 @@ class LatexMathParserInfo(LatexDelimitedExpressionParserInfo):
 
     @classmethod
     def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
-                             delimited_expression_parser):
+                             delimited_expression_parser, latex_walker, **kwargs):
 
         if first_token.tok not in ('mathmode_inline', 'mathmode_display'):
             return False
 
-        if not cls.check_opening_delimiter(delimiters, first_token.arg):
+        if not cls.check_opening_delimiter(
+                delimiters=delimiters,
+                parsed_opening_delimiter=first_token.arg,
+                latex_walker=latex_walker
+        ):
             return False
 
         return True
 
     @classmethod
     def get_acceptable_open_delimiter_list(cls, delimiters, group_parsing_state,
-                                           delimited_expression_parser):
+                                           delimited_expression_parser, latex_walker,
+                                           **kwargs):
         if delimiters is not None:
             if isinstance(delimiters, _basestring):
                 return [delimiters]
@@ -96,9 +102,12 @@ class LatexMathParserInfo(LatexDelimitedExpressionParserInfo):
         self.math_mode_type = self.first_token.tok
         self.math_mode_delimiter = self.first_token.arg
 
-        self.math_parsing_state = self.parsing_state.sub_context(
-            in_math_mode=True,
-            math_mode_delimiter=self.math_mode_delimiter
+        self.math_parsing_state = get_updated_parsing_state_from_delta(
+            self.parsing_state,
+            self.latex_walker.parsing_state_deltas_provider.enter_math_mode(
+                math_mode_delimiter=self.math_mode_delimiter,
+                trigger_token=self.first_token
+            )
         )
 
         self.contents_parsing_state = self.math_parsing_state
@@ -114,8 +123,8 @@ class LatexMathParserInfo(LatexDelimitedExpressionParserInfo):
         return self.math_parsing_state._math_expecting_close_delim_info['close_delim']
 
 
-    def make_group_node_carryover_info(self, latex_walker, token_reader,
-                                       nodelist, carryover_info):
+    def make_group_node_parsing_state_delta(self, latex_walker, token_reader,
+                                            nodelist, parsing_state_delta):
 
         # As for the delimited group parser, use cur_pos() so that it includes
         # the closing math mode delimiter.
@@ -140,7 +149,7 @@ class LatexMathParserInfo(LatexDelimitedExpressionParserInfo):
             pos_end=pos_end,
         )
 
-        return math_node, carryover_info
+        return math_node, parsing_state_delta
 
 
 # ------------------------------------------------------------------------------
@@ -151,6 +160,7 @@ class LatexMathParser(LatexDelimitedExpressionParser):
                  **kwargs):
         super(LatexMathParser, self).__init__(
             delimiters=math_mode_delimiters,
-            discard_carryover_info=False,
+            discard_parsing_state_delta=False,
             delimited_expression_parser_info_class=LatexMathParserInfo,
-            **kwargs)
+            **kwargs
+        )

@@ -36,7 +36,7 @@ from ._exctypes import *
 from .nodes import *
 
 
-from ._carryoverinfo import CarryoverInformation
+from ._parsingstatedelta import ParsingStateDeltaReplaceParsingState
 
 
 class LatexNodesCollector(object):
@@ -149,18 +149,18 @@ class LatexNodesCollector(object):
         )
 
 
-    def get_parser_carryover_info(self):
+    def get_parser_parsing_state_delta(self):
         r"""
         """
         if not self._finalized:
-            raise RuntimeError("Call to get_parser_carryover_info() before finalize()")
+            raise RuntimeError("Call to get_parser_parsing_state_delta() before finalize()")
 
         if self.start_parsing_state is self.parsing_state:
             # we ended with the same object as the initial parsing state
             return None
 
         # report our updated parsing state
-        return CarryoverInformation(set_parsing_state=self.parsing_state)
+        return ParsingStateDeltaReplaceParsingState(set_parsing_state=self.parsing_state)
 
 
     def pos_start(self):
@@ -322,23 +322,23 @@ class LatexNodesCollector(object):
         return None
 
 
-    def update_state_from_carryover_info(self, carryover_info):
+    def update_state_from_parsing_state_delta(self, parsing_state_delta):
         r"""
         This method should only be called internally or by subclass derived methods.
 
-        Update our `parsing_state` attribute to account for any carryover
-        information that might have been provided by some parsed construct (say,
-        a macro call).
+        Update our `parsing_state` attribute to account for any parsing state
+        changes information that might have been provided by some parsed
+        construct (say, a macro call).
         """
 
-        if carryover_info is not None:
+        if parsing_state_delta is not None:
             ps = self.parsing_state
 
             self.parsing_state = \
-                carryover_info.get_updated_parsing_state(self.parsing_state)
+                parsing_state_delta.get_updated_parsing_state(self.parsing_state)
 
-            logger.debug("Updated parsing state using carryover_info %r: %r →→→ %r",
-                         carryover_info, ps, self.parsing_state)
+            logger.debug("Updated parsing state using parsing_state_delta %r: %r →→→ %r",
+                         parsing_state_delta, ps, self.parsing_state)
 
 
 
@@ -387,7 +387,7 @@ class LatexNodesCollector(object):
         :py:meth:`reached_end_of_stream()`.
         
         You can then call :py:meth:`get_final_nodelist()` to get the nodelist,
-        :py:meth:`get_parser_carryover_info()` to get any carry-over information
+        :py:meth:`get_parser_parsing_state_delta()` to get any carry-over information
         for the parser for future parsing, etc.
         """
 
@@ -703,7 +703,7 @@ class LatexNodesCollector(object):
 
         self.token_reader.move_to_token(tok, rewind_pre_space=False)
 
-        groupnode, carryover_info = \
+        groupnode, parsing_state_delta = \
             self.latex_walker.parse_content(
                 self.latex_walker.make_latex_group_parser(
                     delimiters=tok.arg,
@@ -713,9 +713,9 @@ class LatexNodesCollector(object):
                                                             LatexGroupNode),
         )
 
-        if carryover_info is not None:
-            logger.warning("carryover_info is ignored after parsing a LaTeX group: %r",
-                           carryover_info)
+        if parsing_state_delta is not None:
+            logger.warning("parsing_state_delta is ignored after parsing a LaTeX group: %r",
+                           parsing_state_delta)
 
         stop_exc = self.push_to_nodelist(groupnode)
         if stop_exc is not None:
@@ -871,18 +871,18 @@ class LatexNodesCollector(object):
             if exc is not None:
                 raise exc
             result_node = None
-            carryover_info = None
+            parsing_state_delta = None
 
         else:
 
-            result_node, carryover_info = latex_walker.parse_content(
+            result_node, parsing_state_delta = latex_walker.parse_content(
                 node_parser,
                 token_reader=token_reader,
                 parsing_state=self.make_child_parsing_state(self.parsing_state, node_class),
                 open_context=(what, tok),
             )
 
-        self.update_state_from_carryover_info(carryover_info)
+        self.update_state_from_parsing_state_delta(parsing_state_delta)
 
         if result_node is None:
             logger.warning("Parser %r produced no node (None) for token %r", node_parser, tok)
@@ -918,7 +918,7 @@ class LatexNodesCollector(object):
         )
 
         # a math inline or display environment
-        mathnode, carryover_info = \
+        mathnode, parsing_state_delta = \
             self.latex_walker.parse_content(
                 self.latex_walker.make_latex_math_parser(
                     math_mode_delimiters=tok.arg,
@@ -928,9 +928,7 @@ class LatexNodesCollector(object):
                                                             LatexMathNode)
             )
 
-        if carryover_info is not None:
-            logger.warning("carryover_info is ignored after parsing a LaTeX math: %r",
-                           carryover_info)
+        self.update_state_from_parsing_state_delta(parsing_state_delta)
 
         if mathnode is None:
             logger.warning("Math parser produced no node (None) for token %r", tok)

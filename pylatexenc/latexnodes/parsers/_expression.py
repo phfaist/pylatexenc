@@ -249,7 +249,7 @@ class LatexExpressionParser(LatexParserBase):
             # LatexDelimitedGroupParser
             token_reader.move_to_token(tok)
 
-            groupnode, carryover_info = latex_walker.parse_content(
+            groupnode, parsing_state_delta = latex_walker.parse_content(
                 LatexDelimitedGroupParser(
                     delimiters=tok.arg
                 ),
@@ -259,8 +259,8 @@ class LatexExpressionParser(LatexParserBase):
 
             logger.debug("Got groupnode = %r", groupnode)
 
-            if carryover_info is not None:
-                logger.warning("Ignoring carryover_info after parsing an expression group!")
+            if parsing_state_delta is not None:
+                logger.warning("Ignoring parsing_state_delta after parsing an expression group!")
 
             return [ groupnode ]
 

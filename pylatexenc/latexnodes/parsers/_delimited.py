@@ -144,8 +144,8 @@ class LatexDelimitedExpressionParserInfo(object):
       The `parsed_delimiters` is assumed to always be a 2-item tuple.  The
       values can be placeholders, if necessary.  They are only used in user
       messages until the final call to the
-      `make_group_node_and_carryover_info()` method.  In that method, the value
-      of the `parsed_delimiters` is used to set the final group node's
+      `make_group_node_and_parsing_state_delta()` method.  In that method, the
+      value of the `parsed_delimiters` is used to set the final group node's
       delimiters attribute.
 
     Further responsibilities of this object include:
@@ -161,8 +161,16 @@ class LatexDelimitedExpressionParserInfo(object):
       expression.  See :py:meth:`make_content_parser()`.  The default
       implementation should suffice in most cases.
 
-    - :py:meth:`make_group_node_carryover_info()` — prepare the carryover
-      information that will be left over after the group is fully parsed.
+    - :py:meth:`make_group_node_parsing_state_delta()` — prepare the parsing
+      state changes information that will be left over after the group is fully
+      parsed.
+
+
+    .. note::
+
+       When subclasses reimplement the methods in this class, they must ensure
+       that they accept ``**kwargs`` to accommodate any additional arguments
+       that I might think of adding in the future.
 
 
     Here are some attributes that are set on the object instance:
@@ -205,7 +213,7 @@ class LatexDelimitedExpressionParserInfo(object):
        `get_parsed_delimiters()`, because once we know the opening delimiter we
        also know what closing delimiter to expect.  See doc for
        :py:meth:`get_parsed_delimiters()`, :py:meth:`initialize()`, and
-       :py:meth:`make_group_node_carryover_info()` for more info on if the
+       :py:meth:`make_group_node_parsing_state_delta()` for more info on if the
        closing delimiter can't be deduced from the opening delimiter.
 
        This attribute is set in the constructor to the placeholder tuple `(None,
@@ -237,7 +245,8 @@ class LatexDelimitedExpressionParserInfo(object):
 
 
     @classmethod
-    def get_group_parsing_state(cls, parsing_state, delimiters, delimited_expression_parser):
+    def get_group_parsing_state(cls, parsing_state, delimiters,
+                                delimited_expression_parser, latex_walker):
         r"""
         Return the parsing state object to use for the overall group.  This is the
         parsing state that will be attached to the resulting
@@ -251,7 +260,7 @@ class LatexDelimitedExpressionParserInfo(object):
 
     @classmethod
     def get_acceptable_open_delimiter_list(cls, delimiters, group_parsing_state,
-                                           delimited_expression_parser):
+                                           delimited_expression_parser, latex_walker):
         r"""
         Return a list of strings representing acceptable opening delimiters.
 
@@ -311,6 +320,7 @@ class LatexDelimitedExpressionParserInfo(object):
                 first_token=first_token,
                 group_parsing_state=group_parsing_state,
                 delimited_expression_parser=delimited_expression_parser,
+                latex_walker=latex_walker
         ):
             ok = False
 
@@ -323,6 +333,7 @@ class LatexDelimitedExpressionParserInfo(object):
                     delimiters=delimiters,
                     group_parsing_state=group_parsing_state,
                     delimited_expression_parser=delimited_expression_parser,
+                    latex_walker=latex_walker
                 )
             if not acceptable_opening_delimiters:
                 acceptable_delimiters_msg = '??'
@@ -347,7 +358,7 @@ class LatexDelimitedExpressionParserInfo(object):
 
     @classmethod
     def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
-                             delimited_expression_parser):
+                             delimited_expression_parser, latex_walker):
         r"""
         Return `True` if the token `first_token` that was just read does indeed
         correspond to an opening delimiter that this parser is intended to read,
@@ -358,7 +369,8 @@ class LatexDelimitedExpressionParserInfo(object):
 
 
     @classmethod
-    def check_opening_delimiter(cls, delimiters, parsed_opening_delimiter):
+    def check_opening_delimiter(cls, delimiters, parsed_opening_delimiter,
+                                latex_walker):
         r"""
         A helper convenience function for subclasses' optional use in their
         `is_opening_delimiter()` method reimplementations.  Returns `True` or
@@ -387,7 +399,7 @@ class LatexDelimitedExpressionParserInfo(object):
     # ---
 
     def __init__(self, delimited_expression_parser, opening_delimiter_tokens,
-                 group_parsing_state, parsing_state, delimiters):
+                 group_parsing_state, parsing_state, delimiters, latex_walker):
         super(LatexDelimitedExpressionParserInfo, self).__init__()
 
         # save args
@@ -397,6 +409,7 @@ class LatexDelimitedExpressionParserInfo(object):
         self.group_parsing_state = group_parsing_state
         self.parsing_state = parsing_state
         self.delimiters = delimiters
+        self.latex_walker = latex_walker
         # simple defaults so the attributes are there, can be overwritten in initialize()
         self.contents_parsing_state = self.group_parsing_state
         self.child_parsing_state = self.parsing_state
@@ -499,9 +512,10 @@ class LatexDelimitedExpressionParserInfo(object):
         delimiter here, or reimplement `initialize()` to assign a temporary
         placeholder value to the `parsed_delimiters` attribute.  This attribute
         is only used for information messages anyway before the final
-        `make_group_node_carryover_info()` anyways.  However, you need to
-        either reimplement `make_group_node_carryover_info()`, or to set the
-        property `parsed_delimiters` correctly before that method gets called.
+        `make_group_node_parsing_state_delta()` anyways.  However, you need to
+        either reimplement `make_group_node_parsing_state_delta()`, or to set
+        the property `parsed_delimiters` correctly before that method gets
+        called.
         """
         first_token = self.first_token
         delimiters = self.delimiters
@@ -556,11 +570,11 @@ class LatexDelimitedExpressionParserInfo(object):
             self.first_token
         )
 
-    def make_group_node_carryover_info(self, latex_walker, token_reader,
-                                       nodelist, carryover_info):
+    def make_group_node_parsing_state_delta(self, latex_walker, token_reader,
+                                            nodelist, parsing_state_delta):
         r"""
-        Actually create the final node object and the associated carryover_info that
-        will be returned by the delimited expression parser.
+        Actually create the final node object and the associated parsing_state_delta
+        that will be returned by the delimited expression parser.
 
         The default implementation creates a :py:class:`~nodes.LatexGroupNode`
         instance.  The `delimiters` field is set to the `parsed_delimiters`
@@ -579,7 +593,7 @@ class LatexDelimitedExpressionParserInfo(object):
             pos_end=pos_end
         )
 
-        return group_node, carryover_info
+        return group_node, parsing_state_delta
 
 
 
@@ -620,10 +634,10 @@ class LatexDelimitedExpressionParser(LatexParserBase):
       the ``\\`` without any whitespace so that the code ``A+B=C \\ [A,B] = 0``
       doesn't parse ``[A,B]`` as an argument to ``\\``.
 
-    - If `discard_carryover_info` is `True`, any carryover information from
-      parsing the content of the group is discarded.  This is the default
-      behavior and mirrors the behavior of (La)TeX that most definitions are
-      local to a group
+    - If `discard_parsing_state_delta` is `True`, any parsing state changes
+      information from parsing the content of the group is discarded.  This is
+      the default behavior and mirrors the behavior of (La)TeX that most
+      definitions are local to a group
 
       .. todo: How could we think about implementing ``\global`` definitions then?
     """
@@ -632,16 +646,21 @@ class LatexDelimitedExpressionParser(LatexParserBase):
                  delimited_expression_parser_info_class,
                  optional=False,
                  allow_pre_space=False,
-                 discard_carryover_info=True,
+                 discard_parsing_state_delta=True,
                  **kwargs):
         super(LatexDelimitedExpressionParser, self).__init__(**kwargs)
         self.delimiters = delimiters
         self.optional = optional
         self.allow_pre_space = allow_pre_space
-        # allow_pre_space isn't a great interface here I think. (Where should
-        # the space go in the node tree then?) --> use separate
-        # LatexIgnoreSpaceAndCommentsPar() for callable arguments.
-        self.discard_carryover_info = discard_carryover_info
+        # <-- allow_pre_space isn't a great interface here I think. (Where
+        # should the space go in the node tree then?) -> use separate
+        # LatexIgnoreSpaceAndCommentsPar() for callable arguments. (???)
+        #
+        # ### but then we might need to start parsing the group multiple times!
+        # ### (to read the space, to read the opening delimiter, to enter the
+        # ### group parser, ... ... )
+        #
+        self.discard_parsing_state_delta = discard_parsing_state_delta
 
         self.delimited_expression_parser_info_class = delimited_expression_parser_info_class
 
@@ -657,6 +676,7 @@ class LatexDelimitedExpressionParser(LatexParserBase):
                 parsing_state=parsing_state,
                 delimiters=self.delimiters,
                 delimited_expression_parser=self,
+                latex_walker=latex_walker
             )
 
         opening_delimiter_tokens = None
@@ -694,42 +714,47 @@ class LatexDelimitedExpressionParser(LatexParserBase):
                 },
             )
 
-
+        # instantiate the contents parser info class now -->
         contents_parser_info = self.delimited_expression_parser_info_class(
             self,
             opening_delimiter_tokens=opening_delimiter_tokens,
             group_parsing_state=group_parsing_state,
             parsing_state=parsing_state,
             delimiters=self.delimiters,
+            latex_walker=latex_walker
         )
 
         contents_parser_info.initialize()
 
 
-        contents_parser = contents_parser_info.make_content_parser(latex_walker, token_reader)
+        contents_parser = contents_parser_info.make_content_parser(
+            latex_walker,
+            token_reader
+        )
 
-        nodelist, carryover_info = latex_walker.parse_content(
+        nodelist, parsing_state_delta = latex_walker.parse_content(
             contents_parser,
             token_reader=token_reader,
             parsing_state=contents_parser_info.contents_parsing_state,
             open_context=contents_parser_info.get_open_context_description()
         )
 
-        # can discard the carryover_info since the parsing state gets reset at
+        # can discard the parsing_state_delta since the parsing state gets reset at
         # the end of the group.
-        if self.discard_carryover_info and carryover_info is not None:
-            logger.debug("Discarding carryover information %r after delimited group",
-                         carryover_info)
-            carryover_info = None
+        if self.discard_parsing_state_delta and parsing_state_delta is not None:
+            logger.debug("Discarding parsing state changes %r after delimited group",
+                         parsing_state_delta)
+            parsing_state_delta = None
 
-        groupnode, carryover_info = contents_parser_info.make_group_node_carryover_info(
-            latex_walker=latex_walker,
-            token_reader=token_reader,
-            nodelist=nodelist,
-            carryover_info=carryover_info,
-        )
+        groupnode, parsing_state_delta = \
+            contents_parser_info.make_group_node_parsing_state_delta(
+                latex_walker=latex_walker,
+                token_reader=token_reader,
+                nodelist=nodelist,
+                parsing_state_delta=parsing_state_delta,
+            )
         
-        return groupnode, carryover_info
+        return groupnode, parsing_state_delta
 
 
 
@@ -743,7 +768,8 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
 
 
     @classmethod
-    def get_group_parsing_state(cls, parsing_state, delimiters, delimited_expression_parser):
+    def get_group_parsing_state(cls, parsing_state, delimiters, delimited_expression_parser,
+                                latex_walker, **kwargs):
         r"""
         Return the parsing state object to use for the overall group.  This is the
         parsing state that will be attached to the resulting
@@ -798,7 +824,8 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
 
     @classmethod
     def get_acceptable_open_delimiter_list(cls, delimiters, group_parsing_state,
-                                           delimited_expression_parser):
+                                           delimited_expression_parser, latex_walker,
+                                           **kwargs):
         r"""
         Only to be used for error messages.
         """
@@ -815,12 +842,14 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
 
     @classmethod
     def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
-                             delimited_expression_parser):
+                             delimited_expression_parser, latex_walker, **kwargs):
 
         if first_token.tok != 'brace_open':
             return False
 
-        if not cls.check_opening_delimiter(delimiters, first_token.arg):
+        if not cls.check_opening_delimiter(delimiters=delimiters,
+                                           parsed_opening_delimiter=first_token.arg,
+                                           latex_walker=latex_walker):
             return False
 
         return True

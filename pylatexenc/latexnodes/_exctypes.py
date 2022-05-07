@@ -241,9 +241,9 @@ class LatexWalkerNodesParseError(LatexWalkerParseError):
        Nodes result (a :py:class:`LatexNode` or :py:class:`LatexNodeList`
        instance) to use as if the parser call had returned successfully.
 
-    .. py:attribute:: recovery_carryoverinfo
+    .. py:attribute:: recovery_parsing_state_delta
 
-       Carry-over `info` dictionary to use as if the parser call had returned
+       Parsing state delta to use as if the parser call had returned
        successfully.
 
     .. py:attribute:: recovery_at_token
@@ -267,13 +267,13 @@ class LatexWalkerNodesParseError(LatexWalkerParseError):
     """
     def __init__(self,
                  recovery_nodes=None,
-                 recovery_carryover_info=None,
+                 recovery_parsing_state_delta=None,
                  recovery_at_token=None,
                  recovery_past_token=None,
                  **kwargs):
         super(LatexWalkerNodesParseError, self).__init__(**kwargs)
         self.recovery_nodes = recovery_nodes
-        self.recovery_carryover_info = recovery_carryover_info
+        self.recovery_parsing_state_delta = recovery_parsing_state_delta
         self.recovery_at_token = recovery_at_token
         self.recovery_past_token = recovery_past_token
 

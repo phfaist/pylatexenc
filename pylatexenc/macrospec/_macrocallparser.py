@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 from ..latexnodes.nodes import LatexMacroNode, LatexEnvironmentNode, LatexSpecialsNode
 from ..latexnodes.parsers import LatexParserBase, LatexGeneralNodesParser
 
+from ..latexnodes import get_updated_parsing_state_from_delta
 
 # works for macros, environments, and specials.
 class _LatexCallableParserBase(LatexParserBase):
@@ -57,34 +58,49 @@ class _LatexCallableParserBase(LatexParserBase):
 
         self.parse_body = parse_body
 
-        self.make_carryover_info = self.spec_object.make_carryover_info
+        self.make_arguments_parsing_state_delta = \
+            self.spec_object.make_arguments_parsing_state_delta
+        self.make_body_parsing_state_delta = \
+            self.spec_object.make_body_parsing_state_delta
+        self.make_after_parsing_state_delta = \
+            self.spec_object.make_after_parsing_state_delta
 
 
     def parse_call_arguments(self, latex_walker, token_reader, parsing_state, **kwargs):
 
-        nodeargd, carryover_info = latex_walker.parse_content(
+        arguments_parsing_state = get_updated_parsing_state_from_delta(
+            parsing_state,
+            self.make_arguments_parsing_state_delta(
+                token=self.token_call,
+                latex_walker=latex_walker,
+            )
+        )
+
+        nodeargd, parsing_state_delta = latex_walker.parse_content(
             self.arguments_parser,
             token_reader,
-            parsing_state,
+            arguments_parsing_state,
             # open_context=(
             #     "Arguments of {}".format(what),
             #     token_reader.cur_pos()
             # )
             **kwargs
         )
-        return nodeargd, carryover_info
+        return nodeargd, parsing_state_delta
 
-    def make_body_parser_and_parsing_state(self, nodeargd, arg_carryover_info, parsing_state):
+    def make_body_parser_and_parsing_state(self, nodeargd, arg_parsing_state_delta,
+                                           parsing_state, latex_walker):
         raise RuntimeError(
             "No default implementation of make_body_parser_and_parsing_state() in base class")
 
-    def parse_call_body(self, nodeargd, arg_carryover_info,
+    def parse_call_body(self, nodeargd, arg_parsing_state_delta,
                         latex_walker, token_reader, parsing_state, **kwargs):
 
         body_parser, body_parsing_state = \
-            self.make_body_parser_and_parsing_state(nodeargd, arg_carryover_info, parsing_state)
+            self.make_body_parser_and_parsing_state(nodeargd, arg_parsing_state_delta,
+                                                    parsing_state, latex_walker)
 
-        nodelist, carryover_info = latex_walker.parse_content(
+        nodelist, parsing_state_delta = latex_walker.parse_content(
             body_parser,
             token_reader,
             body_parsing_state,
@@ -94,7 +110,7 @@ class _LatexCallableParserBase(LatexParserBase):
             # )
             **kwargs
         )
-        return nodelist, carryover_info
+        return nodelist, parsing_state_delta
 
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
@@ -103,37 +119,38 @@ class _LatexCallableParserBase(LatexParserBase):
 
         # parse any arguments first
         if self.arguments_parser is not None:
-            nodeargd, arg_carryover_info = self.parse_call_arguments(
+            nodeargd, arg_parsing_state_delta = self.parse_call_arguments(
                 latex_walker, token_reader, parsing_state, **kwargs
             )
         else:
-            nodeargd, arg_carryover_info = None, None
+            nodeargd, arg_parsing_state_delta = None, None
 
-        logger.debug("Parsed macro/env/specials arguments; nodeargd=%r, arg_carryover_info=%r",
-                     nodeargd, arg_carryover_info)
+        logger.debug("Parsed macro/env/specials arguments; nodeargd=%r, "
+                     "arg_parsing_state_delta=%r",
+                     nodeargd, arg_parsing_state_delta)
 
         # parse any body, if applicable (e.g. environments)
         if self.parse_body:
-            body_nodelist, body_carryover_info = self.parse_call_body(
-                nodeargd, arg_carryover_info,
+            body_nodelist, body_parsing_state_delta = self.parse_call_body(
+                nodeargd, arg_parsing_state_delta,
                 latex_walker, token_reader, parsing_state,
                 **kwargs
             )
         else:
-            if arg_carryover_info is not None:
+            if arg_parsing_state_delta is not None:
                 logger.warning(
                     "Parsing carry-over information (%r) ignored after arguments to %s!",
-                    arg_carryover_info,
+                    arg_parsing_state_delta,
                     self.what
                 )
 
             body_nodelist = None
-            body_carryover_info = None
+            body_parsing_state_delta = None
 
-        if body_carryover_info is not None:
+        if body_parsing_state_delta is not None:
             logger.warning(
                 "Parsing carry-over information (%r) ignored after body!",
-                body_carryover_info
+                body_parsing_state_delta
             )
 
         # use cur_pos() because we want to include stuff like \end{environemnt}.
@@ -159,12 +176,15 @@ class _LatexCallableParserBase(LatexParserBase):
         # additional information, etc.
         node = self.spec_object.finalize_node(node)
 
-        carryover_info = self.make_carryover_info(parsed_node=node)
+        parsing_state_delta = self.make_after_parsing_state_delta(
+            parsed_node=node,
+            latex_walker=latex_walker,
+        )
 
-        logger.debug("Parsed macro/env/specials call - node %r - carryover_info %r",
-                     node, carryover_info)
+        logger.debug("Parsed macro/env/specials call - node %r - parsing_state_delta %r",
+                     node, parsing_state_delta)
 
-        return node, carryover_info
+        return node, parsing_state_delta
 
 
 
@@ -200,11 +220,12 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
         )
         self.environmentname = environmentname
 
-    def make_body_parser_and_parsing_state(self, nodeargd, arg_carryover_info, parsing_state):
-        if arg_carryover_info is not None:
+    def make_body_parser_and_parsing_state(self, nodeargd, arg_parsing_state_delta,
+                                           parsing_state, latex_walker):
+        if arg_parsing_state_delta is not None:
             logger.warning(
                 "Parsing carry-over information (%r) ignored after arguments to %s!",
-                arg_carryover_info,
+                arg_parsing_state_delta,
                 self.what
             )
 
@@ -218,29 +239,22 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
                 handle_stop_condition_token=self._handle_stop_condition_token,
                 stop_condition_message=(
                     "Expected \\end{}{}{} after \\begin{}{}{}"
-                    .format('{',self.environmentname,'}', '{', self.environmentname, '}')
+                    .format('{', self.environmentname, '}', '{', self.environmentname, '}')
                 ),
             )
 
-        body_parsing_state = \
-            self.make_body_parsing_state(nodeargd, arg_carryover_info, parsing_state)
+        body_parsing_state = get_updated_parsing_state_from_delta(
+            parsing_state,
+            self.make_body_parsing_state_delta(
+                token=self.token_call,
+                nodeargd=nodeargd,
+                arg_parsing_state_delta=arg_parsing_state_delta,
+                latex_walker=latex_walker,
+            )
+        )
 
         return parser, body_parsing_state
 
-    def make_body_parsing_state(self, nodeargd, arg_carryover_info, parsing_state):
-
-        if arg_carryover_info is not None \
-           and arg_carryover_info.inner_parsing_state is not None:
-            #
-            parsing_state = arg_carryover_info.inner_parsing_state
-
-        kw = {}
-        if self.spec_object.is_math_mode is not None:
-            kw.update(in_math_mode=self.spec_object.is_math_mode)
-
-        if kw:
-            return parsing_state.sub_context(**kw)
-        return parsing_state
 
     def _handle_stop_condition_token(self, t, latex_walker, token_reader, parsing_state):
         token_reader.move_past_token(t)

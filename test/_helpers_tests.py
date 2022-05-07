@@ -11,9 +11,10 @@ from pylatexenc.latexnodes import (
     LatexWalkerBase,
     LatexNodesCollector,
     LatexContextDbBase,
-    CarryoverInformation,
+    ParsingStateDelta,
     CallableSpecBase,
     ParsedMacroArgs,
+    ParsingStateDeltaReplaceParsingState,
 )
 from pylatexenc.latexnodes.nodes import *
 
@@ -68,14 +69,14 @@ class DummyWalker(LatexWalkerBase):
                      _class_name(parser), token_reader.cur_pos(), what, tok)
 
 
-        nodes, carryover_info = parser(latex_walker=self,
+        nodes, parsing_state_delta = parser(latex_walker=self,
                                        token_reader=token_reader,
                                        parsing_state=parsing_state)
 
         logger.debug(":: Parsing content DONE (%s) @ pos %d -- %s -- %r / ::",
                      _class_name(parser), token_reader.cur_pos(), what, tok)
 
-        return nodes, carryover_info
+        return nodes, parsing_state_delta
 
 
 
@@ -123,7 +124,7 @@ def dummy_empty_mathmode_parser(latex_walker, token_reader, parsing_state):
 
 
 
-def make_dummy_macro_node_parser(tok, spec, _mkcarryoverinfo=None):
+def make_dummy_macro_node_parser(tok, spec, _mk_parsing_state_delta=None):
     def dummy_macro_node_parser(latex_walker, token_reader, parsing_state):
         n = latex_walker.make_node(
             LatexMacroNode,
@@ -136,8 +137,8 @@ def make_dummy_macro_node_parser(tok, spec, _mkcarryoverinfo=None):
             pos_end=tok.pos_end
         )
         coi = None
-        if _mkcarryoverinfo is not None:
-            coi = _mkcarryoverinfo(parsing_state)
+        if _mk_parsing_state_delta is not None:
+            coi = _mk_parsing_state_delta(parsing_state)
         return n, coi
 
     return dummy_macro_node_parser
@@ -152,11 +153,11 @@ class DummyMacroSpec(CallableSpecBase):
 
 class DefineMacroZMacroSpec(DummyMacroSpec):
     def get_node_parser(self, token):
-        def _mkcarryover_info(ps):
-            return CarryoverInformation(
+        def _mkparsing_state_delta(ps):
+            return ParsingStateDeltaReplaceParsingState(
                 set_parsing_state=ps.sub_context(latex_context=DummyLatexContextDb2())
             )
-        return make_dummy_macro_node_parser(token, self, _mkcarryover_info)
+        return make_dummy_macro_node_parser(token, self, _mkparsing_state_delta)
 
 def make_dummy_environment_node_parser(tok, spec):
     def dummy_environment_node_parser(latex_walker, token_reader, parsing_state):

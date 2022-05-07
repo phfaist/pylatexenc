@@ -37,44 +37,44 @@ class TestLatexDelimitedExpressionParserInfo(unittest.TestCase):
         ps = ParsingState(s='?')
 
         self.assertEqual(
-            LatexDelimitedExpressionParserInfo.get_group_parsing_state(ps, None, None),
+            LatexDelimitedExpressionParserInfo.get_group_parsing_state(ps, None, None, None),
             ps
         )
 
     def test_check_opening_delimiter_1(self):
         
         self.assertTrue(
-            LatexDelimitedExpressionParserInfo.check_opening_delimiter( None, '{' )
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( None, '{', None )
         )
 
         self.assertTrue(
-            LatexDelimitedExpressionParserInfo.check_opening_delimiter( '{', '{' )
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( '{', '{', None )
         )
         self.assertFalse(
-            LatexDelimitedExpressionParserInfo.check_opening_delimiter( '[', '{' )
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( '[', '{', None )
         )
         self.assertFalse(
-            LatexDelimitedExpressionParserInfo.check_opening_delimiter( '<<', '<' )
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( '<<', '<', None )
         )
         self.assertFalse(
-            LatexDelimitedExpressionParserInfo.check_opening_delimiter( '', '{' )
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( '', '{', None )
         )
 
         self.assertTrue(
-            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('{','}'), '{' )
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('{','}'), '{', None )
         )
         self.assertTrue(
-            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ['{','}'], '{' )
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ['{','}'], '{', None )
         )
         self.assertTrue(
             LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('<!--','-->'),
-                                                                        '<!--' )
+                                                                        '<!--', None )
         )
         self.assertFalse(
-            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('[',']'), '{' )
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('[',']'), '{', None )
         )
         self.assertFalse(
-            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('[[',']'), '[' )
+            LatexDelimitedExpressionParserInfo.check_opening_delimiter( ('[[',']'), '[', None )
         )
 
     def test_parse_initial_1(self):
@@ -90,7 +90,7 @@ class TestLatexDelimitedExpressionParserInfo(unittest.TestCase):
         class XyzDEPInfo(LatexDelimitedExpressionParserInfo):
             @classmethod
             def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
-                                     delimited_expression_parser):
+                                     delimited_expression_parser, latex_walker, **kwargs):
                 d['_checked_is_opening_delimiter_token'] = first_token
                 return True # dummy
 
@@ -129,7 +129,7 @@ class TestLatexDelimitedExpressionParserInfo(unittest.TestCase):
         class XyzDEPInfo(LatexDelimitedExpressionParserInfo):
             @classmethod
             def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
-                                     delimited_expression_parser):
+                                     delimited_expression_parser, **kwargs):
                 d['_checked_is_opening_delimiter_token'] = first_token
                 return True # dummy
 
@@ -151,7 +151,7 @@ class TestLatexDelimitedExpressionParserInfo(unittest.TestCase):
         class XyzDEPInfo(LatexDelimitedExpressionParserInfo):
             @classmethod
             def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
-                                     delimited_expression_parser):
+                                     delimited_expression_parser, **kwargs):
                 d['_checked_is_opening_delimiter_token'] = first_token
                 return False # NO, it's not an opening delimiter
 
@@ -177,16 +177,17 @@ class TestLatexDelimitedExpressionParserInfo(unittest.TestCase):
 
 class MyHelperTestDEPInfo(LatexDelimitedExpressionParserInfo):
     @classmethod
-    def get_group_parsing_state(cls, delimiters, parsing_state, delimited_expression_parser):
+    def get_group_parsing_state(cls, delimiters, parsing_state, delimited_expression_parser,
+                                latex_walker):
         # simple test for a different parsing state
         return parsing_state.sub_context(enable_comments=False)
     @classmethod
     def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
-                             delimited_expression_parser):
+                             delimited_expression_parser, latex_walker):
         if not ( first_token.tok == 'char' and first_token.arg == '<' ):
             logger.debug("is_opening_delimiter: not a '<' char token")
             return False
-        if not cls.check_opening_delimiter(delimiters, first_token.arg):
+        if not cls.check_opening_delimiter(delimiters, first_token.arg, latex_walker):
             logger.debug("is_opening_delimiter: not compatible with delimiters = %r",
                          delimiters)
             return False
@@ -222,17 +223,18 @@ def helper_make_log_calls_expression_parser_info_class(BaseClass):
     class LogDEPInfo(BaseClass):
         @classmethod
         def get_group_parsing_state(cls, delimiters, parsing_state,
-                                    delimited_expression_parser):
+                                    delimited_expression_parser, latex_walker):
             d['get_group_parsing_state'] = True
             # simple test for a different parsing state
             return BaseClass.get_group_parsing_state(delimiters, parsing_state,
-                                                     delimited_expression_parser)
+                                                     delimited_expression_parser, latex_walker)
         @classmethod
         def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
-                                 delimited_expression_parser):
+                                 delimited_expression_parser, latex_walker):
             d['is_opening_delimiter'] = {'first_token': first_token}
             return BaseClass.is_opening_delimiter(
-                delimiters, first_token, group_parsing_state, delimited_expression_parser
+                delimiters, first_token, group_parsing_state, delimited_expression_parser,
+                latex_walker
             )
 
         def initialize(self):
@@ -263,15 +265,15 @@ def helper_make_log_calls_expression_parser_info_class(BaseClass):
             d['make_content_parser'] = True
             return super(LogDEPInfo, self).make_content_parser(latex_walker, token_reader)
 
-        def make_group_node_carryover_info(self, latex_walker, token_reader,
-                                           nodelist, carryover_info):
-            node, carryover_info = super(LogDEPInfo, self).make_group_node_carryover_info(
+        def make_group_node_parsing_state_delta(self, latex_walker, token_reader,
+                                           nodelist, parsing_state_delta):
+            node, parsing_state_delta = super(LogDEPInfo, self).make_group_node_parsing_state_delta(
                 latex_walker, token_reader,
-                nodelist, carryover_info
+                nodelist, parsing_state_delta
             )
-            d['make_group_node_carryover_info'] = {'node': node,
-                                                   'carryover_info': carryover_info}
-            return node, carryover_info
+            d['make_group_node_parsing_state_delta'] = {'node': node,
+                                                   'parsing_state_delta': parsing_state_delta}
+            return node, parsing_state_delta
 
     return LogDEPInfo, d
 
@@ -296,7 +298,7 @@ class TestLatexDelimitedExpressionParser(unittest.TestCase):
             delimited_expression_parser_info_class=LogDEPInfo,
         )
 
-        thenodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        thenodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertTrue(d['get_group_parsing_state'])
         self.assertEqual(d['is_opening_delimiter']['first_token'].arg, '<')
@@ -306,7 +308,7 @@ class TestLatexDelimitedExpressionParser(unittest.TestCase):
                          d['stop_token_condition']['token'])
         self.assertTrue(d['make_child_parsing_state']['node_class_is_group_node'])
         self.assertTrue(d['make_content_parser'])
-        self.assertTrue(d['make_group_node_carryover_info']['node'].isNodeType(
+        self.assertTrue(d['make_group_node_parsing_state_delta']['node'].isNodeType(
             LatexGroupNode
         ))
 
@@ -385,7 +387,7 @@ class TestDelimitedGroupParser(unittest.TestCase):
             delimiters=('{','}')
         )
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -421,7 +423,7 @@ class TestDelimitedGroupParser(unittest.TestCase):
             delimiters=('{','}')
         )
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -458,7 +460,7 @@ class TestDelimitedGroupParser(unittest.TestCase):
             optional=True,
         )
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -495,7 +497,7 @@ class TestDelimitedGroupParser(unittest.TestCase):
             optional=True,
         )
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -516,7 +518,7 @@ class TestDelimitedGroupParser(unittest.TestCase):
 
         parser = LatexDelimitedGroupParser(delimiters=None)
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -553,7 +555,7 @@ class TestDelimitedGroupParser(unittest.TestCase):
 
         parser = LatexDelimitedGroupParser(delimiters='[')
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -590,7 +592,7 @@ class TestDelimitedGroupParser(unittest.TestCase):
             allow_pre_space=True,
         )
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -627,7 +629,7 @@ class TestDelimitedGroupParser(unittest.TestCase):
         )
 
         with self.assertRaises(LatexWalkerParseError):
-            nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+            nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
     def test_skip_space_and_group_has_pre_space(self):
 
@@ -642,7 +644,7 @@ class TestDelimitedGroupParser(unittest.TestCase):
             allow_pre_space=True,
         )
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         # pre-space simply gets discarded, which is a strong reason not to use
         # this option at all; prefer to use robust argument parsers that can

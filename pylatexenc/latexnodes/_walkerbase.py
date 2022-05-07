@@ -29,10 +29,15 @@
 
 from __future__ import print_function, unicode_literals
 
+from ._parsingstatedelta import WalkerEventsParsingStateDeltasProvider
+
 
 class LatexWalkerBase(object):
-    def __init__(self, **kwargs):
+    def __init__(self, parsing_state_deltas_provider=None, **kwargs):
         super(LatexWalkerBase, self).__init__(**kwargs)
+        if parsing_state_deltas_provider is None:
+            parsing_state_deltas_provider = WalkerEventsParsingStateDeltasProvider()
+        self.parsing_state_deltas_provider = parsing_state_deltas_provider
 
     def parse_content(self, parser, token_reader=None, parsing_state=None,
                       open_context=None, **kwargs):
@@ -55,6 +60,7 @@ class LatexWalkerBase(object):
     def make_latex_math_parser(self, math_mode_delimiters):
         raise RuntimeError(
             "LatexWalkerBase subclasses must reimplement make_latex_math_parser()")
+
 
     def check_tolerant_parsing_ignore_error(self, exc):
         r"""

@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 from ..latexnodes.parsers import get_standard_argument_parser, LatexParserBase
 
 from ..latexnodes import (
-    ParsedMacroArgs, CarryoverInformation
+    ParsedMacroArgs,
 )
 
 
@@ -108,12 +108,14 @@ class LatexArgumentSpec(object):
 
 class LatexNoArgumentsParser(LatexParserBase):
     r"""
-    Tool for whenever there are no arguments to parse at all!
+    Convenience class for whenever there are no arguments to parse at all.
     """
 
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
     @property
     def argspec(self):
         return ''
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
@@ -190,7 +192,7 @@ class LatexArgumentsParser(LatexParserBase):
             peeked_token = token_reader.peek_token_or_none(parsing_state=parsing_state)
 
             arg_node_parser = arg.arg_node_parser
-            argnodes, carryover_info = latex_walker.parse_content(
+            argnodes, parsing_state_delta = latex_walker.parse_content(
                 arg_node_parser,
                 token_reader,
                 parsing_state,
@@ -199,10 +201,10 @@ class LatexArgumentsParser(LatexParserBase):
                     peeked_token
                 )
             )
-            if carryover_info is not None:
+            if parsing_state_delta is not None:
                 logger.warning(
-                    "Parsing carry-over information (%r) ignored when parsing arguments!",
-                    carryover_info
+                    "Parsing state changes information (%r) ignored in arguments!",
+                    parsing_state_delta
                 )
             argnlist.append( argnodes )
 
@@ -233,6 +235,7 @@ class LatexArgumentsParser(LatexParserBase):
 # ------------------------------------------------------------------------------
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
 
 class _LegacyPyltxenc2MacroArgsParserWrapper(LatexParserBase):
     def __init__(self, args_parser, spec_object):
@@ -269,26 +272,18 @@ class _LegacyPyltxenc2MacroArgsParserWrapper(LatexParserBase):
         new_parsing_state = adic.get('new_parsing_state', None)
         inner_parsing_state = adic.get('inner_parsing_state', None)
 
-        carryover_info_kw = {}
-
-        if new_parsing_state is not None:
-            carryover_info_kw['set_parsing_state'] = new_parsing_state
-
-        if inner_parsing_state is not None:
-            carryover_info_kw['inner_parsing_state'] = inner_parsing_state
-
-        if carryover_info_kw:
-            carryover_info = CarryoverInformation(**carryover_info_kw)
-        else:
-            carryover_info = None
-
-        # We can't return carryover_info here, because the carryover info
+        # We can't return parsing_state_delta here, because the carryover info
         # associated with *argument* (and *body*) parsers of a spec are ignored
         # by MacroCallParser's and friends.  Instead, we set an internal
         # attribute on the node, which the spec's overwritten
-        # make_carryover_info() picks up and returns appropriately.
+        # make_after_parsing_state_delta() & make_body_parsing_state_delta()
+        # pick up appropriately.
 
-        nodeargd._legacy_pyltxenc2_set_carryover_info = carryover_info
+        if new_parsing_state is not None:
+            nodeargd._legacy_pyltxenc2_new_parsing_state = new_parsing_state
+
+        if inner_parsing_state is not None:
+            nodeargd._legacy_pyltxenc2_inner_parsing_state_delta = inner_parsing_state
 
         return nodeargd, None
 

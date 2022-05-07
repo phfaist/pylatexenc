@@ -142,10 +142,10 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
                 )
             ]
 
-        carryover_info = None
+        parsing_state_delta = None
 
         if self.following_arg_parser is not None:
-            following_nodes, carryover_info = latex_walker.parse_content(
+            following_nodes, parsing_state_delta = latex_walker.parse_content(
                 self.following_arg_parser,
                 token_reader=token_reader,
                 parsing_state=parsing_state,
@@ -155,5 +155,5 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
 
         nodes = LatexNodeList(nodes)
 
-        return nodes, carryover_info
+        return nodes, parsing_state_delta
         

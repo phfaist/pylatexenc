@@ -54,11 +54,20 @@ _legacy_pyltxenc2_do = lambda *args: None
 
 
 class _SpecBase(CallableSpecBase):
-    def __init__(self, arguments_spec_list=None, make_carryover_info=None,
+    def __init__(self, arguments_spec_list=None,
+                 make_arguments_parsing_state_delta=None,
+                 make_body_parsing_state_delta=None,
+                 make_after_parsing_state_delta=None,
                  finalize_node=None, **kwargs):
 
         self.arguments_spec_list = arguments_spec_list
 
+        self._fn_make_arguments_parsing_state_delta = make_arguments_parsing_state_delta
+        self._fn_make_body_parsing_state_delta = make_body_parsing_state_delta
+        self._fn_make_after_parsing_state_delta = make_after_parsing_state_delta
+        self._fn_finalize_node = finalize_node
+
+        # note, the following might set self._fn_make_***_parsing_state_delta:
         use_legacy_args_parser = _legacy_pyltxenc2_do(
             'SpecBase_init_from_args_parser', self, arguments_spec_list, kwargs
         )
@@ -70,9 +79,6 @@ class _SpecBase(CallableSpecBase):
                 self.arguments_parser = LatexArgumentsParser(arguments_spec_list)
             else:
                 self.arguments_parser = LatexNoArgumentsParser()
-
-        self._fn_make_carryover_info = make_carryover_info
-        self._fn_finalize_node = finalize_node
 
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
@@ -101,26 +107,77 @@ class _SpecBase(CallableSpecBase):
         return node
 
 
-    def make_carryover_info(self, parsed_node):
+    def make_arguments_parsing_state_delta(self, token, latex_walker):
+        if self._fn_make_arguments_parsing_state_delta is not None:
+            return self._fn_make_arguments_parsing_state_delta(
+                token=token,
+                latex_walker=latex_walker
+            )
+        return None
+
+    def make_body_parsing_state_delta(self,
+                                      token,
+                                      nodeargd,
+                                      arg_parsing_state_delta,
+                                      latex_walker):
         r"""
-        If applicable, create a :py:class:`CarryoverInformation` class to convey any
+        ...........
+
+        This method only makes sense for LaTeX environments.  It's defined in
+        the base class :py:class:`_SpecBase` for consistency with the other
+        `make_**_parsing_state_delta()` methods.  This base class
+        implementation, if no custom body parsing state delta function is set in
+        the constructor, relies on `self.is_math_mode` being available!
+
+        Note: `arg_parsing_state_delta` is always `None` (unless you actually
+        went ahead and replaced the the `arguments_parser` attribute, which is a
+        `LatexArgumentsParser` or `LatexNoArgumentsParser` instance, by a custom
+        parser).
+        """
+        if self._fn_make_body_parsing_state_delta is not None:
+            return self._fn_make_body_parsing_state_delta(
+                token=token,
+                nodeargd=nodeargd,
+                arg_parsing_state_delta=arg_parsing_state_delta,
+                latex_walker=latex_walker,
+            )
+
+        # default implementation checks the is_math_mode attribute
+
+        if self.is_math_mode is not None:
+            if self.is_math_mode:
+                return latex_walker.parsing_state_deltas_provider.enter_math_mode(
+                    trigger_token=token
+                )
+            else:
+                return latex_walker.parsing_state_deltas_provider.leave_math_mode(
+                    trigger_token=token
+                )
+
+        return None
+
+
+    def make_after_parsing_state_delta(self, parsed_node, latex_walker):
+        r"""
+        If applicable, create a :py:class:`ParsingStateDelta` class to convey any
         changes in the parsing state after completing this callable node.
         
-        The default implementation returns `None`.  You do not have to override
-        this method.  You can specify a custom callable to
-        `make_carryover_info=...` in the constructor, and the constructor will
-        reassign the attribute `spec.make_carryover_info` to that callable.
+        The default implementation returns `None`.  You may, but do not have to,
+        override this method to customize its behavior.  You can specify a
+        custom callable to `make_after_parsing_state_delta=...` in the
+        constructor, and the constructor will reassign the attribute
+        `spec.make_after_parsing_state_delta` to that callable.
 
 
         This is called from the LatexMacroCallParser instance, i.e., this
         function won't be called by default if you override get_node_parser()
         and return a different parser instance.
-
         """
-
-        if self._fn_make_carryover_info is not None:
-            return self._fn_make_carryover_info(parsed_node)
-
+        if self._fn_make_after_parsing_state_delta is not None:
+            return self._fn_make_after_parsing_state_delta(
+                parsed_node=parsed_node,
+                latex_walker=latex_walker,
+            )
         return None
 
 
@@ -163,9 +220,7 @@ class MacroSpec(_SpecBase):
        instance is automatically created.
     """
     def __init__(self, macroname, arguments_spec_list=None, **kwargs):
-        make_carryover_info = kwargs.pop('make_carryover_info', None)
         super(MacroSpec, self).__init__(arguments_spec_list=arguments_spec_list,
-                                        make_carryover_info=make_carryover_info,
                                         **kwargs)
 
         self.macroname = macroname
@@ -224,11 +279,9 @@ class EnvironmentSpec(_SpecBase):
 
         is_math_mode = kwargs.pop('is_math_mode', False)
         body_parser = kwargs.pop('body_parser', None)
-        make_carryover_info = kwargs.pop('make_carryover_info', None)
 
         super(EnvironmentSpec, self).__init__(
             arguments_spec_list=arguments_spec_list,
-            make_carryover_info=make_carryover_info,
             **kwargs
         )
 
@@ -281,22 +334,32 @@ class SpecialsSpec(_SpecBase):
 
 from ._argumentsparser import _LegacyPyltxenc2MacroArgsParserWrapper
 
+from ..latexnodes import ParsingStateDeltaReplaceParsingState
+
 _legacy_pyltxenc2_do = \
     lambda what, *args: globals()['_legacy_pyltxenc2_'+what](*args)
 
 
 def _legacy_pyltxenc2_SpecBase_init_from_args_parser(spec, arguments_spec_list, kwargs):
 
-    def _make_carryover_info(parsed_node, spec=spec):
-        carryover_info = getattr(parsed_node.nodeargd, '_legacy_pyltxenc2_set_carryover_info',
-                                 None)
-        return carryover_info
+    def _make_after_parsing_state_delta(parsed_node, spec=spec, **kwargs):
+        new_parsing_state = getattr(parsed_node.nodeargd,
+                                    '_legacy_pyltxenc2_new_parsing_state',
+                                    None)
+        return ParsingStateDeltaReplaceParsingState(set_parsing_state=new_parsing_state)
+
+    def _make_body_parsing_state_delta(token, nodeargd, spec=spec, **kwargs):
+        inner_parsing_state = getattr(nodeargd,
+                                      '_legacy_pyltxenc2_inner_parsing_state',
+                                      None)
+        return ParsingStateDeltaReplaceParsingState(set_parsing_state=inner_parsing_state)
 
     def _init_with_legacy_wrapper(args_parser):
         logger.debug("Initializing spec with legacy args parser %r", args_parser)
         spec.arguments_spec_list = list(args_parser.argspec)
         spec.arguments_parser = _LegacyPyltxenc2MacroArgsParserWrapper(args_parser, spec)
-        spec.make_carryover_info = _make_carryover_info
+        spec._fn_make_body_parsing_state_delta = _make_body_parsing_state_delta
+        spec._fn_make_after_parsing_state_delta = _make_after_parsing_state_delta
         return True
 
     args_parser = kwargs.pop('args_parser', None)
@@ -330,14 +393,14 @@ def _legacy_pyltxenc2_SpecBase_parse_args(spec, w, pos, parsing_state=None):
         use parser stored as the `arguments_parser` attribute instead.
     """
 
-    parsed, carryover_info = w.parse_content(
+    parsed, parsing_state_delta = w.parse_content(
         spec.arguments_parser,
         token_reader=w.make_token_reader(pos=pos),
         parsing_state=parsing_state,
     )
 
-    if carryover_info is not None:
-        return parsed, parsed.pos, parsed.len, carryover_info._to_legacy_pyltxenc2_dict()
+    if parsing_state_delta is not None:
+        return parsed, parsed.pos, parsed.len, parsing_state_delta._to_legacy_pyltxenc2_dict()
 
     return parsed, parsed.pos, parsed.len
 

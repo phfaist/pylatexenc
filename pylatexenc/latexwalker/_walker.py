@@ -330,15 +330,15 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
                 return None # raise the same error further
 
-        def perform_recovery_nodes_and_carryoverinfo(self, token_reader):
+        def perform_recovery_nodes_and_parsing_state_delta(self, token_reader):
             if self.recovery_from_exception is None:
                 raise RuntimeError("No exception had happened to try to recover nodes from")
 
             # set nodes
             nodes = getattr(self.recovery_from_exception, 'recovery_nodes', None)
-            # parser carryover information?
-            carryover_info = getattr(self.recovery_from_exception,
-                                     'recovery_carryover_info', None)
+            # parser state delta information?
+            parsing_state_delta = getattr(self.recovery_from_exception,
+                                     'recovery_parsing_state_delta', None)
 
             # attempt to reset token_reader's position
             reset_at_tok = getattr(self.recovery_from_exception, 'recovery_at_token', None)
@@ -350,7 +350,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
                 if reset_at_tok is not None:
                     token_reader.move_past_token(reset_past_tok)
 
-            return nodes, carryover_info
+            return nodes, parsing_state_delta
 
     def new_parsing_open_context(self, open_context_name=None, open_context_token=None):
         r"""
@@ -369,18 +369,18 @@ class LatexWalker(latexnodes.LatexWalkerBase):
             if pc.recovery_from_exception is not None:
                 # attempt recovery from the exception object stored in
                 # the attribute `pc.recovery_from_exception`.  The method
-                # `pc.perform_recovery_nodes_and_carryoverinfo()` can be
+                # `pc.perform_recovery_nodes_and_parsing_state_delta()` can be
                 # useful.
                 ...
 
         The context manager has a method
-        `perform_recovery_nodes_and_carryoverinfo(token_reader)` that will
+        `perform_recovery_nodes_and_parsing_state_delta(token_reader)` that will
         attempt to recover a nodes object from the parse error exception object
-        and any carryover information, which might have resulted from the
-        parsing of a latex construct, and will attempt to reset the token
-        reader's position in order to continue parsing.  The method returns a
-        tuple `(nodes, carryover_info)` with the hopefully recovered node list
-        and carryover information dictionary.
+        and any parsing state changes information, which might have resulted
+        from the parsing of a latex construct, and will attempt to reset the
+        token reader's position in order to continue parsing.  The method
+        returns a tuple `(nodes, parsing_state_delta)` with the hopefully
+        recovered node list and parsing state changes information dictionary.
 
         The `open_context_name` is a textual description of the context to open,
         and the `open_context_token` is the token instance that is associated
@@ -429,17 +429,17 @@ class LatexWalker(latexnodes.LatexWalkerBase):
           macro ``\mymacro``).  The information about open contexts is used in
           error messages.
 
-        The return value is a tuple `(result, parser_carryover_info)` where
+        The return value is a tuple `(result, parser_parsing_state_delta)` where
         `result` is the return value of the parser, which is expected to be a
         :py:class:`LatexNode` or :py:class:`LatexNodeList` instance, and where
-        `parser_carryover_info`, if non-`None`, is a dictionary with information
-        to carry over when parsing further content, for instance, on how to
-        update the current parsing state.
+        `parser_parsing_state_delta`, if non-`None`, is a dictionary with
+        information to carry over when parsing further content, for instance, on
+        how to update the current parsing state.
 
-        What keys can be set in the `parser_carryover_info` dictionary is up to
-        the parsers.  See :py:class:`LatexGeneralNodesParser` and
+        What keys can be set in the `parser_parsing_state_delta` dictionary is
+        up to the parsers.  See :py:class:`LatexGeneralNodesParser` and
         :py:class:`LatexInvocableWithArgumentsParser` for examples.  An example
-        where `parser_carryover_info` is important is to implement the
+        where `parser_parsing_state_delta` is important is to implement the
         ``\newcommand`` macro which should update the current latex context to
         include the new macro definition.
         """
@@ -817,7 +817,7 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
     pos_end = token_reader.cur_pos()
 
     if info is not None:
-        logger.warning("Call to get_latex_nodes() ignores carryover information "
+        logger.warning("Call to get_latex_nodes() ignores parsing state changes information "
                        "of parsing state")
 
     if nodes is not None:
@@ -899,7 +899,7 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
             raise
 
     if info is not None:
-        logger.warning("Call to get_latex_expression() ignores carryover information "
+        logger.warning("Call to get_latex_expression() ignores parsing state changes information "
                        "of parsing state")
 
     if nodes is None and (self.tolerant_parsing or strict_braces is False):
@@ -1004,8 +1004,8 @@ def _pyltxenc2_LatexWalker_get_latex_braced_group(
     )
 
     if info is not None:
-        logger.warning("Call to get_latex_braced_group() ignores carryover information "
-                       "of parsing state")
+        logger.warning("Call to get_latex_braced_group() ignores parsing state changes "
+                       "information of parsing state")
 
     if nodes is not None:
         p, l = nodes.pos, nodes.len
@@ -1079,8 +1079,8 @@ def _pyltxenc2_LatexWalker_get_latex_environment(
     )
 
     if info is not None:
-        logger.warning("Call to get_latex_environment() ignores carryover information "
-                       "of parsing state")
+        logger.warning("Call to get_latex_environment() ignores parsing state changes "
+                       "information of parsing state")
 
     if not nodes or len(nodes) != 1 or not nodes[0].isNodeType(LatexEnvironmentNode):
         raise LatexWalkerParseError("Expected environment, got {}".format(nodes))
@@ -1146,8 +1146,8 @@ def _pyltxenc2_LatexWalker_get_latex_maybe_optional_arg(self, pos, parsing_state
     )
 
     if info is not None:
-        logger.warning("Call to get_latex_maybe_optional_arg() ignores carryover information "
-                       "of parsing state")
+        logger.warning("Call to get_latex_maybe_optional_arg() ignores parsing state changes "
+                       "information of parsing state")
 
 
     if nodes is None:

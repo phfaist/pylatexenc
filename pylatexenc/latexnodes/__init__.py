@@ -36,8 +36,11 @@ from ._parsingstate import (
     ParsingState
 )
 
-from ._carryoverinfo import (
-    CarryoverInformation
+from ._parsingstatedelta import (
+    ParsingStateDelta,
+    ParsingStateDeltaReplaceParsingState,
+    WalkerEventsParsingStateDeltasProvider,
+    get_updated_parsing_state_from_delta,
 )
 from ._parsedargs import (
     ParsedMacroArgs
