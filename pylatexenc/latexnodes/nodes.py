@@ -88,21 +88,25 @@ class LatexNode(object):
 
     .. py:attribute:: pos
 
-       The position in the parsed string that this node represents.  The parsed
-       string can be recovered as `parsing_state.s`, see
-       :py:attr:`ParsingState.s`.
+       The position in the parsed string that this node represents.  If you're
+       using the :py:class:`LatexWalker` walker class, then the parsed string
+       can normally be recovered as `node.latex_walker.s`, see
+       :py:attr:`LatexWalker.s` and the :py:attr:`latex_walker` attribute.
 
     .. py:attribute:: pos_end
 
        The position in the parsed string that is immediately after the present
-       node.  The parsed string can be recovered as `parsing_state.s`, see
-       :py:attr:`ParsingState.s`.
+       node.  If you're using the :py:class:`LatexWalker` walker class, then the
+       parsed string can normally be recovered as `node.latex_walker.s`, see
+       :py:attr:`LatexWalker.s` and the :py:attr:`latex_walker` attribute.
 
     .. py:attribute:: len
 
        (Read-only attribute.)  How many characters in the parsed string this
-       node represents, starting at position `pos`.  The parsed string can be
-       recovered as `parsing_state.s`, see :py:attr:`ParsingState.s`.
+       node represents, starting at position `pos`.  If you're using the
+       :py:class:`LatexWalker` walker class, then the parsed string can normally
+       be recovered as `node.latex_walker.s`, see :py:attr:`LatexWalker.s` and
+       the :py:attr:`latex_walker` attribute.
 
        Starting from `pylatexenc 3.0`, the `pos_end` attribute is primarily set
        and used instead of the `len` field.  The `len` field becomes a computed
@@ -176,12 +180,12 @@ class LatexNode(object):
         r"""
         Return the chunk of LaTeX code that this node represents.
 
-        This is a shorthand for ``node.parsing_state.s[node.pos:node.pos_end]``.
+        This is a shorthand for ``node.latex_walker.s[node.pos:node.pos_end]``.
         """
-        if self.parsing_state is None:
+        if self.latex_walker is None:
             raise TypeError("Can't use latex_verbatim() on node because we don't "
-                            "have any parsing_state set")
-        return self.parsing_state.s[self.pos : self.pos_end]
+                            "have any latex_walker set")
+        return self.latex_walker.s[self.pos : self.pos_end]
 
     def __eq__(self, other):
         return other is not None  and  \
