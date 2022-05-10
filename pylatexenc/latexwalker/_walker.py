@@ -36,6 +36,7 @@ from .. import latexnodes
 from .. import macrospec
 
 from ..latexnodes._exctypes import *
+from ..latexnodes._exctypes import format_pos
 from ..latexnodes.nodes import *
 from ..latexnodes import parsers
 
@@ -559,6 +560,9 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
         return self._line_no_calc.pos_to_lineno_colno(pos, as_dict=as_dict)
 
+
+    def format_pos(self, pos):
+        return format_pos(pos, **self.pos_to_lineno_colno(pos, as_dict=True))
 
 
     def __repr__(self):

@@ -171,26 +171,26 @@ class LatexWalkerParseErrorFormatter(object):
         msg = exc.msg
         if exc.input_source:
             msg += '  in {}'.format(exc.input_source)
-        disp = msg + " {}".format(self.format_pos(exc.pos, exc.lineno, exc.colno))
+        disp = msg + " {}".format(format_pos(exc.pos, exc.lineno, exc.colno))
         if exc.open_contexts:
             disp += '\nOpen LaTeX blocks:\n'
             for context in reversed(exc.open_contexts):
                 what, pos, lineno, colno = context
                 disp += '{empty:4}{loc:<18}  {what}\n'.format(
                     empty='',
-                    loc=self.format_pos(pos,lineno,colno),
+                    loc=format_pos(pos,lineno,colno),
                     what=what
                 )
         return disp
 
-    def format_pos(self, pos, lineno, colno):
-        if lineno is not None:
-            if colno is not None:
-                return '@ (line {}, col {})'.format(lineno, colno)
-            return '@ line {}'.format(lineno)
-        if pos is not None:
-            return '@ char pos {}'.format(pos)
-        return '@ <unknown>'
+def format_pos(pos, lineno, colno):
+    if lineno is not None:
+        if colno is not None:
+            return '@ (line {}, col {})'.format(lineno, colno)
+        return '@ line {}'.format(lineno)
+    if pos is not None:
+        return '@ char pos {}'.format(pos)
+    return '@ <unknown>'
 
 
 
