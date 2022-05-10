@@ -47,10 +47,13 @@ from ._latexcontextdb import (
     ParsingStateDeltaExtendLatexContextDb,
 )
 
-
 from ._argumentsparser import (
     LatexArgumentSpec,
     LatexArgumentsParser
+)
+
+from ._environmentbodyparser import (
+    LatexEnvironmentBodyContentsParser
 )
 
 from ._macrocallparser import (
