@@ -131,7 +131,6 @@ class ParsedMacroArgs(object):
                  arguments_spec_list=None,
                  #
                  **kwargs):
-        pos, pos_end = kwargs.pop('pos', None), kwargs.pop('pos_end', None)
         argspec = kwargs.pop('argspec', None)
         super(ParsedMacroArgs, self).__init__(**kwargs)
 
@@ -142,8 +141,6 @@ class ParsedMacroArgs(object):
 
         self.arguments_spec_list = arguments_spec_list if arguments_spec_list else []
 
-        self.pos, self.pos_end = pos, pos_end
-
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
     @property
@@ -152,11 +149,6 @@ class ParsedMacroArgs(object):
             self._argspec = _argspec_from_arguments_spec_list(self.arguments_spec_list)
         return self._argspec
 
-    @property
-    def len(self):
-        if self.pos is None or self.pos_end is None:
-            return None
-        return self.pos_end - self.pos
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
 ### BEGIN_PYLATEXENC1_LEGACY_SUPPORT_CODE
@@ -191,8 +183,6 @@ class ParsedMacroArgs(object):
         return (
             self.arguments_spec_list == other.arguments_spec_list
             and self.argnlist == other.argnlist
-            and self.pos == other.pos
-            and self.pos_end == other.pos_end
         )
  
     def to_json_object(self):
@@ -215,7 +205,7 @@ class ParsedMacroArgs(object):
 
     def __repr__(self):
         return "{}(arguments_spec_list={!r}, argnlist={!r})".format(
-            self.__class__.__name__, self.arguments_spec_list, self.argnlist
+            self.__class__.__name__, self.arguments_spec_list, self.argnlist,
         )
 
 

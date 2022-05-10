@@ -123,8 +123,8 @@ class LatexMathParserInfo(LatexDelimitedExpressionParserInfo):
         return self.math_parsing_state._math_expecting_close_delim_info['close_delim']
 
 
-    def make_group_node_parsing_state_delta(self, latex_walker, token_reader,
-                                            nodelist, parsing_state_delta):
+    def make_group_node_and_parsing_state_delta(self, latex_walker, token_reader,
+                                                nodelist, parsing_state_delta):
 
         # As for the delimited group parser, use cur_pos() so that it includes
         # the closing math mode delimiter.

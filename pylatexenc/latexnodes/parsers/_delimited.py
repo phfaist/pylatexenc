@@ -161,7 +161,7 @@ class LatexDelimitedExpressionParserInfo(object):
       expression.  See :py:meth:`make_content_parser()`.  The default
       implementation should suffice in most cases.
 
-    - :py:meth:`make_group_node_parsing_state_delta()` — prepare the parsing
+    - :py:meth:`make_group_node_and_parsing_state_delta()` — prepare the parsing
       state changes information that will be left over after the group is fully
       parsed.
 
@@ -213,7 +213,7 @@ class LatexDelimitedExpressionParserInfo(object):
        `get_parsed_delimiters()`, because once we know the opening delimiter we
        also know what closing delimiter to expect.  See doc for
        :py:meth:`get_parsed_delimiters()`, :py:meth:`initialize()`, and
-       :py:meth:`make_group_node_parsing_state_delta()` for more info on if the
+       :py:meth:`make_group_node_and_parsing_state_delta()` for more info on if the
        closing delimiter can't be deduced from the opening delimiter.
 
        This attribute is set in the constructor to the placeholder tuple `(None,
@@ -294,11 +294,13 @@ class LatexDelimitedExpressionParserInfo(object):
         delimiter has space and `allow_pre_space` is not set, then the
         :py:exc:`LatexDelimitedExpressionParserOpeningDelimiterNotFound` should
         be raised, with relevant information for error messages and recovery.
-        It is not necessary to reset the token reader's position, but it is
-        important to set the `first_tokens` argument of that exception class to
-        those tokens that were read so far, because it is used to reset the
-        token reader correctly if the delimited expression was in fact optional
-        or if we are trying to recover from a parse error.
+        (The exception should be raised regardless of whether or not the
+        delimited expression is optional.)  It is not necessary to reset the
+        token reader's position, but it is important to set the `first_tokens`
+        argument of that exception class to those tokens that were read so far,
+        because it is used to reset the token reader correctly if the delimited
+        expression was in fact optional or if we are trying to recover from a
+        parse error.
 
         The default implementation of `parse_initial()` provided here inspects a
         single token and uses the `is_opening_delimiter()` class function to
@@ -405,7 +407,10 @@ class LatexDelimitedExpressionParserInfo(object):
         # save args
         self.delimited_expression_parser = delimited_expression_parser
         self.opening_delimiter_tokens = opening_delimiter_tokens
-        self.first_token = opening_delimiter_tokens[0]
+        if opening_delimiter_tokens:
+            self.first_token = opening_delimiter_tokens[0]
+        else:
+            self.first_token = None
         self.group_parsing_state = group_parsing_state
         self.parsing_state = parsing_state
         self.delimiters = delimiters
@@ -439,7 +444,7 @@ class LatexDelimitedExpressionParserInfo(object):
         r"""
         Called to take action after the `token` was read and determined to satisfy
         the stopping condition.  By default, the `token_reader` is positioned
-        immediately after the token.
+        immediately after the stopping token.
         """
         token_reader.move_past_token(token)
         logger.debug(
@@ -466,6 +471,7 @@ class LatexDelimitedExpressionParserInfo(object):
         the value of the `child_parsing_state` attribute, if appropriate, or to
         decide to ignore that attribute entirely.
         """
+        logger.debug("Requested child parsing state! = %r", self.child_parsing_state)
         return self.child_parsing_state
 
 
@@ -512,9 +518,9 @@ class LatexDelimitedExpressionParserInfo(object):
         delimiter here, or reimplement `initialize()` to assign a temporary
         placeholder value to the `parsed_delimiters` attribute.  This attribute
         is only used for information messages anyway before the final
-        `make_group_node_parsing_state_delta()` anyways.  However, you need to
-        either reimplement `make_group_node_parsing_state_delta()`, or to set
-        the property `parsed_delimiters` correctly before that method gets
+        `make_group_node_and_parsing_state_delta()` anyways.  However, you need
+        to either reimplement `make_group_node_and_parsing_state_delta()`, or to
+        set the property `parsed_delimiters` correctly before that method gets
         called.
         """
         first_token = self.first_token
@@ -570,8 +576,9 @@ class LatexDelimitedExpressionParserInfo(object):
             self.first_token
         )
 
-    def make_group_node_parsing_state_delta(self, latex_walker, token_reader,
-                                            nodelist, parsing_state_delta):
+    def make_group_node_and_parsing_state_delta(self, latex_walker,
+                                                token_reader, nodelist,
+                                                parsing_state_delta):
         r"""
         Actually create the final node object and the associated parsing_state_delta
         that will be returned by the delimited expression parser.
@@ -742,12 +749,12 @@ class LatexDelimitedExpressionParser(LatexParserBase):
         # can discard the parsing_state_delta since the parsing state gets reset at
         # the end of the group.
         if self.discard_parsing_state_delta and parsing_state_delta is not None:
-            logger.debug("Discarding parsing state changes %r after delimited group",
+            logger.debug("Discarding parsing state changes after delimited expression: %r",
                          parsing_state_delta)
             parsing_state_delta = None
 
         groupnode, parsing_state_delta = \
-            contents_parser_info.make_group_node_parsing_state_delta(
+            contents_parser_info.make_group_node_and_parsing_state_delta(
                 latex_walker=latex_walker,
                 token_reader=token_reader,
                 nodelist=nodelist,

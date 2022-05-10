@@ -48,6 +48,9 @@ class _LatexCallableParserBase(LatexParserBase):
                  parse_body=False,
                  ):
 
+        logger.debug("_LatexCallableParserBase, token_call=%r, spec_object=%r (%s)",
+                     token_call, spec_object, what)
+
         self.token_call = token_call
         self.spec_object = spec_object
         self.what = what
@@ -229,19 +232,8 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
                 self.what
             )
 
-        if self.spec_object.body_parser is not None:
-            parser = self.spec_object.body_parser
-        else:
-            # can't cache parser instance outside class instance because the stop
-            # condition depends on the environment name
-            parser = LatexGeneralNodesParser(
-                stop_token_condition=self._parse_body_token_stop_condition,
-                handle_stop_condition_token=self._handle_stop_condition_token,
-                stop_condition_message=(
-                    "Expected \\end{}{}{} after \\begin{}{}{}"
-                    .format('{', self.environmentname, '}', '{', self.environmentname, '}')
-                ),
-            )
+        parser = self.spec_object.make_body_parser(self.token_call, nodeargd,
+                                                   arg_parsing_state_delta)
 
         body_parsing_state = get_updated_parsing_state_from_delta(
             parsing_state,

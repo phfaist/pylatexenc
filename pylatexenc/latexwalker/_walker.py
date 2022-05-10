@@ -457,8 +457,8 @@ class LatexWalker(latexnodes.LatexWalkerBase):
             open_context_name, open_context_tok = open_context
 
         start_pos = token_reader.cur_pos()
-        logger.debug(":: Parsing content (%s @ %r) - %r ::",
-                     open_context_name, start_pos, parser)
+        logger.debug(":: Parsing content (%s @ %r) - %r [%r]::",
+                     open_context_name, start_pos, parser, parsing_state)
 
         with self.new_parsing_open_context(open_context_name, open_context_tok) as pc:
 

@@ -104,6 +104,11 @@ class LatexArgumentSpec(object):
             return dict(argname=self.argname, parser=self.parser)
         return dict(parser=self.parser)
         
+    def __eq__(self, other):
+        return (
+            self.parser == other.parser
+            and self.argname == other.argname
+        )
 
 
 class LatexNoArgumentsParser(LatexParserBase):
@@ -122,12 +127,14 @@ class LatexNoArgumentsParser(LatexParserBase):
         parsed = ParsedMacroArgs(
             arguments_spec_list=[],
             argnlist=[],
-            pos=token_reader.cur_pos(),
-            pos_end=token_reader.cur_pos()
+            # pos=token_reader.cur_pos(),
+            # pos_end=token_reader.cur_pos()
         )
 
         return parsed, None
 
+    def __eq__(self, other):
+        return self.__class__ is other.__class__
 
 
 class LatexArgumentsParser(LatexParserBase):
@@ -223,13 +230,21 @@ class LatexArgumentsParser(LatexParserBase):
         parsed = ParsedMacroArgs(
             arguments_spec_list=self.arguments_spec_list,
             argnlist=argnlist,
-            pos=pos,
-            pos_end=pos_end
+            # pos=pos,
+            # pos_end=pos_end
         )
 
         logger.debug("Parsed arguments = %r", parsed)
 
         return parsed, None
+
+
+    def __eq__(self, other):
+        return (
+            self.__class__ is other.__class__
+            and self.arguments_spec_list == other.arguments_spec_list
+        )
+
 
 
 # ------------------------------------------------------------------------------

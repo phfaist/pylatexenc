@@ -32,12 +32,15 @@ from __future__ import print_function, unicode_literals
 import logging
 logger = logging.getLogger(__name__)
 
-from ..latexnodes import CallableSpecBase
+from ..latexnodes import (
+    CallableSpecBase,
+)
 
 from ._argumentsparser import LatexArgumentsParser, LatexNoArgumentsParser
 from ._macrocallparser import (
     LatexMacroCallParser, LatexEnvironmentCallParser, LatexSpecialsCallParser
 )
+from ._environmentbodyparser import LatexEnvironmentBodyContentsParser
 
 
 # for Py3
@@ -278,7 +281,7 @@ class EnvironmentSpec(_SpecBase):
     def __init__(self, environmentname, arguments_spec_list=None, **kwargs):
 
         is_math_mode = kwargs.pop('is_math_mode', False)
-        body_parser = kwargs.pop('body_parser', None)
+        make_body_parser = kwargs.pop('make_body_parser', None)
 
         super(EnvironmentSpec, self).__init__(
             arguments_spec_list=arguments_spec_list,
@@ -287,10 +290,27 @@ class EnvironmentSpec(_SpecBase):
 
         self.environmentname = environmentname
         self.is_math_mode = is_math_mode
-        self.body_parser = body_parser
+        self._fn_make_body_parser = make_body_parser
 
     def get_node_parser(self, token):
         return LatexEnvironmentCallParser(token, self)
+
+    def make_body_parser(self, token, nodeargd, arg_parsing_state_delta):
+        if self._fn_make_body_parser is not None:
+            return self._fn_make_body_parser(token, nodeargd, arg_parsing_state_delta)
+        return LatexEnvironmentBodyContentsParser(
+            environmentname=token.arg,
+        )
+        # # can't cache parser instance outside class instance because the stop
+        # # condition depends on the environment name
+        # parser = LatexGeneralNodesParser(
+        #     stop_token_condition=self._parse_body_token_stop_condition,
+        #     handle_stop_condition_token=self._handle_stop_condition_token,
+        #     stop_condition_message=(
+        #         "Expected \\end{}{}{} after \\begin{}{}{}"
+        #         .format('{', self.environmentname, '}', '{', self.environmentname, '}')
+        #     ),
+        # )
 
 
 

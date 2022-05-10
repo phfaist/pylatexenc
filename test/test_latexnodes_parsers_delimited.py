@@ -265,14 +265,17 @@ def helper_make_log_calls_expression_parser_info_class(BaseClass):
             d['make_content_parser'] = True
             return super(LogDEPInfo, self).make_content_parser(latex_walker, token_reader)
 
-        def make_group_node_parsing_state_delta(self, latex_walker, token_reader,
-                                           nodelist, parsing_state_delta):
-            node, parsing_state_delta = super(LogDEPInfo, self).make_group_node_parsing_state_delta(
-                latex_walker, token_reader,
-                nodelist, parsing_state_delta
-            )
-            d['make_group_node_parsing_state_delta'] = {'node': node,
-                                                   'parsing_state_delta': parsing_state_delta}
+        def make_group_node_and_parsing_state_delta(self, latex_walker, token_reader,
+                                                    nodelist, parsing_state_delta):
+            node, parsing_state_delta = \
+                super(LogDEPInfo, self).make_group_node_and_parsing_state_delta(
+                    latex_walker, token_reader,
+                    nodelist, parsing_state_delta
+                )
+            d['make_group_node_and_parsing_state_delta'] = {
+                'node': node,
+                'parsing_state_delta': parsing_state_delta
+            }
             return node, parsing_state_delta
 
     return LogDEPInfo, d
@@ -298,7 +301,8 @@ class TestLatexDelimitedExpressionParser(unittest.TestCase):
             delimited_expression_parser_info_class=LogDEPInfo,
         )
 
-        thenodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        thenodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr,
+                                                         parsing_state=ps)
 
         self.assertTrue(d['get_group_parsing_state'])
         self.assertEqual(d['is_opening_delimiter']['first_token'].arg, '<')
@@ -308,7 +312,7 @@ class TestLatexDelimitedExpressionParser(unittest.TestCase):
                          d['stop_token_condition']['token'])
         self.assertTrue(d['make_child_parsing_state']['node_class_is_group_node'])
         self.assertTrue(d['make_content_parser'])
-        self.assertTrue(d['make_group_node_parsing_state_delta']['node'].isNodeType(
+        self.assertTrue(d['make_group_node_and_parsing_state_delta']['node'].isNodeType(
             LatexGroupNode
         ))
 
