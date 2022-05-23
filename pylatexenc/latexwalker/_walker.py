@@ -538,6 +538,20 @@ class LatexWalker(latexnodes.LatexWalkerBase):
             logger.debug("New node: %r", node)
         return node
 
+    def make_nodelist(self, nodelist, **kwargs):
+        r"""
+        .............................
+
+        .. versionadded:: 3.0
+        
+           This method was introduced in `pylatexenc 3.0`.
+
+        """
+
+        # mandatory keyword-only argument:
+        parsing_state = kwargs.pop('parsing_state')
+
+        return LatexNodeList(nodelist=nodelist, parsing_state=parsing_state, **kwargs)
 
     def pos_to_lineno_colno(self, pos, as_dict=False):
         r"""

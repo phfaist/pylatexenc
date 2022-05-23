@@ -35,6 +35,9 @@ class DummyWalker(LatexWalkerBase):
     def make_node(self, node_class, **kwargs):
         return node_class(**kwargs)
 
+    def make_nodelist(self, nodelist, **kwargs):
+        return LatexNodeList(nodelist=nodelist, **kwargs)
+
     def make_nodes_collector(self,
                              token_reader,
                              parsing_state,

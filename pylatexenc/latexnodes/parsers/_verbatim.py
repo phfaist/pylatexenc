@@ -236,7 +236,7 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
         nodes = latex_walker.make_node(
             LatexGroupNode,
             delimiters=verbatim_info.parsed_delimiters,
-            nodelist=LatexNodeList([verbatim_node]),
+            nodelist=latex_walker.make_nodelist([verbatim_node]),
             pos=verbatim_info.original_pos,
             pos_end=verbatim_node.pos_end + len(verbatim_info.parsed_delimiters[1]),
             parsing_state=parsing_state
@@ -290,7 +290,7 @@ class LatexVerbatimEnvironmentContentsParser(LatexVerbatimBaseParser):
             self.read_verbatim_content(latex_walker, token_reader, parsing_state,
                                        verbatim_info, **kwargs)
 
-        nodes = LatexNodeList([ verbatim_chars_node ])
+        nodes = latex_walker.make_nodelist([ verbatim_chars_node ])
 
         # the pos_end of the environment node itself will use the current
         # token_reader position, which is set correctly at this point.

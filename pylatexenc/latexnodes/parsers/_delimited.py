@@ -713,7 +713,7 @@ class LatexDelimitedExpressionParser(LatexParserBase):
             # raise a parse error
             raise LatexWalkerNodesParseError(
                 msg=e.msg,
-                recovery_nodes=nodes.LatexNodeList([]),
+                recovery_nodes=latex_walker.make_nodelist([]),
                 recovery_at_token=recovery_token,
                 error_type_info={
                     'what': 'nodes_delimited_expected_opening_delimiter_not_found',

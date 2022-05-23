@@ -128,7 +128,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
             # chars marker is simply not present.
             if self.return_none_instead_of_empty:
                 return None, None
-            return LatexNodeList([]), None
+            return latex_walker.make_nodelist([]), None
 
         nodes = []
         if self.include_chars_node_before_following_arg:
@@ -153,7 +153,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
 
             nodes += following_nodes
 
-        nodes = LatexNodeList(nodes)
+        nodes = latex_walker.make_nodelist(nodes)
 
         return nodes, parsing_state_delta
         

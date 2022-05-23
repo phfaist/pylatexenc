@@ -46,6 +46,9 @@ class LatexWalkerBase(object):
     def make_node(self, node_class, **kwargs):
         raise RuntimeError("LatexWalkerBase subclasses must reimplement make_node()")
 
+    def make_nodelist(self, nodelist, **kwargs):
+        raise RuntimeError("LatexWalkerBase subclasses must reimplement make_nodelist()")
+
     def make_nodes_collector(self,
                              token_reader,
                              parsing_state,

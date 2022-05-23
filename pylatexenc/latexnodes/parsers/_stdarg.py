@@ -414,7 +414,7 @@ class _CommaSepContentCustomParser(LatexParserBase):
                         self.current_parsing_state
                     )
 
-        final_node_list = LatexNodeList(
+        final_node_list = latex_walker.make_nodelist(
             self.comma_sep_arg_list,
             pos=self.pos_start,
             pos_end=self.last_element_pos_end,

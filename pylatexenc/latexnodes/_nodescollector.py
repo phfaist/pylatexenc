@@ -143,7 +143,7 @@ class LatexNodesCollector(object):
         if not self._finalized:
             raise RuntimeError("Call to get_final_nodelist() before finalize()")
 
-        return LatexNodeList(
+        return self.latex_walker.make_nodelist(
             nodelist=self._nodelist,
             parsing_state=self.start_parsing_state,
         )

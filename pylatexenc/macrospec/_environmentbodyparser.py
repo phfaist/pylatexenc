@@ -99,7 +99,10 @@ class LatexEnvironmentBodyContentsParserInfo(LatexDelimitedExpressionParserInfo)
 
         if nodelist is None:
             logger.warning("environment body contents parser: parsed nodelist is None")
-            nodelist = nodes.LatexNodeList([])
+            nodelist = latex_walker.make_nodelist(
+                nodelist=[],
+                parsing_state=self.contents_parsing_state
+            )
 
         # just return the LatexNodeList instance
         return nodelist, parsing_state_delta

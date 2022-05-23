@@ -95,7 +95,7 @@ class LatexExpressionParser(LatexParserBase):
 
             if not exprnodes:
                 # happens when end of stream is reached
-                thenodelist = LatexNodeList(
+                thenodelist = latex_walker.make_nodelist(
                     [],
                     pos=token_reader.cur_pos(),
                     pos_end=token_reader.cur_pos()
@@ -104,9 +104,7 @@ class LatexExpressionParser(LatexParserBase):
                 thenodelist = exprnodes[0]
             else:
                 # determine (pos,len) automatically please...
-                expr_nodelist = LatexNodeList(exprnodes)
-                # pos, pos_end = _update_posposend_from_nodelist(pos=None, pos_end=None,
-                #                                                nodelist=exprnodes)
+                expr_nodelist = latex_walker.make_nodelist(exprnodes)
 
                 thenodelist = latex_walker.make_node(
                     LatexGroupNode,
