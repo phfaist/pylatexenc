@@ -133,7 +133,7 @@ class _SpecBase(CallableSpecBase):
         the base class :py:class:`_SpecBase` for consistency with the other
         `make_**_parsing_state_delta()` methods.  This base class
         implementation, if no custom body parsing state delta function is set in
-        the constructor, relies on `self.is_math_mode` being available!
+        the constructor, relies on `self.body_parsing_state_delta` being available!
 
         Note: `arg_parsing_state_delta` is always `None` (unless you actually
         went ahead and replaced the the `arguments_parser` attribute, which is a
@@ -281,22 +281,27 @@ class EnvironmentSpec(_SpecBase):
         make_body_parser = kwargs.pop('make_body_parser', None)
         body_parsing_state_delta = kwargs.pop('body_parsing_state_delta', None)
 
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
         is_math_mode = kwargs.pop('is_math_mode', None) # obsolete !
-
-        if body_parsing_state_delta is None and is_math_mode is not None:
-            if is_math_mode:
-                body_parsing_state_delta = ParsingStateDeltaEnterMathMode()
-            else:
-                body_parsing_state_delta = ParsingStateDeltaLeaveMathMode()
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
         super(EnvironmentSpec, self).__init__(
             arguments_spec_list=arguments_spec_list,
             **kwargs
         )
 
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+        self.is_math_mode = is_math_mode
+        if is_math_mode:
+            if body_parsing_state_delta is None:
+                body_parsing_state_delta = ParsingStateDeltaEnterMathMode()
+            else:
+                raise ValueError("You cannot specify both is_math_mode= and "
+                                 "body_parsing_state_delta=")
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
         self.environmentname = environmentname
         self.body_parsing_state_delta = body_parsing_state_delta
-        self.is_math_mode = is_math_mode
         self._fn_make_body_parser = make_body_parser
 
     def get_node_parser(self, token):
