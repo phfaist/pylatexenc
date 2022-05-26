@@ -61,7 +61,8 @@ from ._callablespecbase import (
 )
 
 from ._walkerbase import (
-    LatexWalkerBase
+    LatexWalkerParsingStateEventHandler,
+    LatexWalkerBase,
 )
 
 from ._latexcontextdbbase import (
