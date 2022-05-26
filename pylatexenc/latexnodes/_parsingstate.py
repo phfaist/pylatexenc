@@ -407,9 +407,15 @@ class ParsingState(object):
         """
 
         attrs = self.get_fields()
-        attrs.update(kwargs)
+        kwargs2 = {
+            k: v
+            for k, v in kwargs.items()
+            if v != attrs[k]
+        }
 
-        p = self.__class__(_parent_parsing_state_info=(self, kwargs),
+        attrs.update(kwargs2)
+
+        p = self.__class__(_parent_parsing_state_info=(self, kwargs2),
                            **attrs)
 
         logger.debug("sub_context(%r): %r --> %r", kwargs, self, p)
