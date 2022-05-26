@@ -34,7 +34,10 @@ logger = logging.getLogger(__name__)
 
 from .._exctypes import *
 from .. import nodes
-from .._parsingstatedelta import get_updated_parsing_state_from_delta
+from .._parsingstatedelta import (
+    ParsingStateDeltaEnterMathMode,
+    get_updated_parsing_state_from_delta,
+)
 
 from ._generalnodes import LatexGeneralNodesParser
 from ._delimited import (
@@ -104,10 +107,11 @@ class LatexMathParserInfo(LatexDelimitedExpressionParserInfo):
 
         self.math_parsing_state = get_updated_parsing_state_from_delta(
             self.parsing_state,
-            self.latex_walker.parsing_state_deltas_provider.enter_math_mode(
+            ParsingStateDeltaEnterMathMode(
                 math_mode_delimiter=self.math_mode_delimiter,
                 trigger_token=self.first_token
-            )
+            ),
+            self.latex_walker,
         )
 
         self.contents_parsing_state = self.math_parsing_state

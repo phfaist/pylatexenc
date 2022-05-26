@@ -34,6 +34,8 @@ logger = logging.getLogger(__name__)
 
 from ..latexnodes import (
     CallableSpecBase,
+    ParsingStateDeltaEnterMathMode,
+    ParsingStateDeltaLeaveMathMode,
 )
 
 from ._argumentsparser import LatexArgumentsParser, LatexNoArgumentsParser
@@ -149,11 +151,11 @@ class _SpecBase(CallableSpecBase):
 
         if self.is_math_mode is not None:
             if self.is_math_mode:
-                return latex_walker.parsing_state_deltas_provider.enter_math_mode(
+                return ParsingStateDeltaEnterMathMode(
                     trigger_token=token
                 )
             else:
-                return latex_walker.parsing_state_deltas_provider.leave_math_mode(
+                return ParsingStateDeltaLeaveMathMode(
                     trigger_token=token
                 )
 

@@ -641,7 +641,7 @@ class ParsingStateDeltaExtendLatexContextDb(ParsingStateDelta):
         self.extend_latex_context = extend_latex_context
         self._fields = ('extend_latex_context', 'set_attributes',)
 
-    def get_updated_parsing_state(self, parsing_state):
+    def get_updated_parsing_state(self, parsing_state, latex_walker):
 
         if self.extend_latex_context:
             if self.set_attributes:

@@ -334,8 +334,10 @@ class LatexNodesCollector(object):
         if parsing_state_delta is not None:
             ps = self.parsing_state
 
-            self.parsing_state = \
-                parsing_state_delta.get_updated_parsing_state(self.parsing_state)
+            self.parsing_state = parsing_state_delta.get_updated_parsing_state(
+                self.parsing_state,
+                self.latex_walker
+            )
 
             logger.debug("Updated parsing state using parsing_state_delta %r: %r →→→ %r",
                          parsing_state_delta, ps, self.parsing_state)

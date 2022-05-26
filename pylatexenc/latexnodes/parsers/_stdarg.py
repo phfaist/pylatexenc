@@ -92,6 +92,9 @@ class LatexStandardArgumentParser(LatexParserBase):
     optional star, as well as more advanced macro argument constructs.
 
     .................
+
+    FIXME: remove `is_math_mode` in favor of a custom parsing state delta in the
+    `LatexArgumentSpec`.
     """
 
     def __init__(self,
@@ -411,7 +414,8 @@ class _CommaSepContentCustomParser(LatexParserBase):
                 # merge any carry over info into the current parsing state
                 self.current_parsing_state = \
                     self.parsing_state_delta.get_updated_parsing_state(
-                        self.current_parsing_state
+                        self.current_parsing_state,
+                        latex_walker
                     )
 
         final_node_list = latex_walker.make_nodelist(

@@ -39,7 +39,9 @@ from ._parsingstate import (
 from ._parsingstatedelta import (
     ParsingStateDelta,
     ParsingStateDeltaReplaceParsingState,
-    WalkerEventsParsingStateDeltasProvider,
+    ParsingStateDeltaWalkerEvent,
+    ParsingStateDeltaEnterMathMode,
+    ParsingStateDeltaLeaveMathMode,
     get_updated_parsing_state_from_delta,
 )
 from ._parsedargs import (

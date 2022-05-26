@@ -29,15 +29,36 @@
 
 from __future__ import print_function, unicode_literals
 
-from ._parsingstatedelta import WalkerEventsParsingStateDeltasProvider
+from ._parsingstatedelta import ParsingStateDelta
+
+
+
+class LatexWalkerParsingStateEventHandler(object):
+
+    def enter_math_mode(self, math_mode_delimiter=None, trigger_token=None):
+        return ParsingStateDelta(
+            set_attributes=dict(
+                in_math_mode=True,
+                math_mode_delimiter=math_mode_delimiter
+            )
+        )
+
+    def leave_math_mode(self, trigger_token=None):
+        return ParsingStateDelta(
+            set_attributes=dict(
+                in_math_mode=False,
+                math_mode_delimiter=None
+            )
+        )
+
+
+_default_parsing_state_event_handler = LatexWalkerParsingStateEventHandler()
 
 
 class LatexWalkerBase(object):
-    def __init__(self, parsing_state_deltas_provider=None, **kwargs):
-        super(LatexWalkerBase, self).__init__(**kwargs)
-        if parsing_state_deltas_provider is None:
-            parsing_state_deltas_provider = WalkerEventsParsingStateDeltasProvider()
-        self.parsing_state_deltas_provider = parsing_state_deltas_provider
+
+    def parsing_state_event_handler(self):
+        return _default_parsing_state_event_handler
 
     def parse_content(self, parser, token_reader=None, parsing_state=None,
                       open_context=None, **kwargs):

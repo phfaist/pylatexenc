@@ -73,7 +73,7 @@ class ParsingStateDelta(object):
             + ")"
         )
 
-    def get_updated_parsing_state(self, parsing_state):
+    def get_updated_parsing_state(self, parsing_state, latex_walker):
         r"""
         Apply any required changes to the given `parsing_state` and return a new
         parsing state that reflects all the necessary changes.
@@ -101,49 +101,60 @@ class ParsingStateDeltaReplaceParsingState(ParsingStateDelta):
         self.set_parsing_state = set_parsing_state
         self._fields = ('set_parsing_state',)
 
-    def get_updated_parsing_state(self, parsing_state):
+    def get_updated_parsing_state(self, parsing_state, latex_walker):
         if self.set_parsing_state is not None:
             return self.set_parsing_state
         return parsing_state
 
 
+# ------------------------------------------------------------------------------
 
+#
+# parsing state delta's associated with walker events
+#
 
+class ParsingStateDeltaWalkerEvent(ParsingStateDelta):
+    def __init__(self, walker_event_name, walker_event_kwargs):
+        super().__init__()
+        self.walker_event_name = walker_event_name
+        self.walker_event_kwargs = walker_event_kwargs
+        self._fields = ('walker_event_name', 'walker_event_kwargs',)
+    
+    def get_updated_parsing_state(self, parsing_state, latex_walker):
+        handler = latex_walker.parsing_state_event_handler()
+        handler_fn = getattr(handler, self.walker_event_name)
+        parsing_state_delta = handler_fn(**self.walker_event_kwargs)
+        return get_updated_parsing_state_from_delta(
+            parsing_state,
+            parsing_state_delta,
+            latex_walker
+        )
 
-
-
-class WalkerEventsParsingStateDeltasProvider(object):
-
-    def enter_math_mode(self, math_mode_delimiter=None, trigger_token=None):
-        return ParsingStateDelta(
-            set_attributes=dict(
-                in_math_mode=True,
-                math_mode_delimiter=math_mode_delimiter
+class ParsingStateDeltaEnterMathMode(ParsingStateDeltaWalkerEvent):
+    def __init__(self, math_mode_delimiter=None, trigger_token=None):
+        super().__init__(
+            walker_event_name='enter_math_mode',
+            walker_event_kwargs=dict(
+                math_mode_delimiter=math_mode_delimiter,
+                trigger_token=trigger_token
             )
         )
 
-    def leave_math_mode(self, trigger_token=None):
-        return ParsingStateDelta(
-            set_attributes=dict(
-                in_math_mode=False,
-                math_mode_delimiter=None
+class ParsingStateDeltaLeaveMathMode(ParsingStateDeltaWalkerEvent):
+    def __init__(self, trigger_token=None):
+        super().__init__(
+            walker_event_name='leave_math_mode',
+            walker_event_kwargs=dict(
+                trigger_token=trigger_token
             )
         )
 
-    # def enter_group(self, latex_group_delimiter, parent_node, trigger_token,
-    # parsing_state):
-    #     return None
 
-    # ...def leave_group(self, latex_group_delimiter, parent_node, trigger_token,
-    # parsing_state):
-    #     ........
+# ------------------------------------------------------------------------------
 
-
-
-
-def get_updated_parsing_state_from_delta(parsing_state, parsing_state_delta):
+def get_updated_parsing_state_from_delta(parsing_state, parsing_state_delta, latex_walker):
     if parsing_state_delta is None:
         return parsing_state
-    return parsing_state_delta.get_updated_parsing_state(parsing_state)
+    return parsing_state_delta.get_updated_parsing_state(parsing_state, latex_walker)
 
 

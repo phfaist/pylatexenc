@@ -76,7 +76,8 @@ class _LatexCallableParserBase(LatexParserBase):
             self.make_arguments_parsing_state_delta(
                 token=self.token_call,
                 latex_walker=latex_walker,
-            )
+            ),
+            latex_walker,
         )
 
         nodeargd, parsing_state_delta = latex_walker.parse_content(
@@ -242,7 +243,8 @@ class LatexEnvironmentCallParser(_LatexCallableParserBase):
                 nodeargd=nodeargd,
                 arg_parsing_state_delta=arg_parsing_state_delta,
                 latex_walker=latex_walker,
-            )
+            ),
+            latex_walker,
         )
 
         return parser, body_parsing_state
