@@ -36,7 +36,11 @@ from ._exctypes import *
 from .nodes import *
 
 
-from ._parsingstatedelta import ParsingStateDeltaReplaceParsingState
+from ._parsingstatedelta import (
+    ParsingStateDeltaReplaceParsingState,
+    ParsingStateDeltaEnterMathMode,
+    get_updated_parsing_state_from_delta,
+)
 
 
 class LatexNodesCollector(object):
@@ -914,9 +918,13 @@ class LatexNodesCollector(object):
 
         self.token_reader.move_to_token(tok, rewind_pre_space=False)
 
-        math_parsing_state = self.parsing_state.sub_context(
-            in_math_mode=True,
-            math_mode_delimiter=tok.arg
+        math_parsing_state = get_updated_parsing_state_from_delta(
+            self.parsing_state,
+            ParsingStateDeltaEnterMathMode(
+                math_mode_delimiter=tok.arg,
+                trigger_token=tok,
+            ),
+            self.latex_walker,
         )
 
         # a math inline or display environment
