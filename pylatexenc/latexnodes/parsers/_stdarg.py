@@ -422,6 +422,7 @@ class _CommaSepContentCustomParser(LatexParserBase):
             self.comma_sep_arg_list,
             pos=self.pos_start,
             pos_end=self.last_element_pos_end,
+            parsing_state=parsing_state,
         )
 
         return final_node_list, self.parsing_state_delta
