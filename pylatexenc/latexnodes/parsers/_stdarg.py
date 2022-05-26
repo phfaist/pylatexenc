@@ -101,9 +101,9 @@ class LatexStandardArgumentParser(LatexParserBase):
                  arg_spec='{',
                  include_skipped_comments=True,
                  expression_single_token_requiring_arg_is_error=True,
-                 is_math_mode=None,
+                 #is_math_mode=None,
                  allow_pre_space=True,
-                 set_arg_parsing_state_kwargs=None,
+                 #set_arg_parsing_state_kwargs=None,
                  **kwargs
                  ):
         super(LatexStandardArgumentParser, self).__init__(**kwargs)
@@ -113,23 +113,23 @@ class LatexStandardArgumentParser(LatexParserBase):
         self.include_skipped_comments = include_skipped_comments
         self.expression_single_token_requiring_arg_is_error = \
             expression_single_token_requiring_arg_is_error
-        self.is_math_mode = is_math_mode
+        #self.is_math_mode = is_math_mode
         self.allow_pre_space = allow_pre_space
-        self.set_arg_parsing_state_kwargs = set_arg_parsing_state_kwargs
+        #self.set_arg_parsing_state_kwargs = set_arg_parsing_state_kwargs
 
-        self._arg_parsing_state_kwargs = None
+        #self._arg_parsing_state_kwargs = None
         self._arg_parser = None
 
 
-    def get_arg_parsing_state_kwargs(self):
+    # def get_arg_parsing_state_kwargs(self):
 
-        arg_parsing_state_kwargs = {}
-        if self.is_math_mode is not None:
-            arg_parsing_state_kwargs['in_math_mode'] = self.is_math_mode
-        if self.set_arg_parsing_state_kwargs:
-            arg_parsing_state_kwargs.update(self.set_arg_parsing_state_kwargs)
+    #     arg_parsing_state_kwargs = {}
+    #     if self.is_math_mode is not None:
+    #         arg_parsing_state_kwargs['in_math_mode'] = self.is_math_mode
+    #     if self.set_arg_parsing_state_kwargs:
+    #         arg_parsing_state_kwargs.update(self.set_arg_parsing_state_kwargs)
 
-        return arg_parsing_state_kwargs
+    #     return arg_parsing_state_kwargs
 
 
     def get_arg_parser_instance(self, arg_spec):
@@ -218,25 +218,25 @@ class LatexStandardArgumentParser(LatexParserBase):
 
     def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
 
-        if self._arg_parsing_state_kwargs is None:
-            self._arg_parsing_state_kwargs = self.get_arg_parsing_state_kwargs()
+        # if self._arg_parsing_state_kwargs is None:
+        #     self._arg_parsing_state_kwargs = self.get_arg_parsing_state_kwargs()
         if self._arg_parser is None:
             self._arg_parser = self.get_arg_parser_instance(self.arg_spec)
 
-        arg_parsing_state = parsing_state
+        # arg_parsing_state = parsing_state
 
-        if self._arg_parsing_state_kwargs:
-            arg_parsing_state = parsing_state.sub_context(
-                **self._arg_parsing_state_kwargs
-            )
-            logger.debug("Argument parsing state: %r", arg_parsing_state)
+        # if self._arg_parsing_state_kwargs:
+        #     arg_parsing_state = parsing_state.sub_context(
+        #         **self._arg_parsing_state_kwargs
+        #     )
+        #     logger.debug("Argument parsing state: %r", arg_parsing_state)
 
         arg_parser = self._arg_parser
 
         nodes, parsing_state_delta = latex_walker.parse_content(
             arg_parser,
             token_reader=token_reader,
-            parsing_state=arg_parsing_state,
+            parsing_state=parsing_state, #arg_parsing_state
             **kwargs
         )
 

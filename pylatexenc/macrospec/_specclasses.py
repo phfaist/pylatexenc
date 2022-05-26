@@ -59,7 +59,8 @@ _legacy_pyltxenc2_do = lambda *args: None
 
 
 class _SpecBase(CallableSpecBase):
-    def __init__(self, arguments_spec_list=None,
+    def __init__(self,
+                 arguments_spec_list=None,
                  make_arguments_parsing_state_delta=None,
                  make_body_parsing_state_delta=None,
                  make_after_parsing_state_delta=None,
@@ -268,6 +269,9 @@ class EnvironmentSpec(_SpecBase):
        instead of `None`.  Since `pylatexenc 3`, setting this field to `False`
        indicates that the environment content is expressedly text/non-math
        mode.)
+
+       ..... ******** FIXME: DEPRECATE THIS ATTRIBUTE in favor of an argument of
+             the type body_parsing_state_delta=...
 
     .. note::
 

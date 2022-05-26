@@ -35,6 +35,7 @@ from ..latexnodes.parsers import get_standard_argument_parser, LatexParserBase
 
 from ..latexnodes import (
     ParsedMacroArgs,
+    get_updated_parsing_state_from_delta,
 )
 
 
@@ -79,8 +80,13 @@ class LatexArgumentSpec(object):
 
        (TODO: Still need good lookup functions in :py:class:`ParsedMacroArgs`,
        etc.)
+
+    .. py:attribute:: parsing_state_delta
+
+       Specify if this argument should be parsed with a specifically altered
+       parsing state (e.g., if the argument should be parsed in math mode).
     """
-    def __init__(self, parser, argname=None):
+    def __init__(self, parser, argname=None, parsing_state_delta=None):
 
         self.parser = parser
 
@@ -91,6 +97,7 @@ class LatexArgumentSpec(object):
 
         self.argname = argname
 
+        self.parsing_state_delta = parsing_state_delta
 
     def __repr__(self):
         return "{cls}(argname={argname!r}, parser={parser!r})".format(
@@ -100,14 +107,21 @@ class LatexArgumentSpec(object):
         )
 
     def to_json_object(self):
+        d = dict(
+            parser=self.parser,
+            parsing_state_delta=self.parsing_state_delta,
+        )
         if self.argname:
-            return dict(argname=self.argname, parser=self.parser)
-        return dict(parser=self.parser)
+            d.update(
+                argname=self.argname,
+            )
+        return d
         
     def __eq__(self, other):
         return (
             self.parser == other.parser
             and self.argname == other.argname
+            and self.parsing_state_delta == other.parsing_state_delta
         )
 
 
@@ -199,10 +213,16 @@ class LatexArgumentsParser(LatexParserBase):
             peeked_token = token_reader.peek_token_or_none(parsing_state=parsing_state)
 
             arg_node_parser = arg.arg_node_parser
+            arg_parsing_state = get_updated_parsing_state_from_delta(
+                parsing_state,
+                arg.parsing_state_delta,
+                latex_walker
+            )
+                
             argnodes, parsing_state_delta = latex_walker.parse_content(
                 arg_node_parser,
                 token_reader,
-                parsing_state,
+                arg_parsing_state,
                 open_context=(
                     "Argument {}".format(argj),
                     peeked_token

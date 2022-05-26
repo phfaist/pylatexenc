@@ -115,7 +115,7 @@ class ParsingStateDeltaReplaceParsingState(ParsingStateDelta):
 
 class ParsingStateDeltaWalkerEvent(ParsingStateDelta):
     def __init__(self, walker_event_name, walker_event_kwargs):
-        super().__init__()
+        super(ParsingStateDeltaWalkerEvent, self).__init__()
         self.walker_event_name = walker_event_name
         self.walker_event_kwargs = walker_event_kwargs
         self._fields = ('walker_event_name', 'walker_event_kwargs',)
@@ -132,7 +132,7 @@ class ParsingStateDeltaWalkerEvent(ParsingStateDelta):
 
 class ParsingStateDeltaEnterMathMode(ParsingStateDeltaWalkerEvent):
     def __init__(self, math_mode_delimiter=None, trigger_token=None):
-        super().__init__(
+        super(ParsingStateDeltaEnterMathMode, self).__init__(
             walker_event_name='enter_math_mode',
             walker_event_kwargs=dict(
                 math_mode_delimiter=math_mode_delimiter,
@@ -142,7 +142,7 @@ class ParsingStateDeltaEnterMathMode(ParsingStateDeltaWalkerEvent):
 
 class ParsingStateDeltaLeaveMathMode(ParsingStateDeltaWalkerEvent):
     def __init__(self, trigger_token=None):
-        super().__init__(
+        super(ParsingStateDeltaLeaveMathMode, self).__init__(
             walker_event_name='leave_math_mode',
             walker_event_kwargs=dict(
                 trigger_token=trigger_token
