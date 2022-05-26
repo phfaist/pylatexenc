@@ -43,24 +43,33 @@ if sys.version_info.major == 2:
 
 
 
-class _StrictAsciiAlphaChars(object):
-    def __str__(self):
-        return "".join([
-            chr(ord('a')+j) for j in range(26)
-        ]) + "".join([
-            chr(ord('A')+j) for j in range(26)
-        ])
-    def __repr__(self):
-        return repr(self.__str__())
-    def __contains__(self, c):
-        n = ord(c)
-        return (
-            (97 <= n <= 122)  # 97 == ord('a'), 122 == ord('z')
-            or
-            (65 <= n <= 90) # 65, 90 == ord('A'), ord('Z')
-        )
-    def to_json_object(self):
-        return self.__str__()
+# class _StrictAsciiAlphaChars(object):
+#     def __str__(self):
+#         return "".join([
+#             chr(ord('a')+j) for j in range(26)
+#         ]) + "".join([
+#             chr(ord('A')+j) for j in range(26)
+#         ])
+#     def __repr__(self):
+#         return repr(self.__str__())
+#     def __contains__(self, c):
+#         n = ord(c)
+#         return (
+#             (97 <= n <= 122)  # 97 == ord('a'), 122 == ord('z')
+#             or
+#             (65 <= n <= 90) # 65, 90 == ord('A'), ord('Z')
+#         )
+#     def to_json_object(self):
+#         return self.__str__()
+
+# allowed macro chars by default: [a-zA-Z]
+_default_macro_alpha_chars = (
+    "".join([
+        chr(ord('a')+j) for j in range(26)
+    ]) + "".join([
+        chr(ord('A')+j) for j in range(26)
+    ])
+)
 
 
 ### BEGINPATCH_UNIQUE_OBJECT_ID
@@ -193,81 +202,134 @@ class ParsingState(object):
        `enable_environments`, `enable_comments`, `macro_alpha_chars`, and
        `forbidden_characters` were introduced in version 3.
     """
+
+    _fields = (
+        's',
+        'latex_context',
+        'in_math_mode',
+        'math_mode_delimiter',
+        'latex_group_delimiters',
+        'latex_inline_math_delimiters',
+        'latex_display_math_delimiters',
+        'enable_double_newline_paragraphs',
+        'enable_macros',
+        'enable_environments',
+        'enable_comments',
+        'enable_groups',
+        'enable_specials',
+        'enable_math',
+        'macro_alpha_chars',
+        'macro_escape_char',
+        'comment_char',
+        'forbidden_characters',
+    )
+
     def __init__(self, **kwargs):
         super(ParsingState, self).__init__()
 
-        self.s = None
+        # (parent state object, changed kwargs)
+        self._parent_parsing_state_info = \
+            kwargs.pop('_parent_parsing_state_info', (None, {}))
 
-        self.latex_context = None
+        self.set_fields(**kwargs)
 
-        self.in_math_mode = False
-        self.math_mode_delimiter = None
+        self.finalize_state()
 
-        # new in pylatexenc 3
-        self.latex_group_delimiters = [ ('{', '}'), ] # must be single characters!
-        self.latex_inline_math_delimiters = [ ('$', '$'), (r'\(', r'\)'), ]
-        self.latex_display_math_delimiters = [ ('$$', '$$'), (r'\[', r'\]'), ]
-        self.enable_double_newline_paragraphs = True
-        self.enable_macros = True
-        self.enable_environments = True
-        self.enable_comments = True
-        self.enable_groups = True
-        self.enable_specials = True
-        self.enable_math = True
-        self.macro_alpha_chars = _StrictAsciiAlphaChars()
+
+    def set_fields(self,
+                   s=None,
+                   latex_context=None,
+                   in_math_mode=False,
+                   math_mode_delimiter=None,
+                   latex_group_delimiters=None,
+                   latex_inline_math_delimiters=None,
+                   latex_display_math_delimiters=None,
+                   enable_double_newline_paragraphs=True,
+                   enable_macros=True,
+                   enable_environments=True,
+                   enable_comments=True,
+                   enable_groups=True,
+                   enable_specials=True,
+                   enable_math=True,
+                   macro_alpha_chars=_default_macro_alpha_chars,
+                   macro_escape_char='\\',
+                   comment_char='%',
+                   forbidden_characters='',
+                   ):
+
+        self.s = s
+
+        self.latex_context = latex_context
+
+        self.in_math_mode = in_math_mode
+        self.math_mode_delimiter = math_mode_delimiter
+
+        if not self.in_math_mode and self.math_mode_delimiter:
+            self.math_mode_delimiter = None
+            logger.warning(
+                "ParsingState: You set math_mode_delimiter=%r but "
+                "in_math_mode is False", self.math_mode_delimiter
+            )
+
+        # new fields in pylatexenc 3
+
+        self.latex_group_delimiters = (
+            latex_group_delimiters if latex_group_delimiters is not None else
+            [ ('{', '}'), ] # must be single characters!
+        )
+
+        self.latex_inline_math_delimiters = (
+            latex_inline_math_delimiters if latex_inline_math_delimiters is not None else
+            [ ('$', '$'), (r'\(', r'\)'), ]
+        )
+        self.latex_display_math_delimiters = (
+            latex_display_math_delimiters if latex_display_math_delimiters is not None else
+            [ ('$$', '$$'), (r'\[', r'\]'), ]
+        )
+        self.enable_double_newline_paragraphs = enable_double_newline_paragraphs
+        self.enable_macros = enable_macros
+        self.enable_environments = enable_environments
+        self.enable_comments = enable_comments
+        self.enable_groups = enable_groups
+        self.enable_specials = enable_specials
+        self.enable_math = enable_math
+        self.macro_alpha_chars = macro_alpha_chars
 
         # !!! at various places in LatexTokenReader, both of these are assumed
         # !!! to be single characters.
-        self.macro_escape_char = '\\' # character that introduces a macro
-        self.comment_char = '%' # character that starts a comment
+        self.macro_escape_char = macro_escape_char # character that introduces a macro
+        self.comment_char = comment_char # character that starts a comment
 
-        self.forbidden_characters = ''
+        self.forbidden_characters = forbidden_characters
 
-        # set internally by the other fields by _set_fields()
-        self._latex_group_delimchars_by_open = {}
-        self._latex_group_delimchars_close = frozenset()
-        #
-        self._math_delims_info_startchars = ''
-        #self._math_delims_by_len = []
-        self._math_all_delims_by_len = frozenset()
-        self._math_delims_info_by_open = {}
-        self._math_delims_close = frozenset()
-        self._math_expecting_close_delim_info = None
 
-        self._fields = (
-            's',
-            'latex_context', 'in_math_mode', 'math_mode_delimiter',
-            'latex_group_delimiters',
-            'latex_inline_math_delimiters', 'latex_display_math_delimiters',
-            'enable_double_newline_paragraphs',
-            'enable_macros',
-            'enable_environments',
-            'enable_comments',
-            'enable_groups',
-            'enable_specials',
-            'enable_math',
-            'macro_alpha_chars',
-            'macro_escape_char',
-            'comment_char',
-            'forbidden_characters',
-        )
+    def _finalize_state_latex_group_delimiters_info(self, parent, kwargs):
 
-        # Set by sub_context() & only used in repr() for now.
-        self._parent_parsing_state_info = (None, {}) # (parent state object, changed kwargs)
+        if parent is not None and 'latex_group_delimiters' not in kwargs:
+            # group delimiters were not changed from parent object, re-use
+            # cached values there
+            self._latex_group_delimchars_by_open = parent._latex_group_delimchars_by_open
+            self._latex_group_delimchars_close = parent._latex_group_delimchars_close
+            return
 
-        do_postprocess = kwargs.pop('_do_postprocess', True)
-
-        self._set_fields(kwargs, do_postprocess=do_postprocess)
-
-    def _set_derivative_fields(self):
-        #
-        # FIXME: DO NOT RECOMPUTE THESE FIELDS ALL THE TIME WHEN THE DELIMITER
-        # LISTS DO NOT CHANGE....
-        #
-        a, b = zip(*self.latex_group_delimiters)
+        # compute cached info for latex group delimiters --
+        a, b = zip(*self.latex_group_delimiters) # a = list of open delims, b = close delims
         self._latex_group_delimchars_by_open = dict(self.latex_group_delimiters)
         self._latex_group_delimchars_close = frozenset(b)
-        #
+
+
+    def _finalize_state_latex_math_delim_info(self, parent, kwargs):
+
+        if parent is not None \
+           and 'latex_inline_math_delimiters' not in kwargs \
+           and 'latex_display_math_delimiters' not in kwargs:
+            # relevant info not changed, reuse parent info
+            self._math_delims_info_startchars = parent._math_delims_info_startchars
+            self._math_all_delims_by_len = parent._math_all_delims_by_len
+            self._math_delims_info_by_open = parent._math_delims_info_by_open
+            self._math_delims_close = parent._math_delims_close
+            return
+
         self._math_delims_info_startchars = "".join([
             x[:1]
             for pair in (self.latex_inline_math_delimiters
@@ -286,12 +348,6 @@ class ParsingState(object):
             key=lambda x: len(x[0]),
             reverse=True,
         )
-        #print(f"{self._math_all_delims_by_len=}")
-        # self._math_delims_by_len = sorted(
-        #     self.latex_inline_math_delimiters + self.latex_display_math_delimiters,
-        #     key=lambda x: len(x[0]),
-        #     reverse=True,
-        # )
         self._math_delims_info_by_open = dict(
             [ (open_delim, dict(close_delim=close_delim, tok='mathmode_inline'))
               for open_delim, close_delim in self.latex_inline_math_delimiters ]
@@ -302,6 +358,16 @@ class ParsingState(object):
             info['close_delim']
             for opendelim,info in self._math_delims_info_by_open.items()
         ])
+        
+    def _finalize_state_inmathmode_info(self, parent, kwargs):
+
+        if parent is not None \
+           and 'in_math_mode' not in kwargs \
+           and 'math_mode_delimiter' not in kwargs:
+            # relevant info not changed, reuse parent info
+            self._math_expecting_close_delim_info = parent._math_expecting_close_delim_info
+            return
+
         if not self.in_math_mode:
             self._math_expecting_close_delim_info = None
         elif self.math_mode_delimiter in self._math_delims_info_by_open:
@@ -312,8 +378,18 @@ class ParsingState(object):
             # Normal, can happen in math environments delimited by
             # e.g. \begin{align}...\end{align}
             self._math_expecting_close_delim_info = None
+        
+
+    def finalize_state(self):
+
+        parent, kwargs = self._parent_parsing_state_info
+
+        self._finalize_state_latex_group_delimiters_info(parent, kwargs)
+        self._finalize_state_latex_math_delim_info(parent, kwargs)
+        self._finalize_state_inmathmode_info(parent, kwargs)
 
 
+    # ---
 
     def sub_context(self, **kwargs):
         r"""
@@ -329,14 +405,17 @@ class ParsingState(object):
         If no arguments are provided, this returns a copy of the present parsing
         context object.
         """
-        p = self.__class__(_do_postprocess=False, **self.get_fields())
 
-        # see constructor; currently this is only used in repr()
-        p._parent_parsing_state_info = (self, kwargs)
+        attrs = self.get_fields()
+        attrs.update(kwargs)
 
-        p._set_fields(kwargs)
+        p = self.__class__(_parent_parsing_state_info=(self, kwargs),
+                           **attrs)
+
+        logger.debug("sub_context(%r): %r --> %r", kwargs, self, p)
 
         return p
+
 
     def get_fields(self):
         r"""
@@ -345,41 +424,6 @@ class ParsingState(object):
         """
         return dict([(f, getattr(self, f)) for f in self._fields])
 
-
-    def _set_fields(self, kwargs, do_postprocess=True):
-
-        for k, v in kwargs.items():
-            if k not in self._fields:
-                raise ValueError("Invalid field for ParsingState: {}={!r}".format(k, v))
-            setattr(self, k, v)
-
-        if do_postprocess:
-            # Do some sanitization.  If we set in_math_mode=False, then we should
-            # clear any math_mode_delimiter.
-            self._sanitize(given_fields=kwargs)
-
-            #
-            # set internal preprocessed values
-            #
-            self._set_derivative_fields()
-
-
-    def _sanitize(self, given_fields):
-        """
-        Sanitize the parsing state.  E.g., clear any `math_mode_delimiter` if
-        `in_math_mode` is `False`.
-
-        The argument `given_fields` is what fields the user required to set;
-        this is used to generate warnings if incompatible field configurations
-        were explicitly required to be set.
-        """
-        if not self.in_math_mode and self.math_mode_delimiter:
-            self.math_mode_delimiter = None
-            if 'math_mode_delimiter' in given_fields:
-                logger.warning(
-                    "ParsingState: You set math_mode_delimiter=%r but "
-                    "in_math_mode is False", self.math_mode_delimiter
-                )
 
 
     def __repr__(self):

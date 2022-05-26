@@ -970,8 +970,10 @@ Also: {\itshape some italic text}.
             ], p, 33-24))
 
         p = latextext.find(r'ent and ') + 4 # points on second "and" on first line
-        nodes, pos, len_ = lw.get_latex_nodes(pos=p, read_max_nodes=5, parsing_state=parsing_state)
-        parsing_state_inner = nodes[3].nodelist[0].parsing_state # inner state -- math mode -- get this
+        nodes, pos, len_ = lw.get_latex_nodes(pos=p, read_max_nodes=5,
+                                              parsing_state=parsing_state)
+        # inner state -- math mode -- get this
+        parsing_state_inner = nodes[3].nodelist[0].parsing_state
         self.assertTrue(parsing_state_inner.in_math_mode)
         self.assertEqual(
             (nodes, pos, len_),
