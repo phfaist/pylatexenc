@@ -148,19 +148,8 @@ class _SpecBase(CallableSpecBase):
                 latex_walker=latex_walker,
             )
 
-        # default implementation checks the is_math_mode attribute
-
-        if self.is_math_mode is not None:
-            if self.is_math_mode:
-                return ParsingStateDeltaEnterMathMode(
-                    trigger_token=token
-                )
-            else:
-                return ParsingStateDeltaLeaveMathMode(
-                    trigger_token=token
-                )
-
-        return None
+        # default implementation checks the body_parsing_state_delta attribute
+        return self.body_parsing_state_delta
 
 
     def make_after_parsing_state_delta(self, parsed_node, latex_walker):
@@ -265,13 +254,16 @@ class EnvironmentSpec(_SpecBase):
        be `True` for environments like ``\begin{equation}``, ``\begin{align}``,
        etc., but is left to `None` for ``\begin{figure}``, etc.
 
-       (In `pylatexenc 2`, this field would be `False` for general environments
-       instead of `None`.  Since `pylatexenc 3`, setting this field to `False`
-       indicates that the environment content is expressedly text/non-math
-       mode.)
+       .. deprecated:: 3.0
 
-       ..... ******** FIXME: DEPRECATE THIS ATTRIBUTE in favor of an argument of
-             the type body_parsing_state_delta=...
+          The field `is_math_mode` was deprecated in `pylatexenc 3` in favor of
+          the field `body_parsing_state_delta`.  Instead of `is_math_mode=True`,
+          use `body_parsing_state_delta=ParsingStateDeltaEnterMathMode()`.
+
+    .. py:attribute:: body_parsing_state_delta
+
+       The parsing state changes that are set in order to parse the body
+       contents of the environment.
 
     .. note::
 
@@ -286,8 +278,16 @@ class EnvironmentSpec(_SpecBase):
     """
     def __init__(self, environmentname, arguments_spec_list=None, **kwargs):
 
-        is_math_mode = kwargs.pop('is_math_mode', False)
         make_body_parser = kwargs.pop('make_body_parser', None)
+        body_parsing_state_delta = kwargs.pop('body_parsing_state_delta', None)
+
+        is_math_mode = kwargs.pop('is_math_mode', None) # obsolete !
+
+        if body_parsing_state_delta is None and is_math_mode is not None:
+            if is_math_mode:
+                body_parsing_state_delta = ParsingStateDeltaEnterMathMode()
+            else:
+                body_parsing_state_delta = ParsingStateDeltaLeaveMathMode()
 
         super(EnvironmentSpec, self).__init__(
             arguments_spec_list=arguments_spec_list,
@@ -295,6 +295,7 @@ class EnvironmentSpec(_SpecBase):
         )
 
         self.environmentname = environmentname
+        self.body_parsing_state_delta = body_parsing_state_delta
         self.is_math_mode = is_math_mode
         self._fn_make_body_parser = make_body_parser
 
@@ -307,17 +308,6 @@ class EnvironmentSpec(_SpecBase):
         return LatexEnvironmentBodyContentsParser(
             environmentname=token.arg,
         )
-        # # can't cache parser instance outside class instance because the stop
-        # # condition depends on the environment name
-        # parser = LatexGeneralNodesParser(
-        #     stop_token_condition=self._parse_body_token_stop_condition,
-        #     handle_stop_condition_token=self._handle_stop_condition_token,
-        #     stop_condition_message=(
-        #         "Expected \\end{}{}{} after \\begin{}{}{}"
-        #         .format('{', self.environmentname, '}', '{', self.environmentname, '}')
-        #     ),
-        # )
-
 
 
 
