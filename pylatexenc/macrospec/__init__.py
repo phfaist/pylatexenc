@@ -48,7 +48,6 @@ from ._latexcontextdb import (
 )
 
 from ._argumentsparser import (
-    LatexArgumentSpec,
     LatexArgumentsParser
 )
 
@@ -64,7 +63,7 @@ from ._macrocallparser import (
 
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
-from ..latexnodes import ParsedMacroArgs
+from ..latexnodes import ParsedArguments as ParsedMacroArgs
 from ._pyltxenc2_argparsers import (
     MacroStandardArgsParser,
     ParsedVerbatimArgs,

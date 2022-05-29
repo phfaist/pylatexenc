@@ -43,6 +43,7 @@ from ..nodes import *
 from ..nodes import _update_posposend_from_nodelist
 
 from ._base import LatexParserBase
+from .._parsedargs import ParsedArguments
 from ._delimited import LatexDelimitedGroupParser
 
 
@@ -189,8 +190,10 @@ class LatexExpressionParser(LatexParserBase):
 
             mspec = parsing_state.latex_context.get_macro_spec(macroname)
 
-            self._check_if_requires_args(latex_walker, mspec, tok,
-                                         r"a single macro ‘\{}’".format(macroname))
+            parsed_arguments = self._check_if_requires_args(
+                latex_walker, mspec, tok,
+                r"a single macro ‘\{}’".format(macroname)
+            )
 
             return [
                 latex_walker.make_node(
@@ -198,7 +201,7 @@ class LatexExpressionParser(LatexParserBase):
                     parsing_state=parsing_state,
                     macroname=tok.arg,
                     spec=mspec,
-                    nodeargd=None,
+                    nodeargd=parsed_arguments,
                     macro_post_space=tok.post_space,
                     pos=tok.pos,
                     pos_end=tok.pos_end
@@ -209,8 +212,10 @@ class LatexExpressionParser(LatexParserBase):
 
             specialsspec = tok.arg
 
-            self._check_if_requires_args(latex_walker, specialsspec, tok,
-                                         r"specials ‘{}’".format(specialsspec.specials_chars))
+            parsed_arguments = self._check_if_requires_args(
+                latex_walker, specialsspec, tok,
+                r"specials ‘{}’".format(specialsspec.specials_chars)
+            )
 
             return [
                 latex_walker.make_node(
@@ -218,7 +223,7 @@ class LatexExpressionParser(LatexParserBase):
                     parsing_state=parsing_state,
                     specials_chars=specialsspec.specials_chars,
                     spec=specialsspec,
-                    nodeargd=None,
+                    nodeargd=parsed_arguments,
                     pos=tok.pos,
                     pos_end=tok.pos_end
                 )
@@ -364,3 +369,6 @@ class LatexExpressionParser(LatexParserBase):
                 if exc is not None:
                     raise exc
 
+                return None
+
+        return ParsedArguments()

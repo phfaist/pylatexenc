@@ -45,7 +45,8 @@ from ._parsingstatedelta import (
     get_updated_parsing_state_from_delta,
 )
 from ._parsedargs import (
-    ParsedMacroArgs
+    LatexArgumentSpec,
+    ParsedArguments,
 )
 
 from ._tokenreaderbase import (

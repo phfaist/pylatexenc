@@ -29,7 +29,8 @@
 
 from __future__ import print_function, unicode_literals
 
-from ._parsedargs import ParsedMacroArgs
+from ._exctypes import LatexWalkerParseError
+from ._parsedargs import ParsedArguments
 
 
 # for Py3
@@ -343,11 +344,11 @@ class LatexMacroNode(LatexNode):
 
     .. py:attribute:: nodeargd
 
-       The :py:class:`pylatexenc.macrospec.ParsedMacroArgs` object that
+       The :py:class:`pylatexenc.latexnodes.ParsedArguments` object that
        represents the macro arguments.
 
        For macros that do not accept any argument, this is an empty
-       :py:class:`~pylatexenc.macrospec.ParsedMacroArgs` instance.  The
+       :py:class:`~pylatexenc.latexnodes.ParsedArguments` instance.  The
        attribute `nodeargd` can be `None` even for macros that accept arguments,
        in the situation where :py:meth:`LatexWalker.get_latex_expression()`
        encounters the macro when reading a single expression.
@@ -389,7 +390,7 @@ class LatexMacroNode(LatexNode):
        :py:class:`LatexNode`.
     """
     def __init__(self, macroname, **kwargs):
-        nodeargd = kwargs.pop('nodeargd', ParsedMacroArgs())
+        nodeargd = kwargs.pop('nodeargd', ParsedArguments())
         macro_post_space = kwargs.pop('macro_post_space', '')
         spec = kwargs.pop('spec', None)
 
@@ -452,7 +453,7 @@ class LatexEnvironmentNode(LatexNode):
 
     .. py:attribute:: nodeargd
 
-       The :py:class:`pylatexenc.macrospec.ParsedMacroArgs` object that
+       The :py:class:`pylatexenc.latexnodes.ParsedArguments` object that
        represents the arguments passed to the environment.  These are arguments
        that are present after the ``\begin{xxxxxx}`` command, as in
        ``\begin{tabular}{ccc}`` or ``\begin{figure}[H]``.  Arguments must be
@@ -493,7 +494,7 @@ class LatexEnvironmentNode(LatexNode):
     """
     
     def __init__(self, environmentname, nodelist, **kwargs):
-        nodeargd = kwargs.pop('nodeargd', ParsedMacroArgs())
+        nodeargd = kwargs.pop('nodeargd', ParsedArguments())
         spec = kwargs.pop('spec', None)
         # # legacy:
         # optargs = kwargs.pop('optargs', [])
@@ -551,7 +552,7 @@ class LatexSpecialsNode(LatexNode):
        If the specials spec (cf. :py:class:`~pylatexenc.macrospec.SpecialsSpec`)
        has `args_parser=None` then the attribute `nodeargd` is set to `None`.
        If `args_parser` is specified in the spec, then the attribute `nodeargd`
-       is a :py:class:`pylatexenc.macrospec.ParsedMacroArgs` instance that 
+       is a :py:class:`pylatexenc.latexnodes.ParsedArguments` instance that 
        represents the arguments to the specials.
 
        The `nodeargd` attribute can also be `None` even if the specials expects
@@ -827,7 +828,6 @@ class LatexNodeList(object):
 
         return split_node_lists
         
-
 
 
     def __eq__(self, other):

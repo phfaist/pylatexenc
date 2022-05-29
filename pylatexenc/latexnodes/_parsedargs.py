@@ -42,28 +42,84 @@ if sys.version_info.major == 2:
 
 
 
+from ._exctypes import LatexWalkerParseError
 
 
 
-#
-# --- TODO: think of a more friendly way of accessing arguments ...
-#
-# class ParsedArgument(LatexNodeList):
-#     r"""
-#    
-#     """
-#
-#     ....
-#
-#     def get_main_node() -- skip comments, whitespace chars, etc.
-#
-#     def get_expression_contents() -- the node, or the group's contents, if it's a group
-#
-#
-#
 
 
-class ParsedMacroArgs(object):
+class LatexArgumentSpec(object):
+    r"""
+    Specify an argument accepted by a callable (a macro, an environment, or
+    specials).
+
+    .. py:attribute:: parser
+
+       The parser instance to use to parse an argument to this callable.
+
+       For the constructor you can also specify a string represending a standard
+       argument type, such as '{', '[', '*', or also some `xparse`-inspired
+       strings.  See
+       :py:class:`~pylatexenc.latexnodes.parsers.LatexStandardArgumentParser`.
+       In this case, a suitable parser is instanciated and stored in the
+       `parser` attribute.
+
+    .. py:attribute:: argname
+
+       A name for the argument (which can be `None`, if the argument is to be
+       referred to only by number).
+
+       The name can serve for easier argument lookups and can offer more
+       future-proof flexibility: E.g., while adding more optional arguments
+       renumbers all arguments, you can refer to them by name to avoid having to
+       update all references to argument numbers.
+
+       (TODO: Still need good lookup functions in :py:class:`ParsedArguments`,
+       etc.)
+
+    .. py:attribute:: parsing_state_delta
+
+       Specify if this argument should be parsed with a specifically altered
+       parsing state (e.g., if the argument should be parsed in math mode).
+
+    .. versionadded:: 3.0
+
+       This class was introduced in `pylatexenc 3`.
+    """
+    def __init__(self, parser, argname=None, parsing_state_delta=None):
+
+        self.parser = parser
+
+        self.argname = argname
+
+        self.parsing_state_delta = parsing_state_delta
+
+    def __repr__(self):
+        return "{cls}(argname={argname!r}, parser={parser!r})".format(
+            cls=self.__class__.__name__,
+            argname=self.argname,
+            parser=self.parser
+        )
+
+    def to_json_object(self):
+        d = dict(
+            parser=self.parser,
+            argname=self.argname,
+            parsing_state_delta=self.parsing_state_delta,
+        )
+        return d
+        
+    def __eq__(self, other):
+        return (
+            self.parser == other.parser
+            and self.argname == other.argname
+            and self.parsing_state_delta == other.parsing_state_delta
+        )
+
+
+
+
+class ParsedArguments(object):
     r"""
     Parsed representation of macro arguments.
 
@@ -125,6 +181,13 @@ class ParsedMacroArgs(object):
 
           The `legacy_nodeoptarg_nodeargs` might be removed in a future version
           of pylatexenc.
+
+    .. versionchanged:: 3.0
+
+       This class used to be called `ParsedMacroArgs` in `pylatexenc 2`.  It
+       provides a mostly backwards-compatible interface to the earlier
+       `ParsedMacroArgs` class, and is still exposed as
+       `macrospec.ParsedMacroArgs`.
     """
     def __init__(self,
                  argnlist=None,
@@ -132,9 +195,10 @@ class ParsedMacroArgs(object):
                  #
                  **kwargs):
         argspec = kwargs.pop('argspec', None)
-        super(ParsedMacroArgs, self).__init__(**kwargs)
+        super(ParsedArguments, self).__init__(**kwargs)
 
         if arguments_spec_list is None and argspec is not None:
+            # support for pylatexenc 2 syntax
             arguments_spec_list = argspec
 
         self.argnlist = argnlist if argnlist else []
@@ -150,6 +214,7 @@ class ParsedMacroArgs(object):
         return self._argspec
 
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
 
 ### BEGIN_PYLATEXENC1_LEGACY_SUPPORT_CODE
 
@@ -169,14 +234,6 @@ class ParsedMacroArgs(object):
 ### END_PYLATEXENC1_LEGACY_SUPPORT_CODE
 
 
-    # --TODO-- -- some decent API to get arguments!! including skipping over
-    #             pre-comments, etc.
-    #
-    # def get_arg(......)
-    #     ...........
-    #
-    # def get_arg_node_by_name(self, argname):
-    #     ...........
 
 
     def __eq__(self, other):

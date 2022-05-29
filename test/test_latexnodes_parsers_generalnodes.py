@@ -13,7 +13,7 @@ from pylatexenc.latexnodes import (
     LatexTokenReader,
     LatexToken,
     ParsingState,
-    ParsedMacroArgs,
+    ParsedArguments,
 )
 from pylatexenc.latexnodes.nodes import *
 
@@ -52,7 +52,7 @@ class TestGeneralNodesParser(unittest.TestCase):
                 LatexMacroNode(
                     parsing_state=ps,
                     macroname='yourname',
-                    nodeargd=ParsedMacroArgs(),
+                    nodeargd=ParsedArguments(),
                     macro_post_space='',
                     spec=ps.latex_context.get_macro_spec('yourname'),
                     pos=37-24,
@@ -108,7 +108,7 @@ class TestGeneralNodesParser(unittest.TestCase):
                 LatexMacroNode(
                     parsing_state=ps,
                     macroname='yourname',
-                    nodeargd=ParsedMacroArgs(),
+                    nodeargd=ParsedArguments(),
                     macro_post_space='',
                     spec=ps.latex_context.get_macro_spec('yourname'),
                     pos=0,

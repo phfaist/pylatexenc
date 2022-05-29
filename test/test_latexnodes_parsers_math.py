@@ -12,7 +12,7 @@ from pylatexenc.latexnodes import (
     LatexTokenReader,
     LatexToken,
     ParsingState,
-    ParsedMacroArgs,
+    ParsedArguments,
 )
 from pylatexenc.latexnodes.nodes import *
 

@@ -12,14 +12,14 @@ from pylatexenc.latexnodes import (
     LatexTokenReader,
     LatexToken,
     ParsingState,
-    ParsedMacroArgs,
+    LatexArgumentSpec,
+    ParsedArguments,
 )
 from pylatexenc.latexnodes.nodes import *
 from pylatexenc.macrospec import (
     LatexContextDb,
     MacroSpec,
     EnvironmentSpec,
-    LatexArgumentSpec,
     ParsingStateDeltaExtendLatexContextDb,
 )
 from pylatexenc.latexwalker import LatexWalker
@@ -121,7 +121,7 @@ class TestEnvironmentBodyContentsParser(unittest.TestCase):
                     latex_walker=lw,
                     macroname='item',
                     spec=ps_content.latex_context.get_macro_spec('item'),
-                    nodeargd=ParsedMacroArgs(argnlist=LatexNodeList([]),),
+                    nodeargd=ParsedArguments(argnlist=LatexNodeList([]),),
                     pos=0,
                     pos_end=6,
                     macro_post_space=' ',
@@ -138,7 +138,7 @@ class TestEnvironmentBodyContentsParser(unittest.TestCase):
                     latex_walker=lw,
                     macroname='textbf',
                     spec=ps.latex_context.get_macro_spec('textbf'),
-                    nodeargd=ParsedMacroArgs(
+                    nodeargd=ParsedArguments(
                         argnlist=[
                             LatexGroupNode(
                                 parsing_state=ps_child,
@@ -152,7 +152,7 @@ class TestEnvironmentBodyContentsParser(unittest.TestCase):
                                             spec=ps_child.latex_context \
                                                 .get_macro_spec('localcommand'),
                                             macroname='localcommand',
-                                            nodeargd=ParsedMacroArgs(
+                                            nodeargd=ParsedArguments(
                                                 argnlist=LatexNodeList([]),
                                             ),
                                             pos=16,

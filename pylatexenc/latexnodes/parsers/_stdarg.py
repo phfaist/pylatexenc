@@ -69,9 +69,13 @@ _std_arg_parser_instances = {}
 
 def get_standard_argument_parser(arg_spec, **kwargs):
 
-    d = {'arg_spec': arg_spec}
-    d.update(kwargs)
-    k = tuple(list(d.items()))
+    if not kwargs:
+        k = arg_spec
+    else:
+        d = {'arg_spec': arg_spec}
+        d.update(kwargs)
+        k = tuple(list(d.items()))
+
     if k not in _std_arg_parser_instances:
         instance = LatexStandardArgumentParser(arg_spec, **kwargs)
         _std_arg_parser_instances[k] = instance
@@ -256,6 +260,9 @@ class LatexCharsGroupParser(LatexDelimitedGroupParser):
 
     Very similar to a verbatim parser, but works with tokens instead of chars.
     You can use comments and recursive groups, too.
+
+    Will result in a group node that contains one char node (and possibly a
+    combination of group, chars, and comment nodes if those were enabled)
     """
     def __init__(self, delimiters=('{','}'),
                  enable_comments=True, enable_groups=True, **kwargs):

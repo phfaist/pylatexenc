@@ -13,7 +13,8 @@ from pylatexenc.latexnodes import (
     LatexContextDbBase,
     ParsingStateDelta,
     CallableSpecBase,
-    ParsedMacroArgs,
+    LatexArgumentSpec,
+    ParsedArguments,
     ParsingStateDeltaReplaceParsingState,
 )
 from pylatexenc.latexnodes.nodes import *
@@ -134,7 +135,7 @@ def make_dummy_macro_node_parser(tok, spec, _mk_parsing_state_delta=None):
             parsing_state=parsing_state,
             macroname=tok.arg,
             spec=spec,
-            nodeargd=ParsedMacroArgs(),
+            nodeargd=ParsedArguments(),
             macro_post_space=tok.post_space,
             pos=tok.pos,
             pos_end=tok.pos_end
@@ -174,7 +175,7 @@ def make_dummy_environment_node_parser(tok, spec):
             parsing_state=parsing_state,
             environmentname=tok.arg,
             spec=spec,
-            nodeargd=ParsedMacroArgs(),
+            nodeargd=ParsedArguments(),
             nodelist=LatexNodeList([]),
             pos=tok.pos,
             pos_end=next_token.pos_end
@@ -198,7 +199,7 @@ def make_dummy_specials_node_parser(tok, spec):
             parsing_state=parsing_state,
             specials_chars=tok.arg.specials_chars,
             spec=spec,
-            nodeargd=ParsedMacroArgs(),
+            nodeargd=ParsedArguments(),
             pos=tok.pos,
             pos_end=tok.pos_end
         )
@@ -279,8 +280,8 @@ class HelperProvideAssertEqualsForLegacyTests(object):
         if isinstance(a, macrospec.ParsedMacroArgs) \
            or isinstance(b, macrospec.ParsedMacroArgs):
             return self._assert_parsedmacroargs_equal(a, b)
-        if isinstance(a, macrospec.LatexArgumentSpec) \
-           or isinstance(b, macrospec.LatexArgumentSpec):
+        if isinstance(a, LatexArgumentSpec) \
+           or isinstance(b, LatexArgumentSpec):
             return self._assert_latexargumentspec_equal(a, b)
         if isinstance(a, list) or isinstance(b, list):
             return self._assert_lists_equal(a, b)
@@ -308,9 +309,9 @@ class HelperProvideAssertEqualsForLegacyTests(object):
 
         from pylatexenc import macrospec
 
-        if isinstance(a, macrospec.LatexArgumentSpec):
+        if isinstance(a, LatexArgumentSpec):
             a = a.parser
-        if isinstance(b, macrospec.LatexArgumentSpec):
+        if isinstance(b, LatexArgumentSpec):
             b = b.parser
 
         return self.assertEqual(a, b, msg=msg)

@@ -32,7 +32,7 @@ from __future__ import print_function, unicode_literals
 
 from ...latexnodes import _exctypes as latexnodes_exctypes
 from ...latexnodes import nodes as latexnodes_nodes
-from ...latexnodes import ParsedMacroArgs
+from ...latexnodes import ParsedArguments as ParsedMacroArgs
 
 
 from ._base import MacroStandardArgsParser

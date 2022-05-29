@@ -916,6 +916,15 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
         else:
             raise
 
+    if nodes is not None and (
+            nodes.isNodeType(LatexMacroNode)
+            or nodes.isNodeType(LatexEnvironmentNode)
+            or nodes.isNodeType(LatexSpecialsNode)
+    ):
+        # match behavior of pylatexenc 2, where a macros' nodeargd attribute was
+        # always None even if the macro didn't accept any arguments
+        nodes.nodeargd = None
+
     if info is not None:
         logger.warning("Call to get_latex_expression() ignores parsing state changes information "
                        "of parsing state")
