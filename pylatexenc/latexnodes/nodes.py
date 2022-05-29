@@ -827,7 +827,25 @@ class LatexNodeList(object):
             split_node_lists.append(pending_nodes)
 
         return split_node_lists
-        
+
+
+    def get_content_as_chars(self):
+        r"""
+        Return the character string content associated with this node list, which is
+        assumed to contain only characters, comments, or group nodes that
+        contain such nodes.
+
+        This method is useful to extract character arguments from macro calls
+        with an argument that requires a single string, such as
+        ``\label{my-label}`` or ``\url{https://example.com/}``.  It also allows
+        you to handle cases like ``\item[{*}]`` that result in nested group
+        nodes.
+
+        Group node delimiters (if applicable) are not included in the returned
+        string.
+        """
+        return _get_content_as_chars(self.nodelist)
+
 
 
     def __eq__(self, other):
@@ -848,6 +866,44 @@ class LatexNodeList(object):
             pos_end=self.pos_end
         )
 
+
+
+def _get_content_as_chars(nodelist):
+
+    # having a separate global method protects against group nodes that might
+    # have a list instead of a LatexNodeList instance as their `nodelist`
+    # attribute, by accident...
+
+    if nodelist is None:
+        return ''
+
+    charslist = []
+
+    for n in nodelist:
+
+        if n is None:
+            continue
+
+        if n.isNodeType(LatexCommentNode):
+            # skip comments
+            continue
+
+        if n.isNodeType(LatexGroupNode):
+            # go recursively
+            charslist.append( _get_content_as_chars(n.nodelist) )
+            continue
+
+        if n.isNodeType(LatexCharsNode):
+            charslist.append(n.chars)
+            continue
+
+        raise LatexWalkerParseError(
+            f"Expected simple characters only, got "
+            f"‘{n.__class__.__name__}’",
+            pos=n.pos
+        )
+
+    return "".join(charslist)
 
 
 

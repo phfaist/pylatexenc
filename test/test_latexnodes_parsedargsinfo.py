@@ -70,6 +70,64 @@ class TestSingleParsedArgumentInfo(unittest.TestCase):
         )
         self.assertFalse(arginfo.was_provided())
 
+
+    def test_get_content_nodelist_with_group(self):
+        grpnode = LatexGroupNode(
+            delimiters=('{','}'),
+            nodelist=LatexNodeList(
+                [
+                    LatexCharsNode(
+                        chars='Hello world',
+                        pos=13,
+                        pos_end=13+11, # 11 == len('Hello world')
+                    ),
+                    None,
+                    LatexCommentNode(
+                        comment=' a comment',
+                        pos=13+11,
+                        pos_end=13+11+12, # 12 == len('% a comment\n')
+                    ),
+                ],
+            ),
+        )
+
+        arginfo = SingleParsedArgumentInfo( grpnode )
+
+        self.assertEqual(arginfo.get_content_nodelist(), grpnode.nodelist)
+
+    def test_get_content_nodelist_with_charsnode(self):
+        chrnode = LatexCharsNode(
+            chars='Hello world',
+            pos=13,
+            pos_end=13+11, # 11 == len('Hello world')
+        )
+
+        arginfo = SingleParsedArgumentInfo( chrnode )
+
+        self.assertEqual(arginfo.get_content_nodelist(), LatexNodeList([chrnode]))
+
+    def test_get_content_nodelist_with_nodelist(self):
+        nodelist = LatexNodeList(
+            [
+                LatexCharsNode(
+                    chars='Hello world',
+                    pos=13,
+                    pos_end=13+11, # 11 == len('Hello world')
+                ),
+                None,
+                LatexCommentNode(
+                    comment=' a comment',
+                    pos=13+11,
+                    pos_end=13+11+12, # 12 == len('% a comment\n')
+                ),
+            ],
+        )
+
+        arginfo = SingleParsedArgumentInfo( nodelist )
+
+        self.assertEqual(arginfo.get_content_nodelist(), nodelist)
+
+
     def test_get_content_as_chars(self):
         arginfo = SingleParsedArgumentInfo(
             LatexGroupNode(
@@ -148,9 +206,235 @@ class TestParsedArgumentsInfo(unittest.TestCase):
 
     maxDiff = None
 
-    @unittest.skip
-    def test_write_me(self):
-        self.assertTrue(False)
+    def test_get_all_arguments_info_noargs(self):
+
+        parsed_args = ParsedArguments(
+            arguments_spec_list=[
+                LatexArgumentSpec('{', argname='content'),
+                LatexArgumentSpec('[', argname='an-optional-arg'),
+                LatexArgumentSpec('{', argname=None),
+            ],
+            argnlist=[
+                LatexGroupNode(
+                    delimiters=('{','}'),
+                    nodelist=LatexNodeList(
+                        [
+                            LatexCharsNode(
+                                chars='Hello world',
+                                pos=13,
+                                pos_end=13+11, # 11 == len('Hello world')
+                            ),
+                            None,
+                            LatexMacroNode(
+                                macroname='hello',
+                                nodeargd=ParsedArguments(),
+                                pos=13+11,
+                                pos_end=13+11+6, # 6 == len(r'\hello')
+                            ),
+                            LatexCommentNode(
+                                comment=' a comment',
+                                pos=13+11+6,
+                                pos_end=13+11+6+12, # 12 == len('% a comment\n')
+                            ),
+                        ],
+                    ),
+                ),
+                None,
+                LatexMacroNode(
+                    macroname='Z',
+                    nodeargd=ParsedArguments(),
+                    pos=13+11+6+12,
+                    pos_end=13+11+6+12+1,
+                ),
+            ]
+        )
+        
+        myall = ParsedArgumentsInfo(parsed_arguments=parsed_args).get_all_arguments_info()
+
+        self.assertEqual(
+            myall,
+            {
+                'content': SingleParsedArgumentInfo(parsed_args.argnlist[0]),
+                'an-optional-arg': SingleParsedArgumentInfo(parsed_args.argnlist[1]),
+                2: SingleParsedArgumentInfo(parsed_args.argnlist[2]),
+            }
+        )
+
+    def test_get_all_arguments_info_withallargsbyindex(self):
+
+        parsed_args = ParsedArguments(
+            arguments_spec_list=[
+                LatexArgumentSpec('{', argname='content'),
+                LatexArgumentSpec('[', argname='an-optional-arg'),
+                LatexArgumentSpec('{', argname=None),
+            ],
+            argnlist=[
+                LatexGroupNode(
+                    delimiters=('{','}'),
+                    nodelist=LatexNodeList(
+                        [
+                            LatexCharsNode(
+                                chars='Hello world',
+                                pos=13,
+                                pos_end=13+11, # 11 == len('Hello world')
+                            ),
+                            None,
+                            LatexMacroNode(
+                                macroname='hello',
+                                nodeargd=ParsedArguments(),
+                                pos=13+11,
+                                pos_end=13+11+6, # 6 == len(r'\hello')
+                            ),
+                            LatexCommentNode(
+                                comment=' a comment',
+                                pos=13+11+6,
+                                pos_end=13+11+6+12, # 12 == len('% a comment\n')
+                            ),
+                        ],
+                    ),
+                ),
+                None,
+                LatexMacroNode(
+                    macroname='Z',
+                    nodeargd=ParsedArguments(),
+                    pos=13+11+6+12,
+                    pos_end=13+11+6+12+1,
+                ),
+            ]
+        )
+        
+        myall = ParsedArgumentsInfo(parsed_arguments=parsed_args).get_all_arguments_info(
+            [0, 1, 2]
+        )
+
+        self.assertEqual(
+            myall,
+            {
+                'content': SingleParsedArgumentInfo(parsed_args.argnlist[0]),
+                'an-optional-arg': SingleParsedArgumentInfo(parsed_args.argnlist[1]),
+                2: SingleParsedArgumentInfo(parsed_args.argnlist[2]),
+            }
+        )
+
+    def test_get_all_arguments_info_withallargsbynameorindex(self):
+
+        parsed_args = ParsedArguments(
+            arguments_spec_list=[
+                LatexArgumentSpec('{', argname='content'),
+                LatexArgumentSpec('[', argname='an-optional-arg'),
+                LatexArgumentSpec('{', argname=None),
+            ],
+            argnlist=[
+                LatexGroupNode(
+                    delimiters=('{','}'),
+                    nodelist=LatexNodeList(
+                        [
+                            LatexCharsNode(
+                                chars='Hello world',
+                                pos=13,
+                                pos_end=13+11, # 11 == len('Hello world')
+                            ),
+                            None,
+                            LatexMacroNode(
+                                macroname='hello',
+                                nodeargd=ParsedArguments(),
+                                pos=13+11,
+                                pos_end=13+11+6, # 6 == len(r'\hello')
+                            ),
+                            LatexCommentNode(
+                                comment=' a comment',
+                                pos=13+11+6,
+                                pos_end=13+11+6+12, # 12 == len('% a comment\n')
+                            ),
+                        ],
+                    ),
+                ),
+                None,
+                LatexMacroNode(
+                    macroname='Z',
+                    nodeargd=ParsedArguments(),
+                    pos=13+11+6+12,
+                    pos_end=13+11+6+12+1,
+                ),
+            ]
+        )
+        
+        myall = ParsedArgumentsInfo(parsed_arguments=parsed_args).get_all_arguments_info(
+            ['content', 1, 2]
+        )
+
+        self.assertEqual(
+            myall,
+            {
+                'content': SingleParsedArgumentInfo(parsed_args.argnlist[0]),
+                'an-optional-arg': SingleParsedArgumentInfo(parsed_args.argnlist[1]),
+                2: SingleParsedArgumentInfo(parsed_args.argnlist[2]),
+            }
+        )
+
+    def test_get_all_arguments_info_withnotallargs(self):
+
+        parsed_args = ParsedArguments(
+            arguments_spec_list=[
+                LatexArgumentSpec('{', argname='content'),
+                LatexArgumentSpec('[', argname='an-optional-arg'),
+                LatexArgumentSpec('{', argname=None),
+            ],
+            argnlist=[
+                LatexGroupNode(
+                    delimiters=('{','}'),
+                    nodelist=LatexNodeList(
+                        [
+                            LatexCharsNode(
+                                chars='Hello world',
+                                pos=13,
+                                pos_end=13+11, # 11 == len('Hello world')
+                            ),
+                            None,
+                            LatexMacroNode(
+                                macroname='hello',
+                                nodeargd=ParsedArguments(),
+                                pos=13+11,
+                                pos_end=13+11+6, # 6 == len(r'\hello')
+                            ),
+                            LatexCommentNode(
+                                comment=' a comment',
+                                pos=13+11+6,
+                                pos_end=13+11+6+12, # 12 == len('% a comment\n')
+                            ),
+                        ],
+                    ),
+                ),
+                None,
+                LatexMacroNode(
+                    macroname='Z',
+                    nodeargd=ParsedArguments(),
+                    pos=13+11+6+12,
+                    pos_end=13+11+6+12+1,
+                ),
+            ]
+        )
+        
+        myall = ParsedArgumentsInfo(parsed_arguments=parsed_args).get_all_arguments_info(
+            ['content', 1],
+            allow_additional_arguments=True,
+        )
+
+        self.assertEqual(
+            myall,
+            {
+                'content': SingleParsedArgumentInfo(parsed_args.argnlist[0]),
+                'an-optional-arg': SingleParsedArgumentInfo(parsed_args.argnlist[1]),
+            }
+        )
+
+        with self.assertRaises(LatexWalkerParseError):
+            myall2 = ParsedArgumentsInfo(parsed_arguments=parsed_args).get_all_arguments_info(
+                ['content', 1],
+                allow_additional_arguments=False, # no additional args allowed, failure
+            )
+
+        
 
 
 

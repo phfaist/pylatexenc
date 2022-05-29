@@ -83,20 +83,7 @@ class SingleParsedArgumentInfo(object):
         delimiters are not included in the returned string.
         """
         nodelist = self.get_content_nodelist()
-        charslist = []
-        for n in nodelist:
-            if n is None:
-                continue
-            if n.isNodeType(LatexCommentNode):
-                # skip comments
-                continue
-            if not n.isNodeType(LatexCharsNode):
-                raise LatexWalkerParseError(
-                    "Expected simple characters only, got ‘{}’".format(n.__class__.__name__),
-                    pos=n.pos
-                )
-            charslist.append(n.chars)
-        return "".join(charslist)
+        return nodelist.get_content_as_chars()
 
 
     def __repr__(self):
@@ -108,6 +95,10 @@ class SingleParsedArgumentInfo(object):
             )
         )
 
+    def __eq__(self, other):
+        return (
+            self.argument_node_object == other.argument_node_object
+        )
 
 
 
@@ -122,8 +113,10 @@ class ParsedArgumentsInfo(object):
         super(ParsedArgumentsInfo, self).__init__()
         self.parsed_arguments = parsed_arguments
         self.node = node
-        if node is not None:
+        if self.node is not None:
             self.node_pos = node.pos
+            if self.parsed_arguments is None:
+                self.parsed_arguments = getattr(self.node, 'nodeargd', None)
         else:
             self.node_pos = None
 
@@ -149,7 +142,7 @@ class ParsedArgumentsInfo(object):
         if isinstance(arg_i, _basestring):
             # find index by looking up the argument name
             argname = arg_i
-            for j, arg_spec in enumerate(self.arguments_spec_list):
+            for j, arg_spec in enumerate(self.parsed_arguments.arguments_spec_list):
                 if arg_spec.argname == argname:
                     arg_i = j
                     break
@@ -160,7 +153,7 @@ class ParsedArgumentsInfo(object):
                 )
 
         # arg_i is the index in the list of arguments
-        return ParsedArgumentInfo( self.argnlist[arg_i] )
+        return SingleParsedArgumentInfo( self.parsed_arguments.argnlist[arg_i] )
 
     def get_all_arguments_info(self, args=None,
                                #*,
@@ -195,22 +188,22 @@ class ParsedArgumentsInfo(object):
         if self.parsed_arguments is None:
             if skip_nonexistent_arguments:
                 return {}
+            msg = "Missing arguments"
+            if self.node is not None:
+                msg = "Missing arguments to {!r}".format(self.node)
             raise LatexWalkerParseError(
-                "Missing arguments"
-                .format( ( '‘'+arg_x+'’'
-                           if isinstance(arg_x, _basestring)
-                           else str(arg_x) ) )
+                msg,
+                self.node_pos
             )
-            
 
         args_info = {}
 
         arg_names_seen = set()
         arg_i_seen = set()
 
-        for j, arg_spec in enumerate(node.nodeargd.arguments_spec_list):
+        for j, arg_spec in enumerate(self.parsed_arguments.arguments_spec_list):
             
-            argument_node_object = self.argnlist[j]
+            argument_node_object = self.parsed_arguments.argnlist[j]
 
             arg_requested = False
             arg_requested_by = None
@@ -236,7 +229,7 @@ class ParsedArgumentsInfo(object):
                     )
                 continue
 
-            arg_info = ParsedArgumentInfo( argument_node_object )
+            arg_info = SingleParsedArgumentInfo( argument_node_object )
 
             if not return_argnames_only and arg_requested_by is not None:
                 args_info[arg_requested_by] = arg_info
@@ -245,7 +238,7 @@ class ParsedArgumentsInfo(object):
             else:
                 args_info[j] = arg_info
 
-        if not skip_nonexistent_arguments:
+        if not skip_nonexistent_arguments and args is not None:
             # if there's an argument in args that wasn't seen, that's an error
             for arg_x in args:
                 if arg_x not in arg_names_seen and arg_x not in arg_i_seen:

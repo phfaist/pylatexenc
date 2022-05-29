@@ -70,3 +70,7 @@ from ._latexcontextdbbase import (
     LatexContextDbBase
 )
 
+from ._parsedargsinfo import (
+    ParsedArgumentsInfo,
+)
+
