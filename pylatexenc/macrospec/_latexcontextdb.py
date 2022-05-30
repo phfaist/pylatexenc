@@ -644,10 +644,12 @@ class ParsingStateDeltaExtendLatexContextDb(ParsingStateDelta):
     def get_updated_parsing_state(self, parsing_state, latex_walker):
 
         if self.extend_latex_context:
+
             if self.set_attributes:
                 set_attributes = self.set_attributes
             else:
                 set_attributes = {}
+
             return parsing_state.sub_context(
                 latex_context=parsing_state.latex_context.extended_with(
                     category=None,
