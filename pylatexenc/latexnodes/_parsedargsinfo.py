@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 
 from .nodes import *
 from ._exctypes import LatexWalkerParseError
@@ -114,11 +116,15 @@ class ParsedArgumentsInfo(object):
         self.parsed_arguments = parsed_arguments
         self.node = node
         if self.node is not None:
-            self.node_pos = node.pos
+            self.node_pos = self.node.pos
             if self.parsed_arguments is None:
                 self.parsed_arguments = getattr(self.node, 'nodeargd', None)
         else:
             self.node_pos = None
+
+        if self.parsed_arguments is None and self.node is None:
+            logger.warning("You created ParsedArgumentsInfo with both node=None "
+                           "and parsed_arguments=None, might be a bug in your code?")
 
     def get_argument_info(self, arg):
         r"""
