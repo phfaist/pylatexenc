@@ -837,9 +837,9 @@ class LatexNodeList(object):
 
         This method is useful to extract character arguments from macro calls
         with an argument that requires a single string, such as
-        ``\label{my-label}`` or ``\url{https://example.com/}``.  It also allows
-        you to handle cases like ``\item[{*}]`` that result in nested group
-        nodes.
+        ``\label{my-label}`` or ``\href{https://example.com/}{..}``.  It also
+        allows you to handle cases like ``\item[{*}]`` that result in nested
+        group nodes.
 
         Group node delimiters (if applicable) are not included in the returned
         string.
@@ -898,8 +898,7 @@ def _get_content_as_chars(nodelist):
             continue
 
         raise LatexWalkerParseError(
-            f"Expected simple characters only, got "
-            f"‘{n.__class__.__name__}’",
+            "Expected simple characters only, got ‘{}’".format(n.__class__.__name__),
             pos=n.pos
         )
 
