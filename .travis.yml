@@ -9,6 +9,12 @@ python:
   - "3.4"
   - "3.6"
 
+
+# install chainmap to support python 2
+before_install:
+  - if [ "$TRAVIS_PYTHON_VERSION" == "2.7" ]; then pip install chainmap; fi
+
+
 # command to run tests
 script:
   - PYTHONPATH=. pytest
