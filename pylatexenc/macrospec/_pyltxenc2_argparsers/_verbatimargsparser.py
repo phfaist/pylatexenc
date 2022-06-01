@@ -372,7 +372,6 @@ class ParsedLstListingArgs(ParsedVerbatimArgs):
         
         self.lstlisting_text = verbatim_chars_node.chars
 
-
     def to_json_object(self):
         r"""
         Called when we export the node structure to JSON when running latexwalker in
@@ -400,6 +399,13 @@ class ParsedLstListingArgs(ParsedVerbatimArgs):
                 super(ParsedLstListingArgs, self).__repr__()
             )
         )
+
+    def __eq__(self, other):
+        return (
+            super(ParsedLstListingArgs, self).__eq__(other)
+            and self.lstlisting_text == other.lstlisting_text
+        )
+
 
 class LstListingArgsParser(VerbatimArgsParser):
     def __init__(self):
