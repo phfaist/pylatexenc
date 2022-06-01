@@ -7,7 +7,7 @@ Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion
    :target: https://github.com/phfaist/pylatexenc/blob/master/LICENSE.txt
 
 .. image:: https://img.shields.io/travis/phfaist/pylatexenc.svg?style=flat
-   :target: https://travis-ci.org/phfaist/pylatexenc
+   :target: https://app.travis-ci.com/github/phfaist/pylatexenc
    
 .. image:: https://img.shields.io/pypi/v/pylatexenc.svg?style=flat
    :target: https://pypi.org/project/pylatexenc/
