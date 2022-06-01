@@ -1,12 +1,11 @@
 import unittest
-import sys
 import logging
 
 
 from pylatexenc.latexnodes.parsers._delimited import (
     LatexDelimitedExpressionParserOpeningDelimiterNotFound,
     LatexDelimitedExpressionParserInfo,
-    LatexDelimitedExpressionParser,
+    #LatexDelimitedExpressionParser,
     LatexDelimitedGroupParser,
 )
 
@@ -15,7 +14,7 @@ from pylatexenc.latexnodes import (
     LatexTokenReader,
     LatexToken,
     ParsingState,
-    ParsedArguments,
+    #ParsedArguments,
 )
 from pylatexenc.latexnodes.nodes import *
 
@@ -633,7 +632,7 @@ class TestDelimitedGroupParser(unittest.TestCase):
         )
 
         with self.assertRaises(LatexWalkerParseError):
-            nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+            _ = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
     def test_skip_space_and_group_has_pre_space(self):
 

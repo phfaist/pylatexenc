@@ -11,7 +11,7 @@ from pylatexenc.latexnodes import (
     LatexWalkerBase,
     LatexNodesCollector,
     LatexContextDbBase,
-    ParsingStateDelta,
+    #ParsingStateDelta,
     CallableSpecBase,
     LatexArgumentSpec,
     ParsedArguments,

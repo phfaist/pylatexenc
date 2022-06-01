@@ -136,9 +136,9 @@ class LatexArgumentsParser(LatexParserBase):
 
         argnlist = []
 
-        pos_start_default = token_reader.cur_pos()
-        pos_start = None
-        last_arg_node = None
+        # pos_start_default = token_reader.cur_pos()
+        # pos_start = None
+        # last_arg_node = None
 
         for argj, arg in enumerate(self.arguments_spec_list):
 

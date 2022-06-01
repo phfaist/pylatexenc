@@ -40,7 +40,6 @@ from .._exctypes import (
     LatexWalkerEndOfStream
 )
 from ..nodes import *
-from ..nodes import _update_posposend_from_nodelist
 
 from ._base import LatexParserBase
 from .._parsedargs import ParsedArguments

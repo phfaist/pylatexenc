@@ -47,10 +47,10 @@ logger = logging.getLogger(__name__)
 
 from .nodes import *
 from ._exctypes import LatexWalkerParseError
-from ._parsedargs import (
-    LatexArgumentSpec,
-    ParsedArguments,
-)
+# from ._parsedargs import (
+#     LatexArgumentSpec,
+#     ParsedArguments,
+# )
 
 
 class SingleParsedArgumentInfo(object):

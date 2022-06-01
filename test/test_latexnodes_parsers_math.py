@@ -1,6 +1,5 @@
 import unittest
-import sys
-import logging
+#import logging
 
 
 from pylatexenc.latexnodes.parsers._math import (
@@ -8,19 +7,14 @@ from pylatexenc.latexnodes.parsers._math import (
 )
 
 from pylatexenc.latexnodes import (
-    LatexWalkerTokenParseError,
     LatexTokenReader,
-    LatexToken,
     ParsingState,
-    ParsedArguments,
 )
 from pylatexenc.latexnodes.nodes import *
 
 
 from ._helpers_tests import (
     DummyWalker,
-    dummy_empty_group_parser,
-    dummy_empty_mathmode_parser,
     DummyLatexContextDb,
 )
 

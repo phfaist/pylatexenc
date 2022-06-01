@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 from ..latexnodes import (
     CallableSpecBase,
     ParsingStateDeltaEnterMathMode,
-    ParsingStateDeltaLeaveMathMode,
+    #ParsingStateDeltaLeaveMathMode,
 )
 
 from ._argumentsparser import LatexArgumentsParser, LatexNoArgumentsParser

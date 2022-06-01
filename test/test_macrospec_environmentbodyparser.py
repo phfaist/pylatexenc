@@ -1,6 +1,4 @@
 import unittest
-import sys
-import logging
 
 
 from pylatexenc.macrospec._environmentbodyparser import (
@@ -8,10 +6,7 @@ from pylatexenc.macrospec._environmentbodyparser import (
 )
 
 from pylatexenc.latexnodes import (
-    LatexWalkerTokenParseError,
     LatexTokenReader,
-    LatexToken,
-    ParsingState,
     LatexArgumentSpec,
     ParsedArguments,
 )
@@ -19,7 +14,6 @@ from pylatexenc.latexnodes.nodes import *
 from pylatexenc.macrospec import (
     LatexContextDb,
     MacroSpec,
-    EnvironmentSpec,
     ParsingStateDeltaExtendLatexContextDb,
 )
 from pylatexenc.latexwalker import LatexWalker

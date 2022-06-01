@@ -135,6 +135,13 @@ class ParsedVerbatimArgs(ParsedMacroArgs):
             )
         )
 
+    def __eq__(self, other):
+        return (
+            super(ParsedVerbatimArgs, self).__eq__(other)
+            and self.verbatim_text == other.verbatim_text
+            and self.verbatim_delimiters == other.verbatim_delimiters
+        )
+
 
 class VerbatimArgsParser(MacroStandardArgsParser):
     r"""

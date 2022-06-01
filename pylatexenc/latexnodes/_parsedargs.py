@@ -42,7 +42,7 @@ if sys.version_info.major == 2:
 
 
 
-from ._exctypes import LatexWalkerParseError
+#from ._exctypes import LatexWalkerParseError
 
 
 

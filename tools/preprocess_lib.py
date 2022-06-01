@@ -463,7 +463,7 @@ class Preprocess:
                 the_mod_path = pkgmod_path
 
             mod_dotname = '.'.join(the_mod_path)
-            mod_fname = os.path.join(self.source_dir, *the_mod_path)
+            #mod_fname = os.path.join(self.source_dir, *the_mod_path)
 
             # ### All OK, this can happen when importing a symbol from the
             # ### __init__ module of a package (e.g.,

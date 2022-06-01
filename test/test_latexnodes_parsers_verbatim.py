@@ -1,5 +1,4 @@
 import unittest
-import sys
 import logging
 
 
@@ -12,17 +11,13 @@ from pylatexenc.latexnodes.parsers._verbatim import (
 from pylatexenc.latexnodes import (
     LatexWalkerParseError,
     LatexTokenReader,
-    LatexToken,
     ParsingState,
-    ParsedArguments,
 )
 from pylatexenc.latexnodes.nodes import *
 
 
 from ._helpers_tests import (
     DummyWalker,
-    dummy_empty_group_parser,
-    dummy_empty_mathmode_parser,
     DummyLatexContextDb,
 )
 
@@ -38,7 +33,7 @@ class TestLatexVerbatimBaseParser(unittest.TestCase):
 
         parser = LatexVerbatimBaseParser()
 
-        node, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             node,
@@ -59,7 +54,7 @@ class TestLatexVerbatimBaseParser(unittest.TestCase):
 
         parser = LatexVerbatimBaseParser()
 
-        node, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             node,
@@ -81,7 +76,7 @@ class TestLatexVerbatimBaseParser(unittest.TestCase):
         parser = LatexVerbatimBaseParser()
 
         with self.assertRaises(LatexWalkerParseError):
-            node, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+            _, _ = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
 
 
@@ -98,7 +93,7 @@ class TestLatexDelimitedVerbatimParser(unittest.TestCase):
 
         parser = LatexDelimitedVerbatimParser()
 
-        node, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             node,
@@ -127,7 +122,7 @@ class TestLatexDelimitedVerbatimParser(unittest.TestCase):
 
         parser = LatexDelimitedVerbatimParser()
 
-        node, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             node,
@@ -156,7 +151,7 @@ class TestLatexDelimitedVerbatimParser(unittest.TestCase):
 
         parser = LatexDelimitedVerbatimParser()
 
-        node, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             node,
@@ -188,7 +183,7 @@ verbatim>"""
 
         parser = LatexDelimitedVerbatimParser()
 
-        node, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             node,
@@ -218,7 +213,7 @@ verbatim>"""
 
         parser = LatexDelimitedVerbatimParser(delimiters=('{','>'))
 
-        node, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             node,
@@ -252,7 +247,7 @@ verbatim>"""
             ('`','\''),
         ])
 
-        node, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             node,
@@ -291,7 +286,7 @@ special characters should be captured verbatim.
 
         parser = LatexVerbatimEnvironmentContentsParser()
 
-        node, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         evpos = latextext.find(r'\end{verbatim}')
 

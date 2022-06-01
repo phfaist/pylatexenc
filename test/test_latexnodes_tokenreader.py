@@ -1,5 +1,4 @@
 import unittest
-import sys
 import logging
 
 
@@ -397,7 +396,7 @@ New paragraph
         ps = ParsingState(enable_comments=False, forbidden_characters='%$')
 
         with self.assertRaises(LatexWalkerTokenParseError):
-            tok = tr.peek_token(ps)
+            _ = tr.peek_token(ps)
 
 
     def test_stuff_mathmodes(self):

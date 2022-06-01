@@ -1,22 +1,19 @@
 import unittest
-import sys
 import logging
 
 
 from pylatexenc.latexnodes.parsers._stdarg import (
-    get_standard_argument_parser,
+    #get_standard_argument_parser,
     LatexStandardArgumentParser,
     LatexCharsCommaSeparatedListParser,
-    LatexCharsGroupParser,
+    #LatexCharsGroupParser,
 )
 from pylatexenc.latexnodes import parsers
 
 from pylatexenc.latexnodes import (
     LatexWalkerNodesParseError,
     LatexTokenReader,
-    LatexToken,
     ParsingState,
-    ParsedArguments,
 )
 from pylatexenc.latexnodes.nodes import *
 
@@ -43,7 +40,7 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
 
         parser = LatexStandardArgumentParser(arg_spec='m')
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -76,7 +73,7 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
 
         parser = LatexStandardArgumentParser(arg_spec='{')
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -111,7 +108,7 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
 
         parser = LatexStandardArgumentParser(arg_spec='m', include_skipped_comments=False)
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -145,7 +142,7 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
 
         parser = LatexStandardArgumentParser(arg_spec='m') # i.e. include_skipped_comments=True
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -205,7 +202,7 @@ class TestLatexCharsCommaSeparatedListParser(unittest.TestCase):
             enable_comments=True,
         )
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         cps = nodes.nodelist[0].parsing_state
         self.assertFalse(cps.enable_macros)
@@ -279,7 +276,7 @@ class TestLatexCharsCommaSeparatedListParser(unittest.TestCase):
             enable_comments=True,
         )
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         print(nodes)
         self.assertEqual(
@@ -308,7 +305,7 @@ class TestLatexCharsCommaSeparatedListParser(unittest.TestCase):
             enable_comments=True,
         )
 
-        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         cps = nodes.nodelist[0].parsing_state
         self.assertFalse(cps.enable_macros)
@@ -399,8 +396,8 @@ class TestLatexCharsCommaSeparatedListParser(unittest.TestCase):
         )
 
         with self.assertRaises(LatexWalkerNodesParseError):
-            nodes, carryover_info = lw.parse_content(parser, token_reader=tr,
-                                                     parsing_state=ps)
+            _, _ = lw.parse_content(parser, token_reader=tr,
+                                    parsing_state=ps)
 
 
 

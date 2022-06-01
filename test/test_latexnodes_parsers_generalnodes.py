@@ -1,5 +1,4 @@
 import unittest
-import sys
 import logging
 
 
@@ -9,9 +8,7 @@ from pylatexenc.latexnodes.parsers._generalnodes import (
 )
 
 from pylatexenc.latexnodes import (
-    LatexWalkerTokenParseError,
     LatexTokenReader,
-    LatexToken,
     ParsingState,
     ParsedArguments,
 )

@@ -3,7 +3,7 @@
 #customjspatches.custom_apply_patches()
 
 
-import pylatexenc.latexnodes as latexnodes
+#import pylatexenc.latexnodes as latexnodes
 import pylatexenc.latexnodes.parsers as parsers
 from pylatexenc.macrospec import LatexContextDb, MacroSpec, EnvironmentSpec, SpecialsSpec
 from pylatexenc.latexwalker import LatexWalker

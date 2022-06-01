@@ -1,5 +1,4 @@
 import unittest
-import sys
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,10 +20,10 @@ from pylatexenc.latexnodes import (
 )
 from pylatexenc.latexnodes.nodes import *
 
-from ._helpers_tests import (
-    DummyWalker,
-    DummyLatexContextDb,
-)
+#from ._helpers_tests import (
+# DummyWalker,
+# DummyLatexContextDb,
+#)
 
 
 
@@ -197,7 +196,7 @@ class TestSingleParsedArgumentInfo(unittest.TestCase):
         )
 
         with self.assertRaises(LatexWalkerParseError):
-            x = arginfo.get_content_as_chars()
+            _ = arginfo.get_content_as_chars()
 
 
 
@@ -429,7 +428,7 @@ class TestParsedArgumentsInfo(unittest.TestCase):
         )
 
         with self.assertRaises(LatexWalkerParseError):
-            myall2 = ParsedArgumentsInfo(parsed_arguments=parsed_args).get_all_arguments_info(
+            _ = ParsedArgumentsInfo(parsed_arguments=parsed_args).get_all_arguments_info(
                 ['content', 1],
                 allow_additional_arguments=False, # no additional args allowed, failure
             )

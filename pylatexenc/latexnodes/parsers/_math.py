@@ -39,7 +39,6 @@ from .._parsingstatedelta import (
     get_updated_parsing_state_from_delta,
 )
 
-from ._generalnodes import LatexGeneralNodesParser
 from ._delimited import (
     LatexDelimitedExpressionParserInfo,
     LatexDelimitedExpressionParser,

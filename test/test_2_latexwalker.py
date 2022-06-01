@@ -4,7 +4,6 @@ from __future__ import print_function # no unicode_literals, test with native st
 import unittest
 import sys
 import logging
-import pprint
 
 if sys.version_info.major > 2:
     def unicode(string): return string

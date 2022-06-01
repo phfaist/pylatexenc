@@ -6,7 +6,6 @@ from ...latexnodes import (
 )
 from ...latexnodes import ParsedArguments as ParsedMacroArgs
 from ...latexnodes.nodes import (
-    LatexNode,
     LatexCharsNode,
 )
 
