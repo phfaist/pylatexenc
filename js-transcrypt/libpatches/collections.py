@@ -31,7 +31,7 @@ class ChainMap:
 
     def __missing__(self, key):
         raise KeyError(key)
-        return None
+        #return None
 
     def __getitem__(self, key):
         #logger.debug("Getting item %r", key)

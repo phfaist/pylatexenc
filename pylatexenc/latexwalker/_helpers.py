@@ -42,7 +42,7 @@ if sys.version_info.major == 2:
 ### END_PYTHON2_SUPPORT_CODE
 
 
-from .. import macrospec
+#from .. import macrospec
 
 
 from ..latexnodes._exctypes import *

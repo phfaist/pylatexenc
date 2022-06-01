@@ -33,7 +33,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from ..latexnodes.nodes import LatexMacroNode, LatexEnvironmentNode, LatexSpecialsNode
-from ..latexnodes.parsers import LatexParserBase, LatexGeneralNodesParser
+from ..latexnodes.parsers import LatexParserBase
 
 from ..latexnodes import get_updated_parsing_state_from_delta
 
@@ -47,6 +47,7 @@ class _LatexCallableParserBase(LatexParserBase):
                  node_extra_kwargs,
                  parse_body=False,
                  ):
+        super(_LatexCallableParserBase, self).__init__()
 
         logger.debug("_LatexCallableParserBase, token_call=%r, spec_object=%r (%s)",
                      token_call, spec_object, what)

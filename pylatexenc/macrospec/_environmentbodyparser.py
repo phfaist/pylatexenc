@@ -33,12 +33,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 from ..latexnodes._exctypes import *
-from ..latexnodes import nodes
+#from ..latexnodes import nodes
 from ..latexnodes import (
     get_updated_parsing_state_from_delta,
 )
 from ..latexnodes.parsers import (
-    LatexGeneralNodesParser,
     LatexDelimitedExpressionParserInfo,
     LatexDelimitedExpressionParser,
 )

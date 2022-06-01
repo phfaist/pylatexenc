@@ -27,7 +27,6 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-import re
 import logging
 logger = logging.getLogger(__name__)
 
@@ -103,6 +102,7 @@ class LatexTokenListTokenReader(LatexTokenReaderBase):
     for that.
     """
     def __init__(self, token_list):
+        super(LatexTokenListTokenReader, self).__init__()
         self.token_list = token_list
         self._idx = 0
 

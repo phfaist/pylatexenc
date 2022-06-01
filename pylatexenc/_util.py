@@ -109,11 +109,11 @@ class PushPropOverride(object):
 
 
 try:
-    from collections import ChainMap
+    from collections import ChainMap #lgtm [py/unused-import]
 except ImportError:
     pass
 ### BEGIN_PYTHON2_SUPPORT_CODE
-    from chainmap import ChainMap
+    from chainmap import ChainMap #lgtm [py/unused-import]
 ### END_PYTHON2_SUPPORT_CODE
 
 
@@ -122,10 +122,10 @@ except ImportError:
 
 
 
-pylatexenc_deprecated_ver = lambda *args: None
-pylatexenc_deprecated_2 = lambda *args: None
-pylatexenc_deprecated_3 = lambda *args: None
-LazyDict = None
+pylatexenc_deprecated_ver = lambda *args: None  #lgtm [py/multiple-definition]
+pylatexenc_deprecated_2 = lambda *args: None  #lgtm [py/multiple-definition]
+pylatexenc_deprecated_3 = lambda *args: None  #lgtm [py/multiple-definition]
+LazyDict = None  #lgtm [py/multiple-definition]
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 

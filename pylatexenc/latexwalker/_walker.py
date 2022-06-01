@@ -348,7 +348,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
             else:
                 reset_past_tok = getattr(self.recovery_from_exception,
                                          'recovery_past_token', None)
-                if reset_at_tok is not None:
+                if reset_past_tok is not None:
                     token_reader.move_past_token(reset_past_tok)
 
             return nodes, parsing_state_delta
@@ -473,7 +473,6 @@ class LatexWalker(latexnodes.LatexWalkerBase):
                 logger.warning("End of stream encountered when parsing content with %s (%s)",
                                parser.__class__.__name__, open_context_name)
                 nodes, info = None, None
-                pass
 
         if pc.recovery_from_exception is not None:
             nodes, info = pc.perform_recovery_nodes_info(token_reader)
