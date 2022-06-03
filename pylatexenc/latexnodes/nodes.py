@@ -215,6 +215,8 @@ class LatexNode(object):
             ")"
             )
 
+    def accept_node_visitor(self, visitor):
+        visitor.visit_unknown_node(self)
 
     def to_json_object_with_latexwalker(self, latexwalker):
         # Prepare a dictionary with the correct keys and values.
@@ -255,6 +257,8 @@ class LatexCharsNode(LatexNode):
     def nodeType(self):
         return LatexCharsNode
 
+    def accept_node_visitor(self, visitor):
+        visitor.visit_chars_node(self)
 
 
 
@@ -295,6 +299,13 @@ class LatexGroupNode(LatexNode):
     def nodeType(self):
         return LatexGroupNode
 
+    def accept_node_visitor(self, visitor):
+        if self.nodelist is not None:
+            for node in self.nodelist:
+                if node is not None:
+                    node.accept_node_visitor(visitor)
+        visitor.visit_group_node(self)
+
 
 class LatexCommentNode(LatexNode):
     r"""
@@ -323,6 +334,9 @@ class LatexCommentNode(LatexNode):
 
     def nodeType(self):
         return LatexCommentNode
+
+    def accept_node_visitor(self, visitor):
+        visitor.visit_comment_node(self)
 
 
 class LatexMacroNode(LatexNode):
@@ -406,6 +420,11 @@ class LatexMacroNode(LatexNode):
 
     def nodeType(self):
         return LatexMacroNode
+
+    def accept_node_visitor(self, visitor):
+        if self.nodeargd is not None:
+            self.nodeargd.accept_node_visitor(visitor)
+        visitor.visit_macro_node(self)
 
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
@@ -529,6 +548,16 @@ class LatexEnvironmentNode(LatexNode):
     def nodeType(self):
         return LatexEnvironmentNode
 
+    def accept_node_visitor(self, visitor):
+        if self.nodeargd is not None:
+            self.nodeargd.accept_node_visitor(visitor)
+        if self.nodelist is not None:
+            for node in self.nodelist:
+                if node is not None:
+                    node.accept_node_visitor(visitor)
+        visitor.visit_environment_node(self)
+
+
 
 class LatexSpecialsNode(LatexNode):
     r"""
@@ -584,6 +613,11 @@ class LatexSpecialsNode(LatexNode):
     def nodeType(self):
         return LatexSpecialsNode
 
+    def accept_node_visitor(self, visitor):
+        if self.nodeargd is not None:
+            self.nodeargd.accept_node_visitor(visitor)
+        visitor.visit_specials_node(self)
+
 
 class LatexMathNode(LatexNode):
     r"""
@@ -625,6 +659,14 @@ class LatexMathNode(LatexNode):
 
     def nodeType(self):
         return LatexMathNode
+
+
+    def accept_node_visitor(self, visitor):
+        if self.nodelist is not None:
+            for node in self.nodelist:
+                if node is not None:
+                    node.accept_node_visitor(visitor)
+        visitor.visit_math_node(self)
 
 
 
@@ -718,6 +760,14 @@ class LatexNodeList(object):
             for n in self.nodelist
             if n is not None
         ])
+
+
+    def accept_node_visitor(self, visitor):
+        if self.nodelist is not None:
+            for node in self.nodelist:
+                if node is not None:
+                    node.accept_node_visitor(visitor)
+        visitor.visit_node_list(self)
 
 
     def split_at_node(self, node_predicate_fn, skip_none=True, keep_separators=False,
@@ -928,3 +978,73 @@ def _update_posposend_from_nodelist(pos, pos_end, nodelist):
             pos_end = None
 
     return pos, pos_end
+
+
+
+
+# ------------------------------------------------------------------------------
+
+
+class LatexNodesVisitor:
+    r"""
+    Implement a visitor pattern on a node structure.
+
+    ......................
+    """
+
+    def visit(self, node):
+        r"""
+        Fallback for visiting any type of node.  This is called by the `visit_XXX()`
+        methods below.  In your subclass, you can reimplement a subset of the
+        `visit_XXXX()` methods, and whichever objects you didn't reimplement the
+        `visit_XXX()` method for, you can catch with the `visit()` method.
+        """
+        pass
+
+    def visit_chars_node(self, node):
+        self.visit(node)
+
+    def visit_group_node(self, node):
+        self.visit(node)
+
+    def visit_comment_node(self, node):
+        self.visit(node)
+
+    def visit_macro_node(self, node):
+        self.visit(node)
+
+    def visit_environment_node(self, node):
+        self.visit(node)
+
+    def visit_specials_node(self, node):
+        self.visit(node)
+
+    def visit_math_node(self, node):
+        self.visit(node)
+
+    def visit_node_list(self, node):
+        self.visit(node)
+
+    def visit_parsed_arguments(self, parsed_args):
+        self.visit(node)
+
+
+    def visit_unknown_node(self, node):
+        self.visit(node)
+
+
+    # --
+
+    def start(self, node):
+        r"""
+        A shortcut for calling `node.accept_node_visitor()` with this visitor
+        object.  It's a convenient starting point for your visiting pattern:
+
+        .. code::
+
+           visitor = MyNodeVisitor()
+           visitor.start(node)
+
+        You probably shouldn't override this method in your visitor subclass.
+        """
+        node.accept_node_visitor(node)

@@ -111,7 +111,7 @@ class PushPropOverride(object):
 try:
     from collections import ChainMap #lgtm [py/unused-import]
 except ImportError:
-    pass
+    pass  #lgtm [py/unnecessary-pass]
 ### BEGIN_PYTHON2_SUPPORT_CODE
     from chainmap import ChainMap #lgtm [py/unused-import]
 ### END_PYTHON2_SUPPORT_CODE

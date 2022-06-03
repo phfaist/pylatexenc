@@ -113,6 +113,16 @@ class TestLatexNodeList(unittest.TestCase):
 
 
 
+
+
+
+class TestLatexNodesVisitor(unittest.TestCase):
+
+    def test_are_these_tests_written(self):
+
+        self.assertTrue(False)
+
+
 # ---
 
 if __name__ == '__main__':

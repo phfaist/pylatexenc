@@ -233,7 +233,12 @@ class ParsedArguments(object):
 
 ### END_PYLATEXENC1_LEGACY_SUPPORT_CODE
 
-
+    def accept_node_visitor(self, visitor):
+        if self.argnlist is not None:
+            for argnode in self.argnlist:
+                if argnode is not None:
+                    argnode.accept_node_visitor(visitor)
+        visitor.visit_parsed_arguments(self)
 
 
     def __eq__(self, other):
