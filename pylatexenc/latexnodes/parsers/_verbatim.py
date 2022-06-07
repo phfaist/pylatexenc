@@ -150,7 +150,6 @@ class LatexVerbatimBaseParser(LatexParserBase):
 
 
 
-
 class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
     def __init__(self,
                  delimiters=None,
