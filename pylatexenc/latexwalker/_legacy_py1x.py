@@ -34,6 +34,8 @@ from .. import _util
 
 from ._walker import LatexWalker
 
+from ._get_defaultspecs import get_default_latex_context_db
+
 
 # provide an interface compatibile with pylatexenc 1.x
 def MacrosDef(macname, optarg, numargs):

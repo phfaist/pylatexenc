@@ -1,15 +1,34 @@
 What's new in `pylatexenc 3`
 ============================
 
-Wow, lots of stuff. I don't know where to start.
+Wow, a *lot* of stuff has changed in the `latexwalker` and `macrospec` modules.
+There's even a new `latexnodes` module.  I don't know where to start!
 
 The good news is, your code depending on `pylatexenc 2` should run without any
 chagnes.  You might get some deprecation warnings which you can silence using
 python's warnings filter management (e.g., ``python -W
 'ignore::DeprecationWarnings'`` or using :py:func:`warnings.simplefilter`)
 
+The `latex2text` and `latexencode` modules have barely changed.
 
 
+- New parsing mechanism in a new `latexnodes` module — everything gets delegated
+  to "parser objects" that are specialized in parsing a specific construct.  See
+  :ref:`parsers-objects`.
+  
+- The parser has new enhanced handling of macro, environment, and specials
+  arguments.  Arguments can be named for easier lookup when traversing the node
+  tree.
+
+- so much more ... ...
+
+- The `len` attribute in node objects is replaced by a `pos_end` attribute.  The
+  `len` attribute can still be accessed as a read-only computed attribute for
+  compatibility with existing code using pylatexenc 2.
+
+
+
+.. _new-in-pylatexenc-3-possible-pitfall-changes:
 
 A couple things to look out for
 -------------------------------

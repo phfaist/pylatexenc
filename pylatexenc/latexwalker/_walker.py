@@ -731,6 +731,110 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
         read_max_nodes=None,
         parsing_state=None
 ):
+    r"""
+    Parses the latex content given to the constructor (and stored in `self.s`)
+    into a list of nodes.
+
+    .. deprecated:: 3.0
+
+       This method was deprecated as of `pylatexenc 3`.  Please use parser
+       objects instead.  You probably want something like::
+
+        # Deprecated since pylatexenc 3:
+        
+        #nodelist, npos, nlen = my_latex_walker.get_latex_nodes(
+        #    parsing_state=parsing_state
+        #)
+        
+        # New syntax since pylatexenc 3:
+        
+        nodelist, parsing_state_delta = my_latex_walker.parse_content(
+            latexnodes.parsers.LatexGeneralNodesParser(),
+            parsing_state=parsing_state
+        )
+        npos = nodelist.pos
+        nlen = nodelist.len # or nodelist.pos_end - nodelist.pos
+
+       See the documentation for
+       :py:class:`~latexnodes.parsers.LatexGeneralNodesParser` for information
+       on how to implement similar behavior as with the `stop_upon_*=`
+       arguments, or by `read_max_nodes=`.  See also, for instance, the
+       :py:class:`~latexnodes.parsers.LatexSingleNodeParser` parser class.
+
+    Returns a tuple `(nodelist, pos, len)` where:
+
+    - `nodelist` is a list of :py:class:`LatexNode`\ 's representing the parsed
+      LaTeX code.
+
+    - `pos` is the same as the `pos` given as argument; if there is leading
+      whitespace it is reported in `nodelist` using a
+      :py:class:`LatexCharsNode`.
+
+    - `len` is the length of the parsed expression.  If one of the
+      `stop_upon_...=` arguments are provided (cf below), then the `len`
+      includes the length of the token/expression that stopped the parsing.
+
+    If `stop_upon_closing_brace` is given and set to a character, then
+    parsing stops once the given closing brace is encountered (but not
+    inside a subgroup).  The brace is given as a character, ']', '}', ')',
+    or '>'.  Alternatively you may specify a 2-item tuple of two single
+    distinct characters representing the opening and closing brace chars.
+    The returned `len` includes the closing brace, but the closing brace is
+    not included in any of the nodes in the `nodelist`.
+
+    If `stop_upon_end_environment` is provided, then parsing stops once the
+    given environment was closed.  If there is an environment mismatch, then
+    a `LatexWalkerParseError` is raised except in tolerant parsing mode (see
+    :py:meth:`parse_flags()`).  Again, the closing environment is included
+    in the length count but not the nodes.
+
+    If `stop_upon_closing_mathmode` is specified, then the parsing stops
+    once the corresponding math mode (assumed already open) is closed.  This
+    argument may take the values `None` (no particular request to stop at
+    any math mode token), or one of ``$``, ``$$``, ``\)`` or ``\]``
+    indicating a closing math mode delimiter that we are expecting and at
+    which point parsing should stop.
+
+    If the token '$' (respectively '$$') is encountered, it is interpreted
+    as the *beginning* of a new math mode chunk *unless* the argument
+    `stop_upon_closing_mathmode=...` has been set to '$' (respectively
+    '$$').
+
+    If `read_max_nodes` is non-`None`, then it should be set to an integer
+    specifying the maximum number of top-level nodes to read before
+    returning.  (Top-level nodes means that macro arguments, environment or
+    group contents, etc., do not count towards `read_max_nodes`.)  If
+    `None`, the entire input string will be parsed.
+
+    .. note::
+
+       There are a few important differences between
+       ``get_latex_nodes(read_max_nodes=1)`` and ``get_latex_expression()``:
+       The former reads a logical node of the LaTeX document, which can be a
+       sequence of characters, a macro invocation with arguments, or an
+       entire environment, but the latter reads a single LaTeX "token" in
+       a similar way to how LaTeX parses macro arguments.
+
+       For instance, if a macro is encountered, then
+       ``get_latex_nodes(read_max_nodes=1)`` will read and parse its
+       arguments, and include it in the corresponding
+       :py:class:`LatexMacroNode`, whereas ``get_latex_expression()`` will
+       return a minimal :py:class:`LatexMacroNode` with no arguments
+       regardless of the macro's argument specification.  The same holds for
+       latex specials.  For environments,
+       ``get_latex_nodes(read_max_nodes=1)`` will return the entire parsed
+       environment into a :py:class:`LatexEnvironmentNode`, whereas
+       ``get_latex_expression()`` will return a :py:class:`LatexMacroNode`
+       named 'begin' with no arguments.
+
+    Parsing might be influenced by the `parsing_state`.  See doc for
+    :py:class:`ParsingState`.  If `parsing_state` is `None`, the default
+    parsing state is used.
+
+    .. versionadded:: 2.0
+
+       The `parsing_state` argument was introduced in version 2.0.
+    """
 
     _util.pylatexenc_deprecated_3(
         "get_latex_nodes(): "
