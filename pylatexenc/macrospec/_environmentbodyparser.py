@@ -85,6 +85,11 @@ class LatexEnvironmentBodyContentsParserInfo(LatexDelimitedExpressionParserInfo)
             self.child_parsing_state
         )
 
+    def get_open_context_description(self):
+        # don't report an open context for the body contents, we already have an
+        # open context for the body node itself
+        return None
+
     def stop_token_condition(self, token):
         if token.tok == 'end_environment' \
            and token.arg == self.delimited_expression_parser.environmentname:
