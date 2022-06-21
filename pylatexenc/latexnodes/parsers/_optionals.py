@@ -67,7 +67,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
                  chars,
                  following_arg_parser=None,
                  include_chars_node_before_following_arg=True,
-                 return_none_instead_of_empty=False,
+                 return_none_instead_of_empty=True,
                  allow_pre_space=True,
                  **kwargs):
         super(LatexOptionalCharsMarkerParser, self).__init__(**kwargs)
@@ -124,7 +124,13 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
             # chars marker is simply not present.
             if self.return_none_instead_of_empty:
                 return None, None
-            return latex_walker.make_nodelist([]), None
+            emptynl = latex_walker.make_nodelist(
+                [],
+                pos=orig_pos_token.pos,
+                pos_end=orig_pos_token.pos,
+                parsing_state=parsing_state,
+            )
+            return emptynl, None
 
         nodes = []
         if self.include_chars_node_before_following_arg:
@@ -149,7 +155,10 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
 
             nodes += following_nodes
 
-        nodes = latex_walker.make_nodelist(nodes)
+        nodes = latex_walker.make_nodelist(
+            nodes, 
+            parsing_state=parsing_state,
+        )
 
         return nodes, parsing_state_delta
         

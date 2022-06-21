@@ -148,6 +148,8 @@ class LatexGeneralNodesParser(LatexParserBase):
         relevant handlers.
         """
 
+        pos_start = token_reader.cur_pos()
+
         collector = self.make_nodes_collector(latex_walker, token_reader, parsing_state)
 
         try:
@@ -163,14 +165,27 @@ class LatexGeneralNodesParser(LatexParserBase):
             
             logger.debug("Got parse error while reading general nodes: %r", e)
 
+            thenodelist = collector.get_final_nodelist()
+            if thenodelist.pos is None:
+                thenodelist.pos = pos_start
+            if thenodelist.pos_end is None:
+                thenodelist.pos_end = pos_start
+
             raise LatexWalkerNodesParseError(
                 msg=e.msg,
                 pos=e.pos,
                 open_contexts=e.open_contexts,
                 error_type_info=e.error_type_info,
-                recovery_nodes=collector.get_final_nodelist(),
+                recovery_nodes=thenodelist,
                 recovery_parsing_state_delta=collector.get_parser_parsing_state_delta(),
             )
+
+        collected_nodelist = collector.get_final_nodelist()
+        if collected_nodelist.pos is None:
+            collected_nodelist.pos = pos_start
+        if collected_nodelist.pos_end is None:
+            collected_nodelist.pos_end = pos_start
+
 
         # check that any required stop condition was met
 
@@ -213,7 +228,7 @@ class LatexGeneralNodesParser(LatexParserBase):
             exc = LatexWalkerNodesParseError(
                 msg=message,
                 pos=collector.pos_start(),
-                recovery_nodes=collector.get_final_nodelist(),
+                recovery_nodes=collected_nodelist,
                 recovery_parsing_state_delta=collector.get_parser_parsing_state_delta(),
                 error_type_info={
                     'what': 'nodes_generalnodes_required_stop_condition_not_met',
@@ -243,7 +258,7 @@ class LatexGeneralNodesParser(LatexParserBase):
 
         # put together the node list & carry on
 
-        nodelist = collector.get_final_nodelist()
+        nodelist = collected_nodelist
         parsing_state_delta = collector.get_parser_parsing_state_delta()
 
         logger.debug("parser - we got final nodelist - %r", nodelist)

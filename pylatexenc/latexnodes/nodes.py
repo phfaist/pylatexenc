@@ -899,6 +899,8 @@ class LatexNodeList(object):
 
 
     def __eq__(self, other):
+        if isinstance(other, list):
+            return self.nodelist == other
         return (
             self.nodelist == other.nodelist
             and self.pos == other.pos

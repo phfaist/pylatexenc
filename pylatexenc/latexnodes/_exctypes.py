@@ -165,23 +165,46 @@ class LatexWalkerParseErrorFormatter(object):
         super(LatexWalkerParseErrorFormatter, self).__init__()
         self.exc = exc
         
+    def format_open_blocks(self):
+        exc = self.exc
+        if not exc.open_contexts:
+            return None
+        disp = ''
+        for context in reversed(exc.open_contexts):
+            what, pos, lineno, colno = context
+            disp += '{empty:4}{loc:<18}  {what}\n'.format(
+                empty='',
+                loc=format_pos(pos,lineno,colno),
+                what=what
+            )
+        return disp
+
+    def format_pos(self):
+        return format_pos(self.exc.pos, self.exc.lineno, self.exc.colno)
+
+    def format_full_traceback(self):
+        exc = self.exc
+        msg = ''
+
+        if exc.input_source:
+            msg += '  in {}'.format(exc.input_source)
+
+        msg += " {}".format(self.format_pos())
+
+        if exc.open_contexts:
+            msg += '\nOpen LaTeX blocks:\n'
+            msg += self.format_open_blocks()
+
+        return msg
+
     def to_display_string(self):
         exc = self.exc
 
         msg = exc.msg
-        if exc.input_source:
-            msg += '  in {}'.format(exc.input_source)
-        disp = msg + " {}".format(format_pos(exc.pos, exc.lineno, exc.colno))
-        if exc.open_contexts:
-            disp += '\nOpen LaTeX blocks:\n'
-            for context in reversed(exc.open_contexts):
-                what, pos, lineno, colno = context
-                disp += '{empty:4}{loc:<18}  {what}\n'.format(
-                    empty='',
-                    loc=format_pos(pos,lineno,colno),
-                    what=what
-                )
-        return disp
+        msg += self.format_full_traceback()
+
+        return msg
+
 
 def format_pos(pos, lineno, colno):
     if lineno is not None:

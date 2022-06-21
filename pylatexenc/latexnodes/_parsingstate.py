@@ -450,9 +450,11 @@ class ParsingState(object):
         # show only fields that differ w.r.t. parent.
         return (
             pswid + "(<{:#x}> {} ".format(fn_unique_object_id(parent_obj), _unisafe_arrow_s)
-            +  ", ".join(
-                "{}={!r}".format(k, v) for k, v in diff_kwargs.items()
-            ) + ")"
+            +  ", ".join([
+                "{}={!r}".format(k, v)
+                for k, v in diff_kwargs.items()
+                if k not in ('s',)
+            ]) + ")"
         )
 
 
