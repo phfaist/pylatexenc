@@ -265,11 +265,11 @@ class ParsingState(object):
         self.math_mode_delimiter = math_mode_delimiter
 
         if not self.in_math_mode and self.math_mode_delimiter:
-            self.math_mode_delimiter = None
             logger.warning(
                 "ParsingState: You set math_mode_delimiter=%r but "
                 "in_math_mode is False", self.math_mode_delimiter
             )
+            self.math_mode_delimiter = None
 
         # new fields in pylatexenc 3
 
@@ -378,6 +378,10 @@ class ParsingState(object):
             # Normal, can happen in math environments delimited by
             # e.g. \begin{align}...\end{align}
             self._math_expecting_close_delim_info = None
+
+        logger.debug("set parsing state internal math mode info, "
+                     "self._math_expecting_close_delim_info=%r",
+                     self._math_expecting_close_delim_info)
         
 
     def finalize_state(self):
@@ -387,6 +391,8 @@ class ParsingState(object):
         self._finalize_state_latex_group_delimiters_info(parent, kwargs)
         self._finalize_state_latex_math_delim_info(parent, kwargs)
         self._finalize_state_inmathmode_info(parent, kwargs)
+        
+        logger.debug("finalize_state() done. parent=%r; kwargs=%r.", parent, kwargs)
 
 
     # ---
@@ -405,6 +411,8 @@ class ParsingState(object):
         If no arguments are provided, this returns a copy of the present parsing
         context object.
         """
+
+        logger.debug("sub_context(%r)", kwargs)
 
         attrs = self.get_fields()
         kwargs2 = {

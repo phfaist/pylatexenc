@@ -156,6 +156,9 @@ class LatexArgumentsParser(LatexParserBase):
                 arg.parsing_state_delta,
                 latex_walker
             )
+
+            logger.debug("Argument %d will use parsing state = %r (delta was %r)",
+                         argj, arg_parsing_state, arg.parsing_state_delta)
                 
             argnodes, parsing_state_delta = latex_walker.parse_content(
                 arg_node_parser,

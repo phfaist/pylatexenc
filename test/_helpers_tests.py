@@ -264,6 +264,23 @@ class DummyLatexContextDb2(DummyLatexContextDb):
 
 
 
+def add_not_equal_warning_to_object(Obj):
+
+    Obj._old_eq_fn = Obj.__eq__
+
+    def _eq_with_warning(a, b):
+        result = a._old_eq_fn(b)
+        if not result:
+            logger.warning("|a!=b|:\na=%r\nb=%r", a, b)
+        return result
+
+    Obj.__eq__ = _eq_with_warning
+
+
+
+
+
+
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
 

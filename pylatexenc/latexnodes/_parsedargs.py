@@ -74,8 +74,8 @@ class LatexArgumentSpec(object):
        renumbers all arguments, you can refer to them by name to avoid having to
        update all references to argument numbers.
 
-       (TODO: Still need good lookup functions in :py:class:`ParsedArguments`,
-       etc.)
+       See :py:class:`ParsedArgumentsInfo` for an interface for looking up
+       argument values on a node instance.
 
     .. py:attribute:: parsing_state_delta
 
@@ -95,10 +95,15 @@ class LatexArgumentSpec(object):
         self.parsing_state_delta = parsing_state_delta
 
     def __repr__(self):
-        return "{cls}(argname={argname!r}, parser={parser!r})".format(
-            cls=self.__class__.__name__,
-            argname=self.argname,
-            parser=self.parser
+        return (
+            "{cls}(argname={argname!r}, parser={parser!r}, "
+            "parsing_state_delta={parsing_state_delta!r})"
+            .format(
+                cls=self.__class__.__name__,
+                argname=self.argname,
+                parser=self.parser,
+                parsing_state_delta=self.parsing_state_delta
+            )
         )
 
     def to_json_object(self):

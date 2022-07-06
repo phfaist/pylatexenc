@@ -64,11 +64,17 @@ class LatexEnvironmentBodyContentsParserInfo(LatexDelimitedExpressionParserInfo)
             self.delimited_expression_parser.get_contents_parsing_state_delta(),
             self.latex_walker,
         )
-        self.child_parsing_state = get_updated_parsing_state_from_delta(
-            self.group_parsing_state,
-            self.delimited_expression_parser.get_child_parsing_state_delta(),
-            self.latex_walker,
-        )
+        child_parsing_state_delta = \
+            self.delimited_expression_parser.get_child_parsing_state_delta()
+        if child_parsing_state_delta is not None:
+            self.child_parsing_state = get_updated_parsing_state_from_delta(
+                self.group_parsing_state,
+                self.delimited_expression_parser.get_child_parsing_state_delta(),
+                self.latex_walker,
+            )
+        else:
+            self.child_parsing_state = None
+
         self.parsed_delimiters = (
             "\\begin{}{}{}".format('{',self.delimited_expression_parser.environmentname,'}'),
             "\\end{}{}{}".format('{',self.delimited_expression_parser.environmentname,'}')

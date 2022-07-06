@@ -1024,11 +1024,11 @@ class LatexNodesVisitor:
     def visit_math_node(self, node):
         self.visit(node)
 
-    def visit_node_list(self, node):
-        self.visit(node)
+    def visit_node_list(self, nodes):
+        self.visit(nodes)
 
     def visit_parsed_arguments(self, parsed_args):
-        self.visit(node)
+        self.visit(parsed_args)
 
 
     def visit_unknown_node(self, node):

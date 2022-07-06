@@ -117,7 +117,7 @@ class LatexMathParserInfo(LatexDelimitedExpressionParserInfo):
             )
 
         self.contents_parsing_state = self.math_parsing_state
-        self.child_parsing_state = self.math_parsing_state
+        self.child_parsing_state = None
         self.parsed_delimiters = self.get_parsed_delimiters()
 
     def stop_token_condition(self, token):

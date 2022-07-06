@@ -417,7 +417,7 @@ class LatexDelimitedExpressionParserInfo(object):
         self.latex_walker = latex_walker
         # simple defaults so the attributes are there, can be overwritten in initialize()
         self.contents_parsing_state = self.group_parsing_state
-        self.child_parsing_state = self.parsing_state
+        self.child_parsing_state = None
         self.parsed_delimiters = (None, None)
 
     def initialize(self):
@@ -429,7 +429,8 @@ class LatexDelimitedExpressionParserInfo(object):
         using the `get_parsed_delimiters()` method.
         """
         self.contents_parsing_state = self.group_parsing_state
-        self.child_parsing_state = self.parsing_state
+        # keep default child parsing state (e.g., for entering math mode, etc.)
+        self.child_parsing_state = None
         self.parsed_delimiters = self.get_parsed_delimiters()
 
     def stop_token_condition(self, token):
@@ -471,8 +472,11 @@ class LatexDelimitedExpressionParserInfo(object):
         the value of the `child_parsing_state` attribute, if appropriate, or to
         decide to ignore that attribute entirely.
         """
-        logger.debug("Requested child parsing state! = %r", self.child_parsing_state)
-        return self.child_parsing_state
+        if self.child_parsing_state is not None:
+            logger.debug("Requested child parsing state! = %r", self.child_parsing_state)
+            return self.child_parsing_state
+        logger.debug("Requested child parsing state, keeping default %r", parsing_state)
+        return parsing_state
 
 
     def get_matching_delimiter(self, opening_delimiter):
