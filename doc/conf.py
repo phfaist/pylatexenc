@@ -54,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'pylatexenc'
-copyright = '2019, Philippe Faist'
+copyright = '2022, Philippe Faist'
 author = 'Philippe Faist'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -96,7 +96,20 @@ issues_github_path = "phfaist/pylatexenc"
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
+
 html_theme = 'alabaster'
+
+# import guzzle_sphinx_theme
+# html_theme_path = guzzle_sphinx_theme.html_theme_path()
+# html_theme = 'guzzle_sphinx_theme'
+# html_style = 'custom.css' /* don't forget to add ''' @import url("guzzle.css"); ''' */
+
+
+#import sphinx_bootstrap_theme
+#html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+#html_theme = 'bootstrap'
+
+
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -112,7 +125,7 @@ html_theme_options = {
     'github_type': 'star',
     'github_count': 'true',
 }
-#
+
 html_sidebars = {
     '**': [
         'about.html',
@@ -122,6 +135,8 @@ html_sidebars = {
 #        'donate.html',
     ]
 }
+
+
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

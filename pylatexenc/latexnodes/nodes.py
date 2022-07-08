@@ -58,6 +58,7 @@ __all__ = [
     'LatexSpecialsNode',
     'LatexMathNode',
     'LatexNodeList',
+    'LatexNodesVisitor',
 ]
 
 

@@ -95,7 +95,7 @@ class LatexWalkerParseError(LatexWalkerError):
     .. py:attribute:: colno
 
        The column number where the error occurred in the line `lineno`, starting
-       at 1.
+       at 0.
 
     .. py:attribute:: error_type_info
 

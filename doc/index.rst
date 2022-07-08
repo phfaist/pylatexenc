@@ -48,8 +48,9 @@ Documentation
    :maxdepth: 2
    :caption: Contents:
 
-   latexwalker
+   latexnodes
    macrospec
+   latexwalker
    latex2text
    latexencode
    changes

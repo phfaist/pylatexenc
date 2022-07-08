@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pylatexenc"
-version = "3.0alpha000001"
+version = "3.0alpha000003"
 description = "Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion"
 authors = ["Philippe Faist <philippe.faist@bluewin.ch>"]
 license = "MIT"

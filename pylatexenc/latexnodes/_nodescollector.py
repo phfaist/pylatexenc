@@ -927,6 +927,10 @@ class LatexNodesCollector(object):
             self.latex_walker,
         )
 
+        child_math_parsing_state = self.make_child_parsing_state(math_parsing_state,
+                                                                 LatexMathNode)
+        logger.debug("child_math_parsing_state = %r", child_math_parsing_state)
+
         # a math inline or display environment
         mathnode, parsing_state_delta = \
             self.latex_walker.parse_content(
@@ -934,8 +938,7 @@ class LatexNodesCollector(object):
                     math_mode_delimiters=tok.arg,
                 ),
                 token_reader=self.token_reader,
-                parsing_state=self.make_child_parsing_state(math_parsing_state,
-                                                            LatexMathNode)
+                parsing_state=child_math_parsing_state,
             )
 
         self.update_state_from_parsing_state_delta(parsing_state_delta)

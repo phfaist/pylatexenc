@@ -145,7 +145,7 @@ class TestLatexNodesCollector(unittest.TestCase):
         ps = ParsingState(s=latextext)
         lw = DummyWalker()
 
-        lw.mkmath_assert_delimiters_equals = '\('
+        lw.mkmath_assert_delimiters_equals = r'\('
 
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,
@@ -155,6 +155,8 @@ class TestLatexNodesCollector(unittest.TestCase):
         nc.process_tokens()
         
         nodelist = nc.get_final_nodelist()
+
+        self.assertFalse(ps.in_math_mode)
 
         self.assertEqual(
             nodelist,
@@ -174,6 +176,7 @@ class TestLatexNodesCollector(unittest.TestCase):
         self.assertTrue(nc.reached_end_of_stream())
         self.assertFalse(nc.stop_token_condition_met())
         self.assertFalse(nc.stop_nodelist_condition_met())
+
         
     def test_final_whitespace_after_chars(self):
         
@@ -906,7 +909,7 @@ class TestLatexNodesCollector(unittest.TestCase):
                 return child_ps
             self.assertTrue(False) # Didn't expect this node class with our latex input code
 
-        lw.mkmath_assert_delimiters_equals = '\('
+        lw.mkmath_assert_delimiters_equals = r'\('
 
         nc = LatexNodesCollector(latex_walker=lw,
                                  token_reader=tr,

@@ -75,6 +75,17 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
+name = "guzzle-sphinx-theme"
+version = "0.7.11"
+description = "Sphinx theme used by Guzzle."
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+Sphinx = ">=1.2b1"
+
+[[package]]
 name = "idna"
 version = "3.3"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -314,6 +325,14 @@ lint = ["flake8 (>=3.5.0)", "isort", "mypy (>=0.950)", "docutils-stubs", "types-
 test = ["pytest (>=4.6)", "html5lib", "cython", "typed-ast"]
 
 [[package]]
+name = "sphinx-bootstrap-theme"
+version = "0.8.1"
+description = "Sphinx Bootstrap Theme."
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "sphinx-issues"
 version = "3.0.1"
 description = "A Sphinx extension for linking to your project's issue tracker"
@@ -466,7 +485,7 @@ buildjslib = ["Transcrypt", "PyYAML"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6" # argh...
-content-hash = "ab9f39139ac8b228f427c7aad354cd3d36258f7f42cae2d23a108ba97bab92f5"
+content-hash = "d68dcfaec88380777a090a8e59f4b18352385d00f01a7aae739a82e24e642f34"
 
 [metadata.files]
 alabaster = [
@@ -501,6 +520,7 @@ docutils = [
     {file = "docutils-0.18.1-py2.py3-none-any.whl", hash = "sha256:23010f129180089fbcd3bc08cfefccb3b890b0050e1ca00c867036e9d161b98c"},
     {file = "docutils-0.18.1.tar.gz", hash = "sha256:679987caf361a7539d76e584cbeddc311e3aee937877c87346f31debc63e9d06"},
 ]
+guzzle-sphinx-theme = []
 idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
     {file = "idna-3.3.tar.gz", hash = "sha256:9d643ff0a55b762d5cdb124b8eaa99c66322e2157b69160bc32796e824360e6d"},
@@ -681,6 +701,7 @@ sphinx = [
     {file = "Sphinx-5.0.1-py3-none-any.whl", hash = "sha256:36aa2a3c2f6d5230be94585bc5d74badd5f9ed8f3388b8eedc1726fe45b1ad30"},
     {file = "Sphinx-5.0.1.tar.gz", hash = "sha256:f4da1187785a5bc7312cc271b0e867a93946c319d106363e102936a3d9857306"},
 ]
+sphinx-bootstrap-theme = []
 sphinx-issues = [
     {file = "sphinx-issues-3.0.1.tar.gz", hash = "sha256:b7c1dc1f4808563c454d11c1112796f8c176cdecfee95f0fd2302ef98e21e3d6"},
     {file = "sphinx_issues-3.0.1-py3-none-any.whl", hash = "sha256:8b25dc0301159375468f563b3699af7a63720fd84caf81c1442036fcd418b20c"},
