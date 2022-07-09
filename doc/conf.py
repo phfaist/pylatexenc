@@ -85,6 +85,11 @@ pygments_style = 'sphinx'
 todo_include_todos = False
 
 
+
+#autodoc_docstring_signature = True
+
+
+
 # -- Options for sphinx_issues --------------------------------------------
 
 # GitHub repo
@@ -99,11 +104,11 @@ issues_github_path = "phfaist/pylatexenc"
 
 html_theme = 'alabaster'
 
+
 # import guzzle_sphinx_theme
 # html_theme_path = guzzle_sphinx_theme.html_theme_path()
 # html_theme = 'guzzle_sphinx_theme'
 # html_style = 'custom.css' /* don't forget to add ''' @import url("guzzle.css"); ''' */
-
 
 #import sphinx_bootstrap_theme
 #html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
@@ -117,15 +122,18 @@ html_theme = 'alabaster'
 #
 html_theme_options = {
     'font_family': 'Open Sans',
-    'font_size': '16px',
+    'font_size': '15px',
     'head_font_family': 'Open Sans',
     'github_user': 'phfaist',
     'github_repo': 'pylatexenc',
     'github_button': True,
     'github_type': 'star',
     'github_count': 'true',
-}
 
+    'fixed_sidebar': True,
+    'page_width': '950px',
+    'sidebar_width': '180px',
+}
 html_sidebars = {
     '**': [
         'about.html',
@@ -135,8 +143,6 @@ html_sidebars = {
 #        'donate.html',
     ]
 }
-
-
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

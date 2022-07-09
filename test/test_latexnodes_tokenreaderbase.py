@@ -1,18 +1,52 @@
 import unittest
 import logging
+logger = logging.getLogger(__name__)
 
-
-from pylatexenc.latexnodes._token import (
-    LatexToken
-)
-
-from pylatexenc.latexnodes._parsingstate import (
-    ParsingState
-)
 
 from pylatexenc.latexnodes._tokenreaderbase import (
-    LatexTokenListTokenReader
+    LatexTokenReaderBase,
+    LatexTokenListTokenReader,
 )
+
+from pylatexenc.latexnodes import (
+    LatexWalkerEndOfStream,
+    LatexToken,
+    ParsingState,
+)
+
+
+
+
+class TestTokenReaderBase(unittest.TestCase):
+
+    def test_make_token(self):
+        tb = LatexTokenReaderBase()
+        
+        self.assertEqual(
+            tb.make_token(tok='char', arg='*', pos=3),
+            LatexToken(tok='char', arg='*', pos=3)
+        )
+
+    def test_peek_token_or_none(self):
+
+        class MyTokenReader(LatexTokenReaderBase):
+            def __init__(self, at_end=False):
+                super(MyTokenReader, self).__init__()
+                self.at_end = at_end
+
+            def peek_token(self, parsing_state):
+                if not self.at_end:
+                    return self.make_token(tok='char', arg='-', pos=5)
+                raise LatexWalkerEndOfStream()
+
+        ps = ParsingState()
+
+        tb = MyTokenReader(False)
+        self.assertEqual( tb.peek_token_or_none(ps),
+                          LatexToken(tok='char', arg='-', pos=5) )
+        tb = MyTokenReader(True)
+        self.assertIsNone( tb.peek_token_or_none(ps) )
+
 
 
 class TestTokenReaderTokenList(unittest.TestCase):

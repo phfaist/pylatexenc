@@ -23,6 +23,13 @@
 # THE SOFTWARE.
 #
 
+r"""
+.. versionadded:: 3.0
+
+   The `latexnodes` module was introduced in `pylatexenc` 3.
+
+"""
+
 
 from ._exctypes import *
 

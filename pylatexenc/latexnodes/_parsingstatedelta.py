@@ -44,7 +44,7 @@ class ParsingStateDelta(object):
 
     There are many ways in which the parsing state can change, and this is
     reflected in the many different subclasses of `ParsingStateDelta` (e.g.,
-    :py:class:`ParsingStateDeltaSetMathMode`).
+    :py:class:`ParsingStateDeltaEnterMathMode`).
 
     It is the :py:class:`LatexWalkerBase` class that is being used that is
     responsible for actually updating a parsing state according to a
@@ -114,6 +114,13 @@ class ParsingStateDeltaReplaceParsingState(ParsingStateDelta):
 #
 
 class ParsingStateDeltaWalkerEvent(ParsingStateDelta):
+    r"""
+    A parsing state change representing a logical "event" (like entering math
+    mode), for which the actual parsing state changes should be requested to the
+    latex walker instance.
+
+    DOC......................
+    """
     def __init__(self, walker_event_name, walker_event_kwargs):
         super(ParsingStateDeltaWalkerEvent, self).__init__()
         self.walker_event_name = walker_event_name
@@ -131,6 +138,17 @@ class ParsingStateDeltaWalkerEvent(ParsingStateDelta):
         )
 
 class ParsingStateDeltaEnterMathMode(ParsingStateDeltaWalkerEvent):
+    r"""
+    A parsing state change representing the beginning of math mode contents.
+
+    This class is a semantic marker for entering math mode and does not itself
+    set the field `in_math_mode=True` for the parsing state.  It's a "walker
+    event parsing state delta", see :py:class:`ParsingStateDeltaWalkerEvent`.
+    The latexwalker is queried to obtain the actual parsing state change that
+    should be effected because of the change to math mode.  (There might be
+    changes other than `in_math_mode=True`, such as a different set of macro
+    definitions, etc.)
+    """
     def __init__(self, math_mode_delimiter=None, trigger_token=None):
         super(ParsingStateDeltaEnterMathMode, self).__init__(
             walker_event_name='enter_math_mode',
@@ -141,6 +159,12 @@ class ParsingStateDeltaEnterMathMode(ParsingStateDeltaWalkerEvent):
         )
 
 class ParsingStateDeltaLeaveMathMode(ParsingStateDeltaWalkerEvent):
+    r"""
+    A parsing state change representing contents in text mode.
+
+    See also :py:class:`ParsingStateDeltaEnterMathMode`.
+    """
+
     def __init__(self, trigger_token=None):
         super(ParsingStateDeltaLeaveMathMode, self).__init__(
             walker_event_name='leave_math_mode',

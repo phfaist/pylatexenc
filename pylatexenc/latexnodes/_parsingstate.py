@@ -105,11 +105,10 @@ class ParsingState(object):
           The `s` attribute is deprecated starting in `pylatexenc 3`.  If you
           have access to a node instance (cf. :py:class:`LatexNode`) and would
           like to find out the original string that was parsed, use
-          `node.latex_walker.s` instead of querying the parsing state.
-
-          (The rationale of removing the `s` attribute from the parsing state is
-          for parsing state objects to have a meaning of their own independently
-          of any string being parsed or any latex walker instance.)
+          `node.latex_walker.s` instead of querying the parsing state.  (The
+          rationale of removing the `s` attribute from the parsing state is for
+          parsing state objects to have a meaning of their own independently of
+          any string being parsed or any latex walker instance.)
 
     .. py:attribute:: latex_context
 
@@ -169,6 +168,10 @@ class ParsingState(object):
 
        ............
 
+    .. py:attribute:: macro_escape_char
+
+       ................
+
     .. py:attribute:: forbidden_characters
 
        Characters that are simply forbidden to occur as regular characters.  You
@@ -199,8 +202,9 @@ class ParsingState(object):
 
        The attributes `latex_group_delimiters`, `latex_inline_math_delimiters`,
        `latex_display_math_delimiters`, `enable_double_newline_paragraphs`,
-       `enable_environments`, `enable_comments`, `macro_alpha_chars`, and
-       `forbidden_characters` were introduced in version 3.
+       `enable_environments`, `enable_comments`, `macro_alpha_chars`,
+       `macro_escape_char`, and `forbidden_characters` were introduced in
+       version 3.
     """
 
     _fields = (

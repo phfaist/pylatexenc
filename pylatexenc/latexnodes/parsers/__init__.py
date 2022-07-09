@@ -23,6 +23,10 @@
 # THE SOFTWARE.
 #
 
+r"""
+Collection of Parser objects that can parse specific types of LaTeX
+constructs.
+"""
 
 from ._base import LatexParserBase
 

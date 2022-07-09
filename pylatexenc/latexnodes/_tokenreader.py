@@ -40,36 +40,35 @@ from ._tokenreaderbase import LatexTokenReaderBase
 
 
 
-# don't use '\w' for alphanumeric char, can get surprises especially if
-# we try to run our code on other platforms (eg brython) where the
-# environment name might otherwise not be matched correctly
-_rx_environment_name = \
-    re.compile(r'\s*\{(?P<environmentname>[A-Za-z0-9* ._-]+)\}')
-
-def _parse_latex_environment_name(s, pos, beginend, pos_envname):
-
-    # I might want to pass this code into transcrypt (->Javascript), where
-    # rx.match(s, pos) is not supported ...
-    envmatch = _rx_environment_name.match(s[pos_envname:]) #s, pos_envname)
-    if envmatch is None:
-        return None, None
-
-    envmatch_end_pos = pos_envname + envmatch.end()
-
-    return envmatch.group('environmentname'), envmatch_end_pos
-
-
-
-
 class LatexTokenReader(LatexTokenReaderBase):
     r"""
+    LatexTokenReader(s, *, tolerant_parsing=False)
+
     Parse tokens from an input string.
 
-    ...................
+    Inherits :py:class:`LatexTokenReaderBase`.  See also the methods there for
+    the standard token reader interface (such as
+    :py:meth:`LatexTokenReaderBase.peek_token()` and friends).
 
-    .. versionadded:: 3.0
+    The main functionality of this class is coded in the `impl_***()` methods.
+    To extend this class with custom functionality, you should reimplement
+    those.  The methods reimplemented from :py:class:`TokenReaderBase` add
+    layers of exception catching and recovery, etc., so be wary of
+    reimplementing them manually.
 
-       The `LatexTokenReader` class was introduced in `pylatexenc` 3.
+    Attributes:
+
+    .. py::attribute:  s
+
+       The string that is being parsed.  Do NOT modify this attribute!
+
+    .. py::attribute:  tolerant_parsing
+
+       Whether or not we are in tolerant parsing mode.  In tolerant parsing
+       mode, we go out of our way to recover from errors to produce some kind of
+       useful tokens.  If not in tolerant parsing mode, then parsing is strict
+       and errors are raised immediately so that they can be traced down and
+       debugged more easily.
     """
     def __init__(self, s, **kwargs):
         super(LatexTokenReader, self).__init__()
@@ -83,10 +82,10 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         self._pos = 0
 
-        # can be patched if necessary...
-        self._parse_latex_environment_name = _parse_latex_environment_name
-
     def move_to_token(self, tok, rewind_pre_space=True):
+        r"""
+        Reimplemented from :py:meth:`LatexTokenReaderBase.move_to_token()`.
+        """
         if rewind_pre_space:
             new_pos = tok.pos - len(tok.pre_space)
         else:
@@ -94,6 +93,9 @@ class LatexTokenReader(LatexTokenReaderBase):
         self._advance_to_pos(new_pos)
 
     def move_past_token(self, tok, fastforward_post_space=True):
+        r"""
+        Reimplemented from :py:meth:`LatexTokenReaderBase.move_past_token()`.
+        """
         new_pos = tok.pos_end
 
         # note tok.pos_end already points past post_space (in contrast to pre_space)
@@ -106,11 +108,17 @@ class LatexTokenReader(LatexTokenReaderBase):
 
 
     def peek_chars(self, num_chars, parsing_state):
+        r"""
+        Reimplemented from :py:meth:`LatexTokenReaderBase.peek_chars()`.
+        """
         if self._pos >= len(self.s):
             raise LatexWalkerEndOfStream()
         return self.s[self._pos:self._pos+num_chars]
 
     def next_chars(self, num_chars, parsing_state):
+        r"""
+        Reimplemented from :py:meth:`LatexTokenReaderBase.next_chars()`.
+        """
         chars = self.peek_chars(num_chars, parsing_state)
         self._pos += num_chars
         if self._pos > len(self.s):
@@ -118,24 +126,23 @@ class LatexTokenReader(LatexTokenReaderBase):
         return chars
 
     def cur_pos(self):
+        r"""
+        Reimplemented from :py:meth:`LatexTokenReaderBase.cur_pos()`.
+        """
         return self._pos
 
-    def final_pos(self):
-        return len(self.s)
+    # def final_pos(self):
+    #     return len(self.s)
 
     def move_to_pos_chars(self, pos):
+        r"""
+        Reimplemented from :py:meth:`LatexTokenReaderBase.move_to_pos_chars()`.
+        """
         self._advance_to_pos(pos)
 
 
     def _advance_to_pos(self, pos):
         self._pos = pos
-
-    def rewind_to_pos(self, pos):
-        if pos > self._pos:
-            raise ValueError("Internal error, rewind_to_pos() requires a position that is "
-                             "*before* the current position, got {} > {}"
-                             .format(pos, self._pos))
-        self._advance_to_pos(pos)
 
 
     def skip_space_chars(self, parsing_state):
@@ -148,6 +155,8 @@ class LatexTokenReader(LatexTokenReaderBase):
         consecutive newlines do not count as whitespace.
 
         Returns the string of whitespace characters that was skipped.
+
+        Reimplemented from :py:meth:`LatexTokenReaderBase.skip_space_chars()`.
         """
 
         (space, space_pos, space_pos_end) = \
@@ -158,10 +167,26 @@ class LatexTokenReader(LatexTokenReaderBase):
         return (space, space_pos, space_pos_end)
 
     def peek_space_chars(self, parsing_state):
+        r"""
+        Reimplemented from :py:meth:`LatexTokenReaderBase.peek_space_chars()`.
+        """
         return self.impl_peek_space_chars(self.s, self._pos, parsing_state)
 
 
     def peek_token(self, parsing_state):
+        r"""
+        Read a single token without updating the current position pointer.  Returns
+        the token that was parsed.
+
+        Parse errors while reading the token are handled differently whether or
+        not we are in tolerant parsing mode.  (See :py:attr:`tolerant_parsing`
+        attribute and constructor argument.)  If not in tolerant mode, the error
+        is raised.  When in tolerant parsing mode, the error is translated into
+        a "recovery token" provided by the error object.  The "recovery token"
+        is returned as if no error had occurred, in order to continue parsing.
+
+        Reimplemented from :py:meth:`LatexTokenReaderBase.peek_token()`.
+        """
 
         try:
             
@@ -176,11 +201,20 @@ class LatexTokenReader(LatexTokenReaderBase):
                 # raise it up the chain
                 raise
 
+    # ---
+
+
     def impl_peek_token(self, parsing_state):
+        r"""
+        Read a single token and return it.
+
+        If the end of stream is reached, raise :py:exc:`LatexWalkerEndOfStream`
+        (regardless of whether or not we are in tolerant parsing mode).
+        """
 
         logger.debug("impl_peek_token(): parsing_state = %r", parsing_state)
 
-        # shorthands (& to avoid repeated lookups)
+        # shorthands (& to avoid repeated lookups to self.XXX)
         s = self.s
         len_s = len(s)
         pos = self._pos
@@ -188,15 +222,19 @@ class LatexTokenReader(LatexTokenReaderBase):
         pre_space, space_pos, space_pos_end = \
             self.impl_peek_space_chars(s, pos, parsing_state)
 
-        pos = space_pos_end
-        if pos >= len_s:
-            raise LatexWalkerEndOfStream(final_space=pre_space)
-
         # first, see if we have a new paragraph token
-        if (pos < len_s - 2
-            and s[pos] == '\n' and s[pos+1] == '\n'
-            and parsing_state.enable_double_newline_paragraphs):
-            # two \n's indicate new paragraph.
+        if parsing_state.enable_double_newline_paragraphs and pre_space.count('\n') >= 2:
+            # the whitespace contained at least two newlines -- it's a new
+            # paragraph token
+
+            # identify where the first and last newline chars are
+            newpar_rel_pos_start = pre_space.find('\n')
+            newpar_rel_pos_end = pre_space.rfind('\n')+1 # include last newline
+            # pre_space is the leading whitespace up to the first newline
+            pre_space = pre_space[:newpar_rel_pos_start]
+            newpar_pos_start = space_pos + newpar_rel_pos_start
+            newpar_pos_end = space_pos + newpar_rel_pos_end
+
             if parsing_state.latex_context is not None:
                 try:
                     sspec = parsing_state.latex_context.get_specials_spec(
@@ -204,15 +242,27 @@ class LatexTokenReader(LatexTokenReaderBase):
                     )
                 except KeyError:
                     sspec = None
-                if sspec is not None:
+                # make sure we got a spec specifically for the new paragraph
+                # token and not a generic default spec object provided by
+                # get_specials_spec() on failed lookup
+                if sspec is not None and sspec.specials_chars == '\n\n':
                     return self.make_token(tok='specials',
                                            arg=sspec,
-                                           pos=pos,
-                                           pos_end=pos+2,
+                                           pos=newpar_pos_start,
+                                           pos_end=newpar_pos_end,
                                            pre_space=pre_space)
             return self.make_token(tok='char', arg='\n\n',
-                                   pos=pos, pos_end=pos+2,
+                                   pos=newpar_pos_start,
+                                   pos_end=newpar_pos_end,
                                    pre_space=pre_space)
+
+        # if all we could read is whitespsace (w/o 2+ newlines), and we're at
+        # the end of the stream, we raise LatexWalkerEndOfStream.
+        pos = space_pos_end
+        if pos >= len_s:
+            raise LatexWalkerEndOfStream(final_space=pre_space)
+
+        # inspect the next character --
 
         c = s[pos]
 
@@ -297,13 +347,13 @@ class LatexTokenReader(LatexTokenReaderBase):
         position pointer (reported in `pos`).  The integer `pos_end` is the
         position immediately after the space characters.
 
-        No exceptions is raised if we encounter the end of the stream, we simply
+        No exception is raised if we encounter the end of the stream, we simply
         stop looking for more spaces.
         """
 
         p2 = pos
-        enable_double_newline_paragraphs = \
-            parsing_state.enable_double_newline_paragraphs
+        # enable_double_newline_paragraphs = \
+        #     parsing_state.enable_double_newline_paragraphs
 
         space = ''
 
@@ -316,17 +366,26 @@ class LatexTokenReader(LatexTokenReaderBase):
             space += c
             p2 += 1
 
-            if space.endswith('\n\n') and enable_double_newline_paragraphs:
-                # two \n's indicate new paragraph.
-                space = space[:-2]
-                p2 = p2 - 2
-                break
+            # ### new paragraphs handled differently now -- parser will count
+            # ### number of newlines in returned whitespace
+            #
+            # if space.endswith('\n\n') and enable_double_newline_paragraphs:
+            #     # two \n's indicate new paragraph.
+            #     space = space[:-2]
+            #     p2 = p2 - 2
+            #     break
 
         # encountered end of space
         return (space, pos, p2)
 
 
     def impl_char_token(self, c, pos, pos_end, parsing_state, pre_space):
+        r"""
+        Read a character token.
+
+        This method checks that the given character is not a forbidden
+        character, see :py:attr:`ParsingState.forbidden_characters`.
+        """
         if c in parsing_state.forbidden_characters:
             raise LatexWalkerTokenParseError(
                 s=self.s,
@@ -349,6 +408,14 @@ class LatexTokenReader(LatexTokenReaderBase):
 
 
     def impl_maybe_read_math_mode_delimiter(self, s, pos, parsing_state, pre_space):
+        r"""
+        See if we can read a math mode delimiter token.  This method is called only
+        after a first check (math mode is enabled in parsing state, and the
+        character is one of the first characters of known math mode delimiters).
+
+        Return the math mode token, or `None` if we didn't encounter a math mode
+        delimiter.
+        """
 
         if parsing_state.in_math_mode:
             # looking for closing math mode
@@ -392,8 +459,18 @@ class LatexTokenReader(LatexTokenReaderBase):
 
 
     def impl_read_macro(self, s, pos, parsing_state, pre_space):
+        r"""
+        Read a macro call token.  Called when the character at the current position
+        is a macro escape character (usually ``\``, see
+        :py:attr:`ParsingState.macro_escape_char`).
 
-        if s[pos] != '\\':
+        Macro characters that form long macro names are determined by the
+        py:attr:`ParsingState.macro_alpha_chars` attribute.
+
+        Return the macro token.
+        """
+
+        if s[pos] != parsing_state.macro_escape_char:
             raise ValueError("Internal error, expected '\\' in impl_read_macro()")
 
         # read information for an escape sequence
@@ -402,7 +479,10 @@ class LatexTokenReader(LatexTokenReaderBase):
             raise LatexWalkerTokenParseError(
                 s=s,
                 pos=pos+1,
-                msg="Expected macro name after ‘\\’ escape character",
+                msg=(
+                    "Expected macro name after ‘{}’ escape character"
+                    .format(parsing_state.macro_escape_char)
+                ),
                 error_type_info={
                     'what': 'token_end_of_stream_immediately_after_escape_character',
                 },
@@ -432,6 +512,14 @@ class LatexTokenReader(LatexTokenReaderBase):
         if isalphamacro:
             post_space, post_space_pos, post_space_pos_end = \
                 self.impl_peek_space_chars(s, posi, parsing_state)
+
+            # but make sure we put back whitespace that breaks into a new paragraph:
+            if post_space.count('\n') >= 2:
+                # only keep whitespace up to the first newline character
+                newline_rel_pos = post_space.find('\n')
+                post_space_pos_end = post_space_pos + newline_rel_pos
+                post_space = post_space[:newline_rel_pos]
+
             posi = post_space_pos_end
 
         return self.make_token(tok='macro', arg=macro,
@@ -439,18 +527,68 @@ class LatexTokenReader(LatexTokenReaderBase):
                                pre_space=pre_space, post_space=post_space)
 
 
+
+    # don't use '\w' for alphanumeric char, can get surprises especially if
+    # we try to run our code on other platforms (eg brython) where the
+    # environment name might otherwise not be matched correctly
+    rx_environment_name = \
+        re.compile(r'\s*\{(?P<environmentname>[A-Za-z0-9* ._-]+)\}')
+    r"""
+    A regular expression that will read the environment name after encountering
+    the ``\begin`` or ``\end`` constructs.
+    """
+
+    def parse_latex_environment_name(self, pos, beginend, pos_envname):
+        r"""
+        Parse an environment name in curly braces after encountering ``\begin`` or
+        ``\end``.
+
+        We allow for whitespace, an opening brace, a macro name with normal
+        ASCII alphanumeric characters and some standard punctuation, and a
+        closing curly brace.
+
+        We use the regular expression stored as the class attribute
+        `rx_environment_name`.  To override it, you can simply set this
+        attribute to your token reader object instance, e.g.,
+        ``my_token_reader.rx_environment_name = .....``
+
+        Return a tuple `(environmentname, environment_match_end_pos)`.  If the
+        environment name could not be read because of a parse error, then return
+        `(None, None)`.
+        """
+
+        # I might want to pass this code into transcrypt (->Javascript), where
+        # rx.match(s, pos) is not supported ...
+        envmatch = self.rx_environment_name.match(self.s[pos_envname:]) #self.s, pos_envname)
+        if envmatch is None:
+            return None, None
+
+        envmatch_end_pos = pos_envname + envmatch.end()
+
+        return envmatch.group('environmentname'), envmatch_end_pos
+
+
     def impl_read_environment(self, s, pos, parsing_state, beginend, pre_space):
+        r"""
+        Parse a ``\begin{environmentname}`` or ``\end{environmentname}`` token.
+
+        This method is called after we have seen that at the position `pos` in
+        the string we indeed have ``\begin`` or ``\end`` (or with the current
+        escape character instead of ``\``).
+
+        Return the parsed token.
+        """
 
         if s[pos:pos+1+len(beginend)] != parsing_state.macro_escape_char + beginend:
             raise ValueError(
-                "Internal error, expected ‘\\{}’ in read_environment()"
-                .format(beginend)
+                "Internal error, expected ‘{}{}’ in read_environment()"
+                .format(parsing_state.macro_escape_char, beginend)
             )
 
         pos_envname = pos + 1 + len(beginend)
 
         environment_name, environment_pos_end = \
-            self._parse_latex_environment_name(s, pos, beginend, pos_envname)
+            self.parse_latex_environment_name(pos, beginend, pos_envname)
 
         logger.debug("Getting environment name at %r -> %r, is {align}?=%r",
                      '...|'+s[pos_envname:pos_envname+35]+'|...',
@@ -490,6 +628,13 @@ class LatexTokenReader(LatexTokenReaderBase):
         return env_token
 
     def impl_read_comment(self, s, pos, parsing_state, pre_space):
+        r"""
+        Parse and return a comment token.
+
+        We also parse the post-space and include it in the token object. New
+        paragraph tokens are never included in the comment's post-space
+        attribute.
+        """
 
         if s[pos] != parsing_state.comment_char:
             raise ValueError("Internal error, expected comment char ‘{}’ in read_comment()"
@@ -506,6 +651,14 @@ class LatexTokenReader(LatexTokenReaderBase):
             # comment
             post_space, post_space_pos, post_space_pos_end = \
                 self.impl_peek_space_chars(s, sppos, parsing_state)
+
+            # but make sure we put back whitespace that breaks into a new paragraph:
+            if post_space.count('\n') >= 2:
+                # only keep whitespace up to the first newline character
+                newline_rel_pos = post_space.find('\n')
+                post_space_pos_end = post_space_pos + newline_rel_pos
+                post_space = post_space[:newline_rel_pos]
+
             comment_pos_end = sppos
             comment_with_whitespace_pos_end = post_space_pos_end
 
@@ -518,10 +671,6 @@ class LatexTokenReader(LatexTokenReaderBase):
             post_space=post_space
         )
     
-
-
-
-
 
 
 

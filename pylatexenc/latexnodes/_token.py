@@ -57,6 +57,8 @@ class LatexToken(object):
     :py:meth:`LatexWalker.get_token()` returns.  See the doc of that function
     for more information on how tokens are parsed.
 
+    TODO UPDATE DOC PYLTXENC3 .........................................
+
     This is not the same thing as a LaTeX token, it's just a part of the input
     which we treat in the same way (e.g. a text character, a comment, a macro,
     etc.)
@@ -145,6 +147,13 @@ class LatexToken(object):
         are delimited directly by LaTeX syntax and are determined unambiguously
         without any lookup in the latex context database.  This is not the case
         for specials.]
+
+    .. versionchanged:: 3.0
+
+       Starting in `pylatexenc 3`, the `len` argument was replaced by `pos_end`.
+       For backwards compatibility, `kwargs` arguments are inspected for a `len`
+       argument.  If a `len` argument is provided and `pos_end` was left `None`,
+       then `pos_end` is set to `pos+len`.
     """
     def __init__(self, tok, arg, pos, pos_end=None, pre_space='', post_space='', **kwargs):
 

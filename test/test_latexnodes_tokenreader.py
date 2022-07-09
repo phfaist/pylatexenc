@@ -294,6 +294,20 @@ New paragraph
                                     pos_end=p+2, pre_space=''))
 
 
+    def test_newpar_tokens(self):
+
+        latextext = """Abc  \t \n   \t\nz"""
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+        
+        p = 3 # whitespace
+        tr.move_to_pos_chars(p)
+        self.assertEqual(
+            tr.next_token(ps),
+            LatexToken(tok='char', arg='\n\n', pos=7, pos_end=7+6, pre_space='  \t ')
+        )
+
+
 
     def test_no_environments(self):
 
