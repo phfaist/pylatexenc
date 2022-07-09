@@ -294,7 +294,20 @@ New paragraph
                                     pos_end=p+2, pre_space=''))
 
 
-    def test_newpar_tokens(self):
+    def test_newpar_tokens_1(self):
+
+        latextext = """Abc    \n\n  z"""
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+        
+        p = 3 # whitespace
+        tr.move_to_pos_chars(p)
+        self.assertEqual(
+            tr.next_token(ps),
+            LatexToken(tok='char', arg='\n\n', pos=7, pos_end=7+2, pre_space='    ')
+        )
+
+    def test_newpar_tokens_2(self):
 
         latextext = """Abc  \t \n   \t\nz"""
         tr = LatexTokenReader(latextext)
@@ -305,6 +318,64 @@ New paragraph
         self.assertEqual(
             tr.next_token(ps),
             LatexToken(tok='char', arg='\n\n', pos=7, pos_end=7+6, pre_space='  \t ')
+        )
+
+    def test_newpar_token_after_macro_1(self):
+
+        latextext = """\\macroname\n  \n """
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+        
+        p = 0
+        tr.move_to_pos_chars(p)
+        self.assertEqual(
+            tr.next_token(ps),
+            LatexToken(tok='macro', arg='macroname', pos=0, pos_end=10, pre_space='',
+                       post_space='')
+        )
+
+    def test_newpar_token_after_macro_2(self):
+
+        latextext = """\\macroname   \n  \n """
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+        
+        p = 0
+        tr.move_to_pos_chars(p)
+        self.assertEqual(
+            tr.next_token(ps),
+            LatexToken(tok='macro', arg='macroname', pos=0, pos_end=13, pre_space='',
+                       post_space='   ')
+        )
+
+
+    def test_nonewpar_token_after_comment_1(self):
+
+        latextext = """% comment \n   xyz"""
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+        
+        p = 0
+        tr.move_to_pos_chars(p)
+        self.assertEqual(
+            tr.next_token(ps),
+            LatexToken(tok='comment', arg=' comment ', pos=0, pos_end=14, pre_space='',
+                       post_space='\n   ')
+        )
+
+
+    def test_newpar_token_after_comment_2(self):
+
+        latextext = """% comment \n  \n """
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+        
+        p = 0
+        tr.move_to_pos_chars(p)
+        self.assertEqual(
+            tr.next_token(ps),
+            LatexToken(tok='comment', arg=' comment ', pos=0, pos_end=10, pre_space='',
+                       post_space='')
         )
 
 
