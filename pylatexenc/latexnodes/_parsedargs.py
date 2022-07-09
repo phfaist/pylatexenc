@@ -170,7 +170,10 @@ class ParsedArguments(object):
 
        Argument type specification provided to the constructor
 
-       ......... deprecated, read-only
+       .. deprecated:: 3.0
+    
+          The attribute `argspec` is deprecated and only read-only starting from
+          `pylatexenc 3`.  Use the `arguments_spec_list` attribute instead.
 
     .. py:attribute:: legacy_nodeoptarg_nodeargs
 

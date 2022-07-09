@@ -550,7 +550,12 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         # mandatory keyword-only argument:
         parsing_state = kwargs.pop('parsing_state')
 
-        return LatexNodeList(nodelist=nodelist, parsing_state=parsing_state, **kwargs)
+        return LatexNodeList(
+            nodelist=nodelist,
+            parsing_state=parsing_state,
+            latex_walker=self,
+            **kwargs
+        )
 
     def pos_to_lineno_colno(self, pos, as_dict=False):
         r"""

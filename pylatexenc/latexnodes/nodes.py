@@ -698,6 +698,14 @@ class LatexNodeList(object):
        assuming that the `nodelist` represents a single continuous sequence of
        nodes in the latex string.
 
+    .. py:attribute:: parsing_state
+
+       The parsing state used to parse this node list.
+
+    .. py:attribute:: latex_walker
+
+       The latex walker instance used to parse this node list.
+
 
     .. py:attribute:: len
 

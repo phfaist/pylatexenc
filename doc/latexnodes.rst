@@ -102,6 +102,9 @@ Parsed Arguments
 .. autoclass:: ParsedArgumentsInfo
    :members:
 
+.. autoclass:: SingleParsedArgumentInfo
+   :members:
+
 
 Nodes Collector
 ---------------

@@ -79,5 +79,6 @@ from ._latexcontextdbbase import (
 
 from ._parsedargsinfo import (
     ParsedArgumentsInfo,
+    SingleParsedArgumentInfo,
 )
 
