@@ -1058,4 +1058,4 @@ class LatexNodesVisitor:
 
         You probably shouldn't override this method in your visitor subclass.
         """
-        node.accept_node_visitor(node)
+        node.accept_node_visitor(self)
