@@ -9,6 +9,7 @@ from pylatexenc.latexnodes import (
     LatexTokenReader,
     LatexArgumentSpec,
     ParsedArguments,
+    ParsingState,
 )
 from pylatexenc.latexnodes.nodes import *
 from pylatexenc.macrospec import (
@@ -18,9 +19,15 @@ from pylatexenc.macrospec import (
 )
 from pylatexenc.latexwalker import LatexWalker
 
-# from ._helpers_tests import (
-# )
+from ._helpers_tests import (
+    add_not_equal_warning_to_object
+)
 
+
+add_not_equal_warning_to_object(LatexNode)
+add_not_equal_warning_to_object(ParsingState)
+add_not_equal_warning_to_object(ParsedArguments)
+add_not_equal_warning_to_object(LatexArgumentSpec)
 
 
 class TestEnvironmentBodyContentsParser(unittest.TestCase):
@@ -104,6 +111,7 @@ class TestEnvironmentBodyContentsParser(unittest.TestCase):
 
         ps_content = nodes[1].parsing_state
         ps_child = nodes[0].parsing_state
+        ps_child2 = nodes[2].parsing_state
         
         print("ps_content =", ps_content)
         print("ps_child =", ps_child)
@@ -128,22 +136,22 @@ class TestEnvironmentBodyContentsParser(unittest.TestCase):
                     pos_end=8,
                 ),
                 LatexMacroNode(
-                    parsing_state=ps_child,
+                    parsing_state=ps_child2,
                     latex_walker=lw,
                     macroname='textbf',
                     spec=ps.latex_context.get_macro_spec('textbf'),
                     nodeargd=ParsedArguments(
                         argnlist=[
                             LatexGroupNode(
-                                parsing_state=ps_child,
+                                parsing_state=ps_child2,
                                 latex_walker=lw,
                                 delimiters=('{','}'),
                                 nodelist=LatexNodeList(
                                     [
                                         LatexMacroNode(
-                                            parsing_state=ps_child,
+                                            parsing_state=ps_child2,
                                             latex_walker=lw,
-                                            spec=ps_child.latex_context \
+                                            spec=ps_child2.latex_context \
                                                 .get_macro_spec('localcommand'),
                                             macroname='localcommand',
                                             nodeargd=ParsedArguments(
@@ -177,11 +185,15 @@ class TestEnvironmentBodyContentsParser(unittest.TestCase):
         print(nodes)
         print(nodes_expected)
 
+        # check that ps_content is the parsing state by inspecting the context db
         self.assertIsNotNone( ps_content.latex_context.get_macro_spec('item') )
         self.assertIsNone( ps_content.latex_context.get_macro_spec('localcommand') )
 
+        # check that ps_child is the parsing state by inspecting the context db
         self.assertIsNone( ps_child.latex_context.get_macro_spec('item') )
         self.assertIsNotNone( ps_child.latex_context.get_macro_spec('localcommand') )
+        self.assertIsNone( ps_child2.latex_context.get_macro_spec('item') )
+        self.assertIsNotNone( ps_child2.latex_context.get_macro_spec('localcommand') )
 
 
         self.assertEqual(

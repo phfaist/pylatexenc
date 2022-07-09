@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 from .._exctypes import *
 from .. import nodes
+from .._parsingstatedelta import get_updated_parsing_state_from_delta
 
 from ._base import LatexParserBase
 from ._generalnodes import LatexGeneralNodesParser
@@ -127,7 +128,11 @@ class LatexDelimitedExpressionParserInfo(object):
       contents might be in math mode.
 
     - `child_parsing_state_delta` - Any state changes to set when recursing down
-      to children of the contents of this delimited content.
+      to children of the contents of this delimited content.  By default, the
+      delta is applied with respect to the `group_parsing_state`, not the
+      `contents_parsing_state`.  [Rationale: this attribute is usually used to
+      "undo" some effects in the contents parsing state, so it's more useful to
+      have the reference parsing state be the `group_parsing_state`.]
 
     - `parsed_delimiters` — This object is also responsible for actually
       determining which delimiters were used (if they weren't predetermined
@@ -461,8 +466,10 @@ class LatexDelimitedExpressionParserInfo(object):
         """
 
         if self.child_parsing_state_delta is not None:
+            logger.debug("Requested child parsing state, applying delta %r",
+                         self.child_parsing_state_delta)
             return get_updated_parsing_state_from_delta(
-                parsing_state,
+                self.group_parsing_state,
                 self.child_parsing_state_delta,
                 self.latex_walker,
             )

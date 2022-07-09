@@ -282,6 +282,9 @@ class DummyLatexContextDb2(DummyLatexContextDb):
 
 def add_not_equal_warning_to_object(Obj):
 
+    if hasattr(Obj, '_old_eq_fn'):
+        return
+
     Obj._old_eq_fn = Obj.__eq__
 
     def _eq_with_warning(a, b):
