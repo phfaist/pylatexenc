@@ -87,6 +87,7 @@ todo_include_todos = False
 
 
 #autodoc_docstring_signature = True
+autodoc_member_order = 'bysource'
 
 
 

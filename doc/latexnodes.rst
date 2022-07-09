@@ -37,7 +37,6 @@ Token Readers
 .. autoclass:: LatexToken
    :members:
 
-
 .. autoclass:: LatexTokenReaderBase
    :members:
 
@@ -158,7 +157,7 @@ Parser Classes
 
 
 .. autoclass:: LatexParserBase
-   :members:
+   :members: __call__, contents_can_be_empty
 
 
 General Nodes

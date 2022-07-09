@@ -11,11 +11,13 @@ from pylatexenc.latexnodes import (
     LatexWalkerBase,
     LatexNodesCollector,
     LatexContextDbBase,
-    #ParsingStateDelta,
     CallableSpecBase,
     LatexArgumentSpec,
     ParsedArguments,
+    #ParsingStateDelta,
+    ParsingStateDeltaEnterMathMode,
     ParsingStateDeltaReplaceParsingState,
+    get_updated_parsing_state_from_delta,
 )
 from pylatexenc.latexnodes.nodes import *
 
@@ -107,6 +109,17 @@ def dummy_empty_group_parser(latex_walker, token_reader, parsing_state):
 def dummy_empty_mathmode_parser(latex_walker, token_reader, parsing_state):
     first_token = token_reader.next_token(parsing_state=parsing_state)
     second_token = token_reader.next_token(parsing_state=parsing_state)
+
+    # --- math mode is only set in the CONTENT of the math node ---
+    #
+    # math_parsing_state = get_updated_parsing_state_from_delta(
+    #     parsing_state,
+    #     ParsingStateDeltaEnterMathMode(
+    #         math_mode_delimiter=first_token.arg,
+    #         trigger_token=first_token,
+    #     ),
+    #     latex_walker,
+    # )
 
     if first_token.tok in ('mathmode_inline','mathmode_display') \
        and second_token.tok in ('mathmode_inline', 'mathmode_display'):
@@ -214,6 +227,9 @@ class DummySpecialsSpec(CallableSpecBase):
 
     def get_node_parser(self, token):
         return make_dummy_specials_node_parser(token, self)
+
+
+
 
 
 

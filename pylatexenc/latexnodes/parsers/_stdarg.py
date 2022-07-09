@@ -286,13 +286,15 @@ class LatexCharsGroupParser(LatexDelimitedGroupParser):
                 enable_specials=False,
                 enable_math=False
             )
-            self.child_parsing_state = self.parsing_state
 
             self.current_parsing_state = self.contents_parsing_state
 
             self.parsed_delimiters = self.get_parsed_delimiters()
 
             logger.debug("Initialized CharsContentsParserInfo; %r", self.__dict__)
+
+        def make_child_parsing_state(self, parsing_state, node_class):
+            return self.parsing_state
 
         def stop_token_condition(self, token):
             logger.debug("stop_token_condition: %r", token)
@@ -339,11 +341,12 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
                 enable_specials=False,
                 enable_math=False
             )
-            self.child_parsing_state = self.parsing_state
-
             self.parsed_delimiters = self.get_parsed_delimiters()
 
             logger.debug("Initialized CommaSepContentsParserInfo; %r", self.__dict__)
+
+        def make_child_parsing_state(self, parsing_state, node_class):
+            return self.parsing_state
 
         def make_content_parser(self, latex_walker, token_reader):
             return _CommaSepContentCustomParser(self)

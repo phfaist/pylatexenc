@@ -126,15 +126,8 @@ class LatexDelimitedExpressionParserInfo(object):
       might differ from surrounding parsing state.  E.g., the group's
       contents might be in math mode.
 
-    - `child_parsing_state` — The group content's children parsing state.
-      This parsing state is used when the contents recurses down to create
-      children nodes, e.g., groups within the group content.
-
-      This attribute is only used by the default implementation of
-      :py:meth:`make_child_parsing_state()`.  I.e., if you reimplement
-      `make_child_parsing_state()` with custom behavior, it's up to you to
-      either inspect and use the `child_parsing_state` attribute or to ignore it
-      entirely and use your own mechanism to determine the child parsing state.
+    - `child_parsing_state_delta` - Any state changes to set when recursing down
+      to children of the contents of this delimited content.
 
     - `parsed_delimiters` — This object is also responsible for actually
       determining which delimiters were used (if they weren't predetermined
@@ -229,12 +222,13 @@ class LatexDelimitedExpressionParserInfo(object):
        expression.  Defaults to `group_parsing_state`; can be set by subclasses
        in their `initialize()` reimplementation.
 
-    .. py:attribute:: child_parsing_state
+    .. py:attribute:: child_parsing_state_delta
 
-       The parsing state to use for parsing children (LaTeX groups, macro
-       arguments, environments, etc.) encountered within the delimited
-       expression that is being parsed.  Defaults to `group_parsing_state`; can
-       be set by subclasses in their `initialize()` reimplementation.
+       Any state changes to set when calling parsers for children of the
+       contents of this delimited expression.  This can be left to `None` to
+       keep the same parsing state as the contents.  It should be set to a
+       :py:class:`~pylatexenc.latexnodes.ParsingStateDelta` instance to specify
+       parsing state changes if applicable.
 
     .. py:attribute:: parsing_state
 
@@ -417,7 +411,7 @@ class LatexDelimitedExpressionParserInfo(object):
         self.latex_walker = latex_walker
         # simple defaults so the attributes are there, can be overwritten in initialize()
         self.contents_parsing_state = self.group_parsing_state
-        self.child_parsing_state = None
+        self.child_parsing_state_delta = None
         self.parsed_delimiters = (None, None)
 
     def initialize(self):
@@ -429,8 +423,7 @@ class LatexDelimitedExpressionParserInfo(object):
         using the `get_parsed_delimiters()` method.
         """
         self.contents_parsing_state = self.group_parsing_state
-        # keep default child parsing state (e.g., for entering math mode, etc.)
-        self.child_parsing_state = None
+        self.child_parsing_state_delta = None
         self.parsed_delimiters = self.get_parsed_delimiters()
 
     def stop_token_condition(self, token):
@@ -461,20 +454,19 @@ class LatexDelimitedExpressionParserInfo(object):
         expression's internal node collector's `make_child_parsing_state()`
         handler.
 
-        In normal circumstances you shouldn't have to reimplement this function.
-        By default, we return the `child_parsing_state` attribute, which was set
-        precisely for that purpose.
-
         You may reimplement this method if you need a more detailed mechanism
         for determining what parsing state the child parser should be initiated
         with, e.g., if the parsing state should vary according to what type of
-        child is encountered.  In this case it's up to you to take into account
-        the value of the `child_parsing_state` attribute, if appropriate, or to
-        decide to ignore that attribute entirely.
+        child is encountered.
         """
-        if self.child_parsing_state is not None:
-            logger.debug("Requested child parsing state! = %r", self.child_parsing_state)
-            return self.child_parsing_state
+
+        if self.child_parsing_state_delta is not None:
+            return get_updated_parsing_state_from_delta(
+                parsing_state,
+                self.child_parsing_state_delta,
+                self.latex_walker,
+            )
+
         logger.debug("Requested child parsing state, keeping default %r", parsing_state)
         return parsing_state
 
@@ -616,7 +608,10 @@ class LatexDelimitedExpressionParserInfo(object):
 
 class LatexDelimitedExpressionParser(LatexParserBase):
     r"""
-    ............
+    A general-purpose parser / parser base class to handle LaTeX content that is
+    enclosed by some form of delimiters.  This can include a standard TeX group
+    (``{ ... }``), or math mode blocks (``$...$``), or environments
+    (``\begin{xyz}...\end{xyz}``), etc.
 
     Constructor arguments:
 

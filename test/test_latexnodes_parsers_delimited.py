@@ -198,7 +198,9 @@ class MyHelperTestDEPInfo(LatexDelimitedExpressionParserInfo):
         self.contents_parsing_state = self.group_parsing_state.sub_context(
             in_math_mode=True,
         )
-        self.child_parsing_state = self.group_parsing_state.sub_context(
+
+    def make_child_parsing_state(self, parsing_state, node_class):
+        return self.group_parsing_state.sub_context(
             in_math_mode=False,
             enable_environments=False,
         )

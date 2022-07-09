@@ -45,19 +45,8 @@ if sys.version_info.major == 2:
 
 class LatexToken(object):
     r"""
-    Represents a token read from the LaTeX input.
-
-    This is used internally by :py:class:`LatexWalker`'s methods.  You probably
-    don't need to worry about individual tokens.  Rather, you should use the
-    high-level functions provided by :py:class:`LatexWalker` (e.g.,
-    :py:meth:`~LatexWalker.get_latex_nodes()`).  So most likely, you can ignore
-    this class entirely.
-
-    Instances of this class are what the method
-    :py:meth:`LatexWalker.get_token()` returns.  See the doc of that function
-    for more information on how tokens are parsed.
-
-    TODO UPDATE DOC PYLTXENC3 .........................................
+    Represents a token read from the LaTeX input.  Instances of this class are
+    return by token readers such as :py:class:`LatexTokenReader`.
 
     This is not the same thing as a LaTeX token, it's just a part of the input
     which we treat in the same way (e.g. a text character, a comment, a macro,
@@ -141,12 +130,15 @@ class LatexToken(object):
         meaning in LaTeX.  E.g., '~', '&', etc.
 
         The `arg` field is then the corresponding
-        :py:class:`~pylatexenc.macrospec.SpecialsSpec` instance.  [The rationale
-        for setting `arg` to a `SpecialsSpec` instance, in contrast to the
-        behavior for macros and envrionments, is that macros and environments
-        are delimited directly by LaTeX syntax and are determined unambiguously
-        without any lookup in the latex context database.  This is not the case
-        for specials.]
+        :py:class:`~pylatexenc.macrospec.SpecialsSpec` instance.
+
+        The rationale for setting `arg` to a `SpecialsSpec` instance, in
+        contrast to the behavior for macros and envrionments, is that macros and
+        environments are delimited directly by LaTeX syntax and are determined
+        unambiguously without any lookup in the latex context database.  This is
+        not the case for specials, where successfully parsing a specials already
+        requires a lookup in the context database, and so the spec object is
+        readily available.
 
     .. versionchanged:: 3.0
 

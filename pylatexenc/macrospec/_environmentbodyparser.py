@@ -64,16 +64,8 @@ class LatexEnvironmentBodyContentsParserInfo(LatexDelimitedExpressionParserInfo)
             self.delimited_expression_parser.get_contents_parsing_state_delta(),
             self.latex_walker,
         )
-        child_parsing_state_delta = \
+        self.child_parsing_state_delta = \
             self.delimited_expression_parser.get_child_parsing_state_delta()
-        if child_parsing_state_delta is not None:
-            self.child_parsing_state = get_updated_parsing_state_from_delta(
-                self.group_parsing_state,
-                self.delimited_expression_parser.get_child_parsing_state_delta(),
-                self.latex_walker,
-            )
-        else:
-            self.child_parsing_state = None
 
         self.parsed_delimiters = (
             "\\begin{}{}{}".format('{',self.delimited_expression_parser.environmentname,'}'),
@@ -82,13 +74,11 @@ class LatexEnvironmentBodyContentsParserInfo(LatexDelimitedExpressionParserInfo)
 
         logger.debug(
             "initializing environment body contents delimited parser: environmentname=%r,"
-            "parsing_state=%r, group_parsing_state=%r, contents_parsing_state=%r, "
-            "child_parsing_state=%r",
+            "parsing_state=%r, group_parsing_state=%r, contents_parsing_state=%r",
             self.delimited_expression_parser.environmentname,
             self.parsing_state,
             self.group_parsing_state,
             self.contents_parsing_state,
-            self.child_parsing_state
         )
 
     def get_open_context_description(self):

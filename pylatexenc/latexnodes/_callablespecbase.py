@@ -33,7 +33,18 @@ from __future__ import print_function, unicode_literals
 
 class CallableSpecBase(object):
     r"""
-    .................
+    The base class for macro, environment, and specials spec classes (see the
+    :py:mod:`pylatexenc.macrospec` module).
+
+    As far as this :py:mod:`latexnodes` module's classes are concerned, a spec
+    object is simply something that can provide a parser to parse the given
+    construct (macro, environment, or specials).
+
+    The spec object should implement :py:meth:`get_node_parser()`, and it should
+    return a parser instance that can be used to parse the entire construct.
+
+    See :py:class:`macrospec.MacroSpec` for how this is implemented in the
+    :py:mod:`pylatexenc.macrospec` module.
     """
 
     def get_node_parser(self, token):

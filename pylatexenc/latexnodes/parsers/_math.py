@@ -60,6 +60,10 @@ if sys.version_info.major == 2:
 
 
 class LatexMathParserInfo(LatexDelimitedExpressionParserInfo):
+    r"""
+    Reimplementation of the :py:class:`LatexDelimitedExpressionParserInfo` class
+    for math environments, for :py:class:`LatexMathParser`.
+    """
 
     @classmethod
     def is_opening_delimiter(cls, delimiters, first_token, group_parsing_state,
@@ -104,20 +108,17 @@ class LatexMathParserInfo(LatexDelimitedExpressionParserInfo):
         self.math_mode_type = self.first_token.tok
         self.math_mode_delimiter = self.first_token.arg
 
-        self.math_parsing_state = self.parsing_state
-        if not self.math_parsing_state.in_math_mode:
-            # enter math mode if we haven't entered math mode already
-            self.math_parsing_state = get_updated_parsing_state_from_delta(
-                self.parsing_state,
-                ParsingStateDeltaEnterMathMode(
-                    math_mode_delimiter=self.math_mode_delimiter,
-                    trigger_token=self.first_token
-                ),
-                self.latex_walker,
-            )
+        # enter math mode !
+        self.math_parsing_state = get_updated_parsing_state_from_delta(
+            self.parsing_state,
+            ParsingStateDeltaEnterMathMode(
+                math_mode_delimiter=self.math_mode_delimiter,
+                trigger_token=self.first_token
+            ),
+            self.latex_walker,
+        )
 
         self.contents_parsing_state = self.math_parsing_state
-        self.child_parsing_state = None
         self.parsed_delimiters = self.get_parsed_delimiters()
 
     def stop_token_condition(self, token):

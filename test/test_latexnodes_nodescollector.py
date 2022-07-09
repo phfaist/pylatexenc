@@ -902,9 +902,6 @@ class TestLatexNodesCollector(unittest.TestCase):
         child_ps = ps.sub_context(enable_comments=False)
 
         def my_make_child_parsing_state(parsing_state, node_class):
-            # the nodes collection should already have provided a
-            # math-mode-enabled parsing state
-            self.assertTrue(parsing_state.in_math_mode)
             if node_class is LatexMathNode:
                 return child_ps
             self.assertTrue(False) # Didn't expect this node class with our latex input code

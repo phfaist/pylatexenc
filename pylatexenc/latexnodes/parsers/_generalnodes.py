@@ -274,6 +274,9 @@ class LatexSingleNodeParser(LatexGeneralNodesParser):
     r"""
     A parser that collects a single logical node.
 
+    Inherits :py:class:`LatexGeneralNodesParser`.  Additional keyword arguments
+    are provided to the :py:class:`LatexGeneralNodesParser` constructor.
+
     This class is a simple `LatexGeneralNodesParser` where the stopping
     condition is set to whenever the node list reaches one node.  (If
     `stop_on_comment` is `False`, then we don't count comment nodes).
@@ -305,6 +308,10 @@ class LatexSingleNodeParser(LatexGeneralNodesParser):
         return False
 
     def contents_can_be_empty(self):
+        r"""
+        Return `False`, because no content would not satisfy the requirements of
+        this parser.
+        """
         return False
 
 
