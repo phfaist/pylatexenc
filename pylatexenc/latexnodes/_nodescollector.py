@@ -918,22 +918,11 @@ class LatexNodesCollector(object):
 
         self.token_reader.move_to_token(tok, rewind_pre_space=False)
 
-        #
-        # ### The math parser instance is responsible for setting the parsing
-        # ### state.
-        #
 
-        # math_parsing_state = get_updated_parsing_state_from_delta(
-        #     self.parsing_state,
-        #     ParsingStateDeltaEnterMathMode(
-        #         math_mode_delimiter=tok.arg,
-        #         trigger_token=tok,
-        #     ),
-        #     self.latex_walker,
-        # )
+        # The math parser instance is responsible for setting the parsing state.
 
         child_math_parsing_state = self.make_child_parsing_state(
-            self.parsing_state, #math_parsing_state,
+            self.parsing_state,
             LatexMathNode
         )
         logger.debug("child_math_parsing_state = %r", child_math_parsing_state)
