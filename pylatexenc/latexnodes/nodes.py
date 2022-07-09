@@ -803,7 +803,15 @@ class LatexNodeList(object):
             else:
                 nodelists_list[len(nodelists_list)-1].append(n)
         
-        return [ LatexNodeList(nl) for nl in nodelists_list ]
+        if self.latex_walker is not None:
+            make_latex_node_list = self.latex_walker.make_nodelist
+        else:
+            make_latex_node_list = lambda nl, **kwargs: LatexNodeList(nl, **kwargs)
+
+        return [
+            make_latex_node_list(nl, parsing_state=self.parsing_state)
+            for nl in nodelists_list
+        ]
 
     def split_at_chars(self, sep_chars):
         r"""
