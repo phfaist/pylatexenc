@@ -59,11 +59,20 @@ class LatexEnvironmentBodyContentsParserInfo(LatexDelimitedExpressionParserInfo)
     def initialize(self):
         # set up all the relevant fields manually
 
+        #logger.debug("parsing_state=%r, group_parsing_state = %r",
+        #             self.parsing_state, self.group_parsing_state)
+
+        contents_parsing_state_delta = \
+            self.delimited_expression_parser.get_contents_parsing_state_delta()
+
         self.contents_parsing_state = get_updated_parsing_state_from_delta(
             self.group_parsing_state,
-            self.delimited_expression_parser.get_contents_parsing_state_delta(),
+            contents_parsing_state_delta,
             self.latex_walker,
         )
+        #logger.debug("Contents state = %r, delta was = %r",
+        #             self.contents_parsing_state, contents_parsing_state_delta)
+
         self.child_parsing_state_delta = \
             self.delimited_expression_parser.get_child_parsing_state_delta()
 

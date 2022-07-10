@@ -586,7 +586,8 @@ class LatexContextDb(object):
                 new_context._autogen_category_counter = self._autogen_category_counter
 
                 # need to be frozen to prevent edits here affecting edits in the original object
-                self.frozen = True 
+                new_context.frozen = True
+                #logger.debug("extended_with(): extended context is = %r", new_context)
                 return new_context
 
             if category is None:
@@ -617,6 +618,7 @@ class LatexContextDb(object):
             }
 
         new_context.frozen = True
+        #logger.debug("extended_with(): new context is = %r", new_context)
         return new_context
 
 
