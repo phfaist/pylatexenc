@@ -383,9 +383,9 @@ class ParsingState(object):
             # e.g. \begin{align}...\end{align}
             self._math_expecting_close_delim_info = None
 
-        logger.debug("set parsing state internal math mode info, "
-                     "self._math_expecting_close_delim_info=%r",
-                     self._math_expecting_close_delim_info)
+        # logger.debug("set parsing state internal math mode info, "
+        #              "self._math_expecting_close_delim_info=%r",
+        #              self._math_expecting_close_delim_info)
         
 
     def finalize_state(self):
@@ -396,7 +396,7 @@ class ParsingState(object):
         self._finalize_state_latex_math_delim_info(parent, kwargs)
         self._finalize_state_inmathmode_info(parent, kwargs)
         
-        logger.debug("finalize_state() done. parent=%r; kwargs=%r.", parent, kwargs)
+        #logger.debug("finalize_state() done. parent=%r; kwargs=%r.", parent, kwargs)
 
 
     # ---
@@ -416,13 +416,13 @@ class ParsingState(object):
         context object.
         """
 
-        logger.debug("sub_context(%r)", kwargs)
+        #logger.debug("sub_context(%r)", kwargs)
 
         attrs = self.get_fields()
         kwargs2 = {
             k: v
             for k, v in kwargs.items()
-            if v != attrs[k]
+            if not _safe_eq(v, attrs[k])
         }
 
         attrs.update(kwargs2)
@@ -474,3 +474,8 @@ class ParsingState(object):
         return { k: v
                  for k, v in self.get_fields().items()
                  if k not in ('latex_context','s',) }
+
+
+
+def _safe_eq(a, b):
+    return ((a is None and b is None) or a == b)

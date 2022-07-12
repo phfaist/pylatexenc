@@ -16,5 +16,16 @@ export function custom_apply_patches() {
         }
         return false;
     };
+    String.prototype.count = function (ch) {
+        var i = 0;
+        var count = 0;
+        for(; i < this.length; ++i) {
+            if (ch === this[i]) {
+                ++count;
+            }
+        }
+        return count;
+    };
+
 
 };

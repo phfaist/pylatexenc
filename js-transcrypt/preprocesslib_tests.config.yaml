@@ -22,6 +22,7 @@ enabled_features:
     PYLATEXENC2_LEGACY_SUPPORT_CODE: False
     PYLATEXENC_GET_DEFAULT_SPECS_FN: False
     LATEXWALKER_HELPERS: False
+    DEBUG_SET_EQ_ATTRIBUTE: False
   patches:
     UNIQUE_OBJECT_ID: |
       import unique_object_id

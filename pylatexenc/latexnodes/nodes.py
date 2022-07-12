@@ -190,15 +190,24 @@ class LatexNode(object):
         return self.latex_walker.s[self.pos : self.pos_end]
 
     def __eq__(self, other):
-        return other is not None  and  \
-            self.nodeType() is other.nodeType()  and  \
-            other.parsing_state is self.parsing_state and \
-            other.latex_walker is self.latex_walker and \
-            other.pos == self.pos and \
-            other.pos_end == self.pos_end and \
+        return (
+            other is not None  and
+            self.nodeType() is other.nodeType()  and
+            other.parsing_state is self.parsing_state  and
+            other.latex_walker is self.latex_walker  and
+            # the "pos is None and other.pos is None" checks on top of equality
+            # comparison are there for transcrypt ...
+            ((other.pos is None and self.pos is None) or other.pos == self.pos)  and
+            ((other.pos_end is None and self.pos_end is None)
+             or other.pos_end == self.pos_end)  and
             all(
-                ( getattr(self, f) == getattr(other, f)  for f in self._fields )
+                (
+                    ( (getattr(self, f) is None and getattr(other, f) is None)
+                      or getattr(self, f) == getattr(other, f) )
+                    for f in self._fields
+                )
             )
+        )
 
     # see https://docs.python.org/3/library/constants.html#NotImplemented
     def __ne__(self, other): return NotImplemented
@@ -726,6 +735,10 @@ class LatexNodeList(object):
 
         self.nodelist = nodelist
 
+        if self.nodelist is None:
+            logger.warning("You're creating a LatexNodeList with nodelist=None. That's "
+                           "likely to cause crashes!")
+
         self.parsing_state = kwargs.pop('parsing_state', None)
         self.latex_walker = kwargs.pop('latex_walker', None)
         self.pos = kwargs.pop('pos', None)
@@ -920,8 +933,10 @@ class LatexNodeList(object):
             return self.nodelist == other
         return (
             self.nodelist == other.nodelist
-            and self.pos == other.pos
-            and self.pos_end == other.pos_end
+            # the "pos is None and other.pos is None" checks are there for transcrypt ...
+            and ((self.pos is None and other.pos is None) or self.pos == other.pos)
+            and ((self.pos_end is None and other.pos_end is None)
+                 or self.pos_end == other.pos_end)
         )
 
 

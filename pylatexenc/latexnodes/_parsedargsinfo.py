@@ -140,7 +140,8 @@ class SingleParsedArgumentInfo(object):
 
     def __eq__(self, other):
         return (
-            self.argument_node_object == other.argument_node_object
+            (self.argument_node_object is None and other.argument_node_object is None)
+            or self.argument_node_object == other.argument_node_object
         )
 
 
@@ -158,8 +159,10 @@ class ParsedArgumentsInfo(object):
         self.node = node
         if self.node is not None:
             self.node_pos = self.node.pos
-            if self.parsed_arguments is None:
-                self.parsed_arguments = getattr(self.node, 'nodeargd', None)
+            if self.parsed_arguments is None and hasattr(self.node, 'nodeargd'):
+                self.parsed_arguments = self.node.nodeargd
+            else:
+                self.parsed_arguments = None
         else:
             self.node_pos = None
 

@@ -190,7 +190,13 @@ class LatexToken(object):
         return self.__repr__()
 
     def __eq__(self, other):
-        return all( ( getattr(self, f) == getattr(other, f)  for f in self._fields ) )
+        return all(
+            (
+                ( (getattr(self, f) is None and getattr(other, f) is None)
+                  or getattr(self, f) == getattr(other, f) )
+                for f in self._fields
+            )
+        )
 
     # see https://docs.python.org/3/library/constants.html#NotImplemented
     def __ne__(self, other): return NotImplemented

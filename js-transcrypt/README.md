@@ -19,7 +19,7 @@ To use commands listed here, make sure you installed the optional poetry extras
 We first need to preprocess the pylatexenc source code to make it suitable for
 use with transcrypt.
 
-    > poetry run python ../preprocess_lib.py  preprocesslib.config.yaml
+    > poetry run python ../tools/preprocess_lib.py  preprocesslib.config.yaml
     
 We can also run a few tests to see that the preprocessed lib works as intended:
 
@@ -64,7 +64,7 @@ Test run with:
 
 First need to preprocess the tests as well as the lib:
 
-    > poetry run python ../preprocess_lib.py  preprocesslib_tests.config.yaml
+    > poetry run python ../tools/preprocess_lib.py  preprocesslib_tests.config.yaml
     
 Then we need to transcrypt the main `runtests` test runner script:
 

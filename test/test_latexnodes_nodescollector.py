@@ -192,7 +192,7 @@ class TestLatexNodesCollector(unittest.TestCase):
                                  )
 
         nc.process_tokens()
-        
+
         nodelist = nc.get_final_nodelist()
 
         self.assertEqual(
@@ -415,7 +415,7 @@ class TestLatexNodesCollector(unittest.TestCase):
         self.assertIsNotNone(ps2.latex_context.get_macro_spec('Z'))
         
         self.assertEqual(
-            nodelist[:],
+            nodelist,
             LatexNodeList([
                 LatexMacroNode(
                     parsing_state=ps,
@@ -435,7 +435,7 @@ class TestLatexNodesCollector(unittest.TestCase):
                     pos=13,
                     pos_end=15,
                 )
-            ])[:]
+            ])
         )
         self.assertEqual(nc.pos_start(), 0)
         self.assertEqual(nc.pos_end(), len(latextext))

@@ -320,9 +320,9 @@ class LatexWalker(latexnodes.LatexWalkerBase):
                                 _maketuple(what, None, -1, -1)
                             )
 
-                epos = getattr(e, 'pos', None)
-                if epos is not None and e.lineno is None and e.colno is None:
-                    e.lineno, e.colno = self.latex_walker.pos_to_lineno_colno(e.pos)
+                if hasattr(e, 'pos') and e.lineno is None and e.colno is None:
+                    epos = getattr(e, 'pos', None)
+                    e.lineno, e.colno = self.latex_walker.pos_to_lineno_colno(epos)
                 e = self.latex_walker.check_tolerant_parsing_ignore_error(e)
                 if e is None:
                     # we're trying to recover from this error (tolerant parsing mode)
@@ -335,19 +335,29 @@ class LatexWalker(latexnodes.LatexWalkerBase):
             if self.recovery_from_exception is None:
                 raise RuntimeError("No exception had happened to try to recover nodes from")
 
+            nodes = None
+            parsing_state_delta = None
+            reset_at_tok = None
+
             # set nodes
-            nodes = getattr(self.recovery_from_exception, 'recovery_nodes', None)
+            if hasattr(self.recovery_from_exception, 'recovery_nodes'):
+                # remember, transcrypt doesn't like getattr(a, b, default) with default arg
+                nodes = self.recovery_from_exception.recovery_nodes
             # parser state delta information?
-            parsing_state_delta = getattr(self.recovery_from_exception,
-                                     'recovery_parsing_state_delta', None)
+            if hasattr(self.recovery_from_exception, 'recovery_parsing_state_delta'):
+                parsing_state_delta = \
+                    self.recovery_from_exception.recovery_parsing_state_delta
 
             # attempt to reset token_reader's position
-            reset_at_tok = getattr(self.recovery_from_exception, 'recovery_at_token', None)
+            if hasattr(self.recovery_from_exception, 'recovery_at_token'):
+                reset_at_tok = self.recovery_from_exception.recovery_at_token
+
             if reset_at_tok is not None:
                 token_reader.move_to_token(reset_at_tok)
             else:
-                reset_past_tok = getattr(self.recovery_from_exception,
-                                         'recovery_past_token', None)
+                reset_past_tok = None
+                if hasattr(self.recovery_from_exception, 'recovery_past_token'):
+                    reset_past_tok = self.recovery_from_exception.recovery_past_token
                 if reset_past_tok is not None:
                     token_reader.move_past_token(reset_past_tok)
 

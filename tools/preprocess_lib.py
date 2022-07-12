@@ -249,11 +249,15 @@ class _Module:
 
 class Preprocess:
 
-    def __init__(self, source_dir, target_dir, module_list, enabled_features):
+    def __init__(self, source_dir, target_dir, module_list,
+                 enabled_features, skip_relative_import_prefixes=None):
         self.source_dir = source_dir
         self.target_dir = target_dir
         self.enabled_features = enabled_features
         self.module_list = module_list
+        if not skip_relative_import_prefixes:
+            skip_relative_import_prefixes = []
+        self.skip_relative_import_prefixes = skip_relative_import_prefixes
 
         # process and glob patterns in module_list
         new_module_list = []
@@ -313,6 +317,8 @@ class Preprocess:
             mod = _Module(mod_path=mod_path,
                           mod_name=mod_name,
                           source_content=source_content)
+
+            logger.info(f"Processing ‘{mod_dotname}’ ...")
 
             # preprocess the module.
             self.preprocess_module(mod)
@@ -396,7 +402,7 @@ class Preprocess:
             if group[-1] == '\n':
                 group = group[:-1]
 
-            logger.debug(f"Found import: ‘{group}’")
+            logger.debug(f"Found “from” import: ‘{group}’")
 
             def _comment_out():
                 return _comment_out_text_full_lines(group)
@@ -407,6 +413,14 @@ class Preprocess:
                     return m.group()
                 else:
                     return _comment_out()
+
+            for skip_prefix in self.skip_relative_import_prefixes:
+                if pkg_where == skip_prefix or pkg_where.startswith(skip_prefix + '.'):
+                    logger.debug(
+                        f"skipping “from {pkg_where} import ...” as it begins "
+                        f"with prefix {skip_prefix!r}"
+                    )
+                    return m.group()
 
             # translate into module name that is imported
             pkgmod_path = pkg_where.split('.')

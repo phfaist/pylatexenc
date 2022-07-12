@@ -64,6 +64,31 @@ def _test_equals(a, b):
         print("\t\tlists are equal")
         return True
 
+    if isinstance(a, set) or isinstance(b, set):
+        print("\t\tconverting sets to sorted lists and comparing lists...")
+        a = sorted(list(a))
+        b = sorted(list(b))
+        return _test_equals(a, b)
+
+    if isinstance(a, dict) or isinstance(b, dict):
+        a = dict(a)
+        b = dict(b)
+        print("\t\t[testing keys are the same-- ]")
+        res = _test_equals(set(a.keys()), set(b.keys()))
+        print("\t\t[testing keys are the same: ", res, "]")
+        if not res:
+            print("\t\tsets of keys differ")
+            return False
+        for key in a.keys():
+            x = a[key]
+            y = b[key]
+            if not _test_equals(x, y):
+                print("\t\tvalue for key {!r} differs, {!r} ! {!r}".format(key, x, y))
+                return False
+        print("\t\tdicts are equal")
+        return True
+            
+
     if isinstance(a, nodes.LatexNode):
         if b is None:
             print("\t\tb is None")
@@ -170,5 +195,6 @@ def do_run(test_objects):
                 if a.startswith('test_'):
                     m = getattr(t, a)
                     if callable(m):
-                        print("*** Run {}.{}".format(tname, a))
+                        print("*** Run {}.{} ***".format(tname, a))
                         m()
+                        print("*** Done {}.{} ***".format(tname, a))
