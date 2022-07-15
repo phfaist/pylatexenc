@@ -20,11 +20,17 @@ export function custom_apply_patches() {
         var i = 0;
         var count = 0;
         for(; i < this.length; ++i) {
-            if (ch === this[i]) {
+            if (ch == this[i]) {
                 ++count;
             }
         }
         return count;
+    };
+    String.prototype.rjust = function(width, fill_char) {
+        if (this.length >= width) {
+            return this;
+        }
+        return fill_char.repeat(width - this.length) + this;
     };
 
 
