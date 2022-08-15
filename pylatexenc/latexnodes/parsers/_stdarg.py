@@ -513,7 +513,7 @@ class _CommaSepContentCustomParser(LatexParserBase):
 # ------------------------------------------------------------------------------
 
 
-class TackOnInformationFieldMacrosParser(LatexParserBase):
+class LatexTackOnInformationFieldMacrosParser(LatexParserBase):
     r"""
     - `macronames` is iterable/list/set of names of macros for which information
       can be specified.  (Name without backslash.)
@@ -526,7 +526,7 @@ class TackOnInformationFieldMacrosParser(LatexParserBase):
       names only and not the other macro names in `macronames`.
     """
     def __init__(self, macronames, allow_multiple=False, **kwargs):
-        super(TackOnInformationFieldMacrosParser, self).__init__(**kwargs)
+        super(LatexTackOnInformationFieldMacrosParser, self).__init__(**kwargs)
 
         self.macronames = set(macronames)
         if allow_multiple is False:
@@ -553,7 +553,6 @@ class TackOnInformationFieldMacrosParser(LatexParserBase):
         arg_nodes = []
 
         seen_macronames = set()
-
 
         while True:
             tok = token_reader.peek_token_or_none(parsing_state)
@@ -614,11 +613,19 @@ class TackOnInformationFieldMacrosParser(LatexParserBase):
                 LatexGroupNode,
                 parsing_state=parsing_state,
                 delimiters=('\\'+macroname, ''),
-                nodelist=arg_content_node,
+                nodelist=latex_walker.make_nodelist(
+                    [arg_content_node],
+                    parsing_state=parsing_state,
+                ),
                 pos=tok.pos,
                 pos_end=arg_content_node.pos_end
             )
 
             arg_nodes.append( arg_node )
 
-        return (arg_nodes, None)
+        arg_nodelist = latex_walker.make_nodelist(
+            arg_nodes,
+            parsing_state=parsing_state,
+        )
+
+        return (arg_nodelist, None)

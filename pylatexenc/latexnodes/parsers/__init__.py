@@ -59,6 +59,7 @@ from ._stdarg import (
     get_standard_argument_parser,
     LatexCharsCommaSeparatedListParser,
     LatexCharsGroupParser,
+    LatexTackOnInformationFieldMacrosParser,
 )
 
 
