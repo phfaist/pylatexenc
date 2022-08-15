@@ -33,7 +33,7 @@ from __future__ import print_function, unicode_literals
 import logging
 logger = logging.getLogger(__name__)
 
-#from .._exctypes import LatexWalkerParseError, LatexWalkerTokenParseError
+from .._exctypes import LatexWalkerParseError
 from ..nodes import *
 
 from ._base import LatexParserBase
@@ -353,8 +353,8 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
 
 
 class _CommaSepContentCustomParser(LatexParserBase):
-    def __init__(self, contents_parser_info):
-        super(_CommaSepContentCustomParser, self).__init__()
+    def __init__(self, contents_parser_info, **kwargs):
+        super(_CommaSepContentCustomParser, self).__init__(**kwargs)
         self.contents_parser_info = contents_parser_info
         self.main_content_parser = LatexGeneralNodesParser(
             stop_token_condition=self.stop_token_condition,
@@ -508,3 +508,117 @@ class _CommaSepContentCustomParser(LatexParserBase):
                      self.comma_sep_arg_list)
 
 
+
+
+# ------------------------------------------------------------------------------
+
+
+class TackOnInformationFieldMacrosParser(LatexParserBase):
+    r"""
+    - `macronames` is iterable/list/set of names of macros for which information
+      can be specified.  (Name without backslash.)
+
+    - `allow_multiple` can be either True, False, or an iterable/list/set.  Set
+      to `True` to allow any information field macro to be specified multiple
+      times; set to `False` to disallow all multiple occurrences of an
+      information field macro.  Providing a set (or iterable or list) of macro
+      names (w/o backslash) will allow repeated specification of those macro
+      names only and not the other macro names in `macronames`.
+    """
+    def __init__(self, macronames, allow_multiple=False, **kwargs):
+        super(TackOnInformationFieldMacrosParser, self).__init__(**kwargs)
+
+        self.macronames = set(macronames)
+        if allow_multiple is False:
+            self.allow_multiple = set()
+        elif allow_multiple is True:
+            self.allow_multiple = self.macronames
+        else:
+            self.allow_multiple = set(allow_multiple)
+
+        self.expression_parser = LatexExpressionParser()
+        
+    def contents_can_be_empty(self):
+        return True
+
+    def get_macro_arg_parser(self, macroname):
+        r"""
+        You can reimplement this method if you want to be able to read more complex
+        macro call syntaxes.
+        """
+        return self.expression_parser
+
+    def __call__(self, latex_walker, token_reader, parsing_state):
+        
+        arg_nodes = []
+
+        seen_macronames = set()
+
+
+        while True:
+            tok = token_reader.peek_token_or_none(parsing_state)
+
+            if tok is None or tok.tok != 'macro' or tok.arg not in self.macronames:
+                logger.debug("Finished parsing tack-on macro arguments")
+                break
+
+            macroname = tok.arg
+            tolerant_parsing_skip_add_this_node = False
+
+            # the token that we read is an information field macro and we will
+            # parse its corresponding value.
+            token_reader.move_past_token(tok)
+
+            if macroname in seen_macronames and not macroname in self.allow_multiple:
+                message = (
+                    "You cannot specify information field macro \\{} multiple times"
+                    .format(macroname)
+                )
+                exc = LatexWalkerParseError(
+                    msg=message,
+                    pos=tok.pos,
+                    error_type_info={
+                        'what': 'nodes_stdarg_illegal_multiple_information_field_macro',
+                        'macroname': macroname
+                    },
+                )
+                exc = latex_walker.check_tolerant_parsing_ignore_error(exc)
+                if exc is not None:
+                    raise exc
+                logger.warning("%s; ignoring the additional information field macros", message)
+                tolerant_parsing_skip_add_this_node = True
+
+            macro_arg_parser = self.get_macro_arg_parser(macroname)
+            
+            arg_content_node, arg_parsing_state_delta = latex_walker.parse_content(
+                macro_arg_parser,
+                token_reader=token_reader,
+                parsing_state=parsing_state,
+                open_context=(
+                    'Argument of information field macro \\{}'.format(macroname),
+                    tok,
+                )
+            )
+
+            if arg_parsing_state_delta is not None:
+                logger.warning(
+                    "Parsing state delta is ignored when parsing tack-on information "
+                    "field macro \\{}: {}"
+                    .format(macroname, arg_parsing_state_delta)
+                )
+
+            if tolerant_parsing_skip_add_this_node:
+                continue
+
+            arg_node = latex_walker.make_node(
+                LatexGroupNode,
+                parsing_state=parsing_state,
+                delimiters=('\\'+macroname, ''),
+                nodelist=arg_content_node,
+                pos=tok.pos,
+                pos_end=arg_content_node.pos_end
+            )
+
+            arg_nodes.append( arg_node )
+
+        return (arg_nodes, None)
