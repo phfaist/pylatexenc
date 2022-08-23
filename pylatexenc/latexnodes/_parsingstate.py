@@ -34,6 +34,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+#__pragma__('opov')
+
+
 _unisafe_arrow_s = '→'
 ### BEGIN_PYTHON2_SUPPORT_CODE
 import sys
@@ -318,10 +321,8 @@ class ParsingState(object):
 
         # compute cached info for latex group delimiters --
         a, b = zip(*self.latex_group_delimiters) # a = list of open delims, b = close delims
-        # __pragma__('opov')
         self._latex_group_delimchars_by_open = dict(self.latex_group_delimiters)
         self._latex_group_delimchars_close = frozenset(b)
-        # __pragma__('noopov')
 
 
     def _finalize_state_latex_math_delim_info(self, parent, kwargs):
@@ -354,14 +355,12 @@ class ParsingState(object):
             key=lambda x: len(x[0]),
             reverse=True,
         )
-        # __pragma__('opov')
         self._math_delims_info_by_open = dict(
             [ (open_delim, dict(close_delim=close_delim, tok='mathmode_inline'))
               for open_delim, close_delim in self.latex_inline_math_delimiters ]
             + [ (open_delim, dict(close_delim=close_delim, tok='mathmode_display'))
               for open_delim, close_delim in self.latex_display_math_delimiters ]
         )
-        # __pragma__('noopov')
         self._math_delims_close = frozenset([
             info['close_delim']
             for opendelim,info in self._math_delims_info_by_open.items()
@@ -444,9 +443,7 @@ class ParsingState(object):
         Returns the fields and values associated with this `ParsingState` as a
         dictionary.
         """
-        # __pragma__('opov')
         return dict([(f, getattr(self, f)) for f in self._fields])
-        # __pragma__('noopov')
 
 
 
