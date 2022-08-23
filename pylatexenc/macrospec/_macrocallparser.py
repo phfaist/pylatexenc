@@ -118,7 +118,7 @@ class _LatexCallableParserBase(LatexParserBase):
         return nodelist, parsing_state_delta
 
 
-    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+    def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
 
         pos_start = self.token_call.pos #token_reader.cur_pos()
 

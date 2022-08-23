@@ -56,13 +56,13 @@ class DummyWalker(LatexWalkerBase):
         # dummy group parser
         if self.mkgroup_assert_delimiters_equals is not None:
             assert delimiters == self.mkgroup_assert_delimiters_equals
-        return dummy_empty_group_parser
+        return dummy_empty_group_parser()
 
     def make_latex_math_parser(self, math_mode_delimiters):
         # dummy group parser
         if self.mkmath_assert_delimiters_equals is not None:
             assert math_mode_delimiters == self.mkmath_assert_delimiters_equals
-        return dummy_empty_mathmode_parser
+        return dummy_empty_mathmode_parser()
 
     def parse_content(self, parser, token_reader=None, parsing_state=None,
                       open_context=None):
@@ -75,9 +75,11 @@ class DummyWalker(LatexWalkerBase):
                      _class_name(parser), token_reader.cur_pos(), what, tok)
 
 
-        nodes, parsing_state_delta = parser(latex_walker=self,
-                                       token_reader=token_reader,
-                                       parsing_state=parsing_state)
+        nodes, parsing_state_delta = parser.parse(
+            latex_walker=self,
+            token_reader=token_reader,
+            parsing_state=parsing_state
+        )
 
         logger.debug(":: Parsing content DONE (%s) @ pos %d -- %s -- %r / ::",
                      _class_name(parser), token_reader.cur_pos(), what, tok)
@@ -88,61 +90,69 @@ class DummyWalker(LatexWalkerBase):
 
 
 
-def dummy_empty_group_parser(latex_walker, token_reader, parsing_state):
-    first_token = token_reader.next_token(parsing_state=parsing_state)
-    second_token = token_reader.next_token(parsing_state=parsing_state)
+class dummy_empty_group_parser:
+    def parse(self, latex_walker, token_reader, parsing_state):
+        first_token = token_reader.next_token(parsing_state=parsing_state)
+        second_token = token_reader.next_token(parsing_state=parsing_state)
 
-    if first_token.tok == 'brace_open' and second_token.tok == 'brace_close':
-        # good
-        n = latex_walker.make_node(
-            LatexGroupNode,
-            delimiters=(first_token.arg, second_token.arg),
-            nodelist=LatexNodeList([], pos='<POS>', pos_end='<POS_END>'),
-            pos=first_token.pos,
-            pos_end=second_token.pos_end,
-            parsing_state=parsing_state
-        )
-        return n, None
+        if first_token.tok == 'brace_open' and second_token.tok == 'brace_close':
+            # good
+            n = latex_walker.make_node(
+                LatexGroupNode,
+                delimiters=(first_token.arg, second_token.arg),
+                nodelist=LatexNodeList([], pos='<POS>', pos_end='<POS_END>'),
+                pos=first_token.pos,
+                pos_end=second_token.pos_end,
+                parsing_state=parsing_state
+            )
+            return n, None
 
-    raise RuntimeError("dummy empty group parser: expected an empty group.")
+        raise RuntimeError("dummy empty group parser: expected an empty group.")
 
-def dummy_empty_mathmode_parser(latex_walker, token_reader, parsing_state):
-    first_token = token_reader.next_token(parsing_state=parsing_state)
-    second_token = token_reader.next_token(parsing_state=parsing_state)
+class dummy_empty_mathmode_parser:
+    def parse(self, latex_walker, token_reader, parsing_state):
+        first_token = token_reader.next_token(parsing_state=parsing_state)
+        second_token = token_reader.next_token(parsing_state=parsing_state)
 
-    # --- math mode is only set in the CONTENT of the math node ---
-    #
-    # math_parsing_state = get_updated_parsing_state_from_delta(
-    #     parsing_state,
-    #     ParsingStateDeltaEnterMathMode(
-    #         math_mode_delimiter=first_token.arg,
-    #         trigger_token=first_token,
-    #     ),
-    #     latex_walker,
-    # )
+        # --- math mode is only set in the CONTENT of the math node ---
+        #
+        # math_parsing_state = get_updated_parsing_state_from_delta(
+        #     parsing_state,
+        #     ParsingStateDeltaEnterMathMode(
+        #         math_mode_delimiter=first_token.arg,
+        #         trigger_token=first_token,
+        #     ),
+        #     latex_walker,
+        # )
 
-    if first_token.tok in ('mathmode_inline','mathmode_display') \
-       and second_token.tok in ('mathmode_inline', 'mathmode_display'):
-        # good
-        n = latex_walker.make_node(
-            LatexMathNode,
-            delimiters=(first_token.arg, second_token.arg),
-            displaytype=('inline' if first_token.tok == 'mathmode_inline' else 'display'),
-            nodelist=LatexNodeList([], pos='<POS>', pos_end='<POS_END>'),
-            pos=first_token.pos,
-            pos_end=second_token.pos_end,
-            parsing_state=parsing_state
-        )
-        return n, None
+        if first_token.tok in ('mathmode_inline','mathmode_display') \
+           and second_token.tok in ('mathmode_inline', 'mathmode_display'):
+            # good
+            n = latex_walker.make_node(
+                LatexMathNode,
+                delimiters=(first_token.arg, second_token.arg),
+                displaytype=('inline' if first_token.tok == 'mathmode_inline' else 'display'),
+                nodelist=LatexNodeList([], pos='<POS>', pos_end='<POS_END>'),
+                pos=first_token.pos,
+                pos_end=second_token.pos_end,
+                parsing_state=parsing_state
+            )
+            return n, None
 
-    raise RuntimeError("dummy math mode group parser: expected an empty math mode group.")
-
-
-
+        raise RuntimeError("dummy math mode group parser: expected an empty math mode group.")
 
 
-def make_dummy_macro_node_parser(tok, spec, _mk_parsing_state_delta=None):
-    def dummy_macro_node_parser(latex_walker, token_reader, parsing_state):
+
+
+
+class make_dummy_macro_node_parser:
+    def __init__(self, tok, spec, _mk_parsing_state_delta=None):
+        self.tok = tok
+        self.spec = spec
+        self._mk_parsing_state_delta = _mk_parsing_state_delta
+
+    def parse(self, latex_walker, token_reader, parsing_state):
+        tok, spec, _mk_parsing_state_delta = self.tok, self.spec, self._mk_parsing_state_delta
         n = latex_walker.make_node(
             LatexMacroNode,
             parsing_state=parsing_state,
@@ -157,8 +167,6 @@ def make_dummy_macro_node_parser(tok, spec, _mk_parsing_state_delta=None):
         if _mk_parsing_state_delta is not None:
             coi = _mk_parsing_state_delta(parsing_state)
         return n, coi
-
-    return dummy_macro_node_parser
 
 class DummyMacroSpec(CallableSpecBase):
     def __init__(self, macroname):
@@ -176,8 +184,13 @@ class DefineMacroZMacroSpec(DummyMacroSpec):
             )
         return make_dummy_macro_node_parser(token, self, _mkparsing_state_delta)
 
-def make_dummy_environment_node_parser(tok, spec):
-    def dummy_environment_node_parser(latex_walker, token_reader, parsing_state):
+class make_dummy_environment_node_parser:
+    def __init__(self, tok, spec):
+        self.tok = tok
+        self.spec = spec
+
+    def parse(self, latex_walker, token_reader, parsing_state):
+        tok, spec = self.tok, self.spec
         next_token = token_reader.next_token(parsing_state)
         if next_token.tok != 'end_environment' or next_token.arg != tok.arg:
             raise RuntimeError(
@@ -195,7 +208,6 @@ def make_dummy_environment_node_parser(tok, spec):
         )
         return n, None
 
-    return dummy_environment_node_parser
 
 class DummyEnvironmentSpec(CallableSpecBase):
     def __init__(self, environmentname):
@@ -205,8 +217,13 @@ class DummyEnvironmentSpec(CallableSpecBase):
     def get_node_parser(self, token):
         return make_dummy_environment_node_parser(token, self)
 
-def make_dummy_specials_node_parser(tok, spec):
-    def dummy_specials_node_parser(latex_walker, token_reader, parsing_state):
+class make_dummy_specials_node_parser:
+    def __init__(self, tok, spec):
+        self.tok = tok
+        self.spec = spec
+
+    def parse(self, latex_walker, token_reader, parsing_state):
+        tok, spec = self.tok, self.spec
         n = latex_walker.make_node(
             LatexSpecialsNode,
             parsing_state=parsing_state,
@@ -217,8 +234,6 @@ def make_dummy_specials_node_parser(tok, spec):
             pos_end=tok.pos_end
         )
         return n, None
-
-    return dummy_specials_node_parser
 
 class DummySpecialsSpec(CallableSpecBase):
     def __init__(self, specials_chars):

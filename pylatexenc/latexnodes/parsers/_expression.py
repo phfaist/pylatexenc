@@ -74,7 +74,7 @@ class LatexExpressionParser(LatexParserBase):
         return False
 
 
-    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+    def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
 
         expr_parsing_state = parsing_state.sub_context(enable_environments=False)
         

@@ -259,6 +259,10 @@ class Preprocess:
             skip_relative_import_prefixes = []
         self.skip_relative_import_prefixes = skip_relative_import_prefixes
 
+        # expand user and environment variables
+        self.source_dir = os.path.expandvars(os.path.expanduser( self.source_dir ))
+        self.target_dir = os.path.expandvars(os.path.expanduser( self.target_dir ))
+
         # process and glob patterns in module_list
         new_module_list = []
         for m in module_list:

@@ -83,7 +83,7 @@ class LatexVerbatimBaseParser(LatexParserBase):
         return verbatim_string
 
 
-    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+    def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
 
         verbatim_info = LatexVerbatimBaseParser.VerbatimInfo()
         verbatim_info.original_pos = token_reader.cur_pos()
@@ -194,7 +194,7 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
         return False
 
 
-    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+    def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
         
         verbatim_info = LatexVerbatimBaseParser.VerbatimInfo()
 
@@ -279,7 +279,7 @@ class LatexVerbatimEnvironmentContentsParser(LatexVerbatimBaseParser):
         verbatim_info.pos_end = pos_start + len(verbatim_string)
         return verbatim_string
 
-    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+    def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
 
         verbatim_info = LatexVerbatimBaseParser.VerbatimInfo()
         verbatim_info.original_pos = token_reader.cur_pos()

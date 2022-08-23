@@ -2,6 +2,8 @@
 from pylatexenc.latexnodes import nodes
 from pylatexenc import latexnodes
 
+#__pragma__('opov')
+
 
 class _AssertRaisesContext:
     def __init__(self, expected):

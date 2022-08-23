@@ -475,9 +475,11 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
             try:
 
-                nodes, info = parser(latex_walker=self,
-                                     token_reader=token_reader,
-                                     parsing_state=parsing_state)
+                nodes, info = parser.parse(
+                    latex_walker=self,
+                    token_reader=token_reader,
+                    parsing_state=parsing_state
+                )
 
             except LatexWalkerEndOfStream:
                 logger.warning("End of stream encountered when parsing content with %s (%s)",

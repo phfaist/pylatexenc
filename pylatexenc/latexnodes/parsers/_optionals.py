@@ -88,7 +88,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
         return True
 
 
-    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+    def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
         
         orig_pos_tok = token_reader.peek_token(parsing_state=parsing_state)
         pos_end = None

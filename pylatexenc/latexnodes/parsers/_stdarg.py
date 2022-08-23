@@ -220,7 +220,7 @@ class LatexStandardArgumentParser(LatexParserBase):
             raise ValueError("Unknown argument specification: {!r}".format(arg_spec))
 
 
-    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+    def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
 
         # if self._arg_parsing_state_kwargs is None:
         #     self._arg_parsing_state_kwargs = self.get_arg_parsing_state_kwargs()
@@ -409,7 +409,7 @@ class _CommaSepContentCustomParser(LatexParserBase):
             self.parse_more = True
 
 
-    def __call__(self, latex_walker, token_reader, parsing_state):
+    def parse(self, latex_walker, token_reader, parsing_state):
 
         logger.debug("parse_content! token pos is %r", token_reader.cur_pos())
 
@@ -548,7 +548,7 @@ class LatexTackOnInformationFieldMacrosParser(LatexParserBase):
         """
         return self.expression_parser
 
-    def __call__(self, latex_walker, token_reader, parsing_state):
+    def parse(self, latex_walker, token_reader, parsing_state):
         
         arg_nodes = []
 

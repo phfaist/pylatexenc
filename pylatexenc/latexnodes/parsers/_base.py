@@ -55,7 +55,7 @@ class LatexParserBase(object):
     corresponding state change through the `parsing_state_delta` object.
 
     The main functionality of the parser is implemented in the
-    :py:meth:`__call__()` method.
+    :py:meth:`parse()` method.
 
     Parser objects should be invoked via the latex walker instance, using
     `LatexWalker.parse_content()` (see :py:class:`LatexWalkerBase` and
@@ -79,7 +79,7 @@ class LatexParserBase(object):
     def __init__(self):
         super(LatexParserBase, self).__init__()
 
-    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+    def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
         r"""
         The main functionality of the parser is implemented in this method.
 
@@ -101,7 +101,7 @@ class LatexParserBase(object):
         resulted during the parsing of this construct.  If there are no parsing
         state changes, `parsing_state_delta` can be set to `None`.
         """
-        raise RuntimeError("LatexParserBase subclasses must reimplement __call__()")
+        raise RuntimeError("LatexParserBase subclasses must reimplement parse()")
 
 
     def contents_can_be_empty(self):

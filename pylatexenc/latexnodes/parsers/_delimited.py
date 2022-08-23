@@ -682,7 +682,7 @@ class LatexDelimitedExpressionParser(LatexParserBase):
         return self.optional
 
 
-    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+    def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
 
         group_parsing_state = \
             self.delimited_expression_parser_info_class.get_group_parsing_state(

@@ -72,7 +72,7 @@ class LatexGeneralNodesParser(LatexParserBase):
       - `stop_token_condition`, `stop_nodelist_condition`,
         `make_child_parsing_state`, `include_stop_token_pre_space_chars` are
         passed on directly to create a nodes collector instance (see also
-        :py:meth:`__call__()`)
+        :py:meth:`parse()`)
 
       - If `require_stop_condition_met` is `True` (the default), then any
         stopping condition must be eventually met; a parse error is raised if
@@ -139,7 +139,7 @@ class LatexGeneralNodesParser(LatexParserBase):
             include_stop_token_pre_space_chars=self.include_stop_token_pre_space_chars,
         )
 
-    def __call__(self, latex_walker, token_reader, parsing_state, **kwargs):
+    def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
         r"""
         The main parsing routine.  The nodes collector instance is created using
         `self.make_nodes_collector()`.
