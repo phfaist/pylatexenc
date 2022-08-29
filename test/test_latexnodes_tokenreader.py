@@ -9,6 +9,7 @@ from pylatexenc.latexnodes._tokenreader import (
 
 from pylatexenc.latexnodes import (
     LatexWalkerTokenParseError,
+    LatexWalkerEndOfStream,
     LatexToken,
     ParsingState
 )
@@ -627,6 +628,30 @@ Some sneaky stuff can happen with consecutive math modes like here: $\zeta$$\gam
         )
         
     
+        # -----
+
+        # test char-level access
+
+    def test_charlevel_peek_next_chars(self):
+        latextext = r"Some Chars"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(tr.peek_chars(4, ps), "Some")
+        self.assertEqual(tr.next_chars(4, ps), "Some")
+        self.assertEqual(tr.peek_chars(1, ps), " ")
+        self.assertEqual(tr.next_chars(1, ps), " ")
+        self.assertEqual(tr.next_chars(1, ps), "C")
+        self.assertEqual(tr.next_chars(1, ps), "h")
+        self.assertEqual(tr.next_chars(1, ps), "a")
+        self.assertEqual(tr.next_chars(1, ps), "r")
+        self.assertEqual(tr.next_chars(1, ps), "s")
+
+        with self.assertRaises(LatexWalkerEndOfStream):
+            c = tr.next_chars(1, ps)
+            
+
 
 
 

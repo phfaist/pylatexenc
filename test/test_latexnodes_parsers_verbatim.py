@@ -307,6 +307,42 @@ special characters should be captured verbatim.
         )        
 
 
+    def test_simple_nofinaleol(self):
+        # imagine that the following immediately follows "\begin{verbatim}" --
+        # end of stream follows immediately after \end{verbatim}
+        latextext = r"""
+Hello world.\
+\macro, \begin! This: % is not a comment; ~.\( all
+special characters should be captured verbatim.
+\end{verbatim}"""
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexVerbatimEnvironmentContentsParser()
+
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        evpos = latextext.find(r'\end{verbatim}')
+
+        self.assertEqual(
+            node,
+            LatexNodeList(
+                [
+                    LatexCharsNode(
+                        parsing_state=ps,
+                        chars=latextext[1:evpos],
+                        pos=1,
+                        pos_end=evpos,
+                    )
+                ],
+                pos=1,
+                pos_end=evpos,
+            )
+        )        
+
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

@@ -914,7 +914,7 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
     elif stop_upon_end_environment is not None:
         require_stop_condition_met = True
         stop_condition_message = \
-            "Was expecting ‘\\end{{{}}}’".format(stop_upon_end_environment)
+            "Was expecting ‘\\end{}{}{}’".format('{',stop_upon_end_environment,'}')
 
     elif stop_upon_closing_mathmode is not None:
         require_stop_condition_met = True

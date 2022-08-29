@@ -1019,7 +1019,7 @@ def _update_posposend_from_nodelist(pos, pos_end, nodelist):
 # ------------------------------------------------------------------------------
 
 
-class LatexNodesVisitor:
+class LatexNodesVisitor(object):
     r"""
     Implement a visitor pattern on a node structure.
 

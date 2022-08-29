@@ -800,7 +800,8 @@ class LatexNodesCollector(object):
         if envspec is None:
             exc = latex_walker.check_tolerant_parsing_ignore_error(
                 LatexWalkerParseError(
-                    msg=r"Encountered unknown environment ‘{{{}}}’".format(environmentname),
+                    msg=r"Encountered unknown environment ‘{}{}{}’"
+                    .format('{', environmentname, '}'),
                     pos=tok.pos,
                     error_type_info={
                         'what': 'nodes_unknown_environment_name',
@@ -813,7 +814,7 @@ class LatexNodesCollector(object):
             envspec = None
 
         node_class = LatexEnvironmentNode
-        what = 'environment ‘{{{}}}’'.format(environmentname)
+        what = 'environment ‘{}{}{}’'.format('{', environmentname, '}')
 
         return self.parse_invocable_token_type(tok, envspec, node_class, what)
 

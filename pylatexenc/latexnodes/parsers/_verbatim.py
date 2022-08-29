@@ -108,23 +108,26 @@ class LatexVerbatimBaseParser(LatexParserBase):
         
         verbatim_info.content_pos_start = token_reader.cur_pos()
 
-        try:
-            while not stop_condition_met:
+        while not stop_condition_met:
+            try:
                 char = token_reader.next_chars(1, parsing_state=parsing_state)
+            except LatexWalkerEndOfStream:
+                char = None
+                ended_with_eos = True
 
-                stopinfo = \
-                    self.new_char_check_stop_condition(char, verbatim_string, verbatim_info,
-                                                       parsing_state)
-                if stopinfo:
-                    # stop condition met
-                    stop_condition_met = True
-                    if stopinfo is not True and stopinfo['put_back_char']:
-                        token_reader.move_to_pos_chars( token_reader.cur_pos() - 1 )
-                else:
-                    verbatim_string += char
+            stopinfo = \
+                self.new_char_check_stop_condition(char, verbatim_string, verbatim_info,
+                                                   parsing_state)
+            if stopinfo:
+                # stop condition met
+                stop_condition_met = True
+                if stopinfo is not True and stopinfo['put_back_char']:
+                    token_reader.move_to_pos_chars( token_reader.cur_pos() - 1 )
+            else:
+                if char is None:
+                    break
+                verbatim_string += char
 
-        except LatexWalkerEndOfStream:
-            ended_with_eos = True
 
         verbatim_string = \
             self.finalize_verbatim_string(verbatim_string, verbatim_info)
@@ -140,7 +143,7 @@ class LatexVerbatimBaseParser(LatexParserBase):
             parsing_state=parsing_state,
         )
 
-        if ended_with_eos:
+        if not stop_condition_met and ended_with_eos:
             return self.error_end_of_stream( pos=pos_end,
                                              recovery_nodes=nodes,
                                              latex_walker=latex_walker,
@@ -181,6 +184,9 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
         The default implementation in this base class is to read a single verbatim
         char.  Reimplement this method in a subclass for more advanced behavior.
         """
+        if char is None:
+            return False
+
         if char == verbatim_info.parsed_delimiters[1]:
             # closing delimiter
             self.depth_counter -= 1
