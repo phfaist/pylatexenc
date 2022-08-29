@@ -121,7 +121,7 @@ class LatexVerbatimBaseParser(LatexParserBase):
             if stopinfo:
                 # stop condition met
                 stop_condition_met = True
-                if stopinfo is not True and stopinfo['put_back_char']:
+                if stopinfo is not True and char is not None and stopinfo['put_back_char']:
                     token_reader.move_to_pos_chars( token_reader.cur_pos() - 1 )
             else:
                 if char is None:
