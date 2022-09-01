@@ -433,7 +433,7 @@ class ParsingState(object):
         p = self.__class__(_parent_parsing_state_info=(self, kwargs2),
                            **attrs)
 
-        logger.debug("sub_context(%r): %r --> %r", kwargs, self, p)
+        logger.debug("%s.sub_context(%r): %r --> %r", self.__class__.__name__, kwargs, self, p)
 
         return p
 
