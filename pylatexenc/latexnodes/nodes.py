@@ -758,6 +758,12 @@ class LatexNodeList(object):
             return None
         return self.pos_end - self.pos
 
+    # needed for Transcrypt apparently, on top of __getitem__.
+    def __iter__(self):
+        if self.nodelist is None:
+            return iter([])
+        return iter(self.nodelist)
+
     def __getitem__(self, index):
         # supports slicing, too, and returns a simple list in such cases
         if isinstance(index, int) and index < 0:

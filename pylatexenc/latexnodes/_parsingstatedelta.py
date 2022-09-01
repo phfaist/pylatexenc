@@ -60,7 +60,7 @@ class ParsingStateDelta(object):
     """
     def __init__(self, set_attributes=None, **kwargs):
         super(ParsingStateDelta, self).__init__(**kwargs)
-        self.set_attributes = dict(set_attributes)
+        self.set_attributes = dict(set_attributes) if set_attributes else None
         self._fields = ('set_attributes',)
 
     def __repr__(self):
