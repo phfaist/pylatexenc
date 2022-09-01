@@ -532,7 +532,7 @@ class LatexTokenReader(LatexTokenReaderBase):
     # we try to run our code on other platforms (eg brython) where the
     # environment name might otherwise not be matched correctly
     rx_environment_name = \
-        re.compile(r'''\s*\{(?P<environmentname>[A-Za-z0-9*._ :/!^()[]-]+)\}''')
+        re.compile(r'''\s*\{(?P<environmentname>[A-Za-z0-9*._ :/!^()\[\]-]+)\}''')
     r"""
     A regular expression that will read the environment name after encountering
     the ``\begin`` or ``\end`` constructs.
