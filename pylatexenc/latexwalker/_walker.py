@@ -81,12 +81,39 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
       - `s`: the string to parse as LaTeX code
 
-      - `latex_context`: a :py:class:`pylatexenc.macrospec.LatexContextDb`
-        object that provides macro and environment specifications with
-        instructions on how to parse arguments, etc.  If you don't specify this
-        argument, or if you specify `None`, then the default database is used.
-        The default database is obtained with
-        :py:func:`get_default_latex_context_db()`.
+      - `default_parsing_state`: The default parsing state to use to parse the
+        content.  This should be a :py:class`pylatexenc.latexnodes.ParsingState`
+        instance (or a subclass instance).  The parsing state also specifies the
+        latex context, so if you specify `default_parsing_state=` you cannot
+        also specify `latex_context=`.  If set to `None`, we'll pick a default
+        parsing state.
+
+        When parsing parts of the string you will still be able to provide
+        custom parsing states; the parsing state specified here serves as the
+        default for when you don't manually specify a parsing state to, e.g.,
+        :py:meth:`parse_content()`.
+
+        This object sets the default parsing state for the
+        :py:meth:`make_parsing_state()` method.  That method returns a
+        sub-context of the default parsing state with the specified attributes
+        set.
+    
+        This argument is keyword-only.
+
+        .. versionadded: 3.0
+
+           The `default_parsing_state` argument was added in pylatexenc 3.
+
+      - `latex_context`: Instead of providing a parsing state, you can provide
+        the latex context only.  This should be a
+        :py:class:`pylatexenc.macrospec.LatexContextDb` object that provides
+        macro and environment specifications with instructions on how to parse
+        arguments, etc.  If you don't specify this argument, or if you specify
+        `None`, then the default database is used.  The default database is
+        obtained with :py:func:`get_default_latex_context_db()`.
+
+        It is strongly recommended to specify this argument as a keyword
+        argument; we still accept a positional arg for backwards compatibility.
 
         .. versionadded:: 2.0
 
@@ -158,6 +185,8 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
     def __init__(self, s, latex_context=None, **kwargs):
 
+        default_parsing_state = kwargs.pop('default_parsing_state', None)
+
         self.s = s
 
         # will be determined lazily automatically by pos_to_lineno_colno(...)
@@ -165,37 +194,43 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
         self.debug_nodes = False
 
-        if latex_context is None:
+        if default_parsing_state is not None:
+            self.default_parsing_state = default_parsing_state
 
-            latex_context = _legacy_pyltxenc1_do(
-                'LatexWalker_init_from_macro_dict', self, kwargs
-            )
-
-            if latex_context is None:
-                # default -- use default
-                latex_context = get_default_latex_context_db()
-
+            if latex_context is not None:
+                raise ValueError("You cannot specify both the default_parsing_state= and "
+                                 "the latex_context= arguments")
         else:
-            # make sure the user didn't also provide a macro_dict= argument
-            if 'macro_dict' in kwargs:
-                raise TypeError(
-                    "Cannot specify both `latex_context=` and `macro_dict=` arguments"
+            if latex_context is None:
+
+                latex_context = _legacy_pyltxenc1_do(
+                    'LatexWalker_init_from_macro_dict', self, kwargs
                 )
 
+                if latex_context is None:
+                    # default -- use default
+                    latex_context = get_default_latex_context_db()
 
-        # We don't store the latex_context in an attribute, because we always
-        # access it via the current parsing_state
+            else:
+                # make sure the user didn't also provide a macro_dict= argument
+                if 'macro_dict' in kwargs:
+                    raise TypeError(
+                        "Cannot specify both `latex_context=` and `macro_dict=` arguments"
+                    )
 
-        if latex_context is not None:
-            latex_context.freeze() # prevent future changes to the latex context db
-            self.default_parsing_state = ParsingState(
-                s=self.s,
-                latex_context=latex_context,
-            )
+            # We don't store the latex_context in an attribute, because we always
+            # access it via the current parsing_state
 
-        else:
-            # the user must promise to set a meaningful default_parsing_state !
-            self.default_parsing_state = None
+            if latex_context is not None:
+                latex_context.freeze() # prevent future changes to the latex context db
+                self.default_parsing_state = ParsingState(
+                    s=self.s,
+                    latex_context=latex_context,
+                )
+
+            else:
+                # the user must promise to set a meaningful default_parsing_state !
+                self.default_parsing_state = None
 
 
         #
