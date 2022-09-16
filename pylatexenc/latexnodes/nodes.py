@@ -44,23 +44,9 @@ if sys.version_info.major == 2:
 
 
 
-
-# we'll be using "from _types import *" for convenience, so to avoid polluting
-# the other modules' namespaces, we define __all__ here.
-
-__all__ = [
-    'LatexNode',
-    'LatexCharsNode',
-    'LatexGroupNode',
-    'LatexCommentNode',
-    'LatexMacroNode',
-    'LatexEnvironmentNode',
-    'LatexSpecialsNode',
-    'LatexMathNode',
-    'LatexNodeList',
-    'LatexNodesVisitor',
-]
-
+#
+# see __all__ defined at the bottom of this module.
+#
 
 
 # ------------------------------------------------------------------------------
@@ -752,6 +738,9 @@ class LatexNodeList(object):
             _update_posposend_from_nodelist(self.pos, self.pos_end, self.nodelist)
 
 
+    _fields = ('nodelist', 'parsing_state', 'latex_walker', 'pos', 'pos_end',)
+
+
     @property
     def len(self):
         if self.pos is None or self.pos_end is None:
@@ -1088,3 +1077,30 @@ class LatexNodesVisitor(object):
         You probably shouldn't override this method in your visitor subclass.
         """
         node.accept_node_visitor(self)
+
+
+
+#
+# ------------------------------------------------------------------------------
+#
+
+# we'll be using "from _types import *" for convenience, so to avoid polluting
+# the other modules' namespaces, we define __all__ here.
+
+latex_node_types = [
+    LatexNode,
+    LatexCharsNode,
+    LatexGroupNode,
+    LatexCommentNode,
+    LatexMacroNode,
+    LatexEnvironmentNode,
+    LatexSpecialsNode,
+    LatexMathNode
+]
+
+__all__ = [ nc.__name__ for nc in latex_node_types ] + [
+    'LatexNodeList',
+    'LatexNodesVisitor',
+]
+
+

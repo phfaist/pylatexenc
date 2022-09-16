@@ -214,6 +214,9 @@ class ParsedArguments(object):
         self.arguments_spec_list = arguments_spec_list if arguments_spec_list else []
 
 
+    _fields = ( 'arguments_spec_list', 'argnlist' )
+
+
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
     @property
     def argspec(self):
