@@ -17,7 +17,7 @@ default_transcrypt_options = (
 
 
 class GenUtils:
-    def __init__(self, *, pylatexenc_src_dir, preprocess_lib_output_dir, env):
+    def __init__(self, *, pylatexenc_src_dir, preprocess_lib_output_dir, env=None):
         super().__init__()
 
         self.python = sys.executable
@@ -31,6 +31,8 @@ class GenUtils:
         self.setpaths(pylatexenc_src_dir)
 
         self.env = env
+        if self.env is None:
+            self.env = {}
 
 
     def setpaths(self, pylatexenc_src_dir):
@@ -183,7 +185,8 @@ export { $$kw, repr };
 
 
 
-    def generate_runtests_script(self, test_dir, *, script_file_name=None):
+    def generate_runtests_script(self, test_dir, *, script_file_name=None,
+                                 test_file_patterns=['test_.*']):
 
         if script_file_name is None:
             script_file_name = 'runtests.py'
@@ -201,7 +204,9 @@ import unittest
 """)
             testmodnames = []
             for testpyname in os.listdir(test_dir):
-                m = re.match('^(?P<testmodname>test_.*)[.]py$', testpyname)
+                m = re.match('^(?P<testmodname>'
+                             + '|'.join(test_file_patterns)
+                             + r')[.]py$', testpyname)
                 if m is not None:
                     testmodnames.append( m.group('testmodname') )
             

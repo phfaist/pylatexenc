@@ -6,12 +6,12 @@
 #
 # preprocessed python source code output
 #
-pylatexenc
-test
+pp-tmp
 
 #
 # output folders
 #
 *_js_output
 pylatexenc-js
+test-pylatexenc-js
 

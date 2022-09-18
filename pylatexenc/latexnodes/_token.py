@@ -198,8 +198,10 @@ class LatexToken(object):
             )
         )
 
+    #__pragma__('skip')
     # see https://docs.python.org/3/library/constants.html#NotImplemented
     def __ne__(self, other): return NotImplemented
+    #__pragma__('noskip')
 
     __hash__ = None
 

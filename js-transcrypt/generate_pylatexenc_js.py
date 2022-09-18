@@ -58,11 +58,6 @@ def run_main():
             f"Please remove it first."
         )
 
-    logger.debug(f"Using pylatexenc dir ‘{args.pylatexenc_src_dir}’")
-    if not os.path.isdir(args.pylatexenc_src_dir):
-        raise RuntimeError(f"Please provide the location of pylatexenc sources with "
-                           f"the --pylatexenc-src-dir option, see README")
-
     # pick up pylatexenc's generation script tool
 
     pylatexenc_tools_dir = os.path.join(pylatexenc_src_dir, 'tools')
@@ -101,6 +96,13 @@ def run_main():
         # Generate the test runner script
         runtests_py = genutils.generate_runtests_script(
             os.path.join(pylatexenc_src_dir, 'test'),
+            test_file_patterns=[
+                # these are regexes that are matched as ^( <...> )[.]py$
+                'test_latexnodes_.*',
+                'test_macrospec_.*',
+                'test_latexwalker_.*',
+                'test_util',
+            ]
         )
 
         # Transcrypt it

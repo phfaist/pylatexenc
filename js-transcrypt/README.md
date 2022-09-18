@@ -1,12 +1,11 @@
 # Building a Javascript version of pylatexenc.latexnodes library via *transcrypt*
 
-You can use the fantastic [transcrypt](http://www.transcrypt.org/) tool ([also
+You can use the fantastic [Transcrypt](http://www.transcrypt.org/) tool ([also
 on github](https://github.com/QQuick/Transcrypt)) for converting parts of the
 pylatexenc code base into JavaScript to make a JavaScript-based parser for
 simple LaTeX code.
 
-This procedure is very much still in alpha stage.  Don't rely on it!
-
+This procedure is very much still in alpha stage.  Don't rely too much on it!
 
 To use commands listed here, make sure you installed the optional poetry extras
 "buildjslib":
@@ -14,59 +13,70 @@ To use commands listed here, make sure you installed the optional poetry extras
     > poetry install -E buildjslib
 
 
-## Preprocessing the pylatexenc library in preparation for transcrypt:
+## The build script
 
-We first need to preprocess the pylatexenc source code to make it suitable for
-use with transcrypt.
+To generate the JS python sources simply run in this folder:
 
-    > poetry run python ../tools/preprocess_lib.py  preprocesslib.config.yaml
+    # generates pylatexenc-js/
+    > poetry run ./generate_pylatexenc_js.py
     
+(Make sure you've removed the `pylatexenc-js` folder from any previous run, or
+pass the `--delete-target-dir` option to the generator script.)
 
-## Generate the JS pylatexenc subset library
+To compile the tests along with the library, in its own folder:
+
+    # generates both pylatexenc-js/ and test-pylatexenc-js/
+    > poetry run ./generate_pylatexenc_js.py --compile-tests
+
+To run the tests using `node`, do:
+
+    > node test-pylatexenc-js/runtests.js
+
+
+## Steps handled by the build script
+
+These are broadly the steps that the build script will apply.
+
+### Preprocessing the pylatexenc library in preparation for transcrypt:
+
+The script will first preprocess the pylatexenc source code to make it suitable
+for use with transcrypt.  You can also do this manually with
+
+    > export PYLATEXENC_SRC_DIR=/path/to/root/folder/of/pylatexenc/
+    > export PREPROCESS_LIB_OUTPUT_DIR=pp-tmp/ # or some other temporary folder
+    > poetry run python ../tools/preprocess_lib.py  preprocesslib-pylatexenc.config.yaml
+    
+### Run Transcrypt to generate the Javascript sources
 
 We need to enable a lot of features in transcrypt, some of which are disabled by
-default.  Follow the following commands.
+default.  The build script basically follows the following commands.
 
+Transcrypt is called with the `import_pylatexenc_modules.py` module as entry
+point.  This python module simply imports the subset of the `pylatexenc` library
+that we'll be compiling to JavaScript.  The command to run is essentially:
 
-We'll direct *transcrypt* to the `import_pylatexenc_modules.py` module, which
-simply imports the subset of the `pylatexenc` library that we'll be compiling to
-JavaScript.  Run:
-
-    > poetry run transcrypt import_pylatexenc_modules.py --dassert --dext --ecom --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -u .auto -xp 'libpatches' -od pylatexenc-js
-    > cp pylatexenc-js-package.json pylatexenc-js/package.json
+    > poetry run transcrypt import_pylatexenc_modules.py --dassert --dext --ecom --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -u .auto -xp 'pp-tmp$libpatches' -od pylatexenc-js
     
-The JavaScript files are output in the `pylatexenc-js` folder.  Now you can try:
+The JavaScript files are output in the `pylatexenc-js` folder.
 
-Test run with:
+### Final touches
 
-    > cd mytestjscode
-    > node my_test_js_code.js
-    
+The build script will then apply some additional steps and patches:
 
+- Create a `package.json` file that defines a module, so that you can import the
+  sources using for instance:
+  
+      // js code
+      import { Symbol1 [, ...] } from './pylatexenc-js/pylatexenc.latexnodes.js'
 
-## Compile a single Python script with transcrypt along with pylatexenc dependencies
+- Create a `py.js` module that exports the functions `$$kw` and `repr`, exposing
+  the keyword-argument functionality as well as python's `repr()` function.
+  You can pass keywords to transcrypted functions as follows:
+  
+      // js code
+      call_function_from_transcrypt(arg1, arg2, $$kw({ keywordarg1: value1,
+                                                       keywordarg2: value2 }))
 
-Try:
-
-    > poetry run transcrypt my_test_script.py --dassert --dext --ecom --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -u .auto -xp 'libpatches' -od target_js_output
-    > echo '{"type":"module"}' >target_js_output/package.json
-    
-Test run with:
-
-    > node target_js_output/my_test_script.js
-    
-
-## Example build tests runner
-
-First need to preprocess the tests as well as the lib:
-
-    > poetry run python ../tools/preprocess_lib.py  preprocesslib_tests.config.yaml
-    
-Then we need to transcrypt the main `runtests` test runner script:
-
-    > poetry run transcrypt runtests.py --dassert --dext --ecom --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -u .auto -xp 'libpatches$test' -od 'tests_js_output'
-    > echo '{"type":"module"}' >tests_js_output/package.json
-
-Then try to run the tests with:
-
-    > node tests_js_output/runtests.js
+- Patch Transcrypt's internal runtime methods to add some missing support for
+  additional functionality (see `transcrypt_runtime_patches.js`)
+  
