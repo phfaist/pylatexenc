@@ -60,4 +60,18 @@ __pop__ = function (aKey, aDefault) {
     return aDefault;
 }
 
+//
+// Check that a is not null, too, otherwise we get errors with "'__eq__' in a".
+// Also check for __eq__ in b object!
+//
+__eq__ = function (a, b) {
+    if (typeof a == 'object' && a != null && '__eq__' in a) {
+        return a.__eq__ (b);
+    } else if (typeof b == 'object' && b != null && '__eq__' in b) {
+        return b.__eq__ (a);
+    } else {
+        return a == b;
+    }
+};
+
 /*** PhF/LLM - END CUSTOM PATCHES ***/

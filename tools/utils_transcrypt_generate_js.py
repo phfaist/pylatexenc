@@ -215,20 +215,10 @@ import unittest
                 f"{x}, " for x in testmodnames
             ]) + " ]\n")
             fw.write(r"""
-print("Instantiating tests...")
-my_test_classes = []
-for module in my_test_modules:
-    for membername in dir(module):
-        if membername.startswith('Test'):
-            cls = getattr(module, membername)
-            #print("Class is ", cls.__name__)
-            instance = cls()
-            #print("Instance is ", instance)
-            my_test_classes.append( [membername, instance] )
 
 print("About to run all tests...")
 
-unittest.do_run(my_test_classes)
+unittest.do_run_test_modules(my_test_modules)
 
 print("Done! All tests succeeded.")
 """)
