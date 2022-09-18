@@ -1,5 +1,9 @@
+
+# source directory -- will be provided by the js sources generation script
+source_dir: $PYLATEXENC_SRC_DIR
+
 # output directory -- will create a pylatexenc/ subfolder
-target_dir: .
+target_dir: $PREPROCESS_LIB_OUTPUT_DIR
 
 # which modules to preprocess
 module_list:

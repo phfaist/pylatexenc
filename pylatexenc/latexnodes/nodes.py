@@ -730,7 +730,7 @@ class LatexNodeList(object):
         self.pos = kwargs.pop('pos', None)
         self.pos_end = kwargs.pop('pos_end', None)
 
-        if kwargs:
+        if len(kwargs): # len() for Transcrypt
             raise ValueError("Unexpected keyword arguments to LatexNodeList: "
                              + repr(kwargs))
 
@@ -753,13 +753,36 @@ class LatexNodeList(object):
             return iter([])
         return iter(self.nodelist)
 
+
     def __getitem__(self, index):
         # supports slicing, too, and returns a simple list in such cases
+
+        #
+        # Provide supporting code that is only visible to Transcrypt -->
+        #
+
+        #__pragma__('ecom')
+
+        # Transcrypt supports slices by passing an array [lower,upper,step] as
+        # "index" parameter.
+
+        """?
+        try:
+            if len(index) == 3:
+                lower, upper, step = index
+                return self.nodelist[lower:upper:step]
+        except:
+            pass
+        ?"""
+
+        # Negative indexing does not seem to be always supported in Transcrypt?
+        """?
         if isinstance(index, int) and index < 0:
-            # do this manually here for potential future use with transcrypt,
-            # where negative indexing is not supported.
             index = len(self.nodelist) + index
+        ?"""
+
         return self.nodelist[index]
+
 
     def __len__(self):
         return len(self.nodelist)

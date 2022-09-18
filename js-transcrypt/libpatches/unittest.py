@@ -53,7 +53,7 @@ def _test_equals(a, b):
             return False
         return True
 
-    if isinstance(a, list):
+    if isinstance(a, (list,tuple)):
         if len(a) != len(b):
             print("\t\tlist lengths differ, {!r} vs {!r}".format(len(a),len(b)))
             return False
@@ -146,7 +146,14 @@ def _test_equals(a, b):
         print("\t\tall ok")
         return True
 
-    ok = (a == b)
+    # handle __eq__ on our own, it sounds like Transcrypt doesn't try the second
+    # object for an __eq__ method ... :/
+    if a is not None and a != None and hasattr(a, '__eq__'):
+        ok = a.__eq__(b)
+    elif b is not None and b != None and hasattr(b, '__eq__'):
+        ok = b.__eq__(a)
+    else:
+        ok = (a == b)
     print("\t\t --> {}".format(ok))
     return ok
     
