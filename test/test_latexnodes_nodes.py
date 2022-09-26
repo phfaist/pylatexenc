@@ -1,4 +1,5 @@
 import unittest
+import re
 import logging
 
 logger = logging.getLogger(__name__)
@@ -108,7 +109,6 @@ class TestLatexNodeList(unittest.TestCase):
 
 
     def test_split_at_chars_1(self):
-
 
         innercharsnode = LatexCharsNode(
             chars='X,,,Z',
@@ -356,6 +356,152 @@ class TestLatexNodeList(unittest.TestCase):
             ]
         )
 
+
+    def test_split_at_chars_callable(self):
+
+        innercharsnode = LatexCharsNode(
+            chars='X,,,Z',
+            pos=10,
+            pos_end=15,
+        )
+
+        innermacronode = LatexMacroNode(
+            macroname='test',
+            nodeargd=ParsedArguments(
+                arguments_spec_list=[ LatexArgumentSpec('{') ],
+                argnlist=[ innercharsnode, ]
+            ),
+            pos=6,
+            pos_end=15,
+        )
+
+        nodelist = LatexNodeList(
+            [
+                LatexCharsNode(
+                    chars='a,b//c',
+                    pos=0,
+                    pos_end=6,
+                ),
+                innermacronode,
+                LatexCharsNode(
+                    chars='d,',
+                    pos=15,
+                    pos_end=17,
+                ),
+            ],
+        )
+
+        # let's say we seek either ',' or '//'
+        rx = re.compile(r'(,|//)')
+        def find_sep_fn(chars, pos):
+            m = rx.search(chars, pos)
+            if m is None:
+                return None
+            return m.start(), m.end()
+
+        self.assertEqual(
+            nodelist.split_at_chars(find_sep_fn, keep_empty=False),
+            [
+                LatexNodeList([
+                    LatexCharsNode(
+                        chars='a',
+                        pos=0,
+                        pos_end=1,
+                    ),
+                ]),
+                LatexNodeList([
+                    LatexCharsNode(
+                        chars='b',
+                        pos=2,
+                        pos_end=3,
+                    ),
+                ]),
+                LatexNodeList([
+                    LatexCharsNode(
+                        chars='c',
+                        pos=5,
+                        pos_end=6,
+                    ),
+                    innermacronode,
+                    LatexCharsNode(
+                        chars='d',
+                        pos=15,
+                        pos_end=16,
+                    ),
+                ]),
+            ]
+        )
+
+
+    def test_split_at_chars_rx(self):
+
+        innercharsnode = LatexCharsNode(
+            chars='X,,,Z',
+            pos=10,
+            pos_end=15,
+        )
+
+        innermacronode = LatexMacroNode(
+            macroname='test',
+            nodeargd=ParsedArguments(
+                arguments_spec_list=[ LatexArgumentSpec('{') ],
+                argnlist=[ innercharsnode, ]
+            ),
+            pos=6,
+            pos_end=15,
+        )
+
+        nodelist = LatexNodeList(
+            [
+                LatexCharsNode(
+                    chars='a,b//c',
+                    pos=0,
+                    pos_end=6,
+                ),
+                innermacronode,
+                LatexCharsNode(
+                    chars='d,',
+                    pos=15,
+                    pos_end=17,
+                ),
+            ],
+        )
+
+        # let's say we seek either ',' or '//'
+        rx = re.compile(r'(,|//)')
+
+        self.assertEqual(
+            nodelist.split_at_chars(rx.search, keep_empty=False),
+            [
+                LatexNodeList([
+                    LatexCharsNode(
+                        chars='a',
+                        pos=0,
+                        pos_end=1,
+                    ),
+                ]),
+                LatexNodeList([
+                    LatexCharsNode(
+                        chars='b',
+                        pos=2,
+                        pos_end=3,
+                    ),
+                ]),
+                LatexNodeList([
+                    LatexCharsNode(
+                        chars='c',
+                        pos=5,
+                        pos_end=6,
+                    ),
+                    innermacronode,
+                    LatexCharsNode(
+                        chars='d',
+                        pos=15,
+                        pos_end=16,
+                    ),
+                ]),
+            ]
+        )
 
 
 

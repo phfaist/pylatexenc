@@ -901,7 +901,8 @@ class LatexNodeList(object):
                 return (-1, len(chars))
 
             if callable(sep_chars):
-                return get_split_match_start_end(chars, pos)
+                m = sep_chars(chars, pos)
+                return get_split_match_start_end(m)
 
             idx = chars.find(sep_chars, pos)
             if idx is None or idx == -1:
