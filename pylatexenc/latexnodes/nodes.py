@@ -844,7 +844,7 @@ class LatexNodeList(object):
             for nl in nodelists_list
         ]
 
-    def split_at_chars(self, sep_chars):
+    def split_at_chars(self, sep_chars, max_split=None, keep_empty=False):
         r"""
         Split the node list into multiple node lists corresponding to chunks
         delimited by the given `sep_chars`.
@@ -863,66 +863,144 @@ class LatexNodeList(object):
         for "{special,key}" ...) ]``, and ``[ (node for "keyN") ]``.
 
         If `sep_chars` is a Python callable object, then it is assumed to be a
-        function that, when called with a string, returns a list of strings
-        corresponding to the string split at the desired locations.  To split at
-        a regex, for instance, you can use::
+        function that, when called with a string and a position, returns either
+        a pair (index, len) the index of next separator start position and end
+        position to use to split the string, or an object with `start()` and
+        `end()` methods that returns those positions (e.g., a regex match
+        object); return `None`, a strictly negative start index, an empty list
+        to indicate splitting is done.  To split at a regex, for instance, you
+        can use::
 
             # make sure there are no capturing parentheses, see re.split()
             rx_space = re.compile(r'\s+')
 
-            split_node_lists = nodelist.split_at_chars(rx_space.split)
+            # rx_object.search(mystring, pos) returns the match object of the
+            # next regex match starting at pos
+            split_node_lists = nodelist.split_at_chars(rx_space.search)
         """
         
-
         # untested code !
 
         split_node_lists = []
         
-        if callable(sep_chars):
-            sep_chars_fn = sep_chars
-        else:
-            sep_chars_fn = lambda chars, sep_chars=sep_chars: chars.split(sep_chars)
+        def get_split_match_start_end(m):
+            if m is None:
+                return (-1, None)
+            if hasattr(m, 'start') and hasattr(m, 'end'):
+                return (m.start(), m.end())
+            if not m or not len(m):
+                return (-1, None)
+            start, end = m
+            if start is None:
+                start = -1
+            return start, end
+
+        def get_next_split(chars, pos):
+
+            if max_split is not None and len(split_node_lists) >= max_split:
+                return (-1, len(chars))
+
+            if callable(sep_chars):
+                return get_split_match_start_end(chars, pos)
+
+            idx = chars.find(sep_chars, pos)
+            if idx is None or idx == -1:
+                return (-1, None)
+            return (idx, idx+len(sep_chars))
+
 
         lw = self.latex_walker
         if lw is not None:
             make_node = lw.make_node
+            make_nodelist = lw.make_nodelist
         else:
             make_node = lambda cls, **kwargs: cls(**kwargs)
+            make_nodelist = lambda nl, **kwargs: LatexNodeList(nl, **kwargs)
 
-        def chars_to_node(chars, orig_node, rel_pos):
-            pos = orig_node.pos + rel_pos
+        def chars_to_node(chars, n, rel_pos, rel_pos_end):
             return make_node(LatexCharsNode,
                              parsing_state=self.parsing_state,
-                             pos=pos,
-                             pos_end=pos + len(chars),
+                             pos=n.pos + rel_pos,
+                             pos_end=n.pos + rel_pos_end,
                              chars=chars)
+
+        def flush_nodes(nodes, pos_end=None):
+            newnodelist = make_nodelist(
+                nodes,
+                parsing_state=self.parsing_state,
+                pos=None if len(nodes) else pos_end, # auto-detect from nodes if applicable
+                pos_end=pos_end,
+            )
+            split_node_lists.append(newnodelist)
 
         pending_nodes = []
 
         for n in self.nodelist:
-            if n.isNodeType(latexwalker.LatexCharsNode):
-                parts = sep_chars_fn(n.chars)
-                rel_pos = 0
-                if parts[0]:
-                    pending_nodes.append( chars_to_node(parts[0], n, 0) )
-                    rel_pos = len(parts[0])
-                    parts = parts[1:]
-                if not parts:
-                    # string didn't contain any separator
-                    continue
-                if pending_nodes:
-                    split_node_lists.append(pending_nodes)
-                    pending_nodes = []
-                for p in parts:
-                    split_node_lists.append( [ chars_to_node(p, n, rel_pos) ] )
-                    rel_pos += len(p)
+
+            if n.isNodeType(LatexCharsNode):
+
+                next_sep_end = 0
+
+                while True:
+                    prev_sep_end = next_sep_end
+                    next_sep_idx, next_sep_end = get_next_split(n.chars, prev_sep_end)
+
+                    if next_sep_idx != -1:
+                        p = n.chars[prev_sep_end:next_sep_idx]
+                        if prev_sep_end == 0:
+                            # This is the first match in the string. We might
+                            # need to merge the first chunk with earlier pending
+                            # nodes.
+                            #
+                            # There might already be nodes pending to be
+                            # collected into a part; add the first chunk up to
+                            # the first separator to those pending nodes (if
+                            # applicable), and flush them into a section
+                            if len(p):
+                                pending_nodes.append(
+                                    chars_to_node(p, n, prev_sep_end, next_sep_idx)
+                                )
+                            if len(pending_nodes) or keep_empty:
+                                flush_nodes(pending_nodes, pos_end=n.pos+next_sep_idx)
+                            pending_nodes = []
+                            continue
+                        else:
+                            # separator encountered, add as a part to the split
+                            # nodes list
+                            thenodes = []
+                            if len(p):
+                                thenodes = [
+                                    chars_to_node(p, n, prev_sep_end, next_sep_idx)
+                                ]
+                            if len(thenodes) or keep_empty:
+                                flush_nodes(thenodes, pos_end=n.pos+next_sep_idx)
+                            continue
+                    else:
+                        if prev_sep_end == 0:
+                            # The string in this node did not contain any
+                            # separator chars at all.  Simply add the entire
+                            # node to the pending chars and stop here.
+                            pending_nodes.append(n)
+                            break
+                        else:
+                            # last bits of chars is part of a new part.  Add to
+                            # pending_nodes and continue.
+                            p = n.chars[prev_sep_end:]
+                            if len(p):
+                                pending_nodes.append(
+                                    chars_to_node(p, n, prev_sep_end, len(n.chars))
+                                )
+                            break
+                        # in all cases, we're done searching through this char
+                        # node's string content
+                        break
 
                 continue
 
             pending_nodes.append( n )
 
-        if pending_nodes:
-            split_node_lists.append(pending_nodes)
+        if pending_nodes or keep_empty:
+            flush_nodes(pending_nodes, pos_end=self.pos_end)
 
         return split_node_lists
 
