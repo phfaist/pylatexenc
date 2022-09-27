@@ -326,6 +326,8 @@ class LatexTokenReader(LatexTokenReaderBase):
             sspec = parsing_state.latex_context.test_for_specials(
                 s, pos, parsing_state=parsing_state
             )
+            logger.debug("tested for specials at ‘%s’ -> %r", s[pos:pos+3]+'...', sspec)
+            #logger.debug("get_specials_spec('&') -> %r", parsing_state.latex_context.get_specials_spec('&'))
             if sspec is not None:
                 return self.make_token(tok='specials', arg=sspec,
                                        pos=pos, pos_end=pos+len(sspec.specials_chars),

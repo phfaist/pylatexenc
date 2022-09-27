@@ -69,6 +69,11 @@ class LineNumbersCalculator(object):
         returned instead of a tuple.
         """
 
+        if pos is None:
+            if as_dict:
+                return {'lineno': None, 'colno': None}
+            return (None, None)
+
         # find line number in list
 
         # line_no is the index of the last item in self._pos_new_lines that is <= pos.

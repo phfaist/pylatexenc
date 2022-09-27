@@ -810,6 +810,42 @@ class LatexNodeList(object):
         visitor.visit_node_list(self)
 
 
+    def filter(self, node_predicate_fn=None,
+               skip_none=True, skip_comments=False, skip_whitespace_char_nodes=False):
+
+        if self.latex_walker is not None:
+            make_nodelist = self.latex_walker.make_nodelist
+        else:
+            make_nodelist = lambda nl, **kwargs: LatexNodeList(nl, **kwargs)
+        
+        def filter_full_predicate_fn(n):
+            if skip_none and n is None:
+                return False
+            if skip_comments and n.isNodeType(LatexCommentNode):
+                return False
+            if skip_whitespace_char_nodes and n.isNodeType(LatexCharsNode) \
+               and len(n.chars.strip()) == 0:
+                return False
+            if node_predicate_fn is not None:
+                return node_predicate_fn(n)
+            return True
+
+        filtered_nodes = [
+            n
+            for n in self.nodelist
+            if filter_full_predicate_fn(n)
+        ]
+
+        return make_nodelist(
+            filtered_nodes,
+            parsing_state=self.parsing_state,
+            # give a meaningful pos/pos_end, both equal to our own pos_end, in
+            # case no nodes satisfied the predicates
+            pos=(None if len(filtered_nodes) else self.pos_end),
+            pos_end=(None if len(filtered_nodes) else self.pos_end),
+        )
+    
+
     def split_at_node(self, node_predicate_fn, skip_none=True, keep_separators=False,
                       max_split=None):
 
@@ -844,7 +880,7 @@ class LatexNodeList(object):
             for nl in nodelists_list
         ]
 
-    def split_at_chars(self, sep_chars, max_split=None, keep_empty=False):
+    def split_at_chars(self, sep_chars, max_split=None, keep_empty=False, skip_none=True):
         r"""
         Split the node list into multiple node lists corresponding to chunks
         delimited by the given `sep_chars`.
@@ -938,6 +974,11 @@ class LatexNodeList(object):
 
         for n in self.nodelist:
 
+            if n is None:
+                if not skip_none:
+                    pending_nodes.append(n)
+                continue
+
             if n.isNodeType(LatexCharsNode):
 
                 next_sep_end = 0
@@ -1004,6 +1045,7 @@ class LatexNodeList(object):
             flush_nodes(pending_nodes, pos_end=self.pos_end)
 
         return split_node_lists
+
 
 
     def get_content_as_chars(self):
