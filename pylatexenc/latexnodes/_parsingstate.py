@@ -227,7 +227,7 @@ class ParsingState(object):
         'enable_math',
         'macro_alpha_chars',
         'macro_escape_char',
-        'comment_char',
+        'comment_start',
         'forbidden_characters',
     )
 
@@ -260,7 +260,7 @@ class ParsingState(object):
                    enable_math=True,
                    macro_alpha_chars=_default_macro_alpha_chars,
                    macro_escape_char='\\',
-                   comment_char='%',
+                   comment_start='%',
                    forbidden_characters='',
                    ):
 
@@ -305,7 +305,7 @@ class ParsingState(object):
         # !!! at various places in LatexTokenReader, both of these are assumed
         # !!! to be single characters.
         self.macro_escape_char = macro_escape_char # character that introduces a macro
-        self.comment_char = comment_char # character that starts a comment
+        self.comment_start = comment_start # character that starts a comment
 
         self.forbidden_characters = forbidden_characters
 

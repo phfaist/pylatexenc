@@ -308,7 +308,10 @@ class LatexTokenReader(LatexTokenReaderBase):
                                             pre_space=pre_space)
 
         # check if we have a latex comment
-        if c == parsing_state.comment_char and parsing_state.enable_comments:
+        if parsing_state.enable_comments \
+           and c == parsing_state.comment_start[0] \
+           and s.startswith(parsing_state.comment_start, pos):
+            #
             return self.impl_read_comment(s=s, pos=pos,
                                           parsing_state=parsing_state,
                                           pre_space=pre_space)
@@ -638,11 +641,13 @@ class LatexTokenReader(LatexTokenReaderBase):
         attribute.
         """
 
-        if s[pos] != parsing_state.comment_char:
-            raise ValueError("Internal error, expected comment char ‘{}’ in read_comment()"
-                             .format(parsing_state.comment_char))
+        if not s.startswith(parsing_state.comment_start, pos):
+            raise ValueError("Internal error, expected comment start ‘{}’ in read_comment()"
+                             .format(parsing_state.comment_start))
 
-        sppos = s.find('\n', pos)
+        pos_inner_start = pos+len(parsing_state.comment_start)
+
+        sppos = s.find('\n', pos_inner_start)
         if sppos == -1:
             # reached end of string
             comment_pos_end = len(s)
@@ -666,7 +671,7 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         return self.make_token(
             tok='comment',
-            arg=s[pos+1:comment_pos_end],
+            arg=s[pos_inner_start:comment_pos_end],
             pos=pos,
             pos_end=comment_with_whitespace_pos_end,
             pre_space=pre_space,

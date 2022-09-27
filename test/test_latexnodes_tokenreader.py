@@ -74,6 +74,18 @@ class TestLatexTokenReader(unittest.TestCase):
                                     pos=0, pos_end=len('% Comment here\n  '),
                                     pre_space='', post_space='\n  '))
 
+    def test_comment_altstartstring(self):
+        latextext = "%!!COMMENT!! Comment here\n  more stuff"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, comment_start='%!!COMMENT!!')
+
+        self.assertEqual(tr.peek_token(ps),
+                         LatexToken(tok='comment', arg=' Comment here',
+                                    pos=0, pos_end=len('%!!COMMENT!! Comment here\n  '),
+                                    pre_space='', post_space='\n  '))
+
+
     def test_comment_with_pre_space(self):
         pre_space = '   \t\n \t'
         latextext = pre_space+"% Comment here\n  more stuff"
