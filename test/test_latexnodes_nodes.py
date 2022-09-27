@@ -394,10 +394,10 @@ class TestLatexNodeList(unittest.TestCase):
         # let's say we seek either ',' or '//'
         rx = re.compile(r'(,|//)')
         def find_sep_fn(chars, pos):
-            m = rx.search(chars, pos)
+            m = rx.search(chars[pos:]) # chars[pos:] for Transcrypt ??
             if m is None:
                 return None
-            return m.start(), m.end()
+            return pos+m.start(), pos+m.end()
 
         self.assertEqual(
             nodelist.split_at_chars(find_sep_fn, keep_empty=False),
@@ -471,7 +471,7 @@ class TestLatexNodeList(unittest.TestCase):
         rx = re.compile(r'(,|//)')
 
         self.assertEqual(
-            nodelist.split_at_chars(rx.search, keep_empty=False),
+            nodelist.split_at_chars(rx, keep_empty=False),
             [
                 LatexNodeList([
                     LatexCharsNode(

@@ -48,18 +48,18 @@ class TestLatexContextDb(unittest.TestCase):
         logger.debug("context2's d = %r", context2.d)
         logger.debug("context2's lookup maps are = %r", context2.lookup_chain_maps)
 
-        self.assertEquals(context2.get_macro_spec('base'),
-                          context.get_macro_spec('base'))
-        self.assertEquals(context2.get_environment_spec('baseenv'),
-                          context.get_environment_spec('baseenv'))
-        self.assertEquals(context2.get_specials_spec('~'),
-                          context.get_specials_spec('~'))
-        self.assertEquals(context2.test_for_specials('~~~~~~~', pos=0),
-                          context.get_specials_spec('~'))
-        self.assertEquals(context2.get_macro_spec('more'), extd1['macros'][0])
-        self.assertEquals(context2.get_environment_spec('moreenv'), extd1['environments'][0])
-        self.assertEquals(context2.get_specials_spec('!'), extd1['specials'][0])
-        self.assertEquals(context2.test_for_specials('!!!!!', pos=0), extd1['specials'][0])
+        self.assertEqual(context2.get_macro_spec('base'),
+                         context.get_macro_spec('base'))
+        self.assertEqual(context2.get_environment_spec('baseenv'),
+                         context.get_environment_spec('baseenv'))
+        self.assertEqual(context2.get_specials_spec('~'),
+                         context.get_specials_spec('~'))
+        self.assertEqual(context2.test_for_specials('~~~~~~~', pos=0),
+                         context.get_specials_spec('~'))
+        self.assertEqual(context2.get_macro_spec('more'), extd1['macros'][0])
+        self.assertEqual(context2.get_environment_spec('moreenv'), extd1['environments'][0])
+        self.assertEqual(context2.get_specials_spec('!'), extd1['specials'][0])
+        self.assertEqual(context2.test_for_specials('!!!!!', pos=0), extd1['specials'][0])
 
         extd2 = dict(
             macros=[ MacroSpec('evenmore', '{'), ],
@@ -72,21 +72,21 @@ class TestLatexContextDb(unittest.TestCase):
         logger.debug("context3's d = %r", context3.d)
         logger.debug("context3's lookup maps are = %r", context3.lookup_chain_maps)
 
-        self.assertEquals(context3.get_macro_spec('base'),
-                          context.get_macro_spec('base'))
-        # self.assertEquals(context3.get_environment_spec('baseenv'),
-        #                   context.get_environment_spec('baseenv'))
-        self.assertEquals(context3.get_specials_spec('~'),
-                          context.get_specials_spec('~'))
-        self.assertEquals(context3.test_for_specials('~~~~~~~', pos=0),
-                          context.get_specials_spec('~'))
-        self.assertEquals(context3.get_macro_spec('more'), extd1['macros'][0])
-        self.assertEquals(context3.get_macro_spec('evenmore'), extd2['macros'][0])
-        self.assertEquals(context3.get_environment_spec('moreenv'), extd1['environments'][0])
-        self.assertEquals(context3.get_environment_spec('baseenv'), extd2['environments'][0])
-        self.assertEquals(context3.get_specials_spec('!'), extd1['specials'][0])
-        self.assertEquals(context3.get_specials_spec('!!'), extd2['specials'][0])
-        self.assertEquals(context3.test_for_specials('!!!!!', pos=0), extd2['specials'][0])
+        self.assertEqual(context3.get_macro_spec('base'),
+                         context.get_macro_spec('base'))
+        # self.assertEqual(context3.get_environment_spec('baseenv'),
+        #                  context.get_environment_spec('baseenv')) # NO!
+        self.assertEqual(context3.get_specials_spec('~'),
+                         context.get_specials_spec('~'))
+        self.assertEqual(context3.test_for_specials('~~~~~~~', pos=0),
+                         context.get_specials_spec('~'))
+        self.assertEqual(context3.get_macro_spec('more'), extd1['macros'][0])
+        self.assertEqual(context3.get_macro_spec('evenmore'), extd2['macros'][0])
+        self.assertEqual(context3.get_environment_spec('moreenv'), extd1['environments'][0])
+        self.assertEqual(context3.get_environment_spec('baseenv'), extd2['environments'][0])
+        self.assertEqual(context3.get_specials_spec('!'), extd1['specials'][0])
+        self.assertEqual(context3.get_specials_spec('!!'), extd2['specials'][0])
+        self.assertEqual(context3.test_for_specials('!!!!!', pos=0), extd2['specials'][0])
 
 
 

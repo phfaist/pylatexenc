@@ -910,31 +910,40 @@ class LatexNodeList(object):
             # make sure there are no capturing parentheses, see re.split()
             rx_space = re.compile(r'\s+')
 
-            # rx_object.search(mystring, pos) returns the match object of the
-            # next regex match starting at pos
-            split_node_lists = nodelist.split_at_chars(rx_space.search)
+            # rx_object is also accepted
+            split_node_lists = nodelist.split_at_chars(rx_space)
+
+        If `sep_chars` is a Regular expression (or any object with a `search()`
+        method returning match-like objects with `start()` and `end()`).
         """
         
         # untested code !
 
         split_node_lists = []
         
-        def get_split_match_start_end(m):
+        def get_split_match_start_end(m, offset=0):
             if m is None:
                 return (-1, None)
             if hasattr(m, 'start') and hasattr(m, 'end'):
-                return (m.start(), m.end())
+                return (offset+m.start(), offset+m.end())
             if not m or not len(m):
                 return (-1, None)
             start, end = m
             if start is None:
                 start = -1
+            else:
+                start = offset + start
+            end = offset + end
             return start, end
 
         def get_next_split(chars, pos):
 
             if max_split is not None and len(split_node_lists) >= max_split:
                 return (-1, len(chars))
+
+            if hasattr(sep_chars, 'search'):
+                m = sep_chars.search(chars[pos:])
+                return get_split_match_start_end(m, offset=pos)
 
             if callable(sep_chars):
                 m = sep_chars(chars, pos)
