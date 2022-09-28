@@ -42,6 +42,10 @@ logger = logging.getLogger(__name__)
 _autogen_category_prefix = '__lctxdb_cat_'
 
 
+### BEGINPATCH_UNIQUE_OBJECT_ID
+fn_unique_object_id = id
+### ENDPATCH_UNIQUE_OBJECT_ID
+
 
 
 class LatexContextDb(object):
@@ -129,7 +133,7 @@ class LatexContextDb(object):
     
     def __repr__(self):
         return "<LatexContextDb {:#x}{}>".format(
-            id(self),
+            fn_unique_object_id(self),
             ("" if self.frozen else " unfrozen")
         )
 
@@ -574,14 +578,19 @@ class LatexContextDb(object):
             d_cat = dd[cat]
             # logger.debug("extended_with() DEBUG: d_cat=%r, new_category_dicts=%r",
             #              d_cat, new_category_dicts)
+            # Make copies of macros, environments, specials dicts to update them
+            # with the new definitions.  Avoid the construction dict(olddict,
+            # **new_stuff) because it doesn't seem to work with Transcrypt.
             d_cat = dict(
-                macros=dict(d_cat['macros'],
-                            **new_category_dicts['macros']),
-                environments=dict(d_cat['environments'],
-                                  **new_category_dicts['environments']),
-                specials=dict(d_cat['specials'],
-                              **new_category_dicts['specials']),
+                macros=dict(d_cat['macros']),
+                environments=dict(d_cat['environments']),
+                specials=dict(d_cat['specials']),
             )
+            d_cat['macros'].update(new_category_dicts['macros'])
+            d_cat['environments'].update(new_category_dicts['environments'])
+            d_cat['specials'].update(new_category_dicts['specials'])
+            # logger.debug("extended_with() DEBUG: updated d_cat is now = %r ; None is %r",
+            #              d_cat, None)
             dd[cat] = d_cat
             new_context.d = dd
             new_context.lookup_chain_maps = {
