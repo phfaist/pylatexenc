@@ -96,3 +96,6 @@ class LatexWalkerBase(object):
         recovery should be attempted.
         """
         return exc
+
+    def format_node_pos(self, node):
+        return 'character position '+repr(node.pos)

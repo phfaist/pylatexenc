@@ -394,7 +394,7 @@ class LatexTokenReader(LatexTokenReaderBase):
         if c in parsing_state.forbidden_characters:
             raise LatexWalkerTokenParseError(
                 s=self.s,
-                pos=pos+1,
+                pos=pos,
                 msg="Character is forbidden here: ‘{}’ ({:#x})".format(c, ord(c)),
                 error_type_info={
                     'what': 'token_forbidden_character',

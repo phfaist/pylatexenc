@@ -189,6 +189,19 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
         self.s = s
 
+        # Shift reported line numbers by this amount.  Useful if you're parsing
+        # a part of a file, so that line numbers are reported correctly.
+        self.line_number_offset = kwargs.pop('line_number_offset', None) # first line = line # 1
+        self.first_line_column_offset = kwargs.pop('first_line_column_offset', None)
+        self.column_offset = kwargs.pop('column_offset', None)
+
+        if self.line_number_offset is None:
+            self.line_number_offset = 1
+        if self.first_line_column_offset is None:
+            self.first_line_column_offset = 0
+        if self.column_offset is None:
+            self.column_offset = 0
+
         # will be determined lazily automatically by pos_to_lineno_colno(...)
         self._line_no_calc = None
 
@@ -604,6 +617,14 @@ class LatexWalker(latexnodes.LatexWalkerBase):
             **kwargs
         )
 
+
+    def format_pos(self, pos):
+        if pos is None:
+            return '(location unknown)'
+        lineno, colno = self.pos_to_lineno_colno(pos)
+        return format_pos(pos, lineno, colno)
+
+
     def pos_to_lineno_colno(self, pos, as_dict=False):
         r"""
         Return the line and column number corresponding to the given `pos` in our
@@ -621,13 +642,14 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         """
 
         if self._line_no_calc is None:
-            self._line_no_calc = _util.LineNumbersCalculator(self.s)
+            self._line_no_calc = _util.LineNumbersCalculator(
+                self.s,
+                line_number_offset=self.line_number_offset,
+                first_line_column_offset=self.first_line_column_offset,
+                column_offset=self.column_offset,
+            )
 
         return self._line_no_calc.pos_to_lineno_colno(pos, as_dict=as_dict)
-
-
-    def format_pos(self, pos):
-        return format_pos(pos, **self.pos_to_lineno_colno(pos, as_dict=True))
 
 
     def __repr__(self):

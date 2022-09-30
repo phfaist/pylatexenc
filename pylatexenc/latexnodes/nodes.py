@@ -232,6 +232,10 @@ class LatexNode(object):
         d.update(latexwalker.pos_to_lineno_colno(self.pos, as_dict=True))
         return d
 
+    def format_pos(self):
+        if self.latex_walker is not None:
+            return self.latex_walker.format_pos(self.pos)
+        return '[@ pos {}]'.format(repr(self.pos))
 
 
 class LatexCharsNode(LatexNode):
@@ -942,8 +946,13 @@ class LatexNodeList(object):
                 return (-1, len(chars))
 
             if hasattr(sep_chars, 'search'):
+                #__pragma__('skip')
+                return get_split_match_start_end(sep_chars.search(chars, pos))
+                #__pragma__('noskip')
+                # Transcrypt's implementation of regexp.search(chars, pos) seems
+                # buggy, so use the following code instead:
                 m = sep_chars.search(chars[pos:])
-                return get_split_match_start_end(m, offset=pos)
+                return get_split_match_start_end(m, pos)
 
             if callable(sep_chars):
                 m = sep_chars(chars, pos)

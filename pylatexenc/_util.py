@@ -39,8 +39,13 @@ class LineNumbersCalculator(object):
     r"""
     Utility to calculate line numbers.
     """
-    def __init__(self, s):
+    def __init__(self, s,
+                 line_number_offset=1, first_line_column_offset=0, column_offset=0):
         super(LineNumbersCalculator, self).__init__()
+
+        self.line_number_offset = line_number_offset
+        self.first_line_column_offset = first_line_column_offset
+        self.column_offset = column_offset
 
         def find_all_new_lines(x):
             # first line starts at the beginning of the string
@@ -81,10 +86,16 @@ class LineNumbersCalculator(object):
         assert line_no >= 0 and line_no < len(self._pos_new_lines)
 
         col_no = pos - self._pos_new_lines[line_no]
-        # 1+... so that line and column numbers start at 1
+
+        if line_no == 0:
+            col_no += self.first_line_column_offset
+        else:
+            col_no += self.column_offset
+        line_no += self.line_number_offset
+
         if as_dict:
-            return {'lineno': 1 + line_no, 'colno': col_no}
-        return (1 + line_no, col_no)
+            return {'lineno': line_no, 'colno': col_no}
+        return (line_no, col_no)
 
 
 
