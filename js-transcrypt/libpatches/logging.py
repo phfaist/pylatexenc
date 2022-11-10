@@ -11,19 +11,19 @@ class MinimalLogger:
         print(s)
 
     def error(self, *args):
-        self._emit("ERROR !!  ", args)
+        self._emit("[[logging.ERROR!!]]  ", args)
 
     def critical(self, *args):
-        self._emit("CRITICAL !!  ", args)
+        self._emit("[[logging.CRITICAL!!]]  ", args)
 
     def warning(self, *args):
-        self._emit("WARNING !  ", args)
+        self._emit("[[logging.WARNING!]]  ", args)
 
     def info(self, *args):
         self._emit("", args)
 
     def debug(self, *args):
-        self._emit("debug --- ", args)
+        self._emit("logging.debug -- ", args)
 
 
 single_logger_instance = MinimalLogger()

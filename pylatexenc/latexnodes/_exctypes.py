@@ -200,7 +200,7 @@ class LatexWalkerParseErrorFormatter(object):
     def to_display_string(self):
         exc = self.exc
 
-        msg = exc.msg
+        msg = str(exc.msg)
         msg += self.format_full_traceback()
 
         return msg
