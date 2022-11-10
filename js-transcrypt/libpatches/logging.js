@@ -5,6 +5,8 @@
 import { repr } from './org.transcrypt.__runtime__.js';
 
 
+const rx = /(^|,)(logging\*?|\*)($|,)/;
+
 class MinimalLogger
 {
     constructor()
@@ -13,36 +15,40 @@ class MinimalLogger
         if ( typeof localStorage !== 'undefined' && localStorage != null
              && localStorage !== false
              && localStorage.debug != null && localStorage.debug !== ''
-             && /(^|,)logging\*?($|,)/.test(localStorage.debug) ) {
+             && rx.test(localStorage.debug) ) {
             this._enable_debug = true;
         }
-    }
-
-    error(msg, ...args)
-    {
-        this._emit('[[logging.ERROR]]', ' !! ', msg, args, console.error);
-    }
-
-    critical(msg, ...args)
-    {
-        this._emit('[[logging.CRITICAL]]', ' !! ', msg, args, console.error);
-    }
-
-    warning(msg, ...args)
-    {
-        this._emit('[[logging.WARNING]]', ' ! ', msg, args);
-    }
-    
-    info(msg, ...args)
-    {
-        this._emit('', '', msg, args);
-    }
-
-    debug(msg, ...args)
-    {
-        if (this._enable_debug) {
-            this._emit('logging.debug', ' -- ', msg, args);
+        if ( typeof process !== 'undefined' && process != null
+             && process !== false
+             && process.env != null
+             && process.env.DEBUG != null && process.env.DEBUG !== ''
+             && rx.test(process.env.DEBUG) ) {
+            this._enable_debug = true;
         }
+
+        console.debug('logging set up; enable_debug = ', this._enable_debug);
+
+        this.error = (msg, ...args) => {
+            this._emit('[[logging.ERROR]]', ' !! ', msg, args, console.error);
+        };
+
+        this.critical = (msg, ...args) => {
+            this._emit('[[logging.CRITICAL]]', ' !! ', msg, args, console.error);
+        };
+
+        this.warning = (msg, ...args) => {
+            this._emit('[[logging.WARNING]]', ' ! ', msg, args);
+        };
+    
+        this.info = (msg, ...args) => {
+            this._emit('', '', msg, args);
+        };
+
+        this.debug = (msg, ...args) => {
+            if (this._enable_debug) {
+                this._emit('logging.debug', ' -- ', msg, args, console.debug);
+            }
+        };
     }
 
     _emit(label, sep, msg, args, log_fn)
