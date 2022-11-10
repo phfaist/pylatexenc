@@ -18,7 +18,7 @@ enabled_features:
   keep_super_arguments: False
   keep_dict_with_generator: False
   keep_frozenset: False
-  keep_logger_debug: False
+  keep_logger_debug: True
   guards:
     PYTHON2_SUPPORT_CODE: False
     PYLATEXENC1_LEGACY_SUPPORT_CODE: False
