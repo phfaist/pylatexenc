@@ -212,7 +212,7 @@ class LatexTokenReader(LatexTokenReaderBase):
         (regardless of whether or not we are in tolerant parsing mode).
         """
 
-        logger.debug("impl_peek_token(): parsing_state = %r", parsing_state)
+        logger.debug("impl_peek_token(): parsing_state = %r, pos=%r", parsing_state, self._pos)
 
         # shorthands (& to avoid repeated lookups to self.XXX)
         s = self.s

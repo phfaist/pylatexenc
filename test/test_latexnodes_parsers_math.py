@@ -305,6 +305,47 @@ class TestMathParser(unittest.TestCase):
         )
 
 
+    def test_simple_7(self):
+        
+        latextext = r'''something \(a\)'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        tr.move_to_pos_chars(10) # 10 == latextext.find(r'\(')
+
+        parser = LatexMathParser(math_mode_delimiters=r'\(')
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        psmath = nodes.nodelist[0].parsing_state
+        self.assertTrue(psmath.in_math_mode)
+
+        self.assertEqual(
+            nodes,
+            LatexMathNode(
+                parsing_state=ps,
+                delimiters=(r'\(',r'\)'),
+                displaytype='inline',
+                nodelist=LatexNodeList(
+                    [
+                        LatexCharsNode(
+                            parsing_state=psmath,
+                            chars='a',
+                            pos=12,
+                            pos_end=13,
+                        ),
+                    ],
+                    pos=12,
+                    pos_end=13,
+                ),
+                pos=10,
+                pos_end=15,
+            )
+        )
+
+
     # def test_open_within_open(self):
 
     #     latextext = r'''\[a+\(\)\]'''

@@ -261,6 +261,7 @@ class LatexNodesCollector(object):
         self._finalized = True
 
         if exc is not None:
+            logger.debug('finalize(): raising exc=%r', exc)
             raise exc
 
 
@@ -416,6 +417,7 @@ class LatexNodesCollector(object):
 
         except LatexWalkerError as e:
             # we got an error! We'll let whoever called us process this
+            logger.debug("process_tokens() - relaying error -- %r", e)
             raise
 
         finally:
@@ -491,6 +493,7 @@ class LatexNodesCollector(object):
                 #print("*** reached end of stream!")
                 exc = LatexNodesCollector.ReachedEndOfStream()
                 exc.pos_end = token_reader.cur_pos()
+                logger.debug('process_one_token(): reached end of stream, exc=%r', exc)
                 raise exc
 
 
@@ -512,6 +515,7 @@ class LatexNodesCollector(object):
             # condition.
             token_reader.move_to_token(tok, rewind_pre_space=rewind_pre_space)
             stop_exc.pos_end = tok.pos_end
+            logger.debug('process_one_token(): stop token condition reached, exc=%r', stop_exc)
             raise stop_exc
 
         # if it's a char, just append it to the stream of last "pending"
@@ -535,6 +539,8 @@ class LatexNodesCollector(object):
                 # absorbed its pre_space
                 token_reader.move_to_token(tok, rewind_pre_space=False)
                 stop_exc.pos_end = tok.pos
+                logger.debug('process_one_token(): stop condition reached (a), exc=%r',
+                             stop_exc)
                 raise stop_exc
 
         # If we have pre_space, add a separate chars node that contains the
@@ -556,6 +562,8 @@ class LatexNodesCollector(object):
                 # absorbed its pre_space
                 token_reader.move_to_token(tok, rewind_pre_space=False)
                 stop_exc.pos_end = tok.pos
+                logger.debug('process_one_token(): stop condition reached (b), exc=%r',
+                             stop_exc)
                 raise stop_exc
 
         # now, process the encountered token `tok`, keeping in mind that the
@@ -686,6 +694,7 @@ class LatexNodesCollector(object):
         stop_exc = self.push_to_nodelist( commentnode )
         if stop_exc is not None:
             stop_exc.pos_end = tok.pos_end
+            logger.debug('parse_comment_node(): stop_exc=%r', stop_exc)
             raise stop_exc
 
 
@@ -709,11 +718,13 @@ class LatexNodesCollector(object):
 
         self.token_reader.move_to_token(tok, rewind_pre_space=False)
 
+        group_parser = self.latex_walker.make_latex_group_parser(
+            delimiters=tok.arg,
+        )
+
         groupnode, parsing_state_delta = \
             self.latex_walker.parse_content(
-                self.latex_walker.make_latex_group_parser(
-                    delimiters=tok.arg,
-                ),
+                group_parser,
                 token_reader=self.token_reader,
                 parsing_state=self.make_child_parsing_state(self.parsing_state,
                                                             LatexGroupNode),
@@ -726,6 +737,7 @@ class LatexNodesCollector(object):
         stop_exc = self.push_to_nodelist(groupnode)
         if stop_exc is not None:
             stop_exc.pos_end = groupnode.pos_end
+            logger.debug('parse_latex_group(): stop_exc=%r', stop_exc)
             raise stop_exc
 
         logger.debug("nodes collector finished parsing group → %r", groupnode)
@@ -876,6 +888,7 @@ class LatexNodesCollector(object):
                 )
             )
             if exc is not None:
+                logger.debug('parse_invocable_token_type(): no-parser error, exc=%r', exc)
                 raise exc
             result_node = None
             parsing_state_delta = None
@@ -884,8 +897,8 @@ class LatexNodesCollector(object):
 
             result_node, parsing_state_delta = latex_walker.parse_content(
                 node_parser,
-                token_reader=token_reader,
-                parsing_state=self.make_child_parsing_state(self.parsing_state, node_class),
+                token_reader,
+                self.make_child_parsing_state(self.parsing_state, node_class),
                 open_context=(what, tok),
             )
 
@@ -898,6 +911,7 @@ class LatexNodesCollector(object):
         exc = self.push_to_nodelist(result_node)
         if exc is not None:
             exc.pos_end = result_node.pos_end
+            logger.debug('parse_invocable_token_type(): exc=%r', exc)
             raise exc
 
 
@@ -928,12 +942,14 @@ class LatexNodesCollector(object):
         )
         logger.debug("child_math_parsing_state = %r", child_math_parsing_state)
 
+        math_parser = self.latex_walker.make_latex_math_parser(
+            math_mode_delimiters=tok.arg,
+        )
+
         # a math inline or display environment
         mathnode, parsing_state_delta = \
             self.latex_walker.parse_content(
-                self.latex_walker.make_latex_math_parser(
-                    math_mode_delimiters=tok.arg,
-                ),
+                math_parser,
                 token_reader=self.token_reader,
                 parsing_state=child_math_parsing_state,
             )
@@ -947,4 +963,5 @@ class LatexNodesCollector(object):
         stop_exc = self.push_to_nodelist(mathnode)
         if stop_exc is not None:
             stop_exc.pos_end = mathnode.pos_end
+            logger.debug('parse_math_node(): stop_exc=%r', stop_exc)
             raise stop_exc

@@ -345,7 +345,7 @@ class LatexDelimitedExpressionParserInfo(object):
                 ])
 
             raise LatexDelimitedExpressionParserOpeningDelimiterNotFound(
-                msg='Expected an opening LaTeX delimiter (%s), got %s/‘%s’%s' %(
+                msg='Expected an opening LaTeX delimiter ({}), got {}/‘{}’{}'.format(
                     acceptable_delimiters_msg,
                     first_token.tok,
                     first_token.arg,
@@ -707,18 +707,23 @@ class LatexDelimitedExpressionParser(LatexParserBase):
         except LatexDelimitedExpressionParserOpeningDelimiterNotFound as e:
             
             recovery_token = None
-            if e.first_tokens:
+            if e.first_tokens is not None and len(e.first_tokens):
                 recovery_token = e.first_tokens[0]
 
             if self.optional:
                 # all ok, the argument was optional and was simply not specified.
-                if e.first_tokens:
+                if e.first_tokens is not None and len(e.first_tokens):
                     token_reader.move_to_token(recovery_token)
                 return None, None
+
+            pos = None
+            if recovery_token is not None:
+                pos = recovery_token
 
             # raise a parse error
             raise LatexWalkerNodesParseError(
                 msg=e.msg,
+                pos=pos,
                 recovery_nodes=latex_walker.make_nodelist(
                     [],
                     parsing_state=group_parsing_state,

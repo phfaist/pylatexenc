@@ -503,10 +503,18 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         include the new macro definition.
         """
 
+        the_token_reader = None
+        the_parsing_state = None
+
         if token_reader is None:
-            token_reader = self.make_token_reader()
+            the_token_reader = self.make_token_reader()
+        else:
+            the_token_reader = token_reader
+
         if parsing_state is None:
-            parsing_state = self.make_parsing_state()
+            the_parsing_state = self.make_parsing_state()
+        else:
+            the_parsing_state = parsing_state
 
         nodes = None
         info = None
@@ -515,9 +523,9 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         if open_context:
             open_context_name, open_context_tok = open_context
 
-        start_pos = token_reader.cur_pos()
+        start_pos = the_token_reader.cur_pos()
         logger.debug(":: Parsing content (%s @ %r) - %r [%r]::",
-                     open_context_name, start_pos, parser, parsing_state)
+                     open_context_name, start_pos, parser, the_parsing_state)
 
         with self.new_parsing_open_context(open_context_name, open_context_tok) as pc:
 
@@ -525,8 +533,8 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
                 nodes, info = parser.parse(
                     latex_walker=self,
-                    token_reader=token_reader,
-                    parsing_state=parsing_state
+                    token_reader=the_token_reader,
+                    parsing_state=the_parsing_state
                 )
 
             except LatexWalkerEndOfStream:
@@ -535,7 +543,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
                 nodes, info = None, None
 
         if pc.recovery_from_exception is not None:
-            nodes, info = pc.perform_recovery_nodes_info(token_reader)
+            nodes, info = pc.perform_recovery_nodes_info(the_token_reader)
 
         logger.debug(":: PARSED content (%s @ %r) - %r - result %r %r DONE ::",
                      open_context_name, start_pos, parser, nodes, info)

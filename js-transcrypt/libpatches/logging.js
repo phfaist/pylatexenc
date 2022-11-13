@@ -4,60 +4,46 @@
 
 import { repr } from './org.transcrypt.__runtime__.js';
 
+import debug_module from 'debug';
 
-const rx = /(^|,)(logging\*?|\*)($|,)/;
+debug_module.formatters.r = (v) => repr(v);
 
-class MinimalLogger
+
+class DebugLogger
 {
-    constructor()
+    constructor(scope)
     {
-        this._enable_debug = false;
-        if ( typeof localStorage !== 'undefined' && localStorage != null
-             && localStorage !== false
-             && localStorage.debug != null && localStorage.debug !== ''
-             && rx.test(localStorage.debug) ) {
-            this._enable_debug = true;
-        }
-        if ( typeof process !== 'undefined' && process != null
-             && process !== false
-             && process.env != null
-             && process.env.DEBUG != null && process.env.DEBUG !== ''
-             && rx.test(process.env.DEBUG) ) {
-            this._enable_debug = true;
-        }
+        this.scope = scope;
 
-        console.debug('logging set up; enable_debug = ', this._enable_debug);
+        this._debug_fn = debug_module(this.scope);
+        this._debug_fn_star = debug_module(this.scope+'*'); // always output
+
+        console.debug(`setting up logger ‘${this.scope}’ via debug()`);
 
         this.error = (msg, ...args) => {
-            this._emit('[[logging.ERROR]]', ' !! ', msg, args, console.error);
+            this._debug_fn_star('[[logging.ERROR]] !! ' + msg, ...args);
         };
 
         this.critical = (msg, ...args) => {
-            this._emit('[[logging.CRITICAL]]', ' !! ', msg, args, console.error);
+            this._debug_fn_star('[[logging.CRITICAL]] !! ' + msg, ...args);
         };
 
         this.warning = (msg, ...args) => {
-            this._emit('[[logging.WARNING]]', ' ! ', msg, args);
+            this._debug_fn_star('[[logging.WARNING]] !! ' + msg, ...args);
         };
     
         this.info = (msg, ...args) => {
-            this._emit('', '', msg, args);
+            this._debug_fn_star(msg, ...args);
         };
 
         this.debug = (msg, ...args) => {
-            if (this._enable_debug) {
-                this._emit('logging.debug', ' -- ', msg, args, console.debug);
-            }
+            this._debug_fn('logging.debug ~~ ' + msg, ...args);
         };
     }
 
     _emit(label, sep, msg, args, log_fn)
     {
-        let s = label + sep + msg;
-        if (args.length) {
-            s += "  //  ";
-            s += args.map( (a) => repr(a) ).join(' ; ');
-        }
+        let s = label + sep + _assemble_msg(msg, args);
         if (log_fn !== undefined) {
             log_fn(s);
         } else {
@@ -66,13 +52,26 @@ class MinimalLogger
     }
 };
 
-
-const single_logger_instance = new MinimalLogger();
-
-
-export function getLogger()
+function _assemble_msg(msg, args)
 {
-    return single_logger_instance;
+    if (args.length) {
+        return msg + "  //  " + args.map( (a) => repr(a) ).join(' ; ');
+    }
+    return msg;
+}
+
+
+
+let _logger_instances = {};
+
+export function getLogger(scope)
+{
+    let logger = _logger_instances[scope];
+    if (logger == null) { // null or undefined
+        logger = new DebugLogger(scope);
+        _logger_instances[scope] = logger;
+    }
+    return logger;
 }
 
 export function basicConfig()
