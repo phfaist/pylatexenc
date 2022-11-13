@@ -694,11 +694,13 @@ class ParsingStateDeltaExtendLatexContextDb(ParsingStateDelta):
             else:
                 set_attributes = {}
 
+            latex_context = parsing_state.latex_context.extended_with(
+                category=None,
+                **self.extend_latex_context
+            )
+
             return parsing_state.sub_context(
-                latex_context=parsing_state.latex_context.extended_with(
-                    category=None,
-                    **self.extend_latex_context
-                ),
+                latex_context=latex_context,
                 **set_attributes
             )
         elif self.set_attributes:
