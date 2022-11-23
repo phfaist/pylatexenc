@@ -6,18 +6,45 @@ authors = ["Philippe Faist <philippe.faist@bluewin.ch>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-#python = "^2.7 || ^3.4"
-python = "^3.6" # argh...
-Transcrypt = { version = "^3.9.0", optional = true }
-PyYAML = { version = "^6.0", optional = true }
+python = "^2.7 || ^3.4" # This simply creates a dependency resolution mess that doesn't work.
+#python = "^3.6"
 
 [tool.poetry.dev-dependencies]
 pytest = ">=4.6"
-Sphinx = "^5.0.1"
-sphinx-issues = "^3.0.1"
 
-[tool.poetry.extras]
-buildjslib = ["Transcrypt","PyYAML"]
+# Sounds good, but all these optional dependencies that are only needed to build
+# the documentation or to transpile the JS lib completely mess up the dependency
+# resolution even if you don't want to install them.  I don't understand how to
+# do this properly with poetry/pyproject while keeping old python compatibility
+# for the simple runtime library.
+# 
+#
+# # pytest and Sphinx' dependency -- need to specify python markers here too :/
+# importlib-metadata = [
+#     { version = ">= 0.12", python = "<3.7" },
+#     { version = ">= 5.0.0", python = ">=3.7" }
+# ]
+#
+#
+# [tool.poetry.group.builddoc]
+# optional = true
+#
+# [tool.poetry.group.builddoc.dependencies]
+# Sphinx = { version = ">=5.0.0", optional = true, python = ">=3.7" }
+# sphinx-issues = { version = ">=3.0.0", optional = true, python = ">=3.7" }
+#
+# [tool.poetry.group.buildjslib]
+# optional = true
+#
+# [tool.poetry.group.buildjslib.dependencies]
+# Transcrypt = { version = ">=3.9.0", optional = true, python = ">=3.9" }
+# PyYAML = { version = ">=5.0", optional = true, python = ">=3.9" }
+#
+# [tool.poetry.extras]
+# builddoc = ["Sphinx", "sphinx-issues"]
+# buildjslib = ["Transcrypt","PyYAML"]
+
+
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

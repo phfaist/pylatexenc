@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 # for Py3
 _basestring = str
 _unicode_from_str = lambda x: x
+to_str = str
 
 ### BEGIN_PYTHON2_SUPPORT_CODE
 import sys
@@ -43,6 +44,7 @@ if sys.version_info.major == 2:
     # Py2
     _basestring = basestring
     _unicode_from_str = lambda x: x.decode('utf-8')
+    to_str = unicode
 ### END_PYTHON2_SUPPORT_CODE
 
 
@@ -200,7 +202,7 @@ class LatexWalkerParseErrorFormatter(object):
     def to_display_string(self):
         exc = self.exc
 
-        msg = str(exc.msg)
+        msg = to_str(exc.msg)
         msg += self.format_full_traceback()
 
         return msg
