@@ -12,8 +12,10 @@ Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion
 .. image:: https://img.shields.io/pypi/v/pylatexenc.svg?style=flat
    :target: https://pypi.org/project/pylatexenc/
 
-.. image:: https://img.shields.io/lgtm/alerts/g/phfaist/pylatexenc.svg?logo=lgtm&logoWidth=18&style=flat
-   :target: https://lgtm.com/projects/g/phfaist/pylatexenc/alerts/
+Python: ≥ 3.4 or ≥ 2.7. The library is designed to be as backwards-compatible as
+reasonably possible and is able to run on old python verisons should it be
+necessary. (Use the setup.py script directly if you have python<3.7, I had
+issues with poetry.)
 
 
 Unicode Text to LaTeX code
@@ -56,6 +58,12 @@ Documentation
 -------------
 
 Full documentation is available at https://pylatexenc.readthedocs.io/.
+
+To build the documentation manually, run::
+
+  > poetry install --with=builddoc
+  > cd doc/
+  doc> poetry run make html
 
 
 License

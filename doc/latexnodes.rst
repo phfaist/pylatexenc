@@ -160,7 +160,7 @@ Parser Classes
 
 
 .. autoclass:: LatexParserBase
-   :members: __call__, contents_can_be_empty
+   :members:
 
 
 General Nodes

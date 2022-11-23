@@ -7,10 +7,10 @@ simple LaTeX code.
 
 This procedure is very much still in alpha stage.  Don't rely too much on it!
 
-To use commands listed here, make sure you installed the optional poetry extras
-"buildjslib":
+To use commands listed here, make sure you installed the optional poetry
+dependency group "buildjslib":
 
-    > poetry install -E buildjslib
+    > poetry install --with=buildjslib
 
 
 ## The build script
