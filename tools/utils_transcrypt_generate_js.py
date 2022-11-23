@@ -1,5 +1,6 @@
 import re
 import sys
+import os
 import os.path
 import json
 
@@ -27,7 +28,9 @@ class GenUtils:
         self.preprocess_lib_output_dir = preprocess_lib_output_dir
 
         if pylatexenc_src_dir is None:
-            pylatexenc_src_dir = os.path.normpath(os.path.dirname(__file__), '..')
+            pylatexenc_src_dir = os.path.normpath(
+                os.path.join(os.getcwd(), '..', os.path.dirname(__file__))
+            )
         self.setpaths(pylatexenc_src_dir)
 
         self.env = env

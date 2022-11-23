@@ -58,10 +58,10 @@ class ParsingStateDelta(object):
     well as a simple implementation of a parsing state change based on parsing
     state attributes that are to be changed.
     """
-    def __init__(self, set_attributes=None, **kwargs):
+    def __init__(self, set_attributes=None, _fields=None, **kwargs):
         super(ParsingStateDelta, self).__init__(**kwargs)
         self.set_attributes = dict(set_attributes) if set_attributes else None
-        self._fields = ('set_attributes',)
+        self._fields = _fields if (_fields is not None) else ('set_attributes',)
 
     def __repr__(self):
         return (
@@ -97,9 +97,11 @@ class ParsingStateDeltaReplaceParsingState(ParsingStateDelta):
     replaces the previous parsing state.
     """
     def __init__(self, set_parsing_state, **kwargs):
-        super(ParsingStateDeltaReplaceParsingState, self).__init__(**kwargs)
+        super(ParsingStateDeltaReplaceParsingState, self).__init__(
+            _fields=('set_parsing_state',),
+            **kwargs
+        )
         self.set_parsing_state = set_parsing_state
-        self._fields = ('set_parsing_state',)
 
     def get_updated_parsing_state(self, parsing_state, latex_walker):
         if self.set_parsing_state is not None:
@@ -122,10 +124,11 @@ class ParsingStateDeltaWalkerEvent(ParsingStateDelta):
     DOC......................
     """
     def __init__(self, walker_event_name, walker_event_kwargs):
-        super(ParsingStateDeltaWalkerEvent, self).__init__()
+        super(ParsingStateDeltaWalkerEvent, self).__init__(
+            _fields=('walker_event_name', 'walker_event_kwargs',)
+        )
         self.walker_event_name = walker_event_name
         self.walker_event_kwargs = walker_event_kwargs
-        self._fields = ('walker_event_name', 'walker_event_kwargs',)
     
     def get_updated_parsing_state(self, parsing_state, latex_walker):
         handler = latex_walker.parsing_state_event_handler()

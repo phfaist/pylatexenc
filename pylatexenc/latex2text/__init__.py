@@ -1218,6 +1218,7 @@ class LatexNodes2Text(object):
                                                 what="specials '%s'"%(specials_chars))
             if spec.discard:
                 return ""
+            a = []
             if node.nodeargd and node.nodeargd.argnlist:
                 a = node.nodeargd.argnlist
             return "".join([self._groupnodecontents_to_text(n) for n in a])

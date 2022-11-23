@@ -1053,7 +1053,7 @@ class LatexNodeList(object):
                             break
                         # in all cases, we're done searching through this char
                         # node's string content
-                        break
+                        #break
 
                 continue
 

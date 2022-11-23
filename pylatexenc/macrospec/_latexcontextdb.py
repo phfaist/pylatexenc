@@ -682,9 +682,11 @@ class ParsingStateDeltaExtendLatexContextDb(ParsingStateDelta):
        added on top of the parsing state change.
     """
     def __init__(self, extend_latex_context, **kwargs):
-        super(ParsingStateDeltaExtendLatexContextDb, self).__init__(**kwargs)
+        super(ParsingStateDeltaExtendLatexContextDb, self).__init__(
+            _fields=('extend_latex_context', 'set_attributes',),
+            **kwargs
+        )
         self.extend_latex_context = extend_latex_context
-        self._fields = ('extend_latex_context', 'set_attributes',)
 
     def get_updated_parsing_state(self, parsing_state, latex_walker):
 
