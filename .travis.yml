@@ -4,10 +4,25 @@
 
 language: python
 
-python:
-  - "2.7"
-  - "3.4"
-  - "3.6"
+jobs:
+  include:
+    - python: '2.7'
+      dist: 'xenial'
+    - python: '3.4'
+      dist: 'xenial'
+    - python: '3.6'
+      dist: 'xenial'
+    - python: '3.7'
+      dist: 'xenial'
+    - python: '3.8'
+      dist: 'xenial'
+    - python: '3.9'
+      dist: 'jammy'
+    - python: '3.10'
+      dist: 'jammy'
+    - python: '3.11'
+      dist: 'jammy'
+
 
 # command to run tests
 script:
