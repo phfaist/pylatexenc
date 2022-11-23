@@ -356,7 +356,8 @@ class LatexContextDb(object):
                 if len(specials_chars) > best_match_len and s.startswith(specials_chars, pos):
                     best_match_s = self.d[cat]['specials'][specials_chars]
                     best_match_len = len(specials_chars)
-                    logger.debug(f"        -> {best_match_s=} {best_match_len=}")
+                    # logger.debug("        -> best_match_s=%s, best_match_len=%s",
+                    #              best_match_s, best_match_len)
 
         return best_match_s # this is None if no match
 
