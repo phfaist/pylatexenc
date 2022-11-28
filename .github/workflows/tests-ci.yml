@@ -2,9 +2,9 @@ name: 'tests-ci'
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "devel" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "devel" ]
   schedule:
     - cron: "13 20 * * 3"
 
