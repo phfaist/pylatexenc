@@ -24,7 +24,7 @@ jobs:
           - 'ubuntu-latest'
         include:
           - python-version: "3.4"
-            os: "win32" # ubuntu-18.04 is deprecated
+            os: "ubuntu-18.04"
           - python-version: "2.7"
             os: 'ubuntu-20.04'
 
