@@ -1,0 +1,59 @@
+
+name: 'tests-ci-js'
+
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: "13 20 * * 3"
+
+jobs:
+  tests-ci-js:
+
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version:
+          - "3.11"
+        poetry-version:
+          - "1.2"
+        node-version:
+          - "14"
+          - "19"
+        os:
+          - 'ubuntu-latest'
+
+    runs-on: '${{ matrix.os }}'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      # Install NodeJS
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '${{ matrix.node-version }}'
+
+      - name: 'Setting up some node packages'
+        run: 'npm i debug'
+
+      # Poetry & Python are needed to transpile Python library
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '${{ matrix.python-version }}'
+
+      - name: 'Set up poetry - Run image'
+        uses: abatilo/actions-poetry@v2
+
+      - name: 'Poetry Install (with buildjslib)'
+        run: 'poetry install --with buildjslib'
+
+      - name: 'Generate pylatexenc JS library'
+        working-directory: 'js-transcrypt'
+        run: 'poetry run python ./generate_pylatexenc_js.py --compile-tests'
+
+      - name: 'Run JS tests'
+        working-directory: 'js-transcrypt'
+        run: 'node test-pylatexenc-js/runtests.js'
