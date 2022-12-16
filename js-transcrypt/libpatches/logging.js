@@ -21,35 +21,52 @@ class DebugLogger
         console.debug(`setting up logger ‘${this.scope}’ via debug()`);
 
         this.error = (msg, ...args) => {
+            const lastarg = args[args.length-1];
+            if (lastarg && lastarg.__kwargtrans__ === null) { this._process_kwargs(lastarg); }
             this._debug_fn_star('[[logging.ERROR]] !! ' + msg, ...args);
         };
 
         this.critical = (msg, ...args) => {
+            const lastarg = args[args.length-1];
+            if (lastarg && lastarg.__kwargtrans__ === null) { this._process_kwargs(lastarg); }
             this._debug_fn_star('[[logging.CRITICAL]] !! ' + msg, ...args);
         };
 
         this.warning = (msg, ...args) => {
+            const lastarg = args[args.length-1];
+            if (lastarg && lastarg.__kwargtrans__ === null) { this._process_kwargs(lastarg); }
             this._debug_fn_star('[[logging.WARNING]] !! ' + msg, ...args);
         };
     
         this.info = (msg, ...args) => {
+            const lastarg = args[args.length-1];
+            if (lastarg && lastarg.__kwargtrans__ === null) { this._process_kwargs(lastarg); }
             this._debug_fn_star(msg, ...args);
         };
 
         this.debug = (msg, ...args) => {
+            const lastarg = args[args.length-1];
+            if (lastarg && lastarg.__kwargtrans__ === null) { this._process_kwargs(lastarg); }
             this._debug_fn('logging.debug ~~ ' + msg, ...args);
         };
     }
 
-    _emit(label, sep, msg, args, log_fn)
+    _process_kwargs(kwargs)
     {
-        let s = label + sep + _assemble_msg(msg, args);
-        if (log_fn !== undefined) {
-            log_fn(s);
-        } else {
-            console.log(s);
+        if (kwargs.exc_info) {
+            console.trace();
         }
     }
+
+    // _emit(label, sep, msg, args, log_fn)
+    // {
+    //     let s = label + sep + _assemble_msg(msg, args);
+    //     if (log_fn !== undefined) {
+    //         log_fn(s);
+    //     } else {
+    //         console.log(s);
+    //     }
+    // }
 };
 
 function _assemble_msg(msg, args)
