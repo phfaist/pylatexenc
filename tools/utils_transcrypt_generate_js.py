@@ -44,8 +44,9 @@ class GenUtils:
             )
         self.setpaths(pylatexenc_src_dir)
 
-        self.env = env
-        if self.env is None:
+        if env:
+            self.env = dict(env)
+        else:
             self.env = {}
 
 
@@ -78,7 +79,8 @@ class GenUtils:
         subprocess.run(cmd, env=env, check=True, stdout=None, stderr=None,)
 
 
-    def preprocess_pylatexenc_lib(self, *, preprocess_lib_output_dir=None, config_yaml=None):
+    def preprocess_pylatexenc_lib(self, *, preprocess_lib_output_dir=None,
+                                  config_yaml=None, override_enabled_features=None):
 
         if preprocess_lib_output_dir is None:
             preprocess_lib_output_dir = self.preprocess_lib_output_dir
@@ -87,7 +89,9 @@ class GenUtils:
             config_yaml = os.path.join(self.pylatexenc_js_transcrypt_dir,
                                        'preprocesslib-pylatexenc.config.yaml')
 
-        self.preprocess_lib(config_yaml, preprocess_lib_output_dir=preprocess_lib_output_dir)
+        self.preprocess_lib(config_yaml,
+                            preprocess_lib_output_dir=preprocess_lib_output_dir,
+                            override_enabled_features=override_enabled_features)
         
 
     def preprocess_lib(self, config_yaml, *, preprocess_lib_output_dir=None,
@@ -96,9 +100,10 @@ class GenUtils:
         if preprocess_lib_output_dir is None:
             preprocess_lib_output_dir = self.preprocess_lib_output_dir
 
-        do_add_env = {
+        do_add_env = dict(self.env)
+        do_add_env.update({
             'PYLATEXENC_SRC_DIR': self.pylatexenc_src_dir,
-        }
+        })
         if preprocess_lib_output_dir is not None:
             do_add_env['PREPROCESS_LIB_OUTPUT_DIR'] = preprocess_lib_output_dir
         if add_env:
