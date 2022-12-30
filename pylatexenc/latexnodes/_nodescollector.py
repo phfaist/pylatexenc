@@ -930,9 +930,9 @@ class LatexNodesCollector(object):
         the node list with a call to :py:meth:`push_to_nodelist()` (refer to
         that method's doc).
         """
+        logger.debug("parse_math, tok=%r", tok)
 
         self.token_reader.move_to_token(tok, rewind_pre_space=False)
-
 
         # The math parser instance is responsible for setting the parsing state.
 

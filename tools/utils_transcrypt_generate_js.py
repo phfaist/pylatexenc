@@ -9,12 +9,23 @@ import subprocess
 import logging
 logger = logging.getLogger(__name__)
 
+import yaml
+
+import preprocess_lib
+
 
 default_transcrypt_options = (
     '--dassert --dext --gen --tconv --sform --kwargs --keycheck --xreex '
     '--opov ' # let's hope we can get away w/o this one sometime in the future....
     '--nomin --build --anno --parent .none -u .auto'.split()
 )
+
+
+rx_env_var = re.compile(
+    r'\$(?P<brace_open>\{)?(?P<varname>(?(brace_open)[^\}]+|[A-Za-z0-9_]+))(?(brace_open)\}|)'
+)
+def expand_env_vars(s, env):
+    return rx_env_var.sub(lambda m: env.get(m.group('varname'), ''), s)
 
 
 class GenUtils:
@@ -79,19 +90,38 @@ class GenUtils:
         self.preprocess_lib(config_yaml, preprocess_lib_output_dir=preprocess_lib_output_dir)
         
 
-    def preprocess_lib(self, config_yaml, *, preprocess_lib_output_dir=None, add_env=None):
+    def preprocess_lib(self, config_yaml, *, preprocess_lib_output_dir=None,
+                       add_env=None, override_enabled_features=None):
 
         if preprocess_lib_output_dir is None:
             preprocess_lib_output_dir = self.preprocess_lib_output_dir
 
-        do_add_env = {}
+        do_add_env = {
+            'PYLATEXENC_SRC_DIR': self.pylatexenc_src_dir,
+        }
         if preprocess_lib_output_dir is not None:
             do_add_env['PREPROCESS_LIB_OUTPUT_DIR'] = preprocess_lib_output_dir
         if add_env:
             do_add_env.update(add_env)
 
-        self.run_cmd([self.python, self.preprocess_lib_py, config_yaml],
-                     add_env=do_add_env)
+        # self.run_cmd([self.python, self.preprocess_lib_py, config_yaml],
+        #              add_env=do_add_env)
+
+        # load config
+        with open(config_yaml) as fyaml:
+            config = yaml.safe_load(fyaml)
+
+        config['source_dir'] = expand_env_vars(config['source_dir'], do_add_env)
+        config['target_dir'] = expand_env_vars(config['target_dir'], do_add_env)
+
+        if override_enabled_features:
+            config['enabled_features'].update(override_enabled_features)
+
+        logger.info('Preprocessing (%s)', config_yaml)
+        logger.debug('   preprocessing will use config = %r', config)
+        pp = preprocess_lib.Preprocess(**config)
+        pp.preprocess()
+        logger.info('... preprocessing done')
 
 
     def run_transcrypt(self, source, *, output_dir,

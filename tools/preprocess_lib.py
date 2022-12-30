@@ -287,9 +287,9 @@ class Preprocess:
         self.modules_to_preprocess = set(new_module_list)
         self.modules_preprocessed = set()
 
-        self._preprocess()
+        #self.preprocess()
 
-    def _preprocess(self):
+    def preprocess(self):
 
         os.makedirs(self.target_dir, exist_ok=True)
 
@@ -638,7 +638,8 @@ if __name__ == '__main__':
         if 'source_dir' not in options:
             options['source_dir'] = default_source_dir
 
-        Preprocess(**options)
+        pp = Preprocess(**options)
+        pp.preprocess()
 
         logger.info("*** Done.")
     except Exception as e:
