@@ -28,7 +28,7 @@ def extract_symbol_node(nodelist, uni, latex):
 
     thenode = nodelist[0]
 
-    if not thenode.isNodeType(latexwalker.LatexMacroNode):
+    if not isinstance(thenode, latexwalker.LatexMacroNode):
         logger.warning("Got node that is not a macro, skipping (%s): %s = %r",
                        chr(uni), latex, thenode)
         return
@@ -42,7 +42,7 @@ def extract_symbol_node(nodelist, uni, latex):
             return
 
         argnode = thenode.nodeargd.argnlist[0]
-        if argnode.isNodeType(latexwalker.LatexGroupNode):
+        if isinstance(argnode, latexwalker.LatexGroupNode):
             argnodelist = argnode.nodelist
         else:
             argnodelist = [ argnode ]

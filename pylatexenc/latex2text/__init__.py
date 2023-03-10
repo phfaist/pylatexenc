@@ -379,11 +379,11 @@ def fmt_matrix_environment_node(node, l2tobj):
 
     # iterate the nodelist and find column and row separators
     for n in node.nodelist:
-        if n.isNodeType(latexwalker.LatexSpecialsNode) and n.specials_chars == '&':
+        if isinstance(n, latexwalker.LatexSpecialsNode) and n.specials_chars == '&':
             # column separator
             state.new_column()
             continue
-        if n.isNodeType(latexwalker.LatexMacroNode) and n.macroname == "\\":
+        if isinstance(n, latexwalker.LatexMacroNode) and n.macroname == "\\":
             # row separator
             state.new_row()
             continue
@@ -1028,7 +1028,7 @@ class LatexNodes2Text(object):
         prev_node = None
         for node in nodelist:
             if self._is_bare_macro_node(prev_node) and \
-               node.isNodeType(latexwalker.LatexCharsNode):
+               isinstance(node, latexwalker.LatexCharsNode):
 
                 if not self.strict_latex_spaces['between-macro-and-chars']:
                     # after a macro with absolutely no arguments, include
@@ -1066,25 +1066,25 @@ class LatexNodes2Text(object):
         # ### It doesn't look like we use prev_node_hint at all.  Eliminate at
         # ### some point?
 
-        if node.isNodeType(latexwalker.LatexCharsNode):
+        if isinstance(node, latexwalker.LatexCharsNode):
             return self.chars_node_to_text(node, textcol=textcol)
 
-        if node.isNodeType(latexwalker.LatexCommentNode):
+        if isinstance(node, latexwalker.LatexCommentNode):
             return self.comment_node_to_text(node)
 
-        if node.isNodeType(latexwalker.LatexGroupNode):
+        if isinstance(node, latexwalker.LatexGroupNode):
             return self.group_node_to_text(node)
 
-        if node.isNodeType(latexwalker.LatexMacroNode):
+        if isinstance(node, latexwalker.LatexMacroNode):
             return self.macro_node_to_text(node)
 
-        if node.isNodeType(latexwalker.LatexEnvironmentNode):
+        if isinstance(node, latexwalker.LatexEnvironmentNode):
             return self.environment_node_to_text(node)
 
-        if node.isNodeType(latexwalker.LatexSpecialsNode):
+        if isinstance(node, latexwalker.LatexSpecialsNode):
             return self.specials_node_to_text(node)
 
-        if node.isNodeType(latexwalker.LatexMathNode):
+        if isinstance(node, latexwalker.LatexMathNode):
             return self.math_node_to_text(node)
 
         logger.warning("LatexNodes2Text.node_to_text(): Unknown node: %r", node)
@@ -1237,7 +1237,7 @@ class LatexNodes2Text(object):
         """
 
         if self.math_mode == 'verbatim':
-            if node.isNodeType(latexwalker.LatexEnvironmentNode) \
+            if isinstance(node, latexwalker.LatexEnvironmentNode) \
                or node.displaytype == 'display':
                 return self._fmt_indented_block(node.latex_verbatim(), indent='')
             else:
@@ -1249,12 +1249,12 @@ class LatexNodes2Text(object):
         elif self.math_mode == 'with-delimiters':
             with _PushEquationContext(self):
                 content = self.nodelist_to_text(node.nodelist).strip()
-            if node.isNodeType(latexwalker.LatexMathNode):
+            if isinstance(node, latexwalker.LatexMathNode):
                 delims = node.delimiters
             else: # environment node
                 delims = (r'\begin{%s}'%(node.environmentname),
                           r'\end{%s}'%(node.environmentname),)
-            if node.isNodeType(latexwalker.LatexEnvironmentNode) \
+            if isinstance(node, latexwalker.LatexEnvironmentNode) \
                or node.displaytype == 'display':
                 return delims[0] + self._fmt_indented_block(content, indent='') + delims[1]
             else:
@@ -1263,7 +1263,7 @@ class LatexNodes2Text(object):
         elif self.math_mode == 'text':
             with _PushEquationContext(self):
                 content = self.nodelist_to_text(node.nodelist).strip()
-            if node.isNodeType(latexwalker.LatexEnvironmentNode) \
+            if isinstance(node, latexwalker.LatexEnvironmentNode) \
                or node.displaytype == 'display':
                 return self._fmt_indented_block(content)
             else:
@@ -1325,13 +1325,13 @@ class LatexNodes2Text(object):
             if 'l2tobj' in fn_args:
                 # callable accepts an argument named 'l2tobj', provide pointer to self
                 kwargs['l2tobj'] = self
-            if node.isNodeType(latexwalker.LatexEnvironmentNode) and \
+            if isinstance(node, latexwalker.LatexEnvironmentNode) and \
                'environmentname' in fn_args:
                 kwargs['environmentname'] = node.environmentname
-            if node.isNodeType(latexwalker.LatexMacroNode) and \
+            if isinstance(node, latexwalker.LatexMacroNode) and \
                'macroname' in fn_args:
                 kwargs['macroname'] = node.macroname
-            if node.isNodeType(latexwalker.LatexSpecialsNode) and \
+            if isinstance(node, latexwalker.LatexSpecialsNode) and \
                'specials_chars' in fn_args:
                 kwargs['specials_chars'] = node.specials_chars
 
@@ -1352,7 +1352,7 @@ class LatexNodes2Text(object):
 
             has_percent_s = re.search('(^|[^%])(%%)*%s', simplify_repl)
 
-            if node.isNodeType(latexwalker.LatexEnvironmentNode):
+            if isinstance(node, latexwalker.LatexEnvironmentNode):
                 if has_percent_s:
                     x = (self.nodelist_to_text(node.nodelist), )
                 else:
@@ -1392,14 +1392,14 @@ class LatexNodes2Text(object):
 
     def _is_bare_macro_node(self, node):
         return (node is not None and
-                node.isNodeType(latexwalker.LatexMacroNode) and
+                isinstance(node, latexwalker.LatexMacroNode) and
                 node.nodeoptarg is None and
                 len(node.nodeargs) == 0)
 
     def _groupnodecontents_to_text(self, groupnode):
         if groupnode is None:
             return ''
-        if not groupnode.isNodeType(latexwalker.LatexGroupNode):
+        if not isinstance(groupnode, latexwalker.LatexGroupNode):
             return self.node_to_text(groupnode)
         return self.nodelist_to_text(groupnode.nodelist)
 

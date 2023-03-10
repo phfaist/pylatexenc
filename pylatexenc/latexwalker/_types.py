@@ -31,6 +31,8 @@ from __future__ import print_function, unicode_literals
 
 from ..macrospec import _parsedargs as macrospec_parsedargs
 
+import warnings
+
 
 # for Py3
 _basestring = str
@@ -282,8 +284,8 @@ class LatexNode(object):
     """
     Represents an abstract 'node' of the latex document.
 
-    Use :py:meth:`nodeType()` to figure out what type of node this is, and
-    :py:meth:`isNodeType()` to test whether it is of a given type.
+    Use :py:meth:`type()` to figure out what type of node this is, and
+    :py:meth:`isinstance()` to test whether it is of a given type.
 
     You should use :py:meth:`LatexWalker.make_node()` to create nodes, so that
     the latex walker has the opportunity to do some additional setting up.
@@ -342,6 +344,11 @@ class LatexNode(object):
         :py:class:`~pylatexenc.latexwalker.LatexCharsNode`,
         :py:class:`~pylatexenc.latexwalker.LatexGroupNode`, etc.
         """
+        warnings.warn(
+            # Feb 2022
+            "nodeType() is deprecated. Use the built-in type() instead.",
+            DeprecationWarning
+        )
         return LatexNode
 
     def isNodeType(self, t):
@@ -350,6 +357,11 @@ class LatexNode(object):
         must be a Python class such as,
         e.g. :py:class:`~pylatexenc.latexwalker.LatexGroupNode`.
         """
+        warnings.warn(
+            # Feb 2022
+            "isNodeType() is deprecated. Use the built-in isinstance(node, class) instead.",
+            DeprecationWarning
+        )
         return isinstance(self, t)
 
     def latex_verbatim(self):
@@ -365,7 +377,7 @@ class LatexNode(object):
 
     def __eq__(self, other):
         return other is not None  and  \
-            self.nodeType() == other.nodeType()  and  \
+            type(self) == type(other)  and  \
             other.parsing_state is self.parsing_state and \
             other.pos == self.pos and \
             other.len == self.len and \
@@ -384,7 +396,7 @@ class LatexNode(object):
         return self.__repr__()
     def __repr__(self):
         return (
-            self.nodeType().__name__ + "(" +
+            type(self).__name__ + "(" +
             "parsing_state=<parsing state {}>, ".format(id(self.parsing_state)) +
             ", ".join([ "%s=%r"%(k,getattr(self,k))  for k in self._fields ]) +
             ")"
@@ -408,6 +420,11 @@ class LatexCharsNode(LatexNode):
         self.chars = chars
 
     def nodeType(self):
+        warnings.warn(
+            # Feb 2022
+            "nodeType() is deprecated. Use the built-in type() instead.",
+            DeprecationWarning
+        )
         return LatexCharsNode
 
 
@@ -444,6 +461,11 @@ class LatexGroupNode(LatexNode):
         self.delimiters = delimiters
 
     def nodeType(self):
+        warnings.warn(
+            # Feb 2022
+            "nodeType() is deprecated. Use the built-in type() instead.",
+            DeprecationWarning
+        )
         return LatexGroupNode
 
 
@@ -473,6 +495,11 @@ class LatexCommentNode(LatexNode):
         self.comment_post_space = comment_post_space
 
     def nodeType(self):
+        warnings.warn(
+            # Feb 2022
+            "nodeType() is deprecated. Use the built-in type() instead.",
+            DeprecationWarning
+        )
         return LatexCommentNode
 
 
@@ -551,6 +578,11 @@ class LatexMacroNode(LatexNode):
         self.nodeargs = nodeargs
 
     def nodeType(self):
+        warnings.warn(
+            # Feb 2022
+            "nodeType() is deprecated. Use the built-in type() instead.",
+            DeprecationWarning
+        )
         return LatexMacroNode
 
 
@@ -629,6 +661,11 @@ class LatexEnvironmentNode(LatexNode):
         self.args = args
 
     def nodeType(self):
+        warnings.warn(
+            # Feb 2022
+            "nodeType() is deprecated. Use the built-in type() instead.",
+            DeprecationWarning
+        )
         return LatexEnvironmentNode
 
 
@@ -672,6 +709,11 @@ class LatexSpecialsNode(LatexNode):
         self.nodeargd = nodeargd
 
     def nodeType(self):
+        warnings.warn(
+            # Feb 2022
+            "nodeType() is deprecated. Use the built-in type() instead.",
+            DeprecationWarning
+        )
         return LatexSpecialsNode
 
 
@@ -714,6 +756,11 @@ class LatexMathNode(LatexNode):
         self.delimiters = delimiters
 
     def nodeType(self):
+        warnings.warn(
+            # Feb 2022
+            "nodeType() is deprecated. Use the built-in type() instead.",
+            DeprecationWarning
+        )
         return LatexMathNode
 
 
