@@ -8,7 +8,9 @@ on:
 jobs:
   deploy-pypi:
 
-    environment: 'env-deploy-pypi'
+    runs-on: ubuntu-latest
+
+    environment: env-deploy-pypi
 
     steps:
       - uses: actions/checkout@v3
