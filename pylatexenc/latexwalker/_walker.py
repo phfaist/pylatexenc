@@ -1076,6 +1076,8 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
     parser = parsers.LatexExpressionParser(
         return_full_node_list=False,
         single_token_requiring_arg_is_error=not self.tolerant_parsing,
+        allow_pre_space=True,
+        allow_pre_comments=True,
     )
 
     token_reader = self.make_token_reader(pos=pos)

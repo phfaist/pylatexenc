@@ -694,6 +694,71 @@ The Title
         )
 
 
+
+    def test_upgreek_letters(self):
+
+        upgreek_letters = (
+            (r"\upmu", "μ"),
+            (r"\upalpha", "α"),
+            (r"\upbeta", "β"),
+            (r"\upgamma", "γ"),
+            (r"\updelta", "δ"),
+            (r"\upepsilon", "ϵ"),     # not sure...
+            (r"\upvarepsilon", "ε"),  #
+            (r"\upzeta", "ζ"),
+            (r"\upeta", "η"),
+            (r"\uptheta", "θ"),     # not sure...
+            (r"\upvartheta", "ϑ"),  #
+            (r"\upiota", "ι"),
+            (r"\upkappa", "κ"),
+            (r"\uplambda", "λ"),
+            (r"\upmu", "μ"),
+            (r"\upnu", "ν"),
+            (r"\upxi", "ξ"),
+            (r"\uppi", "π"),
+            (r"\upvarpi", "ϖ"),
+            (r"\uprho", "ρ"),     # not sure...
+            (r"\upvarrho", "ϱ"),  #
+            (r"\upsigma", "σ"),     # not sure...
+            (r"\upvarsigma", "ς"),  #
+            (r"\uptau", "τ"),
+            (r"\upupsilon", "υ"),
+            (r"\upphi", "ϕ"),     # not sure...
+            (r"\upvarphi", "φ"),  # NB: 'ϕ' != 'φ'
+            (r"\upchi", "χ"),
+            (r"\uppsi", "ψ"),
+            (r"\upomega", "ω"),
+            #
+            (r"\Upgamma", "Γ"),
+            (r"\Updelta", "Δ"),
+            (r"\Uptheta", "Θ"),
+            (r"\Uplambda", "Λ"),
+            (r"\Upxi", "Ξ"),
+            (r"\Uppi", "Π"),
+            (r"\Upsigma", "Σ"),
+            (r"\Upupsilon", "Υ"),
+            (r"\Upphi", "Φ"),
+            (r"\Uppsi", "Ψ"),
+            (r"\Upomega", "Ω"),
+        )
+
+        for source, expected_dest in upgreek_letters:
+            with self.subTest():
+                self.assertEqual(
+                    LatexNodes2Text().nodelist_to_text(
+                        LatexWalker(source).get_latex_nodes()[0]),
+                    expected_dest
+                )
+
+
+
+
+
+
+
+
+
+
     #
     # test utilities
     #
@@ -702,8 +767,6 @@ The Title
         a2 = re.sub(r'\s+', ' ', a).strip()
         b2 = re.sub(r'\s+', ' ', b).strip()
         self.assertEqual(a2, b2)
-
-
 
 
 if __name__ == '__main__':
