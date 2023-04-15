@@ -59,6 +59,10 @@ class LatexTokenReaderBase(object):
     parsers.  In this case, the token reader should implement
     :py:class:`peek_chars()`, :py:class:`next_chars()`, and
     :py:meth:`move_to_pos_chars()`.
+
+    .. versionadded:: 3.0
+
+       The :py:class:`LatexTokenReaderBase` class was introduced in `pylatexenc 3.0`.
     """
 
     def __init__(self, **kwargs):

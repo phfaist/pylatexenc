@@ -1,5 +1,5 @@
-Specifying definitions for the parser
--------------------------------------
+`macrospec` — Specifying definitions for the parser
+---------------------------------------------------
 
 .. automodule:: pylatexenc.macrospec
 

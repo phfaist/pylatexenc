@@ -1,5 +1,5 @@
-Simple Parser for LaTeX Code
-----------------------------
+`latexwalker` — Calling Parsers for LaTeX Code
+----------------------------------------------
 
 .. automodule:: pylatexenc.latexwalker
 

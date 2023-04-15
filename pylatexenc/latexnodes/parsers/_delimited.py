@@ -914,7 +914,7 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
 
     def get_matching_delimiter(self, opening_delimiter):
         r"""
-        ..............
+        Doc..............
 
         This method assumes that the delimiters are latex group type (e.g., curly
         brace chars).  If not, then you need to reimplement this function in a
@@ -926,7 +926,7 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
 
 class LatexDelimitedGroupParser(LatexDelimitedExpressionParser):
     r"""
-    .........................
+    Doc.........................
 
     In all cases, the first token read (after possible whitespace) must be a
     'brace_open' type.  If `delimiters` is a pair of characters, the parsing

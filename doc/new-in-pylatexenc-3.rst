@@ -43,15 +43,16 @@ The `latex2text` and `latexencode` modules have barely changed.
 A couple things to look out for
 -------------------------------
 
-- If you created a `LatexContextDb` database from scratch, you might suddenly
-  get errors about unknown macros.  The default initialization for unknown
-  macro, environment and specials specification objects for `LatexContextDb`
-  was, and remains, `None`.  What has changed is the interpretation of this
-  `None`: Now, the latex walker (more precisely,
-  :py:class:`LatexNodesCollector`) reports an error, whereas previously, the
-  parser would simply assume the macro doesn't accept any arguments.  To restore
-  the earlier behavior, simply set the spec objects for unknown
-  macro/environment/specials in your latex context db object::
+- If you created a :py:class:`~pylatexenc.macrospec.LatexContextDb` database
+  from scratch, you might suddenly get errors about unknown macros.  The default
+  initialization for unknown macro, environment and specials specification
+  objects for :py:class:`~pylatexenc.macrospec.LatexContextDb` was, and remains,
+  `None`.  What has changed is the interpretation of this `None`: Now, the latex
+  walker (more precisely,
+  :py:class:`~pylatexenc.latexnodes.LatexNodesCollector`) reports an error,
+  whereas previously, the parser would simply assume the macro doesn't accept
+  any arguments.  To restore the earlier behavior, simply set the spec objects
+  for unknown macro/environment/specials in your latex context db object::
 
     latex_context_db = macrospec.LatexContextDb()
     # ...
@@ -64,8 +65,9 @@ A couple things to look out for
     # not to take any arguments
     #
 
-- Node lists are now encapsulated in a :py:class:`LatexNodeList`.  It behaves
-  very much like a list in all respects (indexing, slicing, etc.), except that
-  it does not satisfy ``isinstance(nodelist, list)``.  If you relied on such
-  tests, you'll need to update them to the liking of ``isinstance(nodelist,
-  (LatexNodeList, list))``.
+- Node lists are now encapsulated in a
+  :py:class:`~pylatexenc.latexnodes.nodes.LatexNodeList`.  It behaves very much
+  like a list in all respects (indexing, slicing, etc.), except that it does not
+  satisfy ``isinstance(nodelist, list)``.  If you relied on such tests, you'll
+  need to update them to the liking of ``isinstance(nodelist, (LatexNodeList,
+  list))``.

@@ -57,7 +57,7 @@ __all__ = [
     'LatexWalkerError',
     'LatexWalkerLocatedError',
     'LatexWalkerParseError',
-    'LatexWalkerParseErrorFormatter',
+    'LatexWalkerLocatedErrorFormatter',
     'LatexWalkerNodesParseError',
     'LatexWalkerTokenParseError',
     'LatexWalkerEndOfStream',
@@ -135,11 +135,11 @@ class LatexWalkerLocatedError(LatexWalkerError):
                              + repr(kwargs))
 
         super(LatexWalkerLocatedError, self).__init__(
-            LatexWalkerParseErrorFormatter(self).to_display_string()
+            LatexWalkerLocatedErrorFormatter(self).to_display_string()
         )
 
     def __str__(self):
-        return LatexWalkerParseErrorFormatter(self).to_display_string()
+        return LatexWalkerLocatedErrorFormatter(self).to_display_string()
 
     #
     # ### Problem: other_exception might have properties (e.g., from a
@@ -172,9 +172,13 @@ class LatexWalkerParseError(LatexWalkerLocatedError):
 
 
 
-class LatexWalkerParseErrorFormatter(object):
+class LatexWalkerLocatedErrorFormatter(object):
+    r"""
+    Format the 
+    """
+
     def __init__(self, exc):
-        super(LatexWalkerParseErrorFormatter, self).__init__()
+        super(LatexWalkerLocatedErrorFormatter, self).__init__()
         self.exc = exc
         
     def format_open_blocks(self):

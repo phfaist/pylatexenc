@@ -355,7 +355,7 @@ class LatexMacroNode(LatexNode):
 
        .. versionadded:: 3.0
 
-       The `spec` attribute was introduced in `pylatexenc 3`.
+          The `spec` attribute was introduced in `pylatexenc 3`.
 
     .. py:attribute:: nodeargd
 
@@ -712,6 +712,10 @@ class LatexNodeList(object):
        (Read-only attribute.)  The total length spanned by this node list,
        assuming that the `nodelist` represents a single continuous sequence of
        nodes in the latex string.
+
+    .. versionadded: 3.0
+
+       The `LatexNodeList` class was introduced in `pylatexenc 3.0`.
     """
     def __init__(self, nodelist, **kwargs):
 
@@ -1181,7 +1185,11 @@ class LatexNodesVisitor(object):
     r"""
     Implement a visitor pattern on a node structure.
 
-    ......................
+    Doc ......................
+
+    .. versionadded: 3.0
+
+       The `LatexNodesVisitor` class was introduced in `pylatexenc 3.0`.
     """
 
     def visit(self, node):

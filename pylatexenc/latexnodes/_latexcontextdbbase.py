@@ -44,6 +44,11 @@ class LatexContextDbBase(object):
     The spec objects returned by :py:meth:`get_***_spec()` and
     :py:meth:`test_for_specials()` are subclasses of
     :py:class:`CallableSpecBase`.
+
+
+    .. versionadded:: 3.0
+    
+       The :py:class:`LatexContextDbBase` class was added in `pylatexenc 3.0`.
     """
 
     def get_macro_spec(self, macroname):

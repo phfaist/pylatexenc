@@ -54,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'pylatexenc'
-copyright = '2022, Philippe Faist'
+copyright = '2023, Philippe Faist'
 author = 'Philippe Faist'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -122,9 +122,10 @@ html_theme = 'alabaster'
 # documentation.
 #
 html_theme_options = {
-    'font_family': 'Open Sans',
+    'font_family': 'Fira Sans',
     'font_size': '15px',
-    'head_font_family': 'Open Sans',
+    'head_font_family': 'Fira Sans',
+    'code_font_family': 'Fira Mono',
     'github_user': 'phfaist',
     'github_repo': 'pylatexenc',
     'github_button': True,
@@ -133,7 +134,7 @@ html_theme_options = {
 
     'fixed_sidebar': True,
     'page_width': '950px',
-    'sidebar_width': '180px',
+    'sidebar_width': '220px',
 }
 html_sidebars = {
     '**': [

@@ -1,6 +1,5 @@
-
-Simple Latex to Text Converter
-------------------------------
+`latex2text` — Simple Latex to Text Converter
+---------------------------------------------
 
 .. automodule:: pylatexenc.latex2text
 

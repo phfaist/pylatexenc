@@ -145,7 +145,7 @@ class ParsedVerbatimArgs(ParsedMacroArgs):
 
 class VerbatimArgsParser(MacroStandardArgsParser):
     r"""
-    Parses the arguments to various LaTeX "verbatim" constructs such as
+    Parses the arguments to various LaTeX verbatim constructs such as
     ``\begin{verbatim}...\end{verbatim}`` environment or ``\verb+...+``.
 
     This class also serves to illustrate how to write custom parsers for
@@ -179,11 +179,11 @@ class VerbatimArgsParser(MacroStandardArgsParser):
 
     .. py:attribute:: specials_delimiters
 
-      When parsing a "specials" form of a verbatim construct (e.g. ``|\begin|
-      and |\end| are special \LaTeX\ commands''), specify the opening and
-      closing delimiter here.  When parsing the verbatim construct, the closing
-      delimiter is searched and its first occurence is used (there is no
-      brace/parenthesis matching or anything of the kind).
+      When parsing a "specials" form of a verbatim construct (e.g.
+      ``|\begin| and |\end| are special \LaTeX\ commands``), specify the
+      opening and closing delimiter here.  When parsing the verbatim construct,
+      the closing delimiter is searched and its first occurence is used (there
+      is no brace/parenthesis matching or anything of the kind).
     """
     def __init__(self,
                  verbatim_arg_type,

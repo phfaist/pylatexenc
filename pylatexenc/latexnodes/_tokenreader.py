@@ -70,6 +70,11 @@ class LatexTokenReader(LatexTokenReaderBase):
        useful tokens.  If not in tolerant parsing mode, then parsing is strict
        and errors are raised immediately so that they can be traced down and
        debugged more easily.
+
+
+    .. versionadded:: 3.0
+
+       The :py:class:`LatexTokenReader` class was introduced in `pylatexenc 3.0`.
     """
     def __init__(self, s, **kwargs):
         super(LatexTokenReader, self).__init__()

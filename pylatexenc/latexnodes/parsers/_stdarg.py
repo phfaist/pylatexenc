@@ -238,7 +238,7 @@ class LatexStandardArgumentParser(LatexParserBase):
 
 class LatexCharsGroupParser(LatexDelimitedGroupParser):
     r"""
-    ....................
+    Doc ....................
 
     Very similar to a verbatim parser, but works with tokens instead of chars.
     You can use comments and recursive groups, too.

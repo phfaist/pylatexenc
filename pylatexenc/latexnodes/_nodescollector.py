@@ -60,6 +60,11 @@ class LatexNodesCollector(object):
     The public API of this class resides essentially in the
     :py:meth:`process_tokens()`, as well as the :py:meth:`get_final_nodelist()`
     (and some other friends, see docs below).
+
+
+    .. versionadded:: 3.0
+    
+       The :py:class:`CallableSpecBase` class was added in `pylatexenc 3.0`.
     """
 
     class ReachedEndOfStream(Exception):
@@ -155,6 +160,7 @@ class LatexNodesCollector(object):
 
     def get_parser_parsing_state_delta(self):
         r"""
+        Doc. ............
         """
         if not self._finalized:
             raise RuntimeError("Call to get_parser_parsing_state_delta() before finalize()")

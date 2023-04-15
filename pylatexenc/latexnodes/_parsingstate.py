@@ -46,25 +46,6 @@ if sys.version_info.major == 2:
 
 
 
-# class _StrictAsciiAlphaChars(object):
-#     def __str__(self):
-#         return "".join([
-#             chr(ord('a')+j) for j in range(26)
-#         ]) + "".join([
-#             chr(ord('A')+j) for j in range(26)
-#         ])
-#     def __repr__(self):
-#         return repr(self.__str__())
-#     def __contains__(self, c):
-#         n = ord(c)
-#         return (
-#             (97 <= n <= 122)  # 97 == ord('a'), 122 == ord('z')
-#             or
-#             (65 <= n <= 90) # 65, 90 == ord('A'), ord('Z')
-#         )
-#     def to_json_object(self):
-#         return self.__str__()
-
 # allowed macro chars by default: [a-zA-Z]
 _default_macro_alpha_chars = (
     "".join([
@@ -208,6 +189,13 @@ class ParsingState(object):
        `enable_environments`, `enable_comments`, `macro_alpha_chars`,
        `macro_escape_char`, and `forbidden_characters` were introduced in
        version 3.
+
+    .. versionadded:: 3.0
+
+       This class was moved to :py:class:`pylatexenc.latexnodes.ParsingState`
+       starting in `pylatexenc 3.0`.  In earlier versions, this class was
+       located in the :py:mod:`~pylatexenc.latexwalker` module, see
+       :py:class:`~pylatexenc.latexwalker.ParsingState`.
     """
 
     _fields = (

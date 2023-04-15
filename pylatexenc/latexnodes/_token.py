@@ -146,6 +146,13 @@ class LatexToken(object):
        For backwards compatibility, `kwargs` arguments are inspected for a `len`
        argument.  If a `len` argument is provided and `pos_end` was left `None`,
        then `pos_end` is set to `pos+len`.
+
+    .. versionadded:: 3.0
+
+       This class was moved to :py:class:`pylatexenc.latexnodes.LatexToken`
+       starting in `pylatexenc 3.0`.  In earlier versions, this class was
+       located in the :py:mod:`~pylatexenc.latexwalker` module, see
+       :py:class:`~pylatexenc.latexwalker.LatexToken`.
     """
     def __init__(self, tok, arg, pos, pos_end=None, pre_space='', post_space='', **kwargs):
 

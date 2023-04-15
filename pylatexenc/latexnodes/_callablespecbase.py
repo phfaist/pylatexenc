@@ -45,6 +45,10 @@ class CallableSpecBase(object):
 
     See :py:class:`macrospec.MacroSpec` for how this is implemented in the
     :py:mod:`pylatexenc.macrospec` module.
+
+    .. versionadded:: 3.0
+    
+       The :py:class:`CallableSpecBase` class was added in `pylatexenc 3.0`.
     """
 
     def get_node_parser(self, token):

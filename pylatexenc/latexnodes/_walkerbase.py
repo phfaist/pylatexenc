@@ -34,6 +34,24 @@ from ._parsingstatedelta import ParsingStateDelta
 
 
 class LatexWalkerParsingStateEventHandler(object):
+    r"""
+    A LatexWalker parsing state event handler.
+
+    The LatexWalker instance will call methods on this object to determine how
+    to update the parsing state upon certain events, such as entering or exiting
+    math mode.
+
+    Events:
+
+    - enter math mode
+
+    - exit math mode
+
+    .. versionadded:: 3.0
+    
+       The :py:class:`LatexWalkerParsingStateEventHandler` class was added in
+       `pylatexenc 3.0`.
+    """
 
     def enter_math_mode(self, math_mode_delimiter=None, trigger_token=None):
         return ParsingStateDelta(
@@ -56,32 +74,64 @@ _default_parsing_state_event_handler = LatexWalkerParsingStateEventHandler()
 
 
 class LatexWalkerBase(object):
+    r"""
+    Base class for a latex-walker.  Essentially, this is all that the
+    classes and methods in the :py:mod:`latexnodes` module need to know about
+    what a LatexWalker does.
+
+    See also :py:class:`latexwalker.LatexWalker`.
+
+    .. versionadded:: 3.0
+    
+       The :py:class:`LatexWalkerBase` class was added in `pylatexenc 3.0`.
+    """
 
     def parsing_state_event_handler(self):
+        r"""
+        Doc......
+        """
         return _default_parsing_state_event_handler
 
     def parse_content(self, parser, token_reader=None, parsing_state=None,
                       open_context=None, **kwargs):
+        r"""
+        Doc......
+        """
         raise RuntimeError("LatexWalkerBase subclasses must reimplement parse_content()")
 
     def make_node(self, node_class, **kwargs):
+        r"""
+        Doc......
+        """
         raise RuntimeError("LatexWalkerBase subclasses must reimplement make_node()")
 
     def make_nodelist(self, nodelist, **kwargs):
+        r"""
+        Doc......
+        """
         raise RuntimeError("LatexWalkerBase subclasses must reimplement make_nodelist()")
 
     def make_nodes_collector(self,
                              token_reader,
                              parsing_state,
                              **kwargs):
+        r"""
+        Doc......
+        """
         raise RuntimeError(
             "LatexWalkerBase subclasses must reimplement make_nodes_collector()")
 
     def make_latex_group_parser(self, delimiters):
+        r"""
+        Doc......
+        """
         raise RuntimeError(
             "LatexWalkerBase subclasses must reimplement make_latex_group_parser()")
         
     def make_latex_math_parser(self, math_mode_delimiters):
+        r"""
+        Doc......
+        """
         raise RuntimeError(
             "LatexWalkerBase subclasses must reimplement make_latex_math_parser()")
 
@@ -98,4 +148,7 @@ class LatexWalkerBase(object):
         return exc
 
     def format_node_pos(self, node):
+        r"""
+        Doc......
+        """
         return 'character position '+repr(node.pos)

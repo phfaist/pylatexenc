@@ -95,7 +95,7 @@ class LatexVerbatimBaseParser(LatexParserBase):
     def read_verbatim_content(self, latex_walker, token_reader, parsing_state,
                               verbatim_info, **kwargs):
         r"""
-        ....
+        Doc ...........
         
         The `token_reader` is left *after* the character that caused the
         processing to stop.

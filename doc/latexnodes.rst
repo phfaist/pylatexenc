@@ -1,5 +1,5 @@
-LaTeX Nodes Tree and Parsers
-============================
+`latexnodes` — LaTeX Nodes Tree and Parsers
+===========================================
 
 .. automodule:: pylatexenc.latexnodes
 
@@ -31,18 +31,21 @@ Parsing State
 
 
 
-Token Readers
--------------
+Latex Token
+-----------
 
 .. autoclass:: LatexToken
    :members:
+
+
+Token Readers
+-------------
 
 .. autoclass:: LatexTokenReaderBase
    :members:
 
 .. autoclass:: LatexTokenReader
    :members:
-
 
 .. autoclass:: LatexTokenListTokenReader
    :members:
@@ -90,8 +93,8 @@ LaTeX Node Types
 
 
 
-Parsed Arguments
-----------------
+Arguments and Parsed Arguments
+------------------------------
 
 .. autoclass:: LatexArgumentSpec
    :members:
@@ -117,6 +120,9 @@ Exception classes
 -----------------
 
 .. autoclass:: LatexWalkerError
+   :members:
+
+.. autoclass:: LatexWalkerLocatedError
    :members:
 
 .. autoclass:: LatexWalkerParseError
@@ -155,75 +161,7 @@ Base classes
 Parser Classes
 --------------
 
-.. automodule:: pylatexenc.latexnodes.parsers
-   :members:
+.. toctree::
+   :maxdepth: 2
 
-
-.. autoclass:: LatexParserBase
-   :members:
-
-
-General Nodes
-~~~~~~~~~~~~~
-
-.. autoclass:: LatexGeneralNodesParser
-   :members:
-
-.. autoclass:: LatexSingleNodeParser
-   :members:
-
-
-Delimited Expressions
-~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: LatexDelimitedExpressionParserInfo
-   :members:
-
-.. autoclass:: LatexDelimitedExpressionParser
-   :members:
-
-.. autoclass:: LatexDelimitedGroupParserInfo
-   :members:
-
-.. autoclass:: LatexDelimitedGroupParser
-   :members:
-
-.. autoclass:: LatexDelimitedExpressionParserOpeningDelimiterNotFound
-   :members:
-
-.. autoclass:: LatexMathParser
-   :members:
-
-
-
-Other Types of Expressions
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: LatexExpressionParser
-   :members:
-
-.. autoclass:: LatexOptionalSquareBracketsParser
-   :members:
-
-.. autoclass:: LatexOptionalCharsMarkerParser
-   :members:
-
-.. autoclass:: LatexStandardArgumentParser
-   :members:
-
-.. autofunction:: get_standard_argument_parser
-
-.. autoclass:: LatexCharsCommaSeparatedListParser
-   :members:
-
-.. autoclass:: LatexCharsGroupParser
-   :members:
-
-.. autoclass:: LatexVerbatimBaseParser
-   :members:
-
-.. autoclass:: LatexDelimitedVerbatimParser
-   :members:
-
-.. autoclass:: LatexVerbatimEnvironmentContentsParser
-   :members:
+   latexnodes.parsers

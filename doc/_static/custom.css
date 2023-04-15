@@ -1,4 +1,10 @@
-@import url('https://fonts.googleapis.com/css?family=Open+Sans:400,400i,600,600i');
+/*@import url('https://fonts.googleapis.com/css?family=Open+Sans:400,400i,600,600i');*/
+@import url('https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;500&family=Fira+Sans:ital,wght@0,400;0,600;1,400;1,600&display=swap');
+
+
+div.document {
+    margin-top: 10px;
+}
 
 
 /* SIDEBAR */
@@ -7,13 +13,22 @@ div.sphinxsidebar {
     font-size: 0.9rem;
     line-height: inherit;
 
-    /*background-color: rgba(120,80,50,0.1);
-    box-shadow: 3px 5px 10px rgba(0,0,0,0.1);*/
+    /*background-color: rgba(120,80,50,0.1);*/
+    box-shadow: 3px 5px 10px rgba(0,0,0,0.1);
     border-right: 2px solid rgba(120,80,50,0.1);
     padding-right: 10px;
     box-sizing: border-box;
 
+    border-radius: 12px;
+
     background-color: rgba(255,255,255,0.8);
+}
+
+@media screen and (max-width: 875px) {
+    div.sphinxsidebar {
+        width: 100vw;
+        background-color: #333;
+    }
 }
 
 div.sphinxsidebar ul {
@@ -31,9 +46,9 @@ div.sphinxsidebar ul ul {
 /* BODY */
 
 div.body {
-    padding-left: 10px;
+    padding-left: 25px;
     padding-right: 0px;
-    padding-top: 0px;
+    padding-top: 1em; /*0px;*/
     padding-bottom: 0px;
 }
 
@@ -62,6 +77,11 @@ div.body section > dl > dd {
     margin-left: 0px;
 }
 
+div.body li > blockquote {
+    margin-left: 0px;
+}
+
+
 
 .sig {
     /*font-family: 'Roboto', sans-serif;*/
@@ -69,6 +89,9 @@ div.body section > dl > dd {
     font-weight: 350;
     color: rgb(100,100,100);
     letter-spacing: 0.4px;
+}
+.sig pre {
+    font-family: inherit;
 }
 .sig > em.property:first-child {
     font-style: normal;
@@ -85,18 +108,38 @@ div.body section > dl > dd {
 }
 .sig-param {
     color: #000;
+    font-size: 0.95em;
+}
+
+
+pre, tt, code {
+    letter-spacing: -.2pt; /* condense mono/code font a bit */
+}
+
+tt, code {
+  background-color: #b7a48629;
 }
 
 code {
     color: #000;
-    font-family: inherit;
     font-weight: 550;
-    letter-spacing: 0.4px;
+    padding: 2px 3px;
+    border-radius: 4px;
+}
+code.xref.py {
+    font-family: inherit;
+    letter-spacing: 0.2pt;
+    padding: 0px 0px;
+    border-radius: 0px;
 }
 code.xref, a code {
     font-weight: 550;
 }
 
+/* link colors */
+a, a code.xref {
+    color: rgb(117, 63, 10);
+}
 
 
 /* when we have a local TOC, don't make headers into prominent links */
@@ -106,4 +149,22 @@ a.toc-backref {
 }
 
 
+.versionmodified {
+    color: rgb(125, 42, 109);
+}
 
+
+
+/* --- */
+
+nav.contents, aside.topic, div.topic {
+    border: 0px none;
+    background-color: rgba(120,80,50,0.05);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+
+div.admonition {
+    border-radius: 15px;
+}
