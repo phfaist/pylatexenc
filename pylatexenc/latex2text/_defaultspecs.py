@@ -1502,10 +1502,10 @@ def _greekletters(letterlist):
         )
         # up-greek version (from packages such as upgreek or newtxmath)
         _latex_specs_base['macros'].append(
-            MacroTextSpec(f"up{l}", unicodedata.lookup(smallname))
+            MacroTextSpec("up"+l, unicodedata.lookup(smallname))
         )
         _latex_specs_base['macros'].append(
-            MacroTextSpec(f"Up{l}", unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
+            MacroTextSpec("Up"+l, unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
         )
 
 _greekletters(
