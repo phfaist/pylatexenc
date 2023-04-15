@@ -38,7 +38,7 @@ jobs:
 
       - name: 'Install dependencies'
         run: |-
-          pip install pytest; if [ "${{ matrix.python-version }}" == "2.7" ]; then pip install chainmap; fi
+          pip install pytest toml; if [ "${{ matrix.python-version }}" == "2.7" ]; then pip install chainmap; fi
 
       - name: 'Run tests'
         run: pytest
