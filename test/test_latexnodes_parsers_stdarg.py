@@ -38,7 +38,10 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
         lw = DummyWalkerWithGroupsAndMath()
 
-        parser = LatexStandardArgumentParser(arg_spec='m')
+        parser = LatexStandardArgumentParser(
+            arg_spec='m',
+            
+        )
 
         nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
@@ -97,6 +100,39 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
             )
         )
 
+    def test_arg_openbrace_wspace(self):
+        latextext = ' \t  ' + r'''{mandatory argument} (more stuff)'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalkerWithGroupsAndMath()
+
+        parser = LatexStandardArgumentParser(arg_spec='{')
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            nodes,
+            LatexGroupNode(
+                parsing_state=ps,
+                nodelist=LatexNodeList(
+                    [
+                        LatexCharsNode(
+                            parsing_state=ps,
+                            chars='mandatory argument',
+                            pos=4+1,
+                            pos_end=4+19,
+                        )
+                    ],
+                    pos=4+1,
+                    pos_end=4+19,
+                ),
+                delimiters=('{','}'),
+                pos=4+0,
+                pos_end=4+20,
+            )
+        )
+
 
     def test_arg_m_precomment_noincludeskip(self):
         latextext = r'''%comment here
@@ -106,7 +142,10 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
         lw = DummyWalkerWithGroupsAndMath()
 
-        parser = LatexStandardArgumentParser(arg_spec='m', include_skipped_comments=False)
+        parser = LatexStandardArgumentParser(
+            arg_spec='m',
+            expression_return_full_node_list=False,
+        )
 
         nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
@@ -140,49 +179,45 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
         ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
         lw = DummyWalkerWithGroupsAndMath()
 
-        parser = LatexStandardArgumentParser(arg_spec='m') # i.e. include_skipped_comments=True
+        parser = LatexStandardArgumentParser(
+            arg_spec='m',
+            expression_return_full_node_list=True,
+        )
 
         nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
-            LatexGroupNode(
-                parsing_state=ps,
-                delimiters=('',''),
-                nodelist=LatexNodeList(
-                    [
-                        LatexCommentNode(
-                            parsing_state=ps,
-                            comment='comment here',
-                            comment_post_space='\n',
-                            pos=0,
-                            pos_end=14,
+            LatexNodeList(
+                [
+                    LatexCommentNode(
+                        parsing_state=ps,
+                        comment='comment here',
+                        comment_post_space='\n',
+                        pos=0,
+                        pos_end=14,
+                    ),
+                    LatexGroupNode(
+                        parsing_state=ps,
+                        nodelist=LatexNodeList(
+                            [
+                                LatexCharsNode(
+                                    parsing_state=ps,
+                                    chars='mandatory argument',
+                                    pos=14+1,
+                                    pos_end=14+19,
+                                )
+                            ],
+                            pos=14+1,
+                            pos_end=14+19,
                         ),
-                        LatexGroupNode(
-                            parsing_state=ps,
-                            nodelist=LatexNodeList(
-                                [
-                                    LatexCharsNode(
-                                        parsing_state=ps,
-                                        chars='mandatory argument',
-                                        pos=14+1,
-                                        pos_end=14+19,
-                                    )
-                                ],
-                                pos=14+1,
-                                pos_end=14+19,
-                            ),
-                            delimiters=('{','}'),
-                            pos=14,
-                            pos_end=14+20,
-                        )
-                    ],
-                    pos=0,
-                    pos_end=14+20,
-                ),
-                pos=0,
-                pos_end=14+20
-            )
+                        delimiters=('{','}'),
+                        pos=14,
+                        pos_end=14+20,
+                    )
+                ],
+                parsing_state=ps,
+            ),
         )
 
 

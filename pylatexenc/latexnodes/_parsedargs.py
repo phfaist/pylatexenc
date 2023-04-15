@@ -142,12 +142,12 @@ class ParsedArguments(object):
         list, leave this as `None`.  (But then code that uses the latexwalker
         must be aware of your own API to access the macro arguments.)
 
-        The difference between `argnlist` and the legacy `nodeargs` is that all
-        options, regardless of optional or mandatory, are stored in the list
-        `argnlist` with possible `None`\ 's at places where optional arguments
-        were not provided.  Previously, whether a first optional argument was
-        included in `nodeoptarg` or `nodeargs` depended on how the macro
-        specification was given.
+        The difference between `argnlist` and the legacy `nodeargs` (in
+        `pylatexenc 1.x`) is that all options, regardless of optional or
+        mandatory, are stored in the list `argnlist` with possible `None`\ 's at
+        places where optional arguments were not provided.  Previously, whether
+        a first optional argument was included in `nodeoptarg` or `nodeargs`
+        depended on how the macro specification was given.
 
       - `argspec` is a string or a list that describes how each corresponding
         argument in `argnlist` represents.  If the macro arguments are too

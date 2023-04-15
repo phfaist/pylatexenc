@@ -51,22 +51,40 @@ from ._delimited import LatexDelimitedGroupParser
 
 
 
-class _TryAgainWithSkippedCommentNodes(Exception):
-    def __init__(self, skipped_comment_nodes, pos):
-        super(_TryAgainWithSkippedCommentNodes, self).__init__("<internal>")
-        self.skipped_comment_nodes = skipped_comment_nodes
+class _TryAgainWithSkippedCommentOrWhitespaceNodes(Exception):
+    def __init__(self, skipped_nodes, pos):
+        super(_TryAgainWithSkippedCommentOrWhitespaceNodes, self).__init__("<internal>")
+        self.skipped_nodes = skipped_nodes
         self.pos = pos
 
 
 
 class LatexExpressionParser(LatexParserBase):
+    r"""
+    The parsed result is a `LatexNodeList`.
+
+    If `return_full_node_list` is `True`, then a :py:class:`LatexNodeList` is
+    returned as the content returned by :py:meth:`parse()`.  The node list
+    contains all nodes read while parsing the given LaTeX expression (including
+    comment nodes and whitespace reported as whitespace-only chars node).
+
+    If `return_full_node_list` is `False`, then only the single node that
+    contained the expression we're interested in is returned in the contents
+    returned by the :py:meth:`parse()` method.  While you directly get the
+    expression you're interested in, you might lose information about how to
+    recompose the node into its source LaTeX string.
+    """
     def __init__(self,
-                 include_skipped_comments=True,
+                 allow_pre_space=True,
+                 allow_pre_comments=True,
+                 return_full_node_list=True,
                  single_token_requiring_arg_is_error=True,
                  **kwargs
                  ):
         super(LatexExpressionParser, self).__init__(**kwargs)
-        self.include_skipped_comments = include_skipped_comments
+        self.allow_pre_space = allow_pre_space
+        self.allow_pre_comments = allow_pre_comments
+        self.return_full_node_list = return_full_node_list
         self.single_token_requiring_arg_is_error = single_token_requiring_arg_is_error
 
 
@@ -87,37 +105,50 @@ class LatexExpressionParser(LatexParserBase):
                                              expr_parsing_state,
                                              parsing_state=parsing_state,
                                              **kwargs)
-            except _TryAgainWithSkippedCommentNodes as e:
-                exprnodes += e.skipped_comment_nodes
+            except _TryAgainWithSkippedCommentOrWhitespaceNodes as e:
+                exprnodes += e.skipped_nodes
                 continue
 
             exprnodes += moreexprnodes
 
-            if not exprnodes:
+            if not len(exprnodes):
                 # happens when end of stream is reached
                 thenodelist = latex_walker.make_nodelist(
                     [],
                     pos=token_reader.cur_pos(),
-                    pos_end=token_reader.cur_pos()
-                )
-            elif len(exprnodes) == 1:
-                thenodelist = exprnodes[0]
-            else:
-                # determine (pos,len) automatically please...
-                expr_nodelist = latex_walker.make_nodelist(exprnodes)
-
-                thenodelist = latex_walker.make_node(
-                    LatexGroupNode,
+                    pos_end=token_reader.cur_pos(),
                     parsing_state=parsing_state,
-                    nodelist=expr_nodelist,
-                    delimiters=('',''),
-                    pos=expr_nodelist.pos,
-                    pos_end=expr_nodelist.pos_end,
                 )
+
+            else:
+                thenodelist = latex_walker.make_nodelist(
+                    exprnodes,
+                    parsing_state=parsing_state,
+                )
+
+                # # determine (pos,len) automatically please...
+                # expr_nodelist = latex_walker.make_nodelist(
+                #     exprnodes,
+                #     parsing_state=parsing_state,
+                # )
+
+                # thenodelist = latex_walker.make_node(
+                #     LatexGroupNode,
+                #     parsing_state=parsing_state,
+                #     nodelist=expr_nodelist,
+                #     delimiters=('',''),
+                #     pos=expr_nodelist.pos,
+                #     pos_end=expr_nodelist.pos_end,
+                # )
 
             logger.debug("thenodelist = %r", thenodelist)
 
-            return thenodelist, None
+            if self.return_full_node_list:
+                result = thenodelist
+            else:
+                result = thenodelist[-1] # last node is the main content node
+
+            return result, None
 
 
     def _parse_single_token(self, latex_walker, token_reader, expr_parsing_state,
@@ -228,9 +259,47 @@ class LatexExpressionParser(LatexParserBase):
                 )
             ]
 
-        if tok.tok == 'comment':
+        if len(tok.pre_space):
+            if self.allow_pre_space:
+                # put the token back so that it can be found again on the next
+                # iteration, after we've skipped whitespace
+                token_reader.move_to_token(tok, rewind_pre_space=False)
 
-            if self.include_skipped_comments:
+                wspos = tok.pos-len(tok.pre_space)
+
+                # create a dummy whitespace char as we did for comments
+                cnodes = [
+                    latex_walker.make_node(LatexCharsNode,
+                                           parsing_state=parsing_state,
+                                           chars=tok.pre_space,
+                                           pos=wspos,
+                                           pos_end=tok.pos)
+                ]
+                raise _TryAgainWithSkippedCommentOrWhitespaceNodes(cnodes, wspos)
+
+            # whitespace not allowed -> error
+            exc = latex_walker.check_tolerant_parsing_ignore_error(
+                LatexWalkerParseError(
+                    r"Expected expression w/o leading whitespace but found whitespace",
+                    pos=tok.pos - len(tok.pre_space),
+                    error_type_info={
+                        'what': 'expression_required_got_unexpected',
+                        'unexpected': 'whitespace',
+                        'whitespace': tok.pre_space,
+                    },
+                )
+            )
+            if exc is not None:
+                raise exc
+
+            # recover from error ->
+            raise _TryAgainWithSkippedCommentOrWhitespaceNodes([], tok.pos)
+
+
+        if tok.tok == 'comment':
+            if self.allow_pre_comments:
+                # test for comments after gulping whitespace and including them in
+                # possible char nodes
                 cnodes = [
                     latex_walker.make_node(LatexCommentNode,
                                            parsing_state=parsing_state,
@@ -239,10 +308,26 @@ class LatexExpressionParser(LatexParserBase):
                                            pos=tok.pos,
                                            pos_end=tok.pos_end)
                 ]
-            else:
-                cnodes = []
+                raise _TryAgainWithSkippedCommentOrWhitespaceNodes(cnodes, tok.pos)
 
-            raise _TryAgainWithSkippedCommentNodes(cnodes, tok.pos)
+            # comments not allowed here -> error
+            exc = latex_walker.check_tolerant_parsing_ignore_error(
+                    LatexWalkerParseError(
+                    r"Expected expression w/o leading comments but found comment ‘%{}’"
+                    .format(tok.arg),
+                    pos=tok.pos,
+                    error_type_info={
+                        'what': 'expression_required_got_unexpected',
+                        'unexpected': 'comment',
+                        'comment': tok.arg,
+                    },
+                )
+            )
+            if exc is not None:
+                raise exc
+
+            # recover from error ->
+            raise _TryAgainWithSkippedCommentOrWhitespaceNodes([], tok.pos)
 
 
         if tok.tok == 'brace_open':
@@ -262,7 +347,9 @@ class LatexExpressionParser(LatexParserBase):
             logger.debug("Got groupnode = %r", groupnode)
 
             if parsing_state_delta is not None:
-                logger.warning("Ignoring parsing_state_delta after parsing an expression group!")
+                logger.warning(
+                    "Ignoring parsing_state_delta after parsing an expression group!"
+                )
 
             return [ groupnode ]
 

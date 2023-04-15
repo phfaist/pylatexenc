@@ -55,6 +55,7 @@ if sys.version_info.major == 2:
 
 __all__ = [
     'LatexWalkerError',
+    'LatexWalkerLocatedError',
     'LatexWalkerParseError',
     'LatexWalkerParseErrorFormatter',
     'LatexWalkerNodesParseError',
@@ -65,15 +66,18 @@ __all__ = [
 
 
 class LatexWalkerError(Exception):
-    """
-    Generic exception class raised by this module.
+    r"""
+    Generic exception class raised while parsing LaTeX code.  Common subclass 
+    to `LatexWalkerLocatedError` as well as `LatexWalkerEndOfStream`.
     """
     pass
 
 
-class LatexWalkerParseError(LatexWalkerError):
-    """
-    Represents an error while parsing LaTeX code.
+class LatexWalkerLocatedError(LatexWalkerError):
+    r"""
+    Exception class raised to the user when there was an error dealing with
+    LaTeX code.  The exception is accompanied by information about where the
+    error occurred in the source LaTeX code.
 
     The following attributes are available if they were provided to the class
     constructor:
@@ -116,8 +120,7 @@ class LatexWalkerParseError(LatexWalkerError):
        encountered and was forbidden).
     """
     def __init__(self, msg, s=None, pos=None, lineno=None, colno=None,
-                 error_type_info=None,
-                 **kwargs):
+                 error_type_info=None, **kwargs):
         self.input_source = kwargs.pop('input_source', None)
         self.msg = msg
         self.s = s
@@ -127,11 +130,11 @@ class LatexWalkerParseError(LatexWalkerError):
         self.error_type_info = error_type_info
         self.open_contexts = kwargs.pop('open_contexts', [])
 
-        if kwargs:
+        if len(kwargs):
             raise ValueError("Unexpected keyword argument(s) to LatexWalkerParseError(): "
                              + repr(kwargs))
 
-        super(LatexWalkerParseError, self).__init__(
+        super(LatexWalkerLocatedError, self).__init__(
             LatexWalkerParseErrorFormatter(self).to_display_string()
         )
 
@@ -159,6 +162,13 @@ class LatexWalkerParseError(LatexWalkerError):
     #     d.update(kwargs)
     #     return Cls(**d)
 
+
+class LatexWalkerParseError(LatexWalkerLocatedError):
+    r"""
+    Represents an error while LaTeX code, specifically while parsing the
+    code into the nodes structure.
+    """
+    pass
 
 
 

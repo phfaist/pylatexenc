@@ -142,11 +142,11 @@ class LatexArgumentsParser(LatexParserBase):
 
         for argj, arg in enumerate(self.arguments_spec_list):
 
-            logger.debug("Parsing argument %d / %s", argj, arg.parser)
+            arg_node_parser = arg.parser
+
+            logger.debug("Parsing argument %d / %s", argj, arg_node_parser)
 
             peeked_token = token_reader.peek_token_or_none(parsing_state=parsing_state)
-
-            arg_node_parser = arg.parser
 
             if isinstance(arg_node_parser, _basestring):
                 arg_node_parser = get_standard_argument_parser(arg_node_parser)

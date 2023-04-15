@@ -534,7 +534,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
                 nodes, info = parser.parse(
                     latex_walker=self,
                     token_reader=the_token_reader,
-                    parsing_state=the_parsing_state
+                    parsing_state=the_parsing_state,
                 )
 
             except LatexWalkerEndOfStream:
@@ -1074,7 +1074,7 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
                  self.s[pos:pos+50])
 
     parser = parsers.LatexExpressionParser(
-        include_skipped_comments=False,
+        return_full_node_list=False,
         single_token_requiring_arg_is_error=not self.tolerant_parsing,
     )
 

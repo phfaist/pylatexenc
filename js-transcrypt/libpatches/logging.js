@@ -18,7 +18,7 @@ class DebugLogger
         this._debug_fn = debug_module(this.scope);
         this._debug_fn_star = debug_module(this.scope+'*'); // always output
 
-        console.debug(`setting up logger ‘${this.scope}’ via debug()`);
+        //console.debug(`setting up logger ‘${this.scope}’ via debug()`);
 
         this.error = (msg, ...args) => {
             const lastarg = args[args.length-1];

@@ -178,6 +178,7 @@ class LatexNode(object):
     def __eq__(self, other):
         return (
             other is not None  and
+            isinstance(other, LatexNode) and
             self.nodeType() is other.nodeType()  and
             other.parsing_state is self.parsing_state  and
             other.latex_walker is self.latex_walker  and

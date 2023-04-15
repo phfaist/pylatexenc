@@ -121,7 +121,7 @@ class LatexDelimitedExpressionParserInfo(object):
       NOTE: the `group_parsing_state` is determined by the
       `LatexDelimitedGroupParser` object before this
       `LatexDelimitedExpressionParserInfo` is constructed.  See the
-      :py:meth:`LatexDelimitedGroupParser.get_group_parsing_state()` method.
+      :py:meth:`get_group_parsing_state()` static method.
 
     - `contents_parsing_state` — The group content's parsing state, which
       might differ from surrounding parsing state.  E.g., the group's
@@ -620,6 +620,27 @@ class LatexDelimitedExpressionParser(LatexParserBase):
     (``{ ... }``), or math mode blocks (``$...$``), or environments
     (``\begin{xyz}...\end{xyz}``), etc.
 
+    This class is a general base class that groups common functionality of
+    various parsers.  Usually you shouldn't use `LatexDelimitedExpressionParser`
+    parser instances directly.  Rather, you should use one of the more
+    specialized parsers such as :py:class:`LatexDelimitedGroupParser` or
+    :py:class:`LatexMathParser`, etc.
+
+    Many specifics by which the delimited group is parsed is determined by a
+    separate helper class, which must be a
+    :py:class:`LatexDelimitedExpressionParserInfo` subclass.  That info class is
+    given through the `delimited_expression_parser_info_class` constructor
+    argument.  Specialized delimiter-based parsers, such as
+    :py:class:`LatexDelimitedGroupParser`, provide their own info classes
+    `delimited_expression_parser_info_class`; when using those specialized
+    parsers, you don't have to worry about that argument.
+
+    The main :py:meth:`parse()` method normally returns a
+    :py:class:`LatexGroupNode` instance with the delimited LaTeX contents that
+    was parsed according to the provided info class.  The exact object that is
+    returned can be customized by the info class, see
+    :py:meth:`LatexDelimitedExpressionParserInfo.make_group_node_and_parsing_state_delta()`.
+
     Constructor arguments:
 
     - `delimiters` can be either:
@@ -718,7 +739,7 @@ class LatexDelimitedExpressionParser(LatexParserBase):
 
             pos = None
             if recovery_token is not None:
-                pos = recovery_token
+                pos = recovery_token.pos
 
             # raise a parse error
             raise LatexWalkerNodesParseError(

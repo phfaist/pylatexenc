@@ -44,7 +44,8 @@ class LatexTokenReader(LatexTokenReaderBase):
     r"""
     LatexTokenReader(s, *, tolerant_parsing=False)
 
-    Parse tokens from an input string.
+    Parse tokens from an input string to create :py:class:`LatexToken`
+    instances.
 
     Inherits :py:class:`LatexTokenReaderBase`.  See also the methods there for
     the standard token reader interface (such as
@@ -52,7 +53,7 @@ class LatexTokenReader(LatexTokenReaderBase):
 
     The main functionality of this class is coded in the `impl_***()` methods.
     To extend this class with custom functionality, you should reimplement
-    those.  The methods reimplemented from :py:class:`TokenReaderBase` add
+    those.  The methods reimplemented from :py:class:`LatexTokenReaderBase` add
     layers of exception catching and recovery, etc., so be wary of
     reimplementing them manually.
 

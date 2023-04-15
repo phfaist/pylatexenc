@@ -1,4 +1,4 @@
-/*** PhF/LLM - BEGIN CUSTOM PATCHES ***/
+/*** PhF/PYLATEXENC - BEGIN CUSTOM PATCHES ***/
 
 //
 // Patch Transcrypt's implemnetations of some builtin object methods.
@@ -74,4 +74,8 @@ __eq__ = function (a, b) {
     }
 };
 
-/*** PhF/LLM - END CUSTOM PATCHES ***/
+
+
+
+
+/*** PhF/PYLATEXENC - END CUSTOM PATCHES ***/
