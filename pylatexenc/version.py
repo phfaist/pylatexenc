@@ -24,7 +24,7 @@
 
 
 #
-# Self-note: Checklist
+# Self-note: Checklist --- NOTE THESE ARE OLD INSTRUCTIONS DATING FROM 2.X VERSIONS
 #
 #   1) First some checks:
 #
@@ -55,4 +55,4 @@
 #   8) upload package to PyPI (twine upload dist/pylatexenc-X.X.tar.gz -r realpypi)
 #
 
-version_str = "3.0alpha000013"
+version_str = "3.0alpha000014"
