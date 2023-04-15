@@ -125,10 +125,10 @@ Exception classes
 .. autoclass:: LatexWalkerLocatedError
    :members:
 
-.. autoclass:: LatexWalkerParseError
+.. autoclass:: LatexWalkerLocatedErrorFormatter
    :members:
 
-.. autoclass:: LatexWalkerParseErrorFormatter
+.. autoclass:: LatexWalkerParseError
    :members:
 
 .. autoclass:: LatexWalkerNodesParseError

@@ -27,7 +27,8 @@ Exception Classes
    .. deprecated:: 3.0
 
       Since Pylatexenc 3.0, this class now resides in the new module
-      :py:mod:`pylatexenc.latexnodes`.  It is aliased in
+      :py:mod:`pylatexenc.latexnodes` as
+      :py:class:`pylatexenc.latexnodes.LatexWalkerError`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
 .. py:class:: pylatexenc.latexwalker.LatexWalkerParseError
@@ -37,7 +38,8 @@ Exception Classes
    .. deprecated:: 3.0
 
       Since Pylatexenc 3.0, this class now resides in the new module
-      :py:mod:`pylatexenc.latexnodes`.  It is aliased in
+      :py:mod:`pylatexenc.latexnodes` as
+      :py:class:`pylatexenc.latexnodes.LatexWalkerParseError`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
 .. py:class:: pylatexenc.latexwalker.LatexWalkerEndOfStream
@@ -47,8 +49,9 @@ Exception Classes
    .. deprecated:: 3.0
 
       Since Pylatexenc 3.0, this class now resides in the new module
-      :py:mod:`pylatexenc.latexnodes`.  It is aliased in
-      `pylatexenc.latexwalker` for backwards compatibility.
+      :py:mod:`pylatexenc.latexnodes` as
+      :py:class:`pylatexenc.latexnodes.LatexWalkerEndOfStream`.  It is aliased
+      in `pylatexenc.latexwalker` for backwards compatibility.
 
 
 Data Node Classes
@@ -61,7 +64,8 @@ Data Node Classes
    .. deprecated:: 3.0
 
       Since Pylatexenc 3.0, this class now resides in the new module
-      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      :py:mod:`pylatexenc.latexnodes.nodes` as
+      :py:class:`pylatexenc.latexnodes.nodes.LatexNode`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
 .. py:class:: pylatexenc.latexwalker.LatexCharsNode
@@ -71,7 +75,8 @@ Data Node Classes
    .. deprecated:: 3.0
 
       Since Pylatexenc 3.0, this class now resides in the new module
-      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      :py:mod:`pylatexenc.latexnodes.nodes` as
+      :py:class:`pylatexenc.latexnodes.nodes.LatexCharsNode`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
 .. py:class:: pylatexenc.latexwalker.LatexGroupNode
@@ -81,7 +86,8 @@ Data Node Classes
    .. deprecated:: 3.0
 
       Since Pylatexenc 3.0, this class now resides in the new module
-      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      :py:mod:`pylatexenc.latexnodes.nodes` as
+      :py:class:`pylatexenc.latexnodes.nodes.LatexGroupNode`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
 .. py:class:: pylatexenc.latexwalker.LatexCommentNode
@@ -91,8 +97,9 @@ Data Node Classes
    .. deprecated:: 3.0
 
       Since Pylatexenc 3.0, this class now resides in the new module
-      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
-      `pylatexenc.latexwalker` for backwards compatibility.
+      :py:mod:`pylatexenc.latexnodes.nodes` as
+      :py:class:`pylatexenc.latexnodes.nodes.LatexCommentNode`.  It is aliased
+      in `pylatexenc.latexwalker` for backwards compatibility.
 
 .. py:class:: pylatexenc.latexwalker.LatexMacroNode
 
@@ -101,7 +108,8 @@ Data Node Classes
    .. deprecated:: 3.0
 
       Since Pylatexenc 3.0, this class now resides in the new module
-      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      :py:mod:`pylatexenc.latexnodes.nodes` as
+      :py:class:`pylatexenc.latexnodes.nodes.LatexMacroNode`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
 .. py:class:: pylatexenc.latexwalker.LatexEnvironmentNode
@@ -111,8 +119,9 @@ Data Node Classes
    .. deprecated:: 3.0
 
       Since Pylatexenc 3.0, this class now resides in the new module
-      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
-      `pylatexenc.latexwalker` for backwards compatibility.
+      :py:mod:`pylatexenc.latexnodes.nodes` as
+      :py:class:`pylatexenc.latexnodes.nodes.LatexEnvironmentNode`.  It is
+      aliased in `pylatexenc.latexwalker` for backwards compatibility.
 
 .. py:class:: pylatexenc.latexwalker.LatexSpecialsNode
 
@@ -121,8 +130,9 @@ Data Node Classes
    .. deprecated:: 3.0
 
       Since Pylatexenc 3.0, this class now resides in the new module
-      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
-      `pylatexenc.latexwalker` for backwards compatibility.
+      :py:mod:`pylatexenc.latexnodes.nodes` as
+      :py:class:`pylatexenc.latexnodes.nodes.LatexSpecialsNode`.  It is aliased
+      in `pylatexenc.latexwalker` for backwards compatibility.
 
 .. py:class:: pylatexenc.latexwalker.LatexMathNode
 
@@ -131,7 +141,8 @@ Data Node Classes
    .. deprecated:: 3.0
 
       Since Pylatexenc 3.0, this class now resides in the new module
-      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      :py:mod:`pylatexenc.latexnodes.nodes` as
+      :py:class:`pylatexenc.latexnodes.nodes.LatexMathNode`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
 

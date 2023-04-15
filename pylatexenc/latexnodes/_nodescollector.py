@@ -64,7 +64,7 @@ class LatexNodesCollector(object):
 
     .. versionadded:: 3.0
     
-       The :py:class:`CallableSpecBase` class was added in `pylatexenc 3.0`.
+       The :py:class:`LatexNodesCollector` class was added in `pylatexenc 3.0`.
     """
 
     class ReachedEndOfStream(Exception):
