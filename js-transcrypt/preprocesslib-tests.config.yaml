@@ -25,6 +25,7 @@ enabled_features:
     PYLATEXENC_GET_DEFAULT_SPECS_FN: False
     LATEXWALKER_HELPERS: False
     DEBUG_SET_EQ_ATTRIBUTE: False
+    TEST_PYLATEXENC_SKIP: False
   patches:
     UNIQUE_OBJECT_ID: |
       import unique_object_id

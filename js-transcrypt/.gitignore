@@ -15,3 +15,6 @@ pp-tmp
 pylatexenc-js
 test-pylatexenc-js
 
+
+node_modules
+.yarn
