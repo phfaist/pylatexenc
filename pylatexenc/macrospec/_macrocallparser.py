@@ -202,7 +202,7 @@ class LatexMacroCallParser(_LatexCallableParserBase):
         super(LatexMacroCallParser, self).__init__(
             token_call=token_call,
             spec_object=macrospec,
-            what="macro call (\{})".format(macroname),
+            what=r"macro call (\{})".format(macroname),
             node_class=LatexMacroNode,
             node_extra_kwargs=dict(macroname=macroname,
                                    macro_post_space=macro_post_space),

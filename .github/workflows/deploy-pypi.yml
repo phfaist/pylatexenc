@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11"]
-        poetry-version: ["1.2"]
+        poetry-version: ["1.4"]
 
     environment: env-deploy-pypi
 
