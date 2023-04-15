@@ -730,17 +730,17 @@ The Title
             ("\\uppsi", "ψ"),
             ("\\upomega", "ω"),
             #
-            ("\\upgamma", "Γ"),
-            ("\\updelta", "Δ"),
-            ("\\uptheta", "Θ"),
-            ("\\uplambda", "Λ"),
-            ("\\upxi", "Ξ"),
-            ("\\uppi", "Π"),
-            ("\\upsigma", "Σ"),
-            ("\\upupsilon", "Υ"),
-            ("\\upphi", "Φ"),
-            ("\\uppsi", "Ψ"),
-            ("\\upomega", "Ω"),
+            ("\\Upgamma", "Γ"),
+            ("\\Updelta", "Δ"),
+            ("\\Uptheta", "Θ"),
+            ("\\Uplambda", "Λ"),
+            ("\\Upxi", "Ξ"),
+            ("\\Uppi", "Π"),
+            ("\\Upsigma", "Σ"),
+            ("\\Upupsilon", "Υ"),
+            ("\\Upphi", "Φ"),
+            ("\\Uppsi", "Ψ"),
+            ("\\Upomega", "Ω"),
         )
 
         for source, expected_dest in upgreek_letters:

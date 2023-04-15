@@ -3,7 +3,7 @@ import unittest
 ### BEGIN_TEST_PYLATEXENC_SKIP
 
 import toml
-from pathlib import Path
+import os.path
 
 import pylatexenc
 
@@ -15,8 +15,8 @@ class TestHardcodedPackageVersion(unittest.TestCase):
     def test_versions_are_in_sync(self):
         """Checks if the pyproject.toml and package.__init__.py __version__ are in sync."""
 
-        path = Path(__file__).resolve().parents[1] / "pyproject.toml"
-        with open(str(path)) as fpp:
+        path = os.path.join( os.path.dirname(__file__), '..', "pyproject.toml" )
+        with open(path) as fpp:
             pyproject = toml.loads(fpp.read())
         pyproject_version = pyproject["tool"]["poetry"]["version"]
 
