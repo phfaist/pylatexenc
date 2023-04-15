@@ -1,0 +1,20 @@
+#
+# additional git ignores
+#
+
+
+#
+# preprocessed python source code output
+#
+pp-tmp
+
+#
+# output folders
+#
+*_js_output
+pylatexenc-js
+test-pylatexenc-js
+
+
+node_modules
+.yarn

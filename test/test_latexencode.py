@@ -23,6 +23,7 @@ class _DummyContextMgr(object):
         pass
 
 class ProvideAssertCmds(object):
+    # provides assertLogs() in python 2
     def assertLogs(self, *args, **kwargs):
         logging.getLogger(__name__).warning(
             "Can't check if logger generates correct warnings, skipping this check.")

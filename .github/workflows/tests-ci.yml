@@ -1,0 +1,47 @@
+name: 'tests-ci'
+
+on:
+  push:
+    branches: [ "main", "devel" ]
+  pull_request:
+    branches: [ "main", "devel" ]
+  schedule:
+    - cron: "13 20 * * 3"
+
+jobs:
+  tests-ci:
+
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version:
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
+        os:
+          - 'ubuntu-latest'
+        include:
+          # Deprecated system for github actions :/
+          # - python-version: "3.4"
+          #   os: "ubuntu-18.04"
+          - python-version: "2.7"
+            os: 'ubuntu-20.04'
+          - python-version: "3.6"
+            os: 'ubuntu-20.04'
+
+    runs-on: '${{ matrix.os }}'
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '${{ matrix.python-version }}'
+
+      - name: 'Install dependencies'
+        run: |-
+          pip install pytest toml; if [ "${{ matrix.python-version }}" == "2.7" ]; then pip install chainmap; fi
+
+      - name: 'Run tests'
+        run: pytest

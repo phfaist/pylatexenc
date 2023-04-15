@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "pylatexenc"
+version = "3.0alpha000012" # ALSO BUMP IN pylatexenc/version.py
+description = "Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion"
+authors = ["Philippe Faist <philippe.faist@bluewin.ch>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+#python = "^2.7 || ^3.4" # This simply creates a dependency resolution mess that doesn't work.
+python = "^3.7"
+
+[tool.poetry.dev-dependencies]
+pytest = ">=7.0"
+toml = "^0.10.2"
+
+[tool.poetry.group.builddoc]
+optional = true
+
+[tool.poetry.group.builddoc.dependencies]
+Sphinx = ">=5.0.0"
+sphinx-issues = ">=3.0.0"
+
+[tool.poetry.group.buildjslib]
+optional = true
+
+[tool.poetry.group.buildjslib.dependencies]
+Transcrypt = ">=3.9.0"
+PyYAML = ">=5.0"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+
+[tool.pytest.ini_options]
+testpaths = [
+    "test",
+]

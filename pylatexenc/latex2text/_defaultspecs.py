@@ -1497,8 +1497,17 @@ def _greekletters(letterlist):
             MacroTextSpec(l, unicodedata.lookup(smallname))
         )
         _latex_specs_base['macros'].append(
-            MacroTextSpec(l[0].upper()+l[1:], unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
-            )
+            MacroTextSpec(l[0].upper()+l[1:],
+                          unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
+        )
+        # up-greek version (from packages such as upgreek or newtxmath)
+        _latex_specs_base['macros'].append(
+            MacroTextSpec("up"+l, unicodedata.lookup(smallname))
+        )
+        _latex_specs_base['macros'].append(
+            MacroTextSpec("Up"+l, unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
+        )
+
 _greekletters(
     ('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota', 'kappa',
      'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma', 'tau', 'upsilon', 'phi',
@@ -1511,7 +1520,15 @@ _latex_specs_base['macros'] += [
     MacroTextSpec('varrho', u'\N{GREEK RHO SYMBOL}'),
     MacroTextSpec('varsigma', u'\N{GREEK SMALL LETTER FINAL SIGMA}'),
     MacroTextSpec('varphi', u'\N{GREEK SMALL LETTER PHI}'),
-    ]
+
+    # up-greek version
+    MacroTextSpec('upvarepsilon', u'\N{GREEK SMALL LETTER EPSILON}'),
+    MacroTextSpec('upvartheta', u'\N{GREEK THETA SYMBOL}'),
+    MacroTextSpec('upvarpi', u'\N{GREEK PI SYMBOL}'),
+    MacroTextSpec('upvarrho', u'\N{GREEK RHO SYMBOL}'),
+    MacroTextSpec('upvarsigma', u'\N{GREEK SMALL LETTER FINAL SIGMA}'),
+    MacroTextSpec('upvarphi', u'\N{GREEK SMALL LETTER PHI}'),
+]
 
 
 unicode_accents_list = (

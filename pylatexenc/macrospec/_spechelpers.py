@@ -29,19 +29,18 @@
 
 from __future__ import print_function, unicode_literals
 
-from ._argparsers import MacroStandardArgsParser
 from ._specclasses import MacroSpec, EnvironmentSpec, SpecialsSpec
 
 
 # for Py3
 _basestring = str
 
-## Begin Py2 support code
+### BEGIN_PYTHON2_SUPPORT_CODE
 import sys
 if sys.version_info.major == 2:
-    # Py2
     _basestring = basestring
-## End Py2 support code
+### END_PYTHON2_SUPPORT_CODE
+
 
 
 
@@ -134,22 +133,22 @@ def std_macro(macname, *args, **kwargs):
         argspec += '{'*args[1]
 
     if kwargs.get('make_environment_spec', False):
-        return EnvironmentSpec(macname, args_parser=MacroStandardArgsParser(argspec),
-                               is_math_mode=kwargs.get('environment_is_math_mode', False))
-    return MacroSpec(macname, args_parser=MacroStandardArgsParser(argspec))
+        return EnvironmentSpec(macname, argspec,
+                               is_math_mode=kwargs.get('environment_is_math_mode', None))
+    return MacroSpec(macname, argspec)
 
 
 def std_environment(envname, *args, **kwargs):
     r"""
     Return an environment specification for the given environment.  Syntax::
 
-      spec = std_environment(envname, argspec, is_math_mode=True|False)
+      spec = std_environment(envname, argspec, is_math_mode=True|False|None)
       #  or
-      spec = std_environment(envname, optarg, numargs, is_math_mode=True|False)
+      spec = std_environment(envname, optarg, numargs, is_math_mode=True|False|None)
       #  or
-      spec = std_environment( (envname, argspec), is_math_mode=True|False)
+      spec = std_environment( (envname, argspec), is_math_mode=True|False|None)
       #  or
-      spec = std_environment( (envname, optarg, numargs), is_math_mode=True|False)
+      spec = std_environment( (envname, optarg, numargs), is_math_mode=True|False|None)
       #  or
       spec = std_environment( spec ) # spec is already a `EnvironmentSpec` -- no-op
 
@@ -196,7 +195,7 @@ def std_environment(envname, *args, **kwargs):
       `is_math_mode` *must* be given as a keyword argument, in contrast to all
       other arguments which must be positional (non-keyword) arguments.
     """
-    is_math_mode = kwargs.pop('is_math_mode', False)
+    is_math_mode = kwargs.pop('is_math_mode', None)
     kwargs2 = dict(kwargs)
     kwargs2.update(make_environment_spec=True,
                    environment_is_math_mode=is_math_mode)
@@ -216,5 +215,5 @@ def std_specials(specials_chars):
     any argument parsing.  For more complicated specials, you can instantiate a
     :py:class:`SpecialsSpec` directly.
     """
-    return SpecialsSpec(specials_chars, args_parser=None)
+    return SpecialsSpec(specials_chars, None)
 

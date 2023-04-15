@@ -8,8 +8,12 @@ if sys.version_info.major > 2:
 
 from pylatexenc.macrospec import (
     ParsedMacroArgs, MacroStandardArgsParser,
-    MacroSpec, EnvironmentSpec, #SpecialsSpec,
-    std_macro, std_environment, LatexContextDb
+    MacroSpec, EnvironmentSpec, SpecialsSpec,
+    std_macro, std_environment, std_specials,
+    LatexContextDb,
+)
+from pylatexenc.macrospec._latexcontextdb import (
+    _autogen_category_prefix # peek into this
 )
 
 from pylatexenc import latexwalker
@@ -17,6 +21,11 @@ from pylatexenc.latexwalker import (
     LatexCharsNode, LatexGroupNode,
     #LatexCommentNode, LatexMacroNode, LatexEnvironmentNode, LatexMathNode
 )
+
+
+from ._helpers_tests import HelperProvideAssertEqualsForLegacyTests
+
+
 
 
 class MyAsserts(object):
@@ -44,7 +53,9 @@ class MyAsserts(object):
                 raise
 
 
-class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
+
+class TestMacroStandardArgsParser(HelperProvideAssertEqualsForLegacyTests,
+                                  unittest.TestCase, MyAsserts):
 
     def __init__(self, *args, **kwargs):
         super(TestMacroStandardArgsParser, self).__init__(*args, **kwargs)
@@ -90,14 +101,17 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         s = MacroStandardArgsParser('[')
         parsing_state = lw.make_parsing_state()
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'), parsing_state=parsing_state)
+        pssq = argd.argnlist[0].parsing_state
+        self.assertEqual(set(pssq.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
         self.assertPMAEqual(
             argd,
             ParsedMacroArgs(argspec='[', argnlist=[
                 LatexGroupNode(
-                    parsing_state=parsing_state,
+                    parsing_state=pssq,
                     delimiters=('[', ']'),
                     nodelist=[
-                        LatexCharsNode(parsing_state=parsing_state,
+                        LatexCharsNode(parsing_state=pssq,
                                        chars='ab',
                                        pos=5,len=2)
                     ],
@@ -183,6 +197,9 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
         s = MacroStandardArgsParser('{*[{*')
         parsing_state = lw.make_parsing_state()
         (argd, p, l) = s.parse_args(lw, len(r'\cmd'), parsing_state=parsing_state)
+        pssq = argd.argnlist[2].parsing_state
+        self.assertEqual(set(pssq.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
         self.assertPMAEqual(
             argd,
             ParsedMacroArgs(argspec='{*[{*', argnlist=[
@@ -190,10 +207,10 @@ class TestMacroStandardArgsParser(unittest.TestCase, MyAsserts):
                                chars='x',
                                pos=5,len=1),
                 None,
-                LatexGroupNode(parsing_state=parsing_state,
+                LatexGroupNode(parsing_state=pssq,
                                delimiters=('[', ']'),
                                nodelist=[
-                                   LatexCharsNode(parsing_state=parsing_state,
+                                   LatexCharsNode(parsing_state=pssq,
                                                   chars='ab',
                                                   pos=7,len=2)
                                ],
@@ -346,7 +363,7 @@ class Test_std_environment(unittest.TestCase):
         spec = std_environment('environ', '[{')
         self.assertEqual(spec.environmentname, 'environ')
         self.assertEqual(spec.args_parser.argspec, '[{')
-        self.assertEqual(spec.is_math_mode, False)
+        self.assertEqual(spec.is_math_mode, None)
 
     def test_idiom_1(self):
         spec = std_environment('environ', True, 3, is_math_mode=True)
@@ -364,13 +381,13 @@ class Test_std_environment(unittest.TestCase):
         spec = std_environment( ('environ', False, 4), )
         self.assertEqual(spec.environmentname, 'environ')
         self.assertEqual(spec.args_parser.argspec, '{{{{')
-        self.assertEqual(spec.is_math_mode, False)
+        self.assertEqual(spec.is_math_mode, None)
 
     def test_idiom_3b(self):
         spec = std_environment( ('environ', None, '{{{{'), )
         self.assertEqual(spec.environmentname, 'environ')
         self.assertEqual(spec.args_parser.argspec, '{{{{')
-        self.assertEqual(spec.is_math_mode, False)
+        self.assertEqual(spec.is_math_mode, None)
 
     def test_idiom_4(self):
         spec = std_environment(  std_environment('environ', '{*{{{', is_math_mode=True) )
@@ -381,6 +398,74 @@ class Test_std_environment(unittest.TestCase):
 
 
 class TestLatexContextDb(unittest.TestCase):
+
+    def test_add_category(self):
+        db = LatexContextDb()
+
+        macros = [ std_macro('aaa', '{'), std_macro('bbb', '[{[') ]
+        db.add_context_category('cat1', macros, [])
+
+        self.assertEqual(db.category_list, ['cat1'])
+        self.assertEqual(db.d['cat1']['macros']['aaa'], macros[0])
+
+    def test_add_anon_category(self):
+        db = LatexContextDb()
+
+        macros = [ std_macro('aaa', '{'), std_macro('bbb', '[{[') ]
+        db.add_context_category('cat1', macros, [])
+
+        macros2 = [ std_macro('zz', '') ]
+        db.add_context_category(None, macros=macros2)
+
+        self.assertEqual(db.category_list, ['cat1', _autogen_category_prefix+'0'])
+        self.assertEqual(db.lookup_chain_maps['macros']['zz'], macros2[0])
+
+    def test_add_category_multiple(self):
+        db = LatexContextDb()
+
+        db.add_context_category(
+            'cat1', 
+            macros=[ std_macro('aaa', '{'), std_macro('bbb', '[{[') ],
+            environments=[ std_environment('eaaa', '{'), std_environment('ebbb', '[{[') ],
+            specials=[ std_specials('~'), std_specials('`'), std_specials('``') ],
+        )
+        db.add_context_category(
+            'cat2',
+            macros=[ std_macro('aaa', '[{'), std_macro('ccc', None) ],
+            environments=[ std_environment('eaaa', '[{'), std_environment('eccc', None) ],
+            specials=[ ],
+        )
+        db.add_context_category(
+            'cat3',
+            prepend=True,
+            macros=[ std_macro('ccc', '*{'), std_macro('ddd', '{{[') ],
+            environments=[ std_environment('eccc', '*{'), std_environment('eddd', '{{[') ],
+            specials=[ SpecialsSpec('`', args_parser=MacroStandardArgsParser('{')) ],
+        )
+
+        self.assertEqual(db.category_list, ['cat3', 'cat1', 'cat2'])
+        self.assertEqual(db.d['cat1']['macros']['aaa'].args_parser.argspec, '{')
+        self.assertEqual(db.d['cat2']['macros']['aaa'].args_parser.argspec, '[{')
+        self.assertEqual(db.lookup_chain_maps['macros']['aaa'].args_parser.argspec, '{')
+
+        self.assertEqual(db.lookup_chain_maps['environments']['eccc'].args_parser.argspec, '*{')
+
+        self.assertEqual(db.lookup_chain_maps['specials']['`'].args_parser.argspec, '{')
+
+        self.assertEqual(db.lookup_chain_maps['specials']['``'].args_parser.argspec, '')
+
+    def test_freeze_add_category(self):
+
+        db = LatexContextDb()
+
+        db.add_context_category('cat1', [ std_macro('aaa', '{'), std_macro('bbb', '[{[') ], [])
+
+        db.freeze()
+        self.assertTrue( db.frozen )
+
+        with self.assertRaises(RuntimeError):
+            db.add_context_category('cat2', [ std_macro('z', '[{[') ], [])
+
 
     def test_can_get_macro_spec(self):
         db = LatexContextDb()
@@ -439,7 +524,7 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db.get_environment_spec('nonexistent').args_parser.argspec, '')
 
 
-    def test_filter_context_0(self):
+    def test_filtered_context_0(self):
         
         db = LatexContextDb()
         db.set_unknown_macro_spec(MacroSpec('<macro unknown>'))
@@ -455,7 +540,7 @@ class TestLatexContextDb(unittest.TestCase):
                                 [ std_environment('eccc', '*{'), std_environment('eddd', '{{[') ],
                                 prepend=True)
         
-        db2 = db.filter_context(keep_categories=['cat1', 'cat2'])
+        db2 = db.filtered_context(keep_categories=['cat1', 'cat2'])
         # this should give 'ccc' from cat2, not cat3
         self.assertEqual(db2.get_macro_spec('ccc').macroname, 'ccc')
         self.assertEqual(db2.get_macro_spec('ccc').args_parser.argspec, '')
@@ -475,7 +560,7 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db2.unknown_environment_spec, db.unknown_environment_spec)
         self.assertEqual(db2.unknown_specials_spec, db.unknown_specials_spec)
 
-    def test_filter_context_1(self):
+    def test_filtered_context_1(self):
         
         db = LatexContextDb()
         db.set_unknown_macro_spec(MacroSpec('<macro unknown>'))
@@ -491,7 +576,7 @@ class TestLatexContextDb(unittest.TestCase):
                                 [ std_environment('eccc', '*{'), std_environment('eddd', '{{[') ],
                                 prepend=True)
         
-        db2 = db.filter_context(exclude_categories=['cat3'])
+        db2 = db.filtered_context(exclude_categories=['cat3'])
         # this should give 'ccc' from cat2, not cat3
         self.assertEqual(db2.get_macro_spec('ccc').macroname, 'ccc')
         self.assertEqual(db2.get_macro_spec('ccc').args_parser.argspec, '')
@@ -506,7 +591,7 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db2.get_environment_spec('eddd').environmentname, '<env unknown>')
         self.assertEqual(db2.get_environment_spec('eddd').args_parser.argspec, '')
 
-    def test_filter_context_2(self):
+    def test_filtered_context_2(self):
         
         db = LatexContextDb()
         db.set_unknown_macro_spec(MacroSpec('<macro unknown>'))
@@ -522,7 +607,7 @@ class TestLatexContextDb(unittest.TestCase):
                                 [ std_environment('eccc', '*{'), std_environment('eddd', '{{[') ],
                                 prepend=True)
         
-        db2 = db.filter_context(keep_categories=['cat1', 'cat3'], exclude_categories=['cat3'])
+        db2 = db.filtered_context(keep_categories=['cat1', 'cat3'], exclude_categories=['cat3'])
         # this should give 'aaa' from cat1
         self.assertEqual(db2.get_macro_spec('aaa').macroname, 'aaa')
         self.assertEqual(db2.get_macro_spec('aaa').args_parser.argspec, '{')
@@ -537,7 +622,7 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db2.get_environment_spec('eddd').environmentname, '<env unknown>')
         self.assertEqual(db2.get_environment_spec('eddd').args_parser.argspec, '')
 
-    def test_filter_context_3(self):
+    def test_filtered_context_3(self):
         
         db = LatexContextDb()
         db.set_unknown_macro_spec(MacroSpec('<macro unknown>'))
@@ -553,8 +638,8 @@ class TestLatexContextDb(unittest.TestCase):
                                 [ std_environment('eccc', '*{'), std_environment('eddd', '{{[') ],
                                 prepend=True)
         
-        db2 = db.filter_context(keep_categories=['cat1', 'cat3'], exclude_categories=['cat3'],
-                                keep_which=['macros'])
+        db2 = db.filtered_context(keep_categories=['cat1', 'cat3'], exclude_categories=['cat3'],
+                                  keep_which=['macros'])
         # this should give 'aaa' from cat1
         self.assertEqual(db2.get_macro_spec('aaa').macroname, 'aaa')
         self.assertEqual(db2.get_macro_spec('aaa').args_parser.argspec, '{')
@@ -569,7 +654,7 @@ class TestLatexContextDb(unittest.TestCase):
         self.assertEqual(db2.get_environment_spec('eddd').args_parser.argspec, '')
 
 
-    def test_filter_context_4(self):
+    def test_filtered_context_4(self):
         
         db = LatexContextDb()
         db.set_unknown_macro_spec(MacroSpec('<macro unknown>'))
@@ -585,8 +670,8 @@ class TestLatexContextDb(unittest.TestCase):
                                 [ std_environment('eccc', '*{'), std_environment('eddd', '{{[') ],
                                 prepend=True)
         
-        db2 = db.filter_context(keep_categories=['cat1', 'cat3'], exclude_categories=['cat3'],
-                                keep_which=['environments'])
+        db2 = db.filtered_context(keep_categories=['cat1', 'cat3'], exclude_categories=['cat3'],
+                                  keep_which=['environments'])
         # no macros should exist any longer
         self.assertEqual(db2.get_macro_spec('aaa').macroname, '<macro unknown>')
         self.assertEqual(db2.get_macro_spec('aaa').args_parser.argspec, '')

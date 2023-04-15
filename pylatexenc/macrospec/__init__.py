@@ -2,7 +2,7 @@
 #
 # The MIT License (MIT)
 # 
-# Copyright (c) 2019 Philippe Faist
+# Copyright (c) 2022 Philippe Faist
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -35,14 +35,41 @@ macros and environments, specifying how they should be parsed by
 """
 
 
-from ._parsedargs import ParsedMacroArgs
-
-from ._argparsers import MacroStandardArgsParser, \
-    ParsedVerbatimArgs, VerbatimArgsParser, ParsedLstListingArgs, LstListingArgsParser
-
 from ._specclasses import MacroSpec, EnvironmentSpec, SpecialsSpec
 
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 from ._spechelpers import std_macro, std_environment, std_specials
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
-from ._latexcontextdb import LatexContextDb
+
+from ._latexcontextdb import (
+    LatexContextDb,
+    ParsingStateDeltaExtendLatexContextDb,
+)
+
+from ._argumentsparser import (
+    LatexArgumentsParser
+)
+
+from ._environmentbodyparser import (
+    LatexEnvironmentBodyContentsParser
+)
+
+from ._macrocallparser import (
+    LatexMacroCallParser,
+    LatexEnvironmentCallParser,
+    LatexSpecialsCallParser
+)
+
+
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+from ..latexnodes import ParsedArguments as ParsedMacroArgs
+from ._pyltxenc2_argparsers import (
+    MacroStandardArgsParser,
+    ParsedVerbatimArgs,
+    VerbatimArgsParser,
+    ParsedLstListingArgs,
+    LstListingArgsParser,
+)
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 

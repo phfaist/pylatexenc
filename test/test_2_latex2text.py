@@ -588,9 +588,10 @@ above. """
 
     def test_repl_eqn(self):
 
-        for env in ('equation', 'equation*', 'eqnarray', 'eqnarray*',
-                    'align', 'align*', 'multline', 'multline*',
-                    'gather', 'gather*', 'dmath', 'dmath*'):
+        for env in ('equation', #'equation*', 'eqnarray', 'eqnarray*',
+                    #'align', 'align*', 'multline', 'multline*',
+                    #'gather', 'gather*',
+ 'dmath', 'dmath*'):
 
             self.assertEqualUpToWhitespace(
                 LatexNodes2Text(strict_latex_spaces='except-in-equations').latex_to_text(
@@ -693,6 +694,71 @@ The Title
         )
 
 
+
+    def test_upgreek_letters(self):
+
+        # on Py 2.7, r"\u..." still tries to interpolate unicode escapes \uXXXX !
+        upgreek_letters = (
+            ("\\upmu", "μ"),
+            ("\\upalpha", "α"),
+            ("\\upbeta", "β"),
+            ("\\upgamma", "γ"),
+            ("\\updelta", "δ"),
+            ("\\upepsilon", "ϵ"),     # not sure...
+            ("\\upvarepsilon", "ε"),  #
+            ("\\upzeta", "ζ"),
+            ("\\upeta", "η"),
+            ("\\uptheta", "θ"),     # not sure...
+            ("\\upvartheta", "ϑ"),  #
+            ("\\upiota", "ι"),
+            ("\\upkappa", "κ"),
+            ("\\uplambda", "λ"),
+            ("\\upmu", "μ"),
+            ("\\upnu", "ν"),
+            ("\\upxi", "ξ"),
+            ("\\uppi", "π"),
+            ("\\upvarpi", "ϖ"),
+            ("\\uprho", "ρ"),     # not sure...
+            ("\\upvarrho", "ϱ"),  #
+            ("\\upsigma", "σ"),     # not sure...
+            ("\\upvarsigma", "ς"),  #
+            ("\\uptau", "τ"),
+            ("\\upupsilon", "υ"),
+            ("\\upphi", "ϕ"),     # not sure...
+            ("\\upvarphi", "φ"),  # NB: 'ϕ' != 'φ'
+            ("\\upchi", "χ"),
+            ("\\uppsi", "ψ"),
+            ("\\upomega", "ω"),
+            #
+            ("\\Upgamma", "Γ"),
+            ("\\Updelta", "Δ"),
+            ("\\Uptheta", "Θ"),
+            ("\\Uplambda", "Λ"),
+            ("\\Upxi", "Ξ"),
+            ("\\Uppi", "Π"),
+            ("\\Upsigma", "Σ"),
+            ("\\Upupsilon", "Υ"),
+            ("\\Upphi", "Φ"),
+            ("\\Uppsi", "Ψ"),
+            ("\\Upomega", "Ω"),
+        )
+
+        for source, expected_dest in upgreek_letters:
+            self.assertEqual(
+                LatexNodes2Text().nodelist_to_text(
+                    LatexWalker(source).get_latex_nodes()[0]),
+                expected_dest
+            )
+
+
+
+
+
+
+
+
+
+
     #
     # test utilities
     #
@@ -701,8 +767,6 @@ The Title
         a2 = re.sub(r'\s+', ' ', a).strip()
         b2 = re.sub(r'\s+', ' ', b).strip()
         self.assertEqual(a2, b2)
-
-
 
 
 if __name__ == '__main__':

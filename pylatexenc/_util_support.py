@@ -27,6 +27,8 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
+from __future__ import print_function, unicode_literals
+
 
 try:
     # Python >= 3.3
@@ -51,6 +53,15 @@ def pylatexenc_deprecated_2(msg, stacklevel=2):
     warnings.warn(
         ( "Deprecated (pylatexenc 2.0): {} "
           "[see https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-2/]" )
+        .format(msg.strip()),
+        DeprecationWarning,
+        stacklevel=stacklevel+1
+    )
+
+def pylatexenc_deprecated_3(msg, stacklevel=2):
+    warnings.warn(
+        ( "Deprecated (pylatexenc 3.0): {} "
+          "[see https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-3/]" )
         .format(msg.strip()),
         DeprecationWarning,
         stacklevel=stacklevel+1

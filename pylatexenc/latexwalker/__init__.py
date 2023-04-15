@@ -101,32 +101,25 @@ from .. import macrospec
 # ------------------------------------------------------------------------------
 
 
-from ._types import (
-    LatexWalkerError,
-    LatexWalkerParseError,
-    LatexWalkerEndOfStream,
-    #
-    LatexToken,
-    #
-    LatexNode,
-    LatexCharsNode,
-    LatexGroupNode,
-    LatexCommentNode,
-    LatexMacroNode,
-    LatexEnvironmentNode,
-    LatexSpecialsNode,
-    LatexMathNode,
-)
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+from ..latexnodes._exctypes import *
+from ..latexnodes.nodes import *
+from ..latexnodes._token import LatexToken
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
 
 
+from ..latexnodes import ParsingState
 
-from ._walker import ParsingState, LatexWalker
+from ._walker import LatexWalker
 
 
+### BEGIN_PYLATEXENC_GET_DEFAULT_SPECS_FN
 from ._get_defaultspecs import get_default_latex_context_db
+### END_PYLATEXENC_GET_DEFAULT_SPECS_FN
 
 
+### BEGIN_PYLATEXENC1_LEGACY_SUPPORT_CODE
 from ._legacy_py1x import (
     MacrosDef,
     default_macro_dict,
@@ -137,14 +130,15 @@ from ._legacy_py1x import (
     get_latex_environment,
     get_latex_nodes,
 )
+### END_PYLATEXENC1_LEGACY_SUPPORT_CODE
 
 
 
-
+### BEGIN_LATEXWALKER_HELPERS
 from ._helpers import (
     nodelist_to_latex,
     put_in_braces,
     disp_node,
     make_json_encoder,
 )
-
+### END_LATEXWALKER_HELPERS

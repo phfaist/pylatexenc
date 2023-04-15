@@ -23,10 +23,8 @@
 # THE SOFTWARE.
 #
 
-
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
-
 
 from __future__ import print_function, unicode_literals
 
@@ -35,24 +33,23 @@ from __future__ import print_function, unicode_literals
 _basestring = str
 _unicode_from_str = lambda x: x
 
-
-## Begin Py2 support code
+### BEGIN_PYTHON2_SUPPORT_CODE
 import sys
 if sys.version_info.major == 2:
     # Py2
     _basestring = basestring
     _unicode_from_str = lambda x: x.decode('utf-8')
-## End Py support code
+### END_PYTHON2_SUPPORT_CODE
 
 
-from .. import macrospec
+#from .. import macrospec
 
-from ._types import *
 
+from ..latexnodes._exctypes import *
+from ..latexnodes.nodes import *
 
 
 import json
-
 
 
 #
@@ -166,11 +163,18 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
             elif argt == '*':
                 t = '<*>:   '
             else:
-                t = '<unknown>: '
+                t = '<?>: '
             iterchildren.append((t, [argn], False))
 
     if n is None:
+
         title = '<None>'
+
+    elif isinstance(n, LatexNodeList):
+
+        for nn in n.nodelist:
+            disp_node(nn, indent=indent+2, context='- ')
+
     elif n.isNodeType(LatexCharsNode):
         title = repr(n.chars)
     elif n.isNodeType(LatexMacroNode):
@@ -226,19 +230,11 @@ def make_json_encoder(latexwalker, use_line_numbers=True):
             super(LatexNodesJSONEncoder, self).__init__(*args, **kwargs)
 
         def default(self, obj):
-            if isinstance(obj, LatexNode):
-                # Prepare a dictionary with the correct keys and values.
-                n = obj
-                d = {
-                    'nodetype': n.__class__.__name__,
-                }
-                #redundant_fields = getattr(n, '_redundant_fields', n._fields)
-                for fld in n._fields:
-                    d[fld] = n.__dict__[fld]
-                d.update(latexwalker.pos_to_lineno_colno(n.pos, as_dict=True))
-                return d
 
-            if isinstance(obj, macrospec.ParsedMacroArgs):
+            if hasattr(obj, 'to_json_object_with_latexwalker'):
+                return obj.to_json_object_with_latexwalker(latexwalker=latexwalker)
+
+            if hasattr(obj, 'to_json_object'):
                 return obj.to_json_object()
 
             # else:

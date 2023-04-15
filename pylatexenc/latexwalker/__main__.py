@@ -120,6 +120,7 @@ def main(argv=None):
 
     (nodelist, pos, len_) = latexwalker.get_latex_nodes()
 
+
     if args.output_format == 'human':
         print('\n--- NODES ---\n')
         for n in nodelist:
@@ -157,5 +158,5 @@ def run_main():
 
 if __name__ == '__main__':
 
-    #run_main() # debug
-    main()
+    run_main() # debug
+    #main()

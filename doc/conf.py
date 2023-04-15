@@ -54,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'pylatexenc'
-copyright = '2019, Philippe Faist'
+copyright = '2022, Philippe Faist'
 author = 'Philippe Faist'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -71,7 +71,7 @@ release = version
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+#language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -85,6 +85,12 @@ pygments_style = 'sphinx'
 todo_include_todos = False
 
 
+
+#autodoc_docstring_signature = True
+autodoc_member_order = 'bysource'
+
+
+
 # -- Options for sphinx_issues --------------------------------------------
 
 # GitHub repo
@@ -96,7 +102,20 @@ issues_github_path = "phfaist/pylatexenc"
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
+
 html_theme = 'alabaster'
+
+
+# import guzzle_sphinx_theme
+# html_theme_path = guzzle_sphinx_theme.html_theme_path()
+# html_theme = 'guzzle_sphinx_theme'
+# html_style = 'custom.css' /* don't forget to add ''' @import url("guzzle.css"); ''' */
+
+#import sphinx_bootstrap_theme
+#html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+#html_theme = 'bootstrap'
+
+
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -104,15 +123,18 @@ html_theme = 'alabaster'
 #
 html_theme_options = {
     'font_family': 'Open Sans',
-    'font_size': '16px',
+    'font_size': '15px',
     'head_font_family': 'Open Sans',
     'github_user': 'phfaist',
     'github_repo': 'pylatexenc',
     'github_button': True,
     'github_type': 'star',
     'github_count': 'true',
+
+    'fixed_sidebar': True,
+    'page_width': '950px',
+    'sidebar_width': '180px',
 }
-#
 html_sidebars = {
     '**': [
         'about.html',

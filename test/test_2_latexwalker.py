@@ -12,21 +12,34 @@ if sys.version_info.major > 2:
 from pylatexenc.latexwalker import (
     LatexWalker, LatexToken, LatexCharsNode, LatexGroupNode, LatexCommentNode,
     LatexMacroNode, LatexSpecialsNode, LatexEnvironmentNode, LatexMathNode,
-    LatexWalkerParseError, get_default_latex_context_db
+    LatexWalkerParseError, get_default_latex_context_db,
 )
 
 from pylatexenc import macrospec
+
+from ._helpers_tests import HelperProvideAssertEqualsForLegacyTests
+
+# # patch __eq__ for comparison with lists
+# from pylatexenc.latexnodes import LatexNode, LatexNodeList
+# LatexNodeList.__eq__ = lambda self, other: self.nodelist == other
+
 
 def _tmp1133(a, b):
     return b is not None and a.argnlist == b.argnlist
 macrospec.ParsedMacroArgs.__eq__ = _tmp1133
 
 
-class TestLatexWalker(unittest.TestCase):
+class TestLatexWalker(HelperProvideAssertEqualsForLegacyTests, unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super(TestLatexWalker, self).__init__(*args, **kwargs)
         self.maxDiff = None
+
+        # self.addTypeEqualityFunc(LatexNode, self._assert_nodes_equal)
+        # self.addTypeEqualityFunc(LatexNodeList, self._assert_lists_equal)
+        # self.addTypeEqualityFunc(list, self._assert_lists_equal)
+        # self.addTypeEqualityFunc(tuple, self._assert_lists_equal)
+
         
     def test_get_token(self):
         
@@ -246,11 +259,13 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
         
         p = latextext.find(r'?`')
         self.assertEqual(lw.get_latex_expression(pos=p, parsing_state=parsing_state),
-                         (LatexSpecialsNode(parsing_state=parsing_state,
-                                            specials_chars='?`',
-                                            nodeargd=None,
-                                            pos=p, len=2),
-                          p, 2))
+                         (LatexSpecialsNode(
+                             parsing_state=parsing_state,
+                             specials_chars='?`',
+                             spec=parsing_state.latex_context.get_specials_spec(r'?`'),
+                             nodeargd=None,
+                             pos=p, len=2
+                         ), p, 2))
 
 
 
@@ -268,15 +283,21 @@ Indeed thanks to \cite[Lemma 3]{Author}, we know that...
         parsing_state = lw.make_parsing_state()
 
         p = latextext.find(r'\textbf')+len(r'\textbf')
-        self.assertEqual(lw.get_latex_maybe_optional_arg(pos=p, parsing_state=parsing_state), None)
+        self.assertIsNone(lw.get_latex_maybe_optional_arg(pos=p, parsing_state=parsing_state))
+
         p = latextext.find(r'\cite')+len(r'\cite')
-        self.assertEqual(lw.get_latex_maybe_optional_arg(pos=p, parsing_state=parsing_state),
+        gn, gn_pos, gn_len = \
+            lw.get_latex_maybe_optional_arg(pos=p, parsing_state=parsing_state)
+        pssq = gn.nodelist[0].parsing_state
+        self.assertEqual(set(pssq.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
+        self.assertEqual((gn, gn_pos, gn_len),
                          (LatexGroupNode(
-                             parsing_state=parsing_state,
+                             parsing_state=pssq,
                              delimiters=('[', ']'),
                              nodelist=[
                                  LatexCharsNode(
-                                     parsing_state=parsing_state,
+                                     parsing_state=pssq,
                                      chars='Lemma 3',
                                      pos=p+1,
                                      len=len('Lemma 3'),
@@ -330,12 +351,17 @@ Also: {\itshape some italic text}.
         )
 
         p = latextext.find(r'[(i)]')
+        (lbg_nl, lbg_pos, lbg_len) = \
+            lw.get_latex_braced_group(pos=p, brace_type='[', parsing_state=parsing_state)
+        pssq = lbg_nl.parsing_state
+        self.assertEqual(set(pssq.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
         self.assertEqual(
-            lw.get_latex_braced_group(pos=p, brace_type='[', parsing_state=parsing_state),
-            (LatexGroupNode(parsing_state=parsing_state,
+            (lbg_nl, lbg_pos, lbg_len),
+            (LatexGroupNode(parsing_state=pssq,
                             delimiters=('[', ']'),
                             nodelist=[
-                                LatexCharsNode(parsing_state=parsing_state,
+                                LatexCharsNode(parsing_state=pssq,
                                                chars='(i)',
                                                pos=p+1, len=3),
                             ],
@@ -357,6 +383,16 @@ Also: {\itshape some italic text}.
         parsing_state = lw.make_parsing_state()
 
         p = latextext.find(r'\begin{enumerate}')
+        (nl, nlpos, nllen) = \
+            lw.get_latex_environment(pos=p, environmentname='enumerate',
+                                     parsing_state=parsing_state)
+        pssq1 = nl.nodeargd.argnlist[0].parsing_state
+        self.assertEqual(set(pssq1.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
+        pssq2x = nl.nodelist[4].nodeargd.argnlist[0].parsing_state
+        self.assertEqual(set(pssq2x.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
+
         good_parsed_structure = \
             (LatexEnvironmentNode(
                 parsing_state=parsing_state,
@@ -382,10 +418,10 @@ Also: {\itshape some italic text}.
                         macroname='item',
                         nodeargd=macrospec.ParsedMacroArgs(argspec='[', argnlist=[
                             LatexGroupNode(
-                                parsing_state=parsing_state,
+                                parsing_state=pssq2x,
                                 delimiters=('[', ']'),
                                 nodelist=[
-                                    LatexCharsNode(parsing_state=parsing_state,
+                                    LatexCharsNode(parsing_state=pssq2x,
                                                    chars='a',
                                                    pos=p+23+39+7, len=1)
                                 ],
@@ -401,10 +437,10 @@ Also: {\itshape some italic text}.
                 ],
                 nodeargd=macrospec.ParsedMacroArgs(argspec='[', argnlist=[
                     LatexGroupNode(
-                        parsing_state=parsing_state,
+                        parsing_state=pssq1,
                         delimiters=('[', ']'),
                         nodelist=[
-                            LatexCharsNode(parsing_state=parsing_state,
+                            LatexCharsNode(parsing_state=pssq1,
                                            chars='(i)',
                                            pos=p+18,len=21-18)
                         ],
@@ -414,13 +450,7 @@ Also: {\itshape some italic text}.
                 len=latextext.find(r'\end{enumerate}')+len(r'\end{enumerate}')-p
              ), p, latextext.find(r'\end{enumerate}')+len(r'\end{enumerate}')-p)
         self.assertEqual(
-            lw.get_latex_environment(pos=p, environmentname='enumerate',
-                                     parsing_state=parsing_state),
-            good_parsed_structure
-        )
-        self.assertEqual(
-            lw.get_latex_environment(pos=p,
-                                     parsing_state=parsing_state),
+            (nl, nlpos, nllen),
             good_parsed_structure
         )
 
@@ -471,7 +501,8 @@ Also: {\itshape some italic text}.
 
         p = latextext.find('Also: {')+len('Also: {') # points inside right after open brace
         self.assertEqual(
-            lw.get_latex_nodes(pos=p, stop_upon_closing_brace='}', parsing_state=parsing_state),
+            lw.get_latex_nodes(pos=p, stop_upon_closing_brace='}',
+                               parsing_state=parsing_state),
             ([
                 LatexMacroNode(parsing_state=parsing_state,
                                macroname='itshape', macro_post_space=' ',
@@ -938,8 +969,10 @@ Also: {\itshape some italic text}.
             ], p, 33-24))
 
         p = latextext.find(r'ent and ') + 4 # points on second "and" on first line
-        nodes, pos, len_ = lw.get_latex_nodes(pos=p, read_max_nodes=5, parsing_state=parsing_state)
-        parsing_state_inner = nodes[3].nodelist[0].parsing_state # inner state -- math mode -- get this
+        nodes, pos, len_ = lw.get_latex_nodes(pos=p, read_max_nodes=5,
+                                              parsing_state=parsing_state)
+        # inner state -- math mode -- get this
+        parsing_state_inner = nodes[3].nodelist[0].parsing_state
         self.assertTrue(parsing_state_inner.in_math_mode)
         self.assertEqual(
             (nodes, pos, len_),
@@ -1211,12 +1244,17 @@ This is it."""
 
         parsing_state = lw.make_parsing_state()
 
-        print("DEBUG")
-        print(lw.get_latex_nodes(pos=0, parsing_state=parsing_state)[0][1])
+        #print("DEBUG")
+        #print(lw.get_latex_nodes(pos=0, parsing_state=parsing_state)[0][1])
 
         p=0
+        nl, nl_pos, nl_len = \
+            lw.get_latex_nodes(pos=p, parsing_state=parsing_state)
+        pssq = nl[1].nodeargd.argnlist[0].nodelist[0].parsing_state
+        self.assertEqual(set(pssq.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
         self.assertEqual(
-            lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
+            (nl, nl_pos, nl_len),
             ([
                 LatexCharsNode(parsing_state=parsing_state, pos=0, len=(60-24),
                                chars='Use lstlisting environment for code\n'),
@@ -1240,10 +1278,10 @@ int foo() {
                         verbatim_argspec='[',
                         verbatim_argnlist=[
                             LatexGroupNode(
-                                parsing_state=parsing_state,
+                                parsing_state=pssq,
                                 pos=(60-24)+18, len=30-18,
                                 nodelist=[
-                                    LatexCharsNode(parsing_state=parsing_state,
+                                    LatexCharsNode(parsing_state=pssq,
                                                    pos=(60-24)+19,
                                                    len=29-19,
                                                    chars='language=C')
@@ -1323,7 +1361,13 @@ Use macros: \a{} and \b{xxx}{yyy}.
         parsing_state_defa = nodes[1].parsing_state
         parsing_state_defab = nodes[3].parsing_state
 
-        self.assertEqual((npos,nlen), (0,len(latextext)))
+        parsing_state_defa_sqbr = nodes[2].nodeargd.argnlist[2].parsing_state
+        self.assertEqual(set(parsing_state_defa_sqbr.latex_group_delimiters),
+                         set([ ('{','}'), ('[',']'), ]))
+
+
+        self.assertEqual(npos, 0)
+        self.assertEqual(nlen, len(latextext))
         self.assertEqual(
             nodes,
             [
@@ -1343,7 +1387,8 @@ Use macros: \a{} and \b{xxx}{yyy}.
                                        None,
                                        LatexGroupNode(
                                            parsing_state=parsing_state,
-                                           pos=13, len=5, delimiters=('{', '}'),
+                                           pos=13, len=5,
+                                           delimiters=('{', '}'),
                                            nodelist=[
                                                LatexCharsNode(
                                                    parsing_state=parsing_state,
@@ -1368,11 +1413,11 @@ Use macros: \a{} and \b{xxx}{yyy}.
                                            nodeargd=None,
                                        ),
                                        LatexGroupNode(
-                                           parsing_state=parsing_state_defa,
+                                           parsing_state=parsing_state_defa_sqbr,
                                            pos=19+15, len=3, delimiters=('[', ']'),
                                            nodelist=[
                                                LatexCharsNode(
-                                                   parsing_state=parsing_state_defa,
+                                                   parsing_state=parsing_state_defa_sqbr,
                                                    pos=19+16, len=1,
                                                    chars='2'
                                                )
@@ -1509,8 +1554,11 @@ Use macros: """,
         parsing_state = lw.make_parsing_state()
 
         p = 0
+        gln_result = \
+            lw.get_latex_nodes(pos=p, read_max_nodes=3, parsing_state=parsing_state)
+        stuff_parsing_state = gln_result[0][1].nodeargd.argnlist[0].parsing_state
         self.assertEqual(
-            lw.get_latex_nodes(pos=p, read_max_nodes=3, parsing_state=parsing_state),
+            gln_result,
             ([
                 LatexCharsNode(parsing_state=parsing_state,
                                chars='\n',
@@ -1518,20 +1566,23 @@ Use macros: """,
                 LatexMacroNode(parsing_state=parsing_state,
                                macroname='documentclass',
                                nodeargd=macrospec.ParsedMacroArgs(argspec='[{', argnlist=[
-                                   LatexGroupNode(parsing_state=parsing_state,
+                                   LatexGroupNode(parsing_state=stuff_parsing_state,
                                                   delimiters=('[', ']'),
                                                   nodelist=[
-                                                      LatexCharsNode(parsing_state=parsing_state,
-                                                                     chars='stuff',
-                                                                     pos=1+15,len=20-15),
+                                                      LatexCharsNode(
+                                                          parsing_state=stuff_parsing_state,
+                                                          chars='stuff',
+                                                          pos=1+15,len=20-15),
                                                   ],
                                                   pos=1+14,len=21-14),
                                    LatexGroupNode(parsing_state=parsing_state,
                                                   delimiters=('{', '}'),
                                                   nodelist=[
-                                                      LatexCharsNode(parsing_state=parsing_state,
-                                                                     chars='docclass',
-                                                                     pos=1+22,len=30-22),
+                                                      LatexCharsNode(
+                                                          parsing_state=parsing_state,
+                                                          chars='docclass',
+                                                          pos=1+22,len=30-22
+                                                      ),
                                                   ],
                                                   pos=1+21,len=31-21)
                                ]),
@@ -1590,6 +1641,11 @@ Use macros: """,
 
     def test_bug_issueno49(self):
         # see issue #49
+        #
+        # The issue was that when a char token with whitespace was flushed
+        # before looking at a new token, and when the read_max_nodes condition
+        # was hit just at that moment, the third tuple element 'len' of the
+        # return value of get_latex_nodes() was incorrect.
 
         doc_content = r"""\emph{A}
 \emph{B}"""

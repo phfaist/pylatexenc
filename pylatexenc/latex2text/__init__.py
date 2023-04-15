@@ -69,6 +69,7 @@ _python_is_narrow_build = (sys.maxunicode < 0x10FFFF)
 
 #import pylatexenc
 from .. import latexwalker
+from ..latexnodes import nodes as latexnodes_nodes
 from .. import macrospec
 from .. import _util
 
@@ -1218,6 +1219,7 @@ class LatexNodes2Text(object):
                                                 what="specials '%s'"%(specials_chars))
             if spec.discard:
                 return ""
+            a = []
             if node.nodeargd and node.nodeargd.argnlist:
                 a = node.nodeargd.argnlist
             return "".join([self._groupnodecontents_to_text(n) for n in a])
@@ -1399,6 +1401,8 @@ class LatexNodes2Text(object):
     def _groupnodecontents_to_text(self, groupnode):
         if groupnode is None:
             return ''
+        if isinstance(groupnode, latexnodes_nodes.LatexNodeList):
+            return self.nodelist_to_text(groupnode)
         if not groupnode.isNodeType(latexwalker.LatexGroupNode):
             return self.node_to_text(groupnode)
         return self.nodelist_to_text(groupnode.nodelist)

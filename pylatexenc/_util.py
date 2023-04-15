@@ -29,7 +29,7 @@
 
 
 import bisect
-bisect_right_nodupl = bisect.bisect_right
+bisect_right = bisect.bisect_right
 
 
 # ------------------------------------------------------------------------------
@@ -39,8 +39,13 @@ class LineNumbersCalculator(object):
     r"""
     Utility to calculate line numbers.
     """
-    def __init__(self, s):
+    def __init__(self, s,
+                 line_number_offset=1, first_line_column_offset=0, column_offset=0):
         super(LineNumbersCalculator, self).__init__()
+
+        self.line_number_offset = line_number_offset
+        self.first_line_column_offset = first_line_column_offset
+        self.column_offset = column_offset
 
         def find_all_new_lines(x):
             # first line starts at the beginning of the string
@@ -69,17 +74,28 @@ class LineNumbersCalculator(object):
         returned instead of a tuple.
         """
 
+        if pos is None:
+            if as_dict:
+                return {'lineno': None, 'colno': None}
+            return (None, None)
+
         # find line number in list
 
         # line_no is the index of the last item in self._pos_new_lines that is <= pos.
-        line_no = bisect_right_nodupl(self._pos_new_lines, pos)-1
+        line_no = bisect_right(self._pos_new_lines, pos)-1
         assert line_no >= 0 and line_no < len(self._pos_new_lines)
 
         col_no = pos - self._pos_new_lines[line_no]
-        # 1+... so that line and column numbers start at 1
+
+        if line_no == 0:
+            col_no += self.first_line_column_offset
+        else:
+            col_no += self.column_offset
+        line_no += self.line_number_offset
+
         if as_dict:
-            return {'lineno': 1 + line_no, 'colno': col_no}
-        return (1 + line_no, col_no)
+            return {'lineno': line_no, 'colno': col_no}
+        return (line_no, col_no)
 
 
 
@@ -105,14 +121,36 @@ class PushPropOverride(object):
             setattr(self.obj, self.propname, self.initval)
 
 
+# ------------------------------------------------------------------------------
+
+
+try:
+    from collections import ChainMap #lgtm [py/unused-import]
+except ImportError:
+    pass  #lgtm [py/unnecessary-pass]
+### BEGIN_PYTHON2_SUPPORT_CODE
+    from chainmap import ChainMap #lgtm [py/unused-import]
+### END_PYTHON2_SUPPORT_CODE
+
+
 
 # ------------------------------------------------------------------------------
 
 
-from ._util_support import (
+
+pylatexenc_deprecated_ver = lambda *args: None  #lgtm [py/multiple-definition]
+pylatexenc_deprecated_2 = lambda *args: None  #lgtm [py/multiple-definition]
+pylatexenc_deprecated_3 = lambda *args: None  #lgtm [py/multiple-definition]
+LazyDict = None  #lgtm [py/multiple-definition]
+
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
+from ._util_support import (   # lgtm [py/unused-import]
     pylatexenc_deprecated_ver,
     pylatexenc_deprecated_2,
+    pylatexenc_deprecated_3,
     #
     LazyDict
 )
 
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
