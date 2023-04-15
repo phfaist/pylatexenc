@@ -69,6 +69,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
                  include_chars_node_before_following_arg=True,
                  return_none_instead_of_empty=True,
                  allow_pre_space=True,
+                 return_full_node_list=True,
                  **kwargs):
         super(LatexOptionalCharsMarkerParser, self).__init__(**kwargs)
 
@@ -78,6 +79,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
             include_chars_node_before_following_arg
         self.return_none_instead_of_empty = return_none_instead_of_empty
         self.allow_pre_space = allow_pre_space
+        self.return_full_node_list = return_full_node_list
 
         if not self.chars:
             raise ValueError(("Invalid chars={!r}, needs to be non-empty "
@@ -87,9 +89,22 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
     def contents_can_be_empty(self):
         return True
 
+    def get_following_arg_parser(self, chars):
+        return self.following_arg_parser
 
     def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
         
+        def _return_none(pos):
+            if self.return_none_instead_of_empty:
+                return None, None
+            emptynl = latex_walker.make_nodelist(
+                [],
+                pos=pos,
+                pos_end=pos,
+                parsing_state=parsing_state,
+            )
+            return emptynl, None
+
         orig_pos_tok = token_reader.peek_token(parsing_state=parsing_state)
         pos_end = None
         read_s = ''
@@ -100,12 +115,12 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
                 tok = token_reader.next_token(parsing_state=parsing_state)
                 if first_token is None:
                     first_token = tok
-                    if first_token.pre_space and not self.allow_pre_space:
+                    if len(first_token.pre_space) and not self.allow_pre_space:
                         # no pre-space allowed, the optional marker was not provided.
-                        return None, None
+                        return _return_none(first_token.pos)
                 if tok.tok != 'char':
                     break
-                if read_s and tok.pre_space:
+                if read_s and len(tok.pre_space):
                     read_s += " "
                 read_s += tok.arg
                 if read_s == self.chars:
@@ -119,21 +134,16 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
         finally:
             if not match_found:
                 token_reader.move_to_token(orig_pos_tok)
-        
+
         if not match_found:
             # chars marker is simply not present.
-            if self.return_none_instead_of_empty:
-                return None, None
-            emptynl = latex_walker.make_nodelist(
-                [],
-                pos=orig_pos_token.pos,
-                pos_end=orig_pos_token.pos,
-                parsing_state=parsing_state,
-            )
-            return emptynl, None
+            return _return_none(orig_pos_tok.pos)
+
+        following_arg_parser = self.get_following_arg_parser(read_s)
 
         nodes = []
-        if self.include_chars_node_before_following_arg:
+        if (self.include_chars_node_before_following_arg or
+            (following_arg_parser is None and not self.return_full_node_list)):
             nodes += [
                 latex_walker.make_node(
                     LatexCharsNode,
@@ -146,14 +156,21 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
 
         parsing_state_delta = None
 
-        if self.following_arg_parser is not None:
+        if following_arg_parser is not None:
             following_nodes, parsing_state_delta = latex_walker.parse_content(
-                self.following_arg_parser,
+                following_arg_parser,
                 token_reader=token_reader,
                 parsing_state=parsing_state,
             )
 
+            if not self.return_full_node_list:
+                return following_nodes, parsing_state_delta
+
             nodes += following_nodes
+
+        else:
+            if not self.return_full_node_list:
+                return nodes[-1], parsing_state_delta
 
         nodes = latex_walker.make_nodelist(
             nodes, 

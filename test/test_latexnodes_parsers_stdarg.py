@@ -144,7 +144,7 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
 
         parser = LatexStandardArgumentParser(
             arg_spec='m',
-            expression_return_full_node_list=False,
+            return_full_node_list=False,
         )
 
         nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
@@ -181,7 +181,7 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
 
         parser = LatexStandardArgumentParser(
             arg_spec='m',
-            expression_return_full_node_list=True,
+            return_full_node_list=True,
         )
 
         nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
@@ -219,6 +219,60 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
                 parsing_state=ps,
             ),
         )
+
+
+    def test_arg_star_0(self):
+        latextext = r'''*{more} (more stuff)'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalkerWithGroupsAndMath()
+
+        parser = LatexStandardArgumentParser(
+            arg_spec='*',
+            
+        )
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            nodes,
+            LatexCharsNode(
+                parsing_state=ps,
+                chars='*',
+                pos=0,
+                pos_end=1,
+            ),
+        )
+
+
+    def test_arg_star_1(self):
+        latextext = r'''  * {more} (more stuff)'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalkerWithGroupsAndMath()
+
+        parser = LatexStandardArgumentParser(
+            arg_spec='*',
+            
+        )
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            nodes,
+            LatexCharsNode(
+                parsing_state=ps,
+                chars='*',
+                pos=2,
+                pos_end=3,
+            ),
+        )
+
+
+
+
 
 
 

@@ -94,10 +94,12 @@ class SingleParsedArgumentInfo(object):
         """
         argument_node_object = self.argument_node_object
         if argument_node_object is None:
-            self.nodelist = LatexNodeList([None])
-        elif isinstance(argument_node_object, LatexNodeList):
+            return LatexNodeList([None])
+
+        if isinstance(argument_node_object, LatexNodeList):
             return argument_node_object
-        elif argument_node_object.isNodeType(LatexGroupNode):
+
+        if argument_node_object.isNodeType(LatexGroupNode):
             return argument_node_object.nodelist
 
         return LatexNodeList([argument_node_object])

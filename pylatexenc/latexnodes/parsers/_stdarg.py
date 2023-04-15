@@ -106,7 +106,7 @@ class LatexStandardArgumentParser(LatexParserBase):
 
     def __init__(self,
                  arg_spec='{',
-                 expression_return_full_node_list=False,
+                 return_full_node_list=False,
                  expression_single_token_requiring_arg_is_error=True,
                  allow_pre_space=True,
                  **kwargs
@@ -115,8 +115,7 @@ class LatexStandardArgumentParser(LatexParserBase):
 
         self.arg_spec = arg_spec
 
-        self.expression_return_full_node_list = \
-            expression_return_full_node_list
+        self.return_full_node_list = return_full_node_list
         self.expression_single_token_requiring_arg_is_error = \
             expression_single_token_requiring_arg_is_error
 
@@ -131,7 +130,7 @@ class LatexStandardArgumentParser(LatexParserBase):
         if arg_spec in ('m', '{'):
 
             return LatexExpressionParser(
-                return_full_node_list=self.expression_return_full_node_list,
+                return_full_node_list=self.return_full_node_list,
                 single_token_requiring_arg_is_error=\
                     self.expression_single_token_requiring_arg_is_error,
                 allow_pre_space=self.allow_pre_space,
@@ -151,6 +150,7 @@ class LatexStandardArgumentParser(LatexParserBase):
             return LatexOptionalCharsMarkerParser(
                 chars='*',
                 allow_pre_space=self.allow_pre_space,
+                return_full_node_list=self.return_full_node_list,
             )
 
         elif arg_spec.startswith('t'):
@@ -591,14 +591,19 @@ class LatexTackOnInformationFieldMacrosParser(LatexParserBase):
             if tolerant_parsing_skip_add_this_node:
                 continue
 
+            if isinstance(arg_content_node, LatexNodeList):
+                arg_content_nodelist = arg_content_node
+            else:
+                arg_content_nodelist = latex_walker.make_nodelist(
+                    [arg_content_node],
+                    parsing_state=parsing_state,
+                )
+
             arg_node = latex_walker.make_node(
                 LatexGroupNode,
                 parsing_state=parsing_state,
                 delimiters=('\\'+macroname, ''),
-                nodelist=latex_walker.make_nodelist(
-                    [arg_content_node],
-                    parsing_state=parsing_state,
-                ),
+                nodelist=arg_content_nodelist,
                 pos=tok.pos,
                 pos_end=arg_content_node.pos_end
             )
