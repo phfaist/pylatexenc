@@ -314,6 +314,9 @@ specs = [
             # for verbatim |\like \this|...
         ]}),
 
+    #
+    # CATEGORY: lstlisting
+    #
     ('lstlisting', {
         'macros': [],
         'environments': [

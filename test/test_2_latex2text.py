@@ -697,49 +697,50 @@ The Title
 
     def test_upgreek_letters(self):
 
+        # on Py 2.7, r"\u..." still tries to interpolate unicode escapes \uXXXX !
         upgreek_letters = (
-            (r"\upmu", "μ"),
-            (r"\upalpha", "α"),
-            (r"\upbeta", "β"),
-            (r"\upgamma", "γ"),
-            (r"\updelta", "δ"),
-            (r"\upepsilon", "ϵ"),     # not sure...
-            (r"\upvarepsilon", "ε"),  #
-            (r"\upzeta", "ζ"),
-            (r"\upeta", "η"),
-            (r"\uptheta", "θ"),     # not sure...
-            (r"\upvartheta", "ϑ"),  #
-            (r"\upiota", "ι"),
-            (r"\upkappa", "κ"),
-            (r"\uplambda", "λ"),
-            (r"\upmu", "μ"),
-            (r"\upnu", "ν"),
-            (r"\upxi", "ξ"),
-            (r"\uppi", "π"),
-            (r"\upvarpi", "ϖ"),
-            (r"\uprho", "ρ"),     # not sure...
-            (r"\upvarrho", "ϱ"),  #
-            (r"\upsigma", "σ"),     # not sure...
-            (r"\upvarsigma", "ς"),  #
-            (r"\uptau", "τ"),
-            (r"\upupsilon", "υ"),
-            (r"\upphi", "ϕ"),     # not sure...
-            (r"\upvarphi", "φ"),  # NB: 'ϕ' != 'φ'
-            (r"\upchi", "χ"),
-            (r"\uppsi", "ψ"),
-            (r"\upomega", "ω"),
+            ("\\upmu", "μ"),
+            ("\\upalpha", "α"),
+            ("\\upbeta", "β"),
+            ("\\upgamma", "γ"),
+            ("\\updelta", "δ"),
+            ("\\upepsilon", "ϵ"),     # not sure...
+            ("\\upvarepsilon", "ε"),  #
+            ("\\upzeta", "ζ"),
+            ("\\upeta", "η"),
+            ("\\uptheta", "θ"),     # not sure...
+            ("\\upvartheta", "ϑ"),  #
+            ("\\upiota", "ι"),
+            ("\\upkappa", "κ"),
+            ("\\uplambda", "λ"),
+            ("\\upmu", "μ"),
+            ("\\upnu", "ν"),
+            ("\\upxi", "ξ"),
+            ("\\uppi", "π"),
+            ("\\upvarpi", "ϖ"),
+            ("\\uprho", "ρ"),     # not sure...
+            ("\\upvarrho", "ϱ"),  #
+            ("\\upsigma", "σ"),     # not sure...
+            ("\\upvarsigma", "ς"),  #
+            ("\\uptau", "τ"),
+            ("\\upupsilon", "υ"),
+            ("\\upphi", "ϕ"),     # not sure...
+            ("\\upvarphi", "φ"),  # NB: 'ϕ' != 'φ'
+            ("\\upchi", "χ"),
+            ("\\uppsi", "ψ"),
+            ("\\upomega", "ω"),
             #
-            (r"\Upgamma", "Γ"),
-            (r"\Updelta", "Δ"),
-            (r"\Uptheta", "Θ"),
-            (r"\Uplambda", "Λ"),
-            (r"\Upxi", "Ξ"),
-            (r"\Uppi", "Π"),
-            (r"\Upsigma", "Σ"),
-            (r"\Upupsilon", "Υ"),
-            (r"\Upphi", "Φ"),
-            (r"\Uppsi", "Ψ"),
-            (r"\Upomega", "Ω"),
+            ("\\upgamma", "Γ"),
+            ("\\updelta", "Δ"),
+            ("\\uptheta", "Θ"),
+            ("\\uplambda", "Λ"),
+            ("\\upxi", "Ξ"),
+            ("\\uppi", "Π"),
+            ("\\upsigma", "Σ"),
+            ("\\upupsilon", "Υ"),
+            ("\\upphi", "Φ"),
+            ("\\uppsi", "Ψ"),
+            ("\\upomega", "Ω"),
         )
 
         for source, expected_dest in upgreek_letters:
