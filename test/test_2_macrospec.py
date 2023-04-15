@@ -1,6 +1,7 @@
 import unittest
 import sys
 import logging
+import warnings
 
 if sys.version_info.major > 2:
     def unicode(string): return string
@@ -60,6 +61,9 @@ class TestMacroStandardArgsParser(HelperProvideAssertEqualsForLegacyTests,
     def __init__(self, *args, **kwargs):
         super(TestMacroStandardArgsParser, self).__init__(*args, **kwargs)
         self.maxDiff = None
+
+        warnings.simplefilter('ignore', DeprecationWarning)
+
         
     def test_marg_0(self):
         lw = latexwalker.LatexWalker(r'{ab}')

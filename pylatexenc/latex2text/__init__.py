@@ -70,6 +70,7 @@ _python_is_narrow_build = (sys.maxunicode < 0x10FFFF)
 #import pylatexenc
 from .. import latexwalker
 from ..latexnodes import nodes as latexnodes_nodes
+from ..latexnodes import parsers as latexnodes_parsers
 from .. import macrospec
 from .. import _util
 
@@ -989,10 +990,12 @@ class LatexNodes2Text(object):
         if not inputtex:
             return ''
 
-        return self.nodelist_to_text(
-            latexwalker.LatexWalker(inputtex, **self.latex_walker_init_args)
-            .get_latex_nodes()[0]
-        )
+        lw = latexwalker.LatexWalker(inputtex, **self.latex_walker_init_args)
+
+        nodelist, _ = lw.parse_content(latexnodes_parsers.LatexGeneralNodesParser())
+
+        return self.nodelist_to_text(nodelist)
+
 
 
     def latex_to_text(self, latex, **parse_flags):
@@ -1001,23 +1004,26 @@ class LatexNodes2Text(object):
 
         This is equivalent to constructing a
         :py:class:`pylatexenc.latexwalker.LatexWalker` with the given `latex`
-        string, calling its method
-        :py:meth:`~pylatexenc.latexwalker.LatexWalker.get_latex_nodes()`, and
+        string, parsing the string into general nodes with a
+        :py:class:`~pylatexenc.latexnodes.parsers.LatexGeneralNodesParser` (see
+        :py:meth:`~pylatexenc.latexwalker.LatexWalker.parse_content()`), and
         providing the outcome to :py:meth:`nodelist_to_text()`.
 
         The `parse_flags` are keyword arguments to provide to the
         :py:class:`pylatexenc.latexwalker.LatexWalker` constructor.
         """
-        return self.nodelist_to_text(
-            latexwalker.LatexWalker(latex, **parse_flags).get_latex_nodes()[0]
-        )
+
+        lw = latexwalker.LatexWalker(latex, **parse_flags)
+        nodelist, _ = lw.parse_content(latexnodes_parsers.LatexGeneralNodesParser())
+        return self.nodelist_to_text( nodelist )
 
 
     def nodelist_to_text(self, nodelist):
         """
-        Extracts text from a node list. `nodelist` is a list of `latexwalker` nodes,
-        typically returned by
-        :py:meth:`pylatexenc.latexwalker.LatexWalker.get_latex_nodes()`.
+        Extracts text from a node list. `nodelist` is a list of
+        `latexwalker` nodes, typically parsed using a
+        :py:class:`~pylatexenc.latexnodes.parsers.LatexGeneralNodesParser` (see
+        :py:meth:`~pylatexenc.latexwalker.LatexWalker.parse_content()`).
 
         This function basically applies `node_to_text()` to each node and
         concatenates the results into one string.  (This is not quite actually

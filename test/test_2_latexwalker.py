@@ -4,6 +4,7 @@ from __future__ import print_function # no unicode_literals, test with native st
 import unittest
 import sys
 import logging
+import warnings
 
 if sys.version_info.major > 2:
     def unicode(string): return string
@@ -39,6 +40,8 @@ class TestLatexWalker(HelperProvideAssertEqualsForLegacyTests, unittest.TestCase
         # self.addTypeEqualityFunc(LatexNodeList, self._assert_lists_equal)
         # self.addTypeEqualityFunc(list, self._assert_lists_equal)
         # self.addTypeEqualityFunc(tuple, self._assert_lists_equal)
+
+        warnings.simplefilter('ignore', DeprecationWarning)
 
         
     def test_get_token(self):

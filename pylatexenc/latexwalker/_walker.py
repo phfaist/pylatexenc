@@ -607,7 +607,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
     def make_nodelist(self, nodelist, **kwargs):
         r"""
-        .............................
+        Doc .............................
 
         .. versionadded:: 3.0
         

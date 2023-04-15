@@ -32,6 +32,7 @@ import logging
 
 
 from .. import latexwalker
+from ..latexnodes import parsers as latexnodes_parsers
 from ..latex2text import LatexNodes2Text, _strict_latex_spaces_predef
 from ..version import version_str
 
@@ -195,7 +196,9 @@ def main(argv=None):
                                  tolerant_parsing=args.tolerant_parsing,
                                  strict_braces=args.strict_braces)
 
-    (nodelist, pos, len_) = lw.get_latex_nodes()
+    nodelist, _ = lw.parse_content(latexnodes_parsers.LatexGeneralNodesParser())
+
+    #(nodelist, pos, len_) = lw.get_latex_nodes()
 
     ln2t = LatexNodes2Text(math_mode=args.math_mode,
                            keep_comments=args.keep_comments,

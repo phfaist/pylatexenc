@@ -5,6 +5,12 @@ description = "Simple LaTeX parser providing latex-to-unicode and unicode-to-lat
 authors = ["Philippe Faist <philippe.faist@bluewin.ch>"]
 license = "MIT"
 
+[tool.poetry.scripts]
+latexwalker = 'pylatexenc.latexwalker.__main__:main'
+latex2text = 'pylatexenc.latex2text.__main__:main'
+latexencode = 'pylatexenc.latexencode.__main__:main'
+
+
 [tool.poetry.dependencies]
 #python = "^2.7 || ^3.4" # This simply creates a dependency resolution mess that doesn't work.
 python = "^3.7"

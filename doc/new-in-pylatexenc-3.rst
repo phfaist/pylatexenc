@@ -4,22 +4,32 @@ What's new in `pylatexenc 3`
 Wow, a *lot* of stuff has changed in the `latexwalker` and `macrospec` modules.
 There's even a new `latexnodes` module.  I don't know where to start!
 
-The good news is, your code depending on `pylatexenc 2` should run without any
-chagnes.  You might get some deprecation warnings which you can silence using
-python's warnings filter management (e.g., ``python -W
+The good news is, if you're simply using the latex-to-unicode and
+unicode-to-latex conversion tools, your code depending on `pylatexenc 2` should
+run without any chagnes.  You might get some deprecation warnings which you can
+silence using python's warnings filter management (e.g., ``python -W
 'ignore::DeprecationWarnings'`` or using :py:func:`warnings.simplefilter`)
 
 The `latex2text` and `latexencode` modules have barely changed.
 
-
 - New parsing mechanism in a new `latexnodes` module — everything gets delegated
   to "parser objects" that are specialized in parsing a specific construct.  See
-  :ref:`parsers-objects`.
-  
+  :py:class:`pylatexenc.latexnodes.parsers.LatexParserBase`.
+
 - The parser has new enhanced handling of macro, environment, and specials
   arguments.  Arguments can be named for easier lookup when traversing the node
   tree.
 
+- **WARNING**: While in *alpha* stage, I'm expecting that the new APIs might
+  still change.  I'll try to remain as backwards-compatible as possible with
+  `pylatexenc 2.x` but new APIs introduced in the `3.0alphaX` versions might
+  still change a bit until they are finalized.
+
+- Lists of latex node objects
+  (:py:class:`~pylatexenc.latexnodes.nodes.LatexNode`) are now wrapped in a
+  special object for node lists →
+  :py:class:`pylatexenc.latexnodes.nodes.LatexNodeList`.
+  
 - so much more ... ...
 
 - The `len` attribute in node objects is replaced by a `pos_end` attribute.  The

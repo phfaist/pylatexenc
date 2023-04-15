@@ -11,8 +11,8 @@ Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion
 
 Python: ≥ 3.4 or ≥ 2.7. The library is designed to be as backwards-compatible as
 reasonably possible and is able to run on old python verisons should it be
-necessary. (Use the setup.py script directly if you have python<3.7, I had
-issues with poetry.)
+necessary. (Use the setup.py script directly if you have python<3.7, poetry
+doesn't seem to work with old python versions.)
 
 
 Unicode Text to LaTeX code

@@ -6,7 +6,7 @@ Changes
 pylatexenc 3.0alpha
 ===================
 
-(Still in active development.)
+(Still in development.)
 
 .. toctree::
    :maxdepth: 1

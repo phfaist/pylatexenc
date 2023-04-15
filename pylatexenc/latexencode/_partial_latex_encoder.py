@@ -104,8 +104,8 @@ class PartialLatexToLatexEncoder(UnicodeToLatexEncoder):
         if s[pos] in self.keep_latex_chars:
             # Read a token and if it is a macro, keep the full macro!
             lw = LatexWalker(s, tolerant_parsing=False)
-            
-            tok = lw.get_token(pos, environments=False)
+            ps = lw.make_parsing_state()
+            tok = lw.make_token_reader(pos=pos).peek_token(parsing_state=ps)
 
             tok_as_latex = tok.pre_space + s[tok.pos : tok.pos+tok.len]
 

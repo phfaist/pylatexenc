@@ -12,6 +12,7 @@ import os.path
 import unicodedata
 import datetime
 import logging
+import warnings
 
 from pylatexenc.latexwalker import LatexWalker
 from pylatexenc.latex2text import LatexNodes2Text
@@ -22,6 +23,7 @@ class TestLatexNodes2Text(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestLatexNodes2Text, self).__init__(*args, **kwargs)
         self.maxDiff = None
+        warnings.simplefilter('ignore', DeprecationWarning)
 
     def test_basic(self):
 

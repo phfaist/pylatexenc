@@ -14,56 +14,145 @@ The main `LatexWalker` class
    :members:
 
 
-
 .. autofunction:: pylatexenc.latexwalker.get_default_latex_context_db
 
 
 Exception Classes
 ~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pylatexenc.latexwalker.LatexWalkerError
+.. py:class:: pylatexenc.latexwalker.LatexWalkerError
 
-.. autoclass:: pylatexenc.latexwalker.LatexWalkerParseError
+   Moved to :py:class:`pylatexenc.latexnodes.LatexWalkerError`.
 
-.. autoclass:: pylatexenc.latexwalker.LatexWalkerEndOfStream
+   .. deprecated:: 3.0
+
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
+
+.. py:class:: pylatexenc.latexwalker.LatexWalkerParseError
+
+   Moved to :py:class:`pylatexenc.latexnodes.LatexWalkerParseError`.
+
+   .. deprecated:: 3.0
+
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
+
+.. py:class:: pylatexenc.latexwalker.LatexWalkerEndOfStream
+
+   Moved to :py:class:`pylatexenc.latexnodes.LatexWalkerEndOfStream`.
+
+   .. deprecated:: 3.0
+
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
 
 
 Data Node Classes
 ~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pylatexenc.latexwalker.LatexNode
-   :members:
+.. py:class:: pylatexenc.latexwalker.LatexNode
 
-.. autoclass:: pylatexenc.latexwalker.LatexCharsNode
-   :show-inheritance:
+   Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexNode`.
 
-.. autoclass:: pylatexenc.latexwalker.LatexGroupNode
-   :show-inheritance:
+   .. deprecated:: 3.0
 
-.. autoclass:: pylatexenc.latexwalker.LatexCommentNode
-   :show-inheritance:
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
 
-.. autoclass:: pylatexenc.latexwalker.LatexMacroNode
-   :show-inheritance:
+.. py:class:: pylatexenc.latexwalker.LatexCharsNode
 
-.. autoclass:: pylatexenc.latexwalker.LatexEnvironmentNode
-   :show-inheritance:
+   Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexCharsNode`.
 
-.. autoclass:: pylatexenc.latexwalker.LatexSpecialsNode
-   :show-inheritance:
+   .. deprecated:: 3.0
 
-.. autoclass:: pylatexenc.latexwalker.LatexMathNode
-   :show-inheritance:
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
+
+.. py:class:: pylatexenc.latexwalker.LatexGroupNode
+
+   Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexGroupNode`.
+
+   .. deprecated:: 3.0
+
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
+
+.. py:class:: pylatexenc.latexwalker.LatexCommentNode
+
+   Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexCommentNode`.
+
+   .. deprecated:: 3.0
+
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
+
+.. py:class:: pylatexenc.latexwalker.LatexMacroNode
+
+   Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexMacroNode`.
+
+   .. deprecated:: 3.0
+
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
+
+.. py:class:: pylatexenc.latexwalker.LatexEnvironmentNode
+
+   Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexEnvironmentNode`.
+
+   .. deprecated:: 3.0
+
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
+
+.. py:class:: pylatexenc.latexwalker.LatexSpecialsNode
+
+   Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexSpecialsNode`.
+
+   .. deprecated:: 3.0
+
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
+
+.. py:class:: pylatexenc.latexwalker.LatexMathNode
+
+   Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexMathNode`.
+
+   .. deprecated:: 3.0
+
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes.nodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
 
 
 Parsing helpers
 ~~~~~~~~~~~~~~~
 
-.. autoclass:: pylatexenc.latexwalker.ParsingState
-   :members:
+.. py:class:: pylatexenc.latexwalker.ParsingState
 
-.. autoclass:: pylatexenc.latexwalker.LatexToken
-   :members:
+   .. deprecated:: 3.0
+
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
+
+.. py:class:: pylatexenc.latexwalker.LatexToken
+
+   .. deprecated:: 3.0
+
+      Since Pylatexenc 3.0, this class now resides in the new module
+      :py:mod:`pylatexenc.latexnodes`.  It is aliased in
+      `pylatexenc.latexwalker` for backwards compatibility.
 
 
 
