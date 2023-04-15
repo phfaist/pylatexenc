@@ -19,7 +19,7 @@ jobs:
         python-version:
           - "3.11"
         poetry-version:
-          - "1.2"
+          - "1.4"
         node-version:
           - "14"
           - "19"
