@@ -744,12 +744,11 @@ The Title
         )
 
         for source, expected_dest in upgreek_letters:
-            with self.subTest():
-                self.assertEqual(
-                    LatexNodes2Text().nodelist_to_text(
-                        LatexWalker(source).get_latex_nodes()[0]),
-                    expected_dest
-                )
+            self.assertEqual(
+                LatexNodes2Text().nodelist_to_text(
+                    LatexWalker(source).get_latex_nodes()[0]),
+                expected_dest
+            )
 
 
 
