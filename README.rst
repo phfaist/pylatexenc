@@ -80,3 +80,12 @@ NOTE: See copyright notice and license information for file
 ``tools/unicode.xml`` was downloaded from
 https://www.w3.org/2003/entities/2007xml/unicode.xml as linked from
 https://www.w3.org/TR/xml-entity-names/#source.)
+
+
+Javascript Library
+------------------
+
+Some core parts of this library can be transcribed to JavaScript.  This feature
+is used (and was developed for) my `Flexible Latex-like Markup
+project <https://github.com/phfaist/flm>`_.  See the *js-transcrypt/* folder and
+its `README file <js-transcrypt/README.md>`_.
