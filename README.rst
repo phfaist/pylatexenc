@@ -14,6 +14,13 @@ reasonably possible and is able to run on old python verisons should it be
 necessary. (Use the setup.py script directly if you have python<3.7, poetry
 doesn't seem to work with old python versions.)
 
+**NEW (4/2023)**: *PYLATEXENC 3.0alpha* is in pre-release on PyPI.  See `new features
+and major changes <https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-3/>`_.
+The `documentation <https://pylatexenc.readthedocs.io/en/latest/>`_ is still
+incomplete, and the new APIs are still subject to changes.  The code is meant
+to be as backwards compatible as is reasonably possible.  Feel free to try it
+out & submit feedback!
+
 
 Unicode Text to LaTeX code
 --------------------------
