@@ -64,16 +64,19 @@ div.body li > ul {
     margin-bottom: 0.2em;
 }
 
-div.body section > dl {
+div.body section > dl,
+div.body .section > dl {
     background: rgba(120,80,50,0.05);
     padding: 1.5rem 2rem;
     border-radius: 1rem;
     margin-bottom: 2rem;
 }
-div.body section > dl > dt {
+div.body section > dl > dt,
+div.body .section > dl > dt {
     margin-bottom: 1.5em;
 }
-div.body section > dl > dd {
+div.body section > dl > dd,
+div.body .section > dl > dd {
     margin-left: 0px;
 }
 
