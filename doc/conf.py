@@ -88,7 +88,15 @@ todo_include_todos = False
 
 #autodoc_docstring_signature = True
 autodoc_member_order = 'bysource'
+autodoc_inherit_docstrings = False
 
+# autodoc_default_options = {
+#     'members': True, # 'var1, var2',
+#     #'member-order': 'bysource',
+#     'special-members': '__init__',
+#     #'undoc-members': True,
+#     #'exclude-members': '__weakref__'
+# }
 
 
 # -- Options for sphinx_issues --------------------------------------------

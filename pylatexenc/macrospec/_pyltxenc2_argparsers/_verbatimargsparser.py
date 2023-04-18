@@ -148,6 +148,19 @@ class VerbatimArgsParser(MacroStandardArgsParser):
     Parses the arguments to various LaTeX verbatim constructs such as
     ``\begin{verbatim}...\end{verbatim}`` environment or ``\verb+...+``.
 
+    .. deprecated:: 3.0
+
+       This class is part of `pylatexenc 2.x`'s macro argument parsing API.
+       Starting with `pylatexenc 3.0`, each macro/environment/specials argument
+       is parsed with an individual macro parser.  (See
+       :py:class:`pylatexenc.latexnodes.LatexArgumentSpec`,
+       :py:class:`pylatexenc.macrospec.LatexStandardArgumentParser`.)  To parse
+       verbatim contents for macro arguments and body contents, see
+       :py:class:`pylatexenc.latexnodes.parsers.LatexDelimitedVerbatimParser`
+       and
+       :py:class:`pylatexenc.latexnodes.parsers.LatexVerbatimEnvironmentContentsParser`.
+
+
     This class also serves to illustrate how to write custom parsers for
     complicated macro arguments.  See also :py:class:`MacroStandardArgsParser`.
 

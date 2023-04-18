@@ -2,6 +2,7 @@
 ----------------------------------------------
 
 .. automodule:: pylatexenc.latexwalker
+   :no-undoc-members:
 
 .. contents:: Contents:
    :local:

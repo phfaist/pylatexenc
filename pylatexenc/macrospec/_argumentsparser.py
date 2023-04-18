@@ -68,6 +68,10 @@ class LatexNoArgumentsParser(LatexParserBase):
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
     def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
+        r"""
+        Returns an empty :py:class:`pylatexenc.latexnodes.ParsedArguments`
+        object instance, and no parsing state delta.
+        """
 
         parsed = ParsedArguments(
             arguments_spec_list=[],
@@ -91,7 +95,7 @@ class LatexArgumentsParser(LatexParserBase):
     A parser class that handles the arguments of a callable (a macro, an
     environment, or specials).
 
-    ........................
+    Doc ........................
 
     The parser's main function (:py:meth:`parse()`) produces a
     :py:class:`~pylatexenc.latexnodes.ParsedArguments` instance.
@@ -102,13 +106,16 @@ class LatexArgumentsParser(LatexParserBase):
 
     .. py:attribute:: arguments_spec_list
 
-       A list of :py:class:`LatexArgumentSpec` instances describing a sequence
-       of arguments (along with suitable parsers) that a given callable accepts.
+       A list of :py:class:`pylatexenc.latexnodes.LatexArgumentSpec` instances
+       describing a sequence of arguments (along with suitable parsers) that a
+       given callable accepts.
 
        The constructor expects an iterable of elements that are either already
-       :py:class:`LatexArgumentSpec` instances, or that are a string
-       representing a standard argument type, in which case the string is used
-       to construct a :py:class:`LatexArgumentSpec` (see doc for that class).
+       :py:class:`~pylatexenc.latexnodes.LatexArgumentSpec` instances, or that
+       are a string representing a standard argument type, in which case the
+       string is used to construct a
+       :py:class:`~pylatexenc.latexnodes.LatexArgumentSpec` (see doc for that
+       class).
     """
 
     def __init__(self,
@@ -133,6 +140,9 @@ class LatexArgumentsParser(LatexParserBase):
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
     def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
+        r"""
+        See class doc.
+        """
 
         argnlist = []
 

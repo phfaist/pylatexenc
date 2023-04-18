@@ -2,6 +2,7 @@
 ===========================================
 
 .. automodule:: pylatexenc.latexnodes
+   :no-undoc-members:
 
 .. contents:: Contents:
    :local:

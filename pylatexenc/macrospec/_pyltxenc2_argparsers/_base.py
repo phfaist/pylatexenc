@@ -27,6 +27,18 @@ class MacroStandardArgsParser(object):
     r"""
     Parses the arguments to a LaTeX macro.
 
+    .. deprecated:: 3.0
+
+       This class is part of `pylatexenc 2.x`'s macro argument parsing API.
+       Starting with `pylatexenc 3.0`, each macro/environment/specials argument
+       is parsed with an individual macro parser.  See
+       :py:class:`pylatexenc.latexnodes.LatexArgumentSpec`,
+       :py:class:`pylatexenc.latexnodes.parsers.LatexStandardArgumentParser`.
+       (You can also check out the lower-level
+       :py:class:`pylatexenc.macrospec.LatexMacroCallParser`,
+       :py:class:`pylatexenc.macrospec.LatexEnvironmentCallParser`, and
+       :py:class:`pylatexenc.macrospec.LatexSpecialsCallParser`.)
+
     This class parses a simple macro argument specification with a specified
     arrangement of optional and mandatory arguments.
 

@@ -154,6 +154,13 @@ class LatexVerbatimBaseParser(LatexParserBase):
 
 
 class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
+    r"""
+    Parse verbatim content specified between token delimiters (e.g.,
+    ``\verb|...|``).
+
+    Doc..................
+    """
+
     def __init__(self,
                  delimiters=None,
                  auto_delimiters=None,
@@ -255,6 +262,11 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
 
 
 class LatexVerbatimEnvironmentContentsParser(LatexVerbatimBaseParser):
+    r"""
+    Parse verbatim content given as an environment body contents.
+
+    Doc.......................
+    """
     def __init__(self, environment_name='verbatim', **kwargs):
         super(LatexVerbatimEnvironmentContentsParser, self).__init__(**kwargs)
         self.environment_name = environment_name

@@ -2,6 +2,7 @@
 ---------------------------------------
 
 .. automodule:: pylatexenc.latexencode
+   :no-undoc-members:
 
 .. contents:: Contents:
    :local:
