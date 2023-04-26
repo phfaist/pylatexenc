@@ -257,7 +257,9 @@ class LatexTokenReader(LatexTokenReaderBase):
                                            pos=newpar_pos_start,
                                            pos_end=newpar_pos_end,
                                            pre_space=pre_space)
-            return self.make_token(tok='char', arg='\n\n',
+
+            par_space_tokens = s[newpar_pos_start:newpar_pos_end]
+            return self.make_token(tok='char', arg=par_space_tokens, #'\n\n',
                                    pos=newpar_pos_start,
                                    pos_end=newpar_pos_end,
                                    pre_space=pre_space)
@@ -272,7 +274,7 @@ class LatexTokenReader(LatexTokenReaderBase):
 
         c = s[pos]
 
-        logger.debug("Char at %d: %r", pos, c)
+        #logger.debug("Char at %d: %r", pos, c)
 
         # check if we have a math mode delimiter
         if c in parsing_state._math_delims_info_startchars and parsing_state.enable_math:
@@ -292,8 +294,8 @@ class LatexTokenReader(LatexTokenReaderBase):
                 else:
                     beginend = None
 
-                logger.debug("beginend=%r; s.startswith('begin',pos+1)=%r; s[pos+1:pos+7]=%r",
-                             beginend, s.startswith('begin', pos+1), s[pos+1:pos+7])
+                #logger.debug("beginend=%r; s.startswith('begin',pos+1)=%r; s[pos+1:pos+7]=%r",
+                #             beginend, s.startswith('begin', pos+1), s[pos+1:pos+7])
 
                 if beginend:
                     pastbeginendpos = pos+1+len(beginend)
@@ -335,7 +337,7 @@ class LatexTokenReader(LatexTokenReaderBase):
             sspec = parsing_state.latex_context.test_for_specials(
                 s, pos, parsing_state=parsing_state
             )
-            logger.debug("tested for specials at ‘%s’ -> %r", s[pos:pos+3]+'...', sspec)
+            #logger.debug("tested for specials at ‘%s’ -> %r", s[pos:pos+3]+'...', sspec)
             #logger.debug("get_specials_spec('&') -> %r", parsing_state.latex_context.get_specials_spec('&'))
             if sspec is not None:
                 return self.make_token(tok='specials', arg=sspec,

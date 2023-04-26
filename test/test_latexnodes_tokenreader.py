@@ -330,7 +330,7 @@ New paragraph
         tr.move_to_pos_chars(p)
         self.assertEqual(
             tr.next_token(ps),
-            LatexToken(tok='char', arg='\n\n', pos=7, pos_end=7+6, pre_space='  \t ')
+            LatexToken(tok='char', arg='\n   \t\n', pos=7, pos_end=7+6, pre_space='  \t ')
         )
 
     def test_newpar_token_after_macro_1(self):

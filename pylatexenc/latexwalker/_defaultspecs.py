@@ -38,6 +38,17 @@ from ..macrospec import (
 
 specs = [
     #
+    # CATEGORY: latex-paragraph
+    #
+    ('latex-paragraph', {
+        'macros': [],
+        'environments': [],
+        'specials': [
+            std_specials('\n\n'), # paragraph break
+        ],
+    }),
+
+    #
     # CATEGORY: latex-base
     #
     ('latex-base', {

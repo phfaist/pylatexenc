@@ -347,6 +347,19 @@ class HelperProvideAssertEqualsForLegacyTests(object):
         super(HelperProvideAssertEqualsForLegacyTests, self).assertEqual(a, b, msg=msg)
 
     def _assert_parsedmacroargs_equal(self, a, b, msg=''):
+        if a is None and b is None:
+            return # all ok
+
+        try:
+            self.assertEqual( (a is None) , (b is None) )
+        except AssertionError:
+            print("------------------------------------------------------------")
+            print("In comparing parsed macro args, one is None and not the other: ")
+            print("a = ", a)
+            print("b = ", b)
+            print("------------------------------------------------------------")
+            raise
+            
         for fld in ('arguments_spec_list', 'argnlist'):
             x, y = getattr(a, fld), getattr(b, fld)
             try:
@@ -415,8 +428,15 @@ class HelperProvideAssertEqualsForLegacyTests(object):
                 blen=len(b),
             )
             print("------------------------------------------------------------")
-            print("    a = \n", pprint.pformat(a), sep='')
-            print("    b = \n", pprint.pformat(b), sep='')
+            print("    len(a) [=", len(a), "] != len(b) [=", len(b), "]")
+            print("    a = ")
+            for n in a:
+                print("        * ", repr(n))
+            print()
+            print("    b = ")
+            for n in a:
+                print("        * ", repr(n))
+            print()
             print("------------------------------------------------------------")
             self.fail(msg)
 
