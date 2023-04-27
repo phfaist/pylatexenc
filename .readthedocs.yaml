@@ -2,6 +2,9 @@
 # Configuration for readthedocs.org
 #
 
+# See poetry builds on RTD:
+# https://docs.readthedocs.io/en/stable/build-customization.html#install-dependencies-with-poetry
+
 version: 2
 
 build:
@@ -29,3 +32,4 @@ build:
 
 sphinx:
   configuration: doc/conf.py
+  builder: 'dirhtml'
