@@ -70,6 +70,7 @@ div.body .section > dl {
     padding: 1.5rem 2rem;
     border-radius: 1rem;
     margin-bottom: 2rem;
+    box-shadow: 3px 3px 6px rgba(0,0,0,0.1);
 }
 div.body section > dl > dt,
 div.body .section > dl > dt {
@@ -165,6 +166,7 @@ nav.contents, aside.topic, div.topic {
     background-color: rgba(120,80,50,0.05);
     border-radius: 10px;
     padding: 20px;
+    box-shadow: 3px 3px 6px rgba(0,0,0,0.1);
 }
 
 
