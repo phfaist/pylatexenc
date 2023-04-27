@@ -46,14 +46,6 @@ class ParsingStateDelta(object):
     reflected in the many different subclasses of `ParsingStateDelta` (e.g.,
     :py:class:`ParsingStateDeltaEnterMathMode`).
 
-    It is the :py:class:`LatexWalkerBase` class that is being used that is
-    responsible for actually updating a parsing state according to a
-    `ParsingStateDelta` object.  Of course, `ParsingStateDelta` objects offer a
-    `get_updated_parsing_state()` method that should minimally implement this
-    parsing state change.  Yet the walker instance may take additional
-    initiatives, for instance, changing the latex context as a consequence of a
-    change to/from math mode.
-
     This class serves both as a base class for general parsing state changes, as
     well as a simple implementation of a parsing state change based on parsing
     state attributes that are to be changed.

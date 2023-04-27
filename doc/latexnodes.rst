@@ -3,6 +3,7 @@
 
 .. automodule:: pylatexenc.latexnodes
    :no-undoc-members:
+   :show-inheritance:
 
 .. contents:: Contents:
    :local:
@@ -50,48 +51,6 @@ Token Readers
 
 .. autoclass:: LatexTokenListTokenReader
    :members:
-
-
-
-LaTeX Node Classes
-------------------
-
-
-.. autoclass:: pylatexenc.latexnodes.nodes.LatexNode
-   :members:
-
-.. autoclass:: pylatexenc.latexnodes.nodes.LatexNodeList
-   :members:
-
-.. autoclass:: pylatexenc.latexnodes.nodes.LatexNodesVisitor
-   :members:
-
-
-LaTeX Node Types
-~~~~~~~~~~~~~~~~
-
-.. autoclass:: pylatexenc.latexnodes.nodes.LatexCharsNode
-   :members:
-
-.. autoclass:: pylatexenc.latexnodes.nodes.LatexGroupNode
-   :members:
-
-.. autoclass:: pylatexenc.latexnodes.nodes.LatexCommentNode
-   :members:
-
-.. autoclass:: pylatexenc.latexnodes.nodes.LatexMacroNode
-   :members:
-
-.. autoclass:: pylatexenc.latexnodes.nodes.LatexEnvironmentNode
-   :members:
-
-.. autoclass:: pylatexenc.latexnodes.nodes.LatexSpecialsNode
-   :members:
-
-.. autoclass:: pylatexenc.latexnodes.nodes.LatexMathNode
-   :members:
-
-
 
 
 Arguments and Parsed Arguments
@@ -157,6 +116,15 @@ Base classes
 .. autoclass:: LatexContextDbBase
    :members:
 
+
+
+Node Classes
+------------
+
+.. toctree::
+   :maxdepth: 2
+
+   latexnodes.nodes
 
 
 Parser Classes

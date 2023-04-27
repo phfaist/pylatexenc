@@ -98,7 +98,7 @@ class _SpecBase(CallableSpecBase):
 
     def finalize_node(self, node):
         r"""
-        ................
+        Doc ................
 
         MUST RETURN the new node instance.
 
@@ -114,6 +114,9 @@ class _SpecBase(CallableSpecBase):
 
 
     def make_arguments_parsing_state_delta(self, token, latex_walker):
+        r"""
+        Doc ................
+        """
         if self._fn_make_arguments_parsing_state_delta is not None:
             return self._fn_make_arguments_parsing_state_delta(
                 token=token,
@@ -127,7 +130,7 @@ class _SpecBase(CallableSpecBase):
                                       arg_parsing_state_delta,
                                       latex_walker):
         r"""
-        ...........
+        Doc ................
 
         This method only makes sense for LaTeX environments.  It's defined in
         the base class :py:class:`_SpecBase` for consistency with the other
@@ -137,8 +140,8 @@ class _SpecBase(CallableSpecBase):
 
         Note: `arg_parsing_state_delta` is always `None` (unless you actually
         went ahead and replaced the the `arguments_parser` attribute, which is a
-        `LatexArgumentsParser` or `LatexNoArgumentsParser` instance, by a custom
-        parser).
+        :py:class:`LatexArgumentsParser` or :py:class:`LatexNoArgumentsParser`
+        instance, by a custom parser).
         """
         if self._fn_make_body_parsing_state_delta is not None:
             return self._fn_make_body_parsing_state_delta(
@@ -154,19 +157,18 @@ class _SpecBase(CallableSpecBase):
 
     def make_after_parsing_state_delta(self, parsed_node, latex_walker):
         r"""
-        If applicable, create a :py:class:`ParsingStateDelta` class to convey any
+        If applicable, create a
+        :py:class:`~pylatexenc.latexnodes.ParsingStateDelta` class to convey any
         changes in the parsing state after completing this callable node.
         
         The default implementation returns `None`.  You may, but do not have to,
         override this method to customize its behavior.  You can specify a
         custom callable to `make_after_parsing_state_delta=...` in the
-        constructor, and the constructor will reassign the attribute
-        `spec.make_after_parsing_state_delta` to that callable.
+        constructor which will be invoked in this method.
 
-
-        This is called from the LatexMacroCallParser instance, i.e., this
-        function won't be called by default if you override get_node_parser()
-        and return a different parser instance.
+        This method is called from the :py:class:`LatexMacroCallParser`
+        instance, i.e., this function won't be called by default if you override
+        :py:meth:`get_node_parser()` and return a different parser instance.
         """
         if self._fn_make_after_parsing_state_delta is not None:
             return self._fn_make_after_parsing_state_delta(
@@ -177,6 +179,9 @@ class _SpecBase(CallableSpecBase):
 
 
     def needs_arguments(self):
+        r"""
+        Doc ................
+        """
         for arg in self.arguments_spec_list:
             if arg.spec.is_required():
                 return True
@@ -213,14 +218,22 @@ class MacroSpec(_SpecBase):
        If you specify a string, then for convenience this is interpreted as an
        argspec argument for :py:class:`MacroStandardArgsParser` and such an
        instance is automatically created.
+
+       .. deprecated:: 3.0
+
+           The `args_parser` attribute is deprecated since `pylatexenc 3.0`.  Macro,
+           environment, and specials specification classes now return more general
+           parsers meant to handle the entire macro/environment/specials invocation,
+           not only their arguments, via the :meth:`get_node_parser()` method.
     """
     def __init__(self, macroname, arguments_spec_list=None, **kwargs):
-        super(MacroSpec, self).__init__(arguments_spec_list=arguments_spec_list,
-                                        **kwargs)
-
+        super(MacroSpec, self).__init__(arguments_spec_list=arguments_spec_list, **kwargs)
         self.macroname = macroname
 
     def get_node_parser(self, token):
+        r"""
+        Doc.........
+        """
         return LatexMacroCallParser(token, self)
 
 
@@ -233,10 +246,27 @@ class EnvironmentSpec(_SpecBase):
     This stores the environment name and instructions on how to parse any
     arguments provided after ``\begin{environment}<args>``.
 
+    .. note::
+
+       Starred variants of environments (as in ``\begin{equation*}``) must not
+       be specified using an argspec as for macros (e.g., `argspec='*'`).
+       Rather, we need to define a separate environment spec for the starred
+       variant with the star in the name itself (``EnvironmentSpec('equation*',
+       None)``) because the star really is part of the environment name.  If you
+       happened to use ``EnvironmentSpec('equation', '*')``, then the parser
+       would recognize the expression ``\begin{equation}*`` but not
+       ``\begin{equation*}``.
+
     .. py:attribute:: environmentname
 
        The name of the environment, i.e., the argument of ``\begin{...}`` and
        ``\end{...}``.
+
+    .. py:attribute:: body_parsing_state_delta
+
+       The parsing state changes that are set in order to parse the body
+       contents of the environment.
+
 
     .. py:attribute:: args_parser
 
@@ -247,6 +277,13 @@ class EnvironmentSpec(_SpecBase):
        If you specify a string, then for convenience this is interpreted as an
        argspec argument for :py:class:`MacroStandardArgsParser` and such an
        instance is automatically created.
+
+       .. deprecated:: 3.0
+
+           The `args_parser` attribute is deprecated since `pylatexenc 3.0`.  Macro,
+           environment, and specials specification classes now return more general
+           parsers meant to handle the entire macro/environment/specials invocation,
+           not only their arguments, via the :meth:`get_node_parser()` method.
 
     .. py:attribute:: is_math_mode
 
@@ -259,22 +296,6 @@ class EnvironmentSpec(_SpecBase):
           The field `is_math_mode` was deprecated in `pylatexenc 3` in favor of
           the field `body_parsing_state_delta`.  Instead of `is_math_mode=True`,
           use `body_parsing_state_delta=ParsingStateDeltaEnterMathMode()`.
-
-    .. py:attribute:: body_parsing_state_delta
-
-       The parsing state changes that are set in order to parse the body
-       contents of the environment.
-
-    .. note::
-
-       Starred variants of environments (as in ``\begin{equation*}``) must not
-       be specified using an argspec as for macros (e.g., `argspec='*'`).
-       Rather, we need to define a separate environment spec for the starred
-       variant with the star in the name itself (``EnvironmentSpec('equation*',
-       None)``) because the star really is part of the environment name.  If you
-       happened to use ``EnvironmentSpec('equation', '*')``, then the parser
-       would recognize the expression ``\begin{equation}*`` but not
-       ``\begin{equation*}``.
     """
     def __init__(self, environmentname, arguments_spec_list=None, **kwargs):
 
@@ -305,9 +326,15 @@ class EnvironmentSpec(_SpecBase):
         self._fn_make_body_parser = make_body_parser
 
     def get_node_parser(self, token):
+        r"""
+        Doc.........
+        """
         return LatexEnvironmentCallParser(token, self)
 
     def make_body_parser(self, token, nodeargd, arg_parsing_state_delta):
+        r"""
+        Doc. ................
+        """
         if self._fn_make_body_parser is not None:
             return self._fn_make_body_parser(token, nodeargd, arg_parsing_state_delta)
         return LatexEnvironmentBodyContentsParser(
@@ -333,6 +360,13 @@ class SpecialsSpec(_SpecBase):
        A parser (e.g. :py:class:`MacroStandardArgsParser`) that is invoked when
        the specials is encountered.  Can/should be set to `None` if the specials
        should not parse any arguments (e.g. '~').
+
+       .. deprecated:: 3.0
+
+           The `args_parser` attribute is deprecated since `pylatexenc 3.0`.  Macro,
+           environment, and specials specification classes now return more general
+           parsers meant to handle the entire macro/environment/specials invocation,
+           not only their arguments, via the :meth:`get_node_parser()` method.
     """
     def __init__(self, specials_chars, arguments_spec_list=None, **kwargs):
         super(SpecialsSpec, self).__init__(arguments_spec_list=arguments_spec_list, **kwargs)
@@ -345,6 +379,9 @@ class SpecialsSpec(_SpecBase):
         )
 
     def get_node_parser(self, token):
+        r"""
+        Doc.........
+        """
         return LatexSpecialsCallParser(token, self)
 
 

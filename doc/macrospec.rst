@@ -3,6 +3,7 @@
 
 .. automodule:: pylatexenc.macrospec
    :no-undoc-members:
+   :show-inheritance:
 
 .. contents:: Contents:
    :local:
@@ -13,12 +14,15 @@ Macro and environment definitions
 
 .. autoclass:: pylatexenc.macrospec.MacroSpec
    :members:
+   :inherited-members:
 
 .. autoclass:: pylatexenc.macrospec.EnvironmentSpec
    :members:
+   :inherited-members:
 
 .. autoclass:: pylatexenc.macrospec.SpecialsSpec
    :members:
+   :inherited-members:
 
 
 .. autofunction:: pylatexenc.macrospec.std_macro

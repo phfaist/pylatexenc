@@ -79,8 +79,9 @@ class LatexDelimitedExpressionParserOpeningDelimiterNotFound(Exception):
 
 class LatexDelimitedExpressionParserInfo(object):
     r"""
-    Class that specifies how to parse a LaTeX chunk of code that is delimited by
-    specific delimiters (a "delimited group").
+    Class that specifies how to parse a LaTeX chunk of code that is
+    delimited by specific delimiters (a "delimited group").  Helper class for
+    :py:class:`LatexDelimitedExpressionParser`.
 
     This class determines specific aspects of what type of delimited LaTeX code
     we should be reading, such as whether the delimiters are actual LaTeX group
@@ -809,7 +810,10 @@ class LatexDelimitedExpressionParser(LatexParserBase):
 # ------------------------------------------------
 
 class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
-
+    r"""
+    Helper class for :py:class:`LatexDelimitedGroupParser`.  See also
+    :py:class:`LatexDelimitedExpressionParserInfo`.
+    """
 
     @classmethod
     def get_group_parsing_state(cls, parsing_state, delimiters, delimited_expression_parser,

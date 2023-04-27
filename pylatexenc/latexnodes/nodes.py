@@ -63,6 +63,14 @@ class LatexNode(object):
     You should use :py:meth:`LatexWalker.make_node()` to create nodes, so that
     the latex walker has the opportunity to do some additional setting up.
 
+    .. versionchanged: 3.0
+    
+       This class (along with its canonical subclasses) is located in the module
+       :py:mod:`pylatexenc.latexnodes.nodes` starting in `pylatexenc 3.0`.  It
+       is aliased in :py:mod:`pylatexenc.latexwalker` for backwards
+       compatibility.
+
+
     All nodes have the following attributes:
 
     .. py:attribute:: parsing_state

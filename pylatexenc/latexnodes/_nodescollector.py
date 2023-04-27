@@ -48,14 +48,14 @@ class LatexNodesCollector(object):
     Process a stream of LaTeX tokens and convert them into a list of nodes.
 
     The `LatexNodesCollector` class functions hand-in-hand with parsers to
-    transform tokens into nodes.  The parser sets up the parsing state
-    correctly, checks the input against errors such as missing mandatory
-    arguments, and then typically defers to a `LatexNodesCollector` instance to
-    actually parse a bulk of contents.  The `LatexNodesCollector` instance, on
-    the other hand, recurses down to calling parsers when we encounter new
-    macros, environments, specials, etc. in the bulk that is being parsed.  The
-    result is a node list containing a full tree of child nodes that represents
-    the logical structure of the tokens that were encountered.
+    transform tokens into nodes.  A parser such as
+    :py:class:`~pylatexenc.latexnodes.parsers.LatexGeneralNodesParser` might set
+    up the parsing state correctly and then defer to a `LatexNodesCollector`
+    instance to actually parse a bulk of contents.  The `LatexNodesCollector`
+    instance, on the other hand, recurses down to calling parsers when we
+    encounter new macros, environments, specials, etc. in the bulk that is being
+    parsed.  The result is a node list containing a full tree of child nodes
+    that represents the logical structure of the tokens that were encountered.
     
     The public API of this class resides essentially in the
     :py:meth:`process_tokens()`, as well as the :py:meth:`get_final_nodelist()`
@@ -147,7 +147,8 @@ class LatexNodesCollector(object):
         r"""
         Returns the final nodelist collected from the processed tokens.
 
-        The return value is a :py:class:`LatexNodeList` instance.
+        The return value is a
+        :py:class:`~pylatexenc.latexnodes.nodes.LatexNodeList` instance.
         """
         if not self._finalized:
             raise RuntimeError("Call to get_final_nodelist() before finalize()")

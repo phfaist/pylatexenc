@@ -3,6 +3,7 @@
 
 .. automodule:: pylatexenc.latexwalker
    :no-undoc-members:
+   :show-inheritance:
 
 .. contents:: Contents:
    :local:

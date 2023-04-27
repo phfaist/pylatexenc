@@ -267,8 +267,6 @@ class ParsedArguments(object):
         typically a dictionary, that can easily be exported to JSON.  The object
         may contain latex nodes and other parsed-argument objects, as we use a
         custom JSON encoder that understands these types.
-
-        Subclasses may
         """
 
         return dict(
