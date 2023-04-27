@@ -439,6 +439,8 @@ class LatexContextDb(object):
                 yield spec
 
 
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
     def filter_context(self, *args, **kwargs):
         r"""
         .. deprecated:: 3.0
@@ -449,6 +451,8 @@ class LatexContextDb(object):
         _util.pylatexenc_deprecated_3("`LatexContextDb.filter_context()` was renamed to "
                                       "`filtered_context()`.")
         return self.filtered_context(*args, **kwargs)
+
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
 
     def filtered_context(self, keep_categories=[], exclude_categories=[],
@@ -477,6 +481,11 @@ class LatexContextDb(object):
         macro and environment specifications, but the specification classes (and
         corresponding argument parsers) might correspond to the same instances.
         I.e., the returned context is not a full deep copy.
+
+        .. versionadded:: 3.0
+
+           The `filter_context()` method was renamed `filtered_context()` in
+           `pylatexenc 3.0`.
         """
         
         if create_class is None:
