@@ -35,7 +35,12 @@ macros and environments, specifying how they should be parsed by
 """
 
 
-from ._specclasses import MacroSpec, EnvironmentSpec, SpecialsSpec
+from ._specclasses import (
+    CallableSpec,
+    MacroSpec,
+    EnvironmentSpec,
+    SpecialsSpec,
+)
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 from ._spechelpers import std_macro, std_environment, std_specials

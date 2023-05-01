@@ -58,27 +58,93 @@ if sys.version_info.major == 2:
 _legacy_pyltxenc2_do = lambda *args: None
 
 
-class _SpecBase(CallableSpecBase):
+class _NotSpecified:
+    pass
+
+
+class CallableSpec(CallableSpecBase):
+    r"""
+    Base class for :py:class:`MacroSpec`, :py:class:`EnvironmentSpec` and
+    :py:class:`SpecialsSpec` classes regrouping common functionality.
+
+    Doc. ................
+
+    One of the main reasons for bringing all the default functionality of the
+    :py:class:`MacroSpec`, :py:class:`EnvironmentSpec`, and
+    :py:class:`SpecialsSpec` classes together in the same base class is to
+    facilitate creating richer derived spec classes.  For instance, the `flm
+    <https://github.com/phfaist/flm>`_ project needs to supplement spec classes
+    with additional information, e.g., about how to render the node in
+    appropriate output formats.  In such cases, it suffices to inherit
+    `CallableSpec` to implement the desired functionality, and instantiate such
+    classes directly (or recreate lightweight derived versions for macros,
+    environments, and specials), rather than have to play around with multiple
+    inheritance or other such tricks to simultaneously implement new base
+    functionality that is common to macro, environment, and specials parsing.
+    """
+
     def __init__(self,
-                 arguments_spec_list=None,
+                 arguments_spec_list,
+                 #*,
+                 spec_node_parser_type,
+                 macroname=_NotSpecified,
+                 environmentname=_NotSpecified,
+                 specials_chars=_NotSpecified,
                  make_arguments_parsing_state_delta=None,
                  make_body_parsing_state_delta=None,
                  make_after_parsing_state_delta=None,
-                 finalize_node=None, **kwargs):
+                 make_body_parser=None,
+                 finalize_node=None,
+                 **kwargs):
 
         self.arguments_spec_list = arguments_spec_list
 
-        self._fn_make_arguments_parsing_state_delta = make_arguments_parsing_state_delta
-        self._fn_make_body_parsing_state_delta = make_body_parsing_state_delta
-        self._fn_make_after_parsing_state_delta = make_after_parsing_state_delta
-        self._fn_finalize_node = finalize_node
+        self.spec_node_parser_type = spec_node_parser_type
+        if macroname is not _NotSpecified:
+            self.macroname = macroname
+        if environmentname is not _NotSpecified:
+            self.environmentname = environmentname
+        if specials_chars is not _NotSpecified:
+            self.specials_chars = specials_chars
+
+        # Internal convention: if any of the _fn_*** attributes are set, they
+        # should NOT be set to None.  They should simply not be set.  We're
+        # testing for their presence with hasattr(self, '_fn_***').
+
+        if make_arguments_parsing_state_delta is not None:
+            self._fn_make_arguments_parsing_state_delta = make_arguments_parsing_state_delta
+        if make_body_parsing_state_delta is not None:
+            self._fn_make_body_parsing_state_delta = make_body_parsing_state_delta
+        if make_after_parsing_state_delta is not None:
+            self._fn_make_after_parsing_state_delta = make_after_parsing_state_delta
+        if make_body_parser is not None:
+            self._fn_make_body_parser = make_body_parser
+        if finalize_node is not None:
+            self._fn_finalize_node = finalize_node
 
         # note, the following might set self._fn_make_***_parsing_state_delta:
         use_legacy_args_parser = _legacy_pyltxenc2_do(
-            'SpecBase_init_from_args_parser', self, arguments_spec_list, kwargs
+            'CallableSpec_init_from_args_parser', self, arguments_spec_list, kwargs
         )
 
-        super(_SpecBase, self).__init__(**kwargs)
+        # for environments---
+        # body_parsing_state_delta is the default delta object if no
+        # "make_body_parsing_state_delta" function is provided or overridden
+        body_parsing_state_delta = kwargs.pop('body_parsing_state_delta', None)
+
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+        self.is_math_mode = kwargs.pop('is_math_mode', None) # obsolete !
+        if self.is_math_mode:
+            if body_parsing_state_delta is None:
+                body_parsing_state_delta = ParsingStateDeltaEnterMathMode()
+            else:
+                raise ValueError("You cannot specify both is_math_mode= and "
+                                 "body_parsing_state_delta=")
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
+        self.body_parsing_state_delta = body_parsing_state_delta
+
+        super(CallableSpec, self).__init__(**kwargs)
 
         if not use_legacy_args_parser:
             if self.arguments_spec_list:
@@ -86,6 +152,23 @@ class _SpecBase(CallableSpecBase):
             else:
                 self.arguments_parser = LatexNoArgumentsParser()
 
+
+    def get_node_parser(self, token):
+        r"""
+        Return a parser instance that is capable of parsing this node
+        construct.
+
+        This base class instantiates and returns an object of the type
+        `spec_node_parser_type` that was specified to the constructor.  (This
+        type is set to :py:class:`LatexMacroCallParser`,
+        :py:class:`LatexEnvironmentCallParser`, or
+        :py:class:`LatexSpecialsCallParser` by the corresponding subclasses
+        :py:class:`MacroSpec`, :py:class:`EnvironmentSpec`, or
+        :py:class:`SpecialsSpec`.)  The given type's constructor is assumed to
+        accept to positional arguments to which the token object `token` and the
+        present spec instance (`self`) are passed.
+        """
+        return self.spec_node_parser_type(token, self)
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
@@ -107,7 +190,9 @@ class _SpecBase(CallableSpecBase):
         and return a different parser instance.
         """
 
-        if self._fn_finalize_node is not None:
+        # Transcrypt doesn't seem to like getattr(obj, attrname, default) with
+        # default arg, so use hasattr() test
+        if hasattr(self, '_fn_finalize_node'): # and self._fn_finalize_node is not None:
             return self._fn_finalize_node(node)
 
         return node
@@ -117,7 +202,12 @@ class _SpecBase(CallableSpecBase):
         r"""
         Doc ................
         """
-        if self._fn_make_arguments_parsing_state_delta is not None:
+        # Transcrypt doesn't seem to like getattr(obj, attrname, default) with
+        # default arg, so use hasattr() test
+        if (
+                hasattr(self, '_fn_make_arguments_parsing_state_delta')
+                #and self._fn_make_arguments_parsing_state_delta is not None
+        ):
             return self._fn_make_arguments_parsing_state_delta(
                 token=token,
                 latex_walker=latex_walker
@@ -133,7 +223,7 @@ class _SpecBase(CallableSpecBase):
         Doc ................
 
         This method only makes sense for LaTeX environments.  It's defined in
-        the base class :py:class:`_SpecBase` for consistency with the other
+        the base class :py:class:`CallableSpec` for consistency with the other
         `make_**_parsing_state_delta()` methods.  This base class
         implementation, if no custom body parsing state delta function is set in
         the constructor, relies on `self.body_parsing_state_delta` being available!
@@ -143,7 +233,10 @@ class _SpecBase(CallableSpecBase):
         :py:class:`LatexArgumentsParser` or :py:class:`LatexNoArgumentsParser`
         instance, by a custom parser).
         """
-        if self._fn_make_body_parsing_state_delta is not None:
+        if (
+                hasattr(self, '_fn_make_body_parsing_state_delta')
+                #and self._fn_make_body_parsing_state_delta is not None
+        ):
             return self._fn_make_body_parsing_state_delta(
                 token=token,
                 nodeargd=nodeargd,
@@ -170,7 +263,10 @@ class _SpecBase(CallableSpecBase):
         instance, i.e., this function won't be called by default if you override
         :py:meth:`get_node_parser()` and return a different parser instance.
         """
-        if self._fn_make_after_parsing_state_delta is not None:
+        if (
+                hasattr(self, '_fn_make_after_parsing_state_delta')
+                #and self._fn_make_after_parsing_state_delta is not None
+        ):
             return self._fn_make_after_parsing_state_delta(
                 parsed_node=parsed_node,
                 latex_walker=latex_walker,
@@ -187,18 +283,36 @@ class _SpecBase(CallableSpecBase):
                 return True
         return False
 
+
+    def make_body_parser(self, token, nodeargd, arg_parsing_state_delta):
+        r"""
+        Doc. ................
+
+        For environment specs only. ........
+        """
+        if hasattr(self, '_fn_make_body_parser'): # and self._fn_make_body_parser is not None:
+            return self._fn_make_body_parser(token, nodeargd, arg_parsing_state_delta)
+        return LatexEnvironmentBodyContentsParser(
+            environmentname=token.arg,
+        )
+
+
     def __repr__(self):
         return (
             self.__class__.__name__ + "(" +
-            ", ".join([ "{}={!r}".format(k,v)
-                        for (k,v) in self.__dict__.items()
-                        if not k.startswith("_") ])
+            ", ".join([
+                "{}={!r}".format(k,v)
+                for (k,v) in self.__dict__.items()
+                if (not k.startswith("_")
+                    and v is not None
+                    and k not in ('spec_node_parser_type', ))
+            ])
             + ")"
         )
     
 
 
-class MacroSpec(_SpecBase):
+class MacroSpec(CallableSpec):
     r"""
     Stores the specification of a macro.
 
@@ -227,19 +341,24 @@ class MacroSpec(_SpecBase):
            not only their arguments, via the :meth:`get_node_parser()` method.
     """
     def __init__(self, macroname, arguments_spec_list=None, **kwargs):
-        super(MacroSpec, self).__init__(arguments_spec_list=arguments_spec_list, **kwargs)
-        self.macroname = macroname
+        super(MacroSpec, self).__init__(
+            arguments_spec_list=arguments_spec_list,
+            spec_node_parser_type=LatexMacroCallParser,
+            macroname=macroname,
+            **kwargs
+        )
+        #self.macroname = macroname
 
-    def get_node_parser(self, token):
-        r"""
-        Doc.........
-        """
-        return LatexMacroCallParser(token, self)
+    # def get_node_parser(self, token):
+    #     r"""
+    #     Doc.........
+    #     """
+    #     return LatexMacroCallParser(token, self)
 
 
 
 
-class EnvironmentSpec(_SpecBase):
+class EnvironmentSpec(CallableSpec):
     r"""
     Stores the specification of a LaTeX environment.
 
@@ -299,51 +418,33 @@ class EnvironmentSpec(_SpecBase):
     """
     def __init__(self, environmentname, arguments_spec_list=None, **kwargs):
 
-        make_body_parser = kwargs.pop('make_body_parser', None)
-        body_parsing_state_delta = kwargs.pop('body_parsing_state_delta', None)
-
-### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
-        is_math_mode = kwargs.pop('is_math_mode', None) # obsolete !
-### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
-
         super(EnvironmentSpec, self).__init__(
             arguments_spec_list=arguments_spec_list,
+            spec_node_parser_type=LatexEnvironmentCallParser,
+            environmentname=environmentname,
             **kwargs
         )
+        #self.environmentname = environmentname
 
-### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
-        self.is_math_mode = is_math_mode
-        if is_math_mode:
-            if body_parsing_state_delta is None:
-                body_parsing_state_delta = ParsingStateDeltaEnterMathMode()
-            else:
-                raise ValueError("You cannot specify both is_math_mode= and "
-                                 "body_parsing_state_delta=")
-### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
+    # def get_node_parser(self, token):
+    #     r"""
+    #     Doc.........
+    #     """
+    #     return LatexEnvironmentCallParser(token, self)
 
-        self.environmentname = environmentname
-        self.body_parsing_state_delta = body_parsing_state_delta
-        self._fn_make_body_parser = make_body_parser
-
-    def get_node_parser(self, token):
-        r"""
-        Doc.........
-        """
-        return LatexEnvironmentCallParser(token, self)
-
-    def make_body_parser(self, token, nodeargd, arg_parsing_state_delta):
-        r"""
-        Doc. ................
-        """
-        if self._fn_make_body_parser is not None:
-            return self._fn_make_body_parser(token, nodeargd, arg_parsing_state_delta)
-        return LatexEnvironmentBodyContentsParser(
-            environmentname=token.arg,
-        )
+    # def make_body_parser(self, token, nodeargd, arg_parsing_state_delta):
+    #     r"""
+    #     Doc. ................
+    #     """
+    #     if self._fn_make_body_parser is not None:
+    #         return self._fn_make_body_parser(token, nodeargd, arg_parsing_state_delta)
+    #     return LatexEnvironmentBodyContentsParser(
+    #         environmentname=token.arg,
+    #     )
 
 
 
-class SpecialsSpec(_SpecBase):
+class SpecialsSpec(CallableSpec):
     r"""
     Specification of a LaTeX "special char sequence": an active char, a
     ligature, or some other non-macro char sequence that has a special meaning.
@@ -369,20 +470,24 @@ class SpecialsSpec(_SpecBase):
            not only their arguments, via the :meth:`get_node_parser()` method.
     """
     def __init__(self, specials_chars, arguments_spec_list=None, **kwargs):
-        super(SpecialsSpec, self).__init__(arguments_spec_list=arguments_spec_list, **kwargs)
-
-        self.specials_chars = specials_chars
-
-    def __repr__(self):
-        return 'SpecialsSpec(specials_chars={!r}, arguments_spec_list={!r})'.format(
-            self.specials_chars, self.arguments_spec_list
+        super(SpecialsSpec, self).__init__(
+            arguments_spec_list=arguments_spec_list,
+            spec_node_parser_type=LatexSpecialsCallParser,
+            specials_chars=specials_chars,
+            **kwargs
         )
+        #self.specials_chars = specials_chars
 
-    def get_node_parser(self, token):
-        r"""
-        Doc.........
-        """
-        return LatexSpecialsCallParser(token, self)
+    # def __repr__(self):
+    #     return 'SpecialsSpec(specials_chars={!r}, arguments_spec_list={!r})'.format(
+    #         self.specials_chars, self.arguments_spec_list
+    #     )
+
+    # def get_node_parser(self, token):
+    #     r"""
+    #     Doc.........
+    #     """
+    #     return LatexSpecialsCallParser(token, self)
 
 
 
@@ -398,7 +503,7 @@ _legacy_pyltxenc2_do = \
     lambda what, *args: globals()['_legacy_pyltxenc2_'+what](*args)
 
 
-def _legacy_pyltxenc2_SpecBase_init_from_args_parser(spec, arguments_spec_list, kwargs):
+def _legacy_pyltxenc2_CallableSpec_init_from_args_parser(spec, arguments_spec_list, kwargs):
 
     def _make_after_parsing_state_delta(parsed_node, spec=spec, **kwargs):
         new_parsing_state = getattr(parsed_node.nodeargd,
@@ -443,7 +548,7 @@ def _legacy_pyltxenc2_SpecBase_init_from_args_parser(spec, arguments_spec_list, 
 
 
 
-def _legacy_pyltxenc2_SpecBase_parse_args(spec, w, pos, parsing_state=None):
+def _legacy_pyltxenc2_CallableSpec_parse_args(spec, w, pos, parsing_state=None):
     r"""
     .. deprecated:: 3.0
 
@@ -462,7 +567,7 @@ def _legacy_pyltxenc2_SpecBase_parse_args(spec, w, pos, parsing_state=None):
 
     return parsed, parsed.pos, parsed.len
 
-_SpecBase.parse_args = _legacy_pyltxenc2_SpecBase_parse_args
+CallableSpec.parse_args = _legacy_pyltxenc2_CallableSpec_parse_args
 
 
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
