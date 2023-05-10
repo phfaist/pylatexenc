@@ -110,14 +110,20 @@ from .. import _util
 
 
 from ._unicode_to_latex_encoder import (
-    get_builtin_uni2latex_dict,
     RULE_DICT,
     RULE_REGEX,
     RULE_CALLABLE,
     UnicodeToLatexConversionRule,
-    get_builtin_conversion_rules,
     UnicodeToLatexEncoder,
 )
+#    get_builtin_uni2latex_dict,
+#    get_builtin_conversion_rules,
+
+### BEGIN_PYLATEXENC_GET_DEFAULT_SPECS_FN
+from .get_builtin_rules import (
+    get_builtin_uni2latex_dict, get_builtin_conversion_rules
+)
+### END_PYLATEXENC_GET_DEFAULT_SPECS_FN
 
 
 

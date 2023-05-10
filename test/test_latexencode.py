@@ -15,6 +15,7 @@ if sys.version_info.major > 2:
 
 from pylatexenc.latexencode import UnicodeToLatexEncoder
 from pylatexenc import latexencode 
+from pylatexenc.latexencode import get_builtin_rules as lenc_get_builtin
 
 
 class _DummyContextMgr(object):
@@ -36,48 +37,77 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
     def __init__(self, *args, **kwargs):
         super(TestLatexEncode, self).__init__(*args, **kwargs)
 
+### BEGIN_TEST_PYLATEXENC_SKIP
     def test_basic_0(self):
         u = UnicodeToLatexEncoder()
         input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
         self.assertEqual(u.unicode_to_latex(input),
                          "''\\`A votre sant\\'e!'' s'exclama le ma{\\^\\i}tre de maison \\`a 100\\%.")
+### END_TEST_PYLATEXENC_SKIP
+
+    def test_basic_0b(self):
+        u = UnicodeToLatexEncoder(conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'))
+        input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
+        self.assertEqual(u.unicode_to_latex(input),
+                         "''\\`A votre sant\\'e!'' s'exclama le ma{\\^\\i}tre de maison \\`a 100\\%.")
 
     def test_basic_1(self):
-        u = UnicodeToLatexEncoder(non_ascii_only=True, replacement_latex_protection='braces-all')
+        u = UnicodeToLatexEncoder(
+            conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+            non_ascii_only=True, replacement_latex_protection='braces-all'
+        )
         input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
         self.assertEqual(u.unicode_to_latex(input),
                          "\"{\\`A} votre sant{\\'e}!\" s'exclama le ma{\\^\\i}tre de maison {\\`a} 100%.")
         
     def test_basic_2(self):
-        u = UnicodeToLatexEncoder(replacement_latex_protection='braces-after-macro')
+        u = UnicodeToLatexEncoder(
+            conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+            replacement_latex_protection='braces-after-macro'
+        )
         input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
         self.assertEqual(u.unicode_to_latex(input),
                          "''\\`A votre sant\\'e!'' s'exclama le ma\\^\\i{}tre de maison \\`a 100\\%.")
     def test_basic_2a(self):
         # Issue #44
-        u = UnicodeToLatexEncoder(replacement_latex_protection='braces-after-macro')
+        u = UnicodeToLatexEncoder(
+            conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+            replacement_latex_protection='braces-after-macro'
+        )
         input = "Jabłoński, François, ⟨.⟩, ~"
         self.assertEqual(u.unicode_to_latex(input), "Jab\\l{}o\\'nski, Fran\\c{c}ois, \\ensuremath{\\langle}.\\ensuremath{\\rangle}, \\textasciitilde{}")
 
     def test_basic_2b(self):
-        u = UnicodeToLatexEncoder(replacement_latex_protection='none')
+        u = UnicodeToLatexEncoder(
+            conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+            replacement_latex_protection='none'
+        )
         input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
         self.assertEqual(u.unicode_to_latex(input),
                          "''\\`A votre sant\\'e!'' s'exclama le ma\\^\\itre de maison \\`a 100\\%.")
 
     def test_basic_2c(self):
-        u = UnicodeToLatexEncoder(non_ascii_only=True)
+        u = UnicodeToLatexEncoder(
+            conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+            non_ascii_only=True
+        )
         ascii_chars_convert = " \" # $ % & \\ _ { } ~ "
         self.assertEqual(u.unicode_to_latex(ascii_chars_convert), ascii_chars_convert)
 
     def test_basic_2d(self):
-        u = UnicodeToLatexEncoder(non_ascii_only=False)
+        u = UnicodeToLatexEncoder(
+            conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+            non_ascii_only=False
+        )
         ascii_chars_convert = " \" # $ % & \\ _ { } ~ "
         self.assertEqual(u.unicode_to_latex(ascii_chars_convert),
                          " '' \\# \\$ \\% \\& {\\textbackslash} \\_ \\{ \\} {\\textasciitilde} ")
 
     def test_basic_callable_replacement_latex_protection(self):
-        u = UnicodeToLatexEncoder(replacement_latex_protection=lambda s: '{***{'+s+'}***}')
+        u = UnicodeToLatexEncoder(
+            conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+            replacement_latex_protection=lambda s: '{***{'+s+'}***}'
+        )
         input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
         self.assertEqual(u.unicode_to_latex(input),
                          "{***{''}***}{***{\\`A}***} votre sant{***{\\'e}***}!{***{''}***} s'exclama le ma{***{\\^\\i}***}tre de maison {***{\\`a}***} 100{***{\\%}***}.")
@@ -87,26 +117,35 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
         test_unknown_chars = "A unicode character: \N{THAI CHARACTER THO THONG}"
         # generates warnings -- that's good
         with self.assertLogs(logger='pylatexenc.latexencode', level='WARNING') as cm:
-            u = UnicodeToLatexEncoder(unknown_char_policy='keep')
+            u = UnicodeToLatexEncoder(
+                conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+                unknown_char_policy='keep'
+            )
             self.assertEqual(u.unicode_to_latex(test_unknown_chars), test_unknown_chars) # unchanged
 
     def test_basic_3b(self):
         test_unknown_chars = "A unicode character: \N{THAI CHARACTER THO THONG}"
         # generates warnings -- that's good
         with self.assertLogs(logger='pylatexenc.latexencode', level='WARNING') as cm:
-            u = UnicodeToLatexEncoder(unknown_char_policy='replace')
+            u = UnicodeToLatexEncoder(
+                conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+                unknown_char_policy='replace'
+            )
             self.assertEqual(u.unicode_to_latex(test_unknown_chars),
                              "A unicode character: {\\bfseries ?}")
 
     def test_basic_3c(self):
         test_unknown_chars = "A unicode character: \N{THAI CHARACTER THO THONG}"
-        u = UnicodeToLatexEncoder(unknown_char_policy='unihex', unknown_char_warning=False)
+        u = UnicodeToLatexEncoder(
+            conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+            unknown_char_policy='unihex', unknown_char_warning=False
+        )
 
         self.assertEqual(u.unicode_to_latex(test_unknown_chars),
                          "A unicode character: \\ensuremath{\\langle}\\texttt{U+0E18}\\ensuremath{\\rangle}")
 
 
-
+### BEGIN_TEST_PYLATEXENC_SKIP
     def test_rules_00(self):
         
         def acallable(s, pos):
@@ -133,6 +172,61 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
         self.assertEqual(u.unicode_to_latex(input),
                          "''{{\\`{A}}} notre sant\\'e!'' s'exprima le ma{\\^i}tre de maison {\\ldots} \\`a 100{\\textpercent}.")
 
+    def test_rules_00b(self):
+        
+        def acallable(s, pos):
+            if s[pos] == "\N{LATIN SMALL LETTER E WITH ACUTE}":
+                return (1, r"{\'{e}}")
+            if s.startswith('...', pos):
+                return (3, r"\ldots")
+            return None
+
+        u = UnicodeToLatexEncoder(conversion_rules=[
+            latexencode.UnicodeToLatexConversionRule(latexencode.RULE_DICT, {
+                ord("\N{LATIN CAPITAL LETTER A WITH GRAVE}"): r"{{\`{A}}}",
+                ord("%"): r"\textpercent",
+            }),
+            latexencode.UnicodeToLatexConversionRule(latexencode.RULE_REGEX, [
+                (re.compile('v(otre)'), r'n\1'),
+                (re.compile("s'exclama", flags=re.I), r"s'exprima"),
+                (re.compile('\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}'), r"{\^i}"),
+            ]),
+            'defaults',
+            latexencode.UnicodeToLatexConversionRule(latexencode.RULE_CALLABLE, acallable),
+        ])
+        input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison ... \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
+        self.assertEqual(u.unicode_to_latex(input),
+                         "''{{\\`{A}}} notre sant\\'e!'' s'exprima le ma{\\^i}tre de maison {\\ldots} \\`a 100{\\textpercent}.")
+
+### END_TEST_PYLATEXENC_SKIP
+
+    def test_rules_00c(self):
+        
+        def acallable(s, pos):
+            if s[pos] == "\N{LATIN SMALL LETTER E WITH ACUTE}":
+                return (1, r"{\'{e}}")
+            if s.startswith('...', pos):
+                return (3, r"\ldots")
+            return None
+
+        u = UnicodeToLatexEncoder(conversion_rules=[
+            latexencode.UnicodeToLatexConversionRule(latexencode.RULE_DICT, {
+                ord("\N{LATIN CAPITAL LETTER A WITH GRAVE}"): r"{{\`{A}}}",
+                ord("%"): r"\textpercent",
+            }),
+            latexencode.UnicodeToLatexConversionRule(latexencode.RULE_REGEX, [
+                (re.compile('v(otre)'), r'n\1'),
+                (re.compile("s'exclama", flags=re.I), r"s'exprima"),
+                (re.compile('\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}'), r"{\^i}"),
+            ]),
+        ] + lenc_get_builtin.get_builtin_conversion_rules('defaults') + [
+            latexencode.UnicodeToLatexConversionRule(latexencode.RULE_CALLABLE, acallable),
+        ])
+        input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison ... \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
+        self.assertEqual(u.unicode_to_latex(input),
+                         "''{{\\`{A}}} notre sant\\'e!'' s'exprima le ma{\\^i}tre de maison {\\ldots} \\`a 100{\\textpercent}.")
+
+### BEGIN_TEST_PYLATEXENC_SKIP
     def test_rules_01(self):
         
         def acallable(s, pos):
@@ -152,13 +246,41 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
                 (re.compile("s'exclama", flags=re.I), r"s'exprima"),
                 (re.compile('\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}'), r"{\^i}"),
             ]),
-            'unicode-xml', # expand built-in rule names
+            'unicode-xml', # expand built-in names
+            latexencode.UnicodeToLatexConversionRule(latexencode.RULE_CALLABLE, acallable),
+        ])
+        input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison ... \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
+        self.assertEqual(u.unicode_to_latex(input),
+                         "\"{{\\`{A}}} notre sant\\'{e}!\" s'exprima le ma{\\^i}tre de maison {\\ldots} \\`{a} 100{\\textpercent}.")
+### END_TEST_PYLATEXENC_SKIP
+
+    def test_rules_01b(self):
+        
+        def acallable(s, pos):
+            if s[pos] == "\N{LATIN SMALL LETTER E WITH ACUTE}":
+                return (1, r"{\'{e}}")
+            if s.startswith('...', pos):
+                return (3, r"\ldots")
+            return None
+
+        u = UnicodeToLatexEncoder(conversion_rules=[
+            latexencode.UnicodeToLatexConversionRule(latexencode.RULE_DICT, {
+                ord("\N{LATIN CAPITAL LETTER A WITH GRAVE}"): r"{{\`{A}}}",
+                ord("%"): r"\textpercent",
+            }),
+            latexencode.UnicodeToLatexConversionRule(latexencode.RULE_REGEX, [
+                (re.compile('v(otre)'), r'n\1'),
+                (re.compile("s'exclama", flags=re.I), r"s'exprima"),
+                (re.compile('\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}'), r"{\^i}"),
+            ]),
+        ] + lenc_get_builtin.get_builtin_conversion_rules('unicode-xml') + [
             latexencode.UnicodeToLatexConversionRule(latexencode.RULE_CALLABLE, acallable),
         ])
         input = "\"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison ... \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
         self.assertEqual(u.unicode_to_latex(input),
                          "\"{{\\`{A}}} notre sant\\'{e}!\" s'exprima le ma{\\^i}tre de maison {\\ldots} \\`{a} 100{\\textpercent}.")
 
+### BEGIN_TEST_PYLATEXENC_SKIP
     def test_rules_02(self):
         # based on test_basic_0()
         u = UnicodeToLatexEncoder(conversion_rules=['defaults'])
@@ -166,9 +288,26 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
         input = "* \"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama\N{SUPERSCRIPT TWO} le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
         self.assertEqual(u.unicode_to_latex(input),
                          "* ''\\`A votre sant\\'e!'' s'exclama{\\texttwosuperior} le ma{\\^\\i}tre de maison \\`a 100\\%.")
+### END_TEST_PYLATEXENC_SKIP
 
+    def test_rules_02b(self):
+        # based on test_basic_0()
+        u = UnicodeToLatexEncoder(conversion_rules=[]+lenc_get_builtin.get_builtin_conversion_rules('defaults'))
+        #u = UnicodeToLatexEncoder()
+        input = "* \"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama\N{SUPERSCRIPT TWO} le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
+        self.assertEqual(u.unicode_to_latex(input),
+                         "* ''\\`A votre sant\\'e!'' s'exclama{\\texttwosuperior} le ma{\\^\\i}tre de maison \\`a 100\\%.")
+
+### BEGIN_TEST_PYLATEXENC_SKIP
     def test_rules_03(self):
         u = UnicodeToLatexEncoder(conversion_rules=['unicode-xml'])
+        input = "* \"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama\N{SUPERSCRIPT TWO} le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
+        self.assertEqual(u.unicode_to_latex(input),
+                         "{\\ast} \"\\`{A} votre sant\\'{e}!\" s{\\textquotesingle}exclama{^2} le ma\\^{\\i}tre de maison \\`{a} 100\\%.")
+### END_TEST_PYLATEXENC_SKIP
+
+    def test_rules_03b(self):
+        u = UnicodeToLatexEncoder(conversion_rules=[]+lenc_get_builtin.get_builtin_conversion_rules('unicode-xml'))
         input = "* \"\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}!\" s'exclama\N{SUPERSCRIPT TWO} le ma\N{LATIN SMALL LETTER I WITH CIRCUMFLEX}tre de maison \N{LATIN SMALL LETTER A WITH GRAVE} 100%."
         self.assertEqual(u.unicode_to_latex(input),
                          "{\\ast} \"\\`{A} votre sant\\'{e}!\" s{\\textquotesingle}exclama{^2} le ma\\^{\\i}tre de maison \\`{a} 100\\%.")
@@ -191,7 +330,7 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
                 latexencode.UnicodeToLatexConversionRule(
                     latexencode.RULE_CALLABLE, capitalize_acronyms
                 ),
-            ] + latexencode.get_builtin_conversion_rules('defaults')
+            ] + lenc_get_builtin.get_builtin_conversion_rules('defaults')
         )
         input = "Title with {Some} ABC acronyms LIKe this."
         self.assertEqual(
@@ -206,7 +345,7 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
                     [ (re.compile(r'([{}])'), r'\1'), # keep existing braces
                       (re.compile(r'\b([A-Z]{2,}\w*)\b'), r'{\1}'), ]
                 ),
-            ] + latexencode.get_builtin_conversion_rules('defaults')
+            ] + lenc_get_builtin.get_builtin_conversion_rules('defaults')
         )
         input = "Title 2 with {Some} ABC acronyms LIKe this."
         self.assertEqual(
@@ -226,8 +365,11 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
                 self.chunks.append(s)
                 return self
 
-        u = UnicodeToLatexEncoder(latex_string_class=LatexChunkList,
-                                  replacement_latex_protection='none')
+        u = UnicodeToLatexEncoder(
+            conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+            latex_string_class=LatexChunkList,
+            replacement_latex_protection='none'
+        )
         result = u.unicode_to_latex("A é → α")
         # result is an object of custom type LatexChunkList
         self.assertEqual(
@@ -238,10 +380,11 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
 
 class TestPartialLatexEncode(unittest.TestCase, ProvideAssertCmds):
 
+### BEGIN_TEST_PYLATEXENC_SKIP
     def test_simple_cases(self):
 
         self.assertEqual(
-            latexencode.PartialLatexToLatexEncoder()
+            latexencode.PartialLatexToLatexEncoder() # use 'defaults'
             .unicode_to_latex(
                 r"Check ~ \that{macros are fully & 100% \textbf{pr{\'e}s\`ervées}}."
             )
@@ -250,7 +393,32 @@ class TestPartialLatexEncode(unittest.TestCase, ProvideAssertCmds):
         )
 
         self.assertEqual(
-            latexencode.PartialLatexToLatexEncoder()
+            latexencode.PartialLatexToLatexEncoder() # use 'defaults'
+            .unicode_to_latex(
+                r"{JILA} {SrI} optical lattice clock with uncertainty of $2.0 \times 10^{-18}$"
+            )
+            ,
+            r"{JILA} {SrI} optical lattice clock with uncertainty of $2.0 \times 10^{-18}$"
+        )
+### END_TEST_PYLATEXENC_SKIP
+
+    def test_simple_cases_b(self):
+
+        self.assertEqual(
+            latexencode.PartialLatexToLatexEncoder(
+                conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+            )
+            .unicode_to_latex(
+                r"Check ~ \that{macros are fully & 100% \textbf{pr{\'e}s\`ervées}}."
+            )
+            ,
+            r"Check {\textasciitilde} \that{macros are fully \& 100\% \textbf{pr{\'e}s\`erv\'ees}}."
+        )
+
+        self.assertEqual(
+            latexencode.PartialLatexToLatexEncoder(
+                conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+            )
             .unicode_to_latex(
                 r"{JILA} {SrI} optical lattice clock with uncertainty of $2.0 \times 10^{-18}$"
             )
@@ -273,8 +441,7 @@ class TestPartialLatexEncode(unittest.TestCase, ProvideAssertCmds):
                         (re.compile(r'\b([A-Z]{2,}\w*)\b'), r'{\1}'),
                     ]
                 ),
-                'defaults',
-            ]
+            ] + lenc_get_builtin.get_builtin_conversion_rules('defaults'),
         )
         input = r"Title with {Some} ABC àcr\^onyms LIKe this."
         self.assertEqual(
