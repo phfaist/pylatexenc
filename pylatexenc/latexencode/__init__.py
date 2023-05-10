@@ -92,20 +92,15 @@ import sys
 import functools
 import itertools
 
+### BEGIN_PYTHON2_SUPPORT_CODE
 if sys.version_info.major > 2:
     unicode = str # need to support unicode() w/ no arguments
     basestring = str
-    # use MappingProxyType for keeping
-    from types import MappingProxyType as _MappingProxyType
-    # inspect function argument names
-    from inspect import getfullargspec
-else:
-    _MappingProxyType = dict
-    # inspect function argument names -- simulate getfullargspec with getargspec (argh...)
-    from inspect import getargspec as getfullargspec
+
+### END_PYTHON2_SUPPORT_CODE
+
 
 logger = logging.getLogger(__name__)
-
 
 
 from .. import _util
@@ -137,6 +132,7 @@ from ._partial_latex_encoder import (
 # ------------------------------------------------
 
 
+### BEGIN_PYLATEXENC1_LEGACY_SUPPORT_CODE
 
 _u2l_obj_cache = {}
 
@@ -327,6 +323,4 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
     return result
 
 
-
-
-
+### END_PYLATEXENC1_LEGACY_SUPPORT_CODE

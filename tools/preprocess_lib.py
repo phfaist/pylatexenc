@@ -79,6 +79,7 @@ _rx_patches = re.compile(
 _rx_from_import = re.compile(
     r"""
     ^                                   # beginning of a line
+    (?P<indent_space>[ \t]*)            # any indenting space
     from
     \s+
     (?P<pkg_where>[a-zA-Z0-9_.]+)       # package path
@@ -286,6 +287,7 @@ class Preprocess:
 
         self.modules_to_preprocess = set(new_module_list)
         self.modules_preprocessed = set()
+        self.modules_skipped = set()
 
         #self.preprocess()
 
@@ -295,7 +297,9 @@ class Preprocess:
 
         while True:
 
-            need_to_preprocess = ( self.modules_to_preprocess - self.modules_preprocessed )
+            need_to_preprocess = (
+                self.modules_to_preprocess - self.modules_preprocessed - self.modules_skipped
+            )
 
             # logger.debug(f"{self.modules_to_preprocess=}\n{self.modules_preprocessed=}\n"
             #              f" --> {need_to_preprocess}")
@@ -315,14 +319,23 @@ class Preprocess:
 
             rel_mod_fname = os.path.join(*mod_path, mod_name+'.py')
 
-            with open( os.path.join(self.source_dir, rel_mod_fname), 'r' ) as f:
-                source_content = f.read()
+            logger.info(f"Processing ‘{mod_dotname}’ ...")
+
+            try:
+                with open( os.path.join(self.source_dir, rel_mod_fname), 'r' ) as f:
+                    source_content = f.read()
+            except FileNotFoundError as e:
+                logger.warning(
+                    f"Could not find file {self.source_dir}/{rel_mod_fname}: {repr(e)}. "
+                    f"I'm assuming that this file is not to be preprocessed."
+                )
+                self.modules_skipped.add( mod_dotname )
+                continue
+
 
             mod = _Module(mod_path=mod_path,
                           mod_name=mod_name,
                           source_content=source_content)
-
-            logger.info(f"Processing ‘{mod_dotname}’ ...")
 
             # preprocess the module.
             self.preprocess_module(mod)
@@ -396,6 +409,7 @@ class Preprocess:
 
         def _repl_from_import(m):
 
+            indent_space = m.group('indent_space')
             pkg_where = m.group('pkg_where')
             import_targets = m.group('import_targets')
             import_name = m.group('import_name')
@@ -505,11 +519,11 @@ class Preprocess:
             # tweak in different form
             if imported_sub_module:
                 if import_as:
-                    return f'import {mod_dotname} as {import_as}\n'
-                return f'import {mod_dotname} as {import_name}\n'
+                    return f'{indent_space}import {mod_dotname} as {import_as}\n'
+                return f'{indent_space}import {mod_dotname} as {import_name}\n'
 
             # transform into simple absolute from X import Y statement
-            return f'from {mod_dotname} import {import_targets}'
+            return f'{indent_space}from {mod_dotname} import {import_targets}'
 
         # def _repl_import(m):
         #     # don't replace the text, but register the module name for it to

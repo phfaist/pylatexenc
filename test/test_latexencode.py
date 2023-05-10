@@ -2,17 +2,18 @@
 from __future__ import print_function, absolute_import, unicode_literals
 
 import unittest
-import sys
 import re
 import logging
 
+### BEGIN_PYTHON2_SUPPORT_CODE
+import sys
 if sys.version_info.major > 2:
     def unicode(string): return string
     basestring = str
+### END_PYTHON2_SUPPORT_CODE
 
-from pylatexenc.latexencode import (
-    UnicodeToLatexEncoder, utf8tolatex
-)
+
+from pylatexenc.latexencode import UnicodeToLatexEncoder
 from pylatexenc import latexencode 
 
 
@@ -180,14 +181,16 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
             if s[pos] in ('{', '}'):
                 # preserve existing braces
                 return (1, s[pos])
-            m = re.compile(r'\b[A-Z]{2,}\w*\b').match(s, pos)
+            m = re.compile(r'\b[A-Z]{2,}\w*\b').match(s[pos:]) #.match(s, pos) -- not for Transcrypt
             if m is None:
                 return None
             return (m.end()-m.start(), "{" + m.group() + "}")
 
         u = UnicodeToLatexEncoder(
             conversion_rules=[
-                latexencode.UnicodeToLatexConversionRule(latexencode.RULE_CALLABLE, capitalize_acronyms),
+                latexencode.UnicodeToLatexConversionRule(
+                    latexencode.RULE_CALLABLE, capitalize_acronyms
+                ),
             ] + latexencode.get_builtin_conversion_rules('defaults')
         )
         input = "Title with {Some} ABC acronyms LIKe this."
@@ -205,10 +208,10 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
                 ),
             ] + latexencode.get_builtin_conversion_rules('defaults')
         )
-        input = "Title with {Some} ABC acronyms LIKe this."
+        input = "Title 2 with {Some} ABC acronyms LIKe this."
         self.assertEqual(
             u.unicode_to_latex(input),
-            "Title with {Some} {ABC} acronyms {LIKe} this."
+            "Title 2 with {Some} {ABC} acronyms {LIKe} this."
         )
 
 
@@ -282,6 +285,9 @@ class TestPartialLatexEncode(unittest.TestCase, ProvideAssertCmds):
 
 
 
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
+from pylatexenc.latexencode import utf8tolatex
 
 class TestUtf8tolatex(unittest.TestCase, ProvideAssertCmds):
 
@@ -317,6 +323,9 @@ class TestUtf8tolatex(unittest.TestCase, ProvideAssertCmds):
         with self.assertLogs(logger='pylatexenc.latexencode', level='WARNING') as cm:
             self.assertEqual(utf8tolatex(test_bad_chars, substitute_bad_chars=True),
                              "A unicode character: {\\bfseries ?}")
+
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
+
 
 
 if __name__ == '__main__':

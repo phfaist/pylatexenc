@@ -8,6 +8,7 @@ module_list:
   - 'pylatexenc.latexnodes'
   - 'pylatexenc.macrospec'
   - 'pylatexenc.latexwalker'
+  - 'pylatexenc.latexencode'
   - 'test.*'
 
 # features
@@ -30,3 +31,8 @@ enabled_features:
     UNIQUE_OBJECT_ID: |
       import unique_object_id
       fn_unique_object_id = unique_object_id.fn_unique_object_id
+
+    # Always specify u2lobj= to callables (JS will silently ignore extra args)
+    LATEXENCODE_CALLABLE_ACCEPTS_U2LOBJ_ARG: |
+      def _callable_accepts_u2lobj_arg(fn):
+          return True

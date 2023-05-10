@@ -98,10 +98,13 @@ def run_main():
             os.path.join(pylatexenc_src_dir, 'test'),
             test_file_patterns=[
                 # these are regexes that are matched as ^( <...> )[.]py$
-                'test_latexnodes_.*',
-                'test_macrospec_.*',
-                'test_latexwalker_.*',
-                'test_util',
+
+                #DEBUG!!!!!!!
+                # 'test_latexnodes_.*',
+                # 'test_macrospec_.*',
+                # 'test_latexwalker_.*',
+                'test_latexencode',
+                # 'test_util',
             ]
         )
 

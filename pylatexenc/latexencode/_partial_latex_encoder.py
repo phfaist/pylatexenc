@@ -37,10 +37,8 @@ from ._unicode_to_latex_encoder import (
     UnicodeToLatexEncoder
 )
 
-# if sys.version_info.major == 2:
-#     bytes = str
-#     str = unicode
 
+from ..latexwalker import _walker
 
 
 class PartialLatexToLatexEncoder(UnicodeToLatexEncoder):
@@ -99,11 +97,9 @@ class PartialLatexToLatexEncoder(UnicodeToLatexEncoder):
         further rules can be considered by the base unicode encoder.
         """
 
-        from ..latexwalker import LatexWalker
-
         if s[pos] in self.keep_latex_chars:
             # Read a token and if it is a macro, keep the full macro!
-            lw = LatexWalker(s, tolerant_parsing=False)
+            lw = _walker.LatexWalker(s, tolerant_parsing=False)
             ps = lw.make_parsing_state()
             tok = lw.make_token_reader(pos=pos).peek_token(parsing_state=ps)
 

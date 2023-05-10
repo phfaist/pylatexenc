@@ -1,14 +1,16 @@
 
-import pylatexenc  #lgtm [py/unused-import]
+import pylatexenc
 #
-import pylatexenc.latexnodes  #lgtm [py/unused-import]
-import pylatexenc.macrospec  #lgtm [py/unused-import]
-import pylatexenc.latexwalker  #lgtm [py/unused-import]
+import pylatexenc.latexnodes
+import pylatexenc.macrospec
+import pylatexenc.latexwalker
+
+import pylatexenc.latexencode
 
 
 # additional modules that we might need:
-import logging  #lgtm [py/unused-import]
-import collections  #lgtm [py/unused-import]
+import logging
+import collections
 
 
 # customjspatches is no longer needed, we're now directly patching the

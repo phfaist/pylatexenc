@@ -229,10 +229,10 @@ def do_run_test_modules(test_modules):
     for ti in test_objects:
 
         tmodule = ti['module']
-        tmembername = ti['membername']
+        tmembername = ti['classname']
         t = ti['instance']
 
-        tmodulename = tmodule.__name__
+        tmodulename = t.__class__.__module__
 
         if isinstance(t, TestCase):
             #print("dir(t) = ", dir(t))
@@ -240,7 +240,7 @@ def do_run_test_modules(test_modules):
                 if a.startswith('test_'):
                     m = getattr(t, a)
                     if callable(m):
-                        print("*** Run {}.{}.{} ***".format(tmodulename, tmembername, a))
+                        print(f"*** Run  {tmodulename}.{tmembername}.{a} ***")
                         try:
                             m()
                         except (object) as err:
@@ -271,7 +271,7 @@ Traceback:
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 """)
                             raise err2
-                        print("*** Done {}.{}.{} ***".format(tmodulename, tmembername, a))
+                        print(f"*** Done {tmodulename}.{tmembername}.{a} ***")
                         summary_methods.append(
                             f"{t.__class__.__module__}::{t.__class__.__name__}::{a} ✓"
                         )
