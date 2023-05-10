@@ -6,6 +6,7 @@ import pylatexenc.macrospec
 import pylatexenc.latexwalker
 
 import pylatexenc.latexencode
+import pylatexenc.latexencode.get_builtin_rules
 
 
 # additional modules that we might need:

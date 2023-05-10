@@ -11,6 +11,7 @@ module_list:
   - 'pylatexenc.macrospec'
   - 'pylatexenc.latexwalker'
   - 'pylatexenc.latexencode'
+  - 'pylatexenc.latexencode.get_builtin_rules'
 
 # features
 enabled_features:
