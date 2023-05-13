@@ -223,6 +223,7 @@ def do_run_test_modules(test_modules):
                 } )
 
     summary_modules = []
+    summary_seen_modules = []
     summary_methods = []
     summary_classes = []
 
@@ -278,9 +279,11 @@ Traceback:
             summary_classes.append(
                 f"{t.__class__.__module__}::{t.__class__.__name__} ✓"
             )
-        summary_modules.append(
-            f"{t.__class__.__module__} ✓"
-        )
+        if t.__class__.__module__ not in summary_seen_modules:
+            summary_seen_modules.append(t.__class__.__module__)
+            summary_modules.append(
+                f"{t.__class__.__module__} ✓"
+            )
 
 
     # print summary
@@ -308,7 +311,7 @@ MODULES:
 {}
 
 """.format(
-    "\n".join([ '+ '+x for x in summary_methods]),
-    "\n".join([ '+ '+x for x in summary_classes]),
-    "\n".join([ '+ '+x for x in summary_modules]),
+    "\n".join([ '+ '+x for x in sorted(summary_methods)]),
+    "\n".join([ '+ '+x for x in sorted(summary_classes)]),
+    "\n".join([ '+ '+x for x in sorted(summary_modules)]),
     ))

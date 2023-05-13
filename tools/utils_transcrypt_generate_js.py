@@ -197,9 +197,9 @@ class GenUtils:
             logger.info(f"Installing shortcuts to python runtime tricks ...")
             with open( os.path.join(output_dir, 'py.js'), 'w' ) as fw:
                 fw.write(r"""
-import {__kwargtrans__, repr} from "./org.transcrypt.__runtime__.js";
+import {__kwargtrans__, repr, dict} from "./org.transcrypt.__runtime__.js";
 const $$kw = __kwargtrans__;
-export { $$kw, repr };
+export { $$kw, repr, dict };
 """)
 
         if js_patches:
