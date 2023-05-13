@@ -83,7 +83,7 @@ __pragma__('js', 'var HexstrN = (v, N=4) => (+v).toString(16).toUpperCase().padS
 
 #__pragma__('skip')
 def HexstrN(value, N=4):
-    return f'{value:x}' .zfill(N).upper()
+    return ('%X'%(value)).zfill(N)
 #__pragma__('noskip')
 
 
