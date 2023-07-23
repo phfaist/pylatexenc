@@ -10,14 +10,14 @@
    :local:
 
 
-Parser Base Class
+Parser base class
 ~~~~~~~~~~~~~~~~~
 
 .. autoclass:: LatexParserBase
    :members:
 
 
-General Nodes
+General nodes
 ~~~~~~~~~~~~~
 
 .. autoclass:: LatexGeneralNodesParser
@@ -29,7 +29,7 @@ General Nodes
    :show-inheritance:
 
 
-Delimited Expressions
+Delimited expressions
 ~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: LatexDelimitedExpressionParserInfo
@@ -57,12 +57,16 @@ Delimited Expressions
 
 
 
-Other Types of Expressions
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Single expression parser
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: LatexExpressionParser
    :members:
    :show-inheritance:
+
+
+Optional expression parser
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: LatexOptionalSquareBracketsParser
    :members:
@@ -72,19 +76,9 @@ Other Types of Expressions
    :members:
    :show-inheritance:
 
-.. autoclass:: LatexStandardArgumentParser
-   :members:
-   :show-inheritance:
 
-.. autofunction:: get_standard_argument_parser
-
-.. autoclass:: LatexCharsCommaSeparatedListParser
-   :members:
-   :show-inheritance:
-
-.. autoclass:: LatexCharsGroupParser
-   :members:
-   :show-inheritance:
+Verbatim/literal expressions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: LatexVerbatimBaseParser
    :members:
@@ -97,3 +91,27 @@ Other Types of Expressions
 .. autoclass:: LatexVerbatimEnvironmentContentsParser
    :members:
    :show-inheritance:
+
+
+
+Typical macro arguments
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_standard_argument_parser
+
+.. autoclass:: LatexStandardArgumentParser
+   :members:
+   :show-inheritance:
+
+.. autoclass:: LatexCharsCommaSeparatedListParser
+   :members:
+   :show-inheritance:
+
+.. autoclass:: LatexCharsGroupParser
+   :members:
+   :show-inheritance:
+
+.. autoclass:: LatexTackOnInformationFieldMacrosParser
+   :members:
+   :show-inheritance:
+
