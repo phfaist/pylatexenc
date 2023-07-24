@@ -22,6 +22,9 @@ Parsing State
 .. autoclass:: ParsingStateDeltaReplaceParsingState
    :members:
 
+.. autoclass:: ParsingStateDeltaChained
+   :members:
+
 .. autoclass:: ParsingStateDeltaWalkerEvent
    :members:
 

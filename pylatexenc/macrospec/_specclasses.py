@@ -62,6 +62,13 @@ class _NotSpecified:
     pass
 
 
+_spec_node_parser_types = {
+    'macro': LatexMacroCallParser,
+    'environment': LatexEnvironmentCallParser,
+    'specials': LatexSpecialsCallParser,
+}
+
+
 class CallableSpec(CallableSpecBase):
     r"""
     Base class for :py:class:`MacroSpec`, :py:class:`EnvironmentSpec` and
@@ -95,11 +102,15 @@ class CallableSpec(CallableSpecBase):
                  make_after_parsing_state_delta=None,
                  make_body_parser=None,
                  finalize_node=None,
+                 # also accepts `body_parsing_state_delta` as kwargs ->
                  **kwargs):
 
         self.arguments_spec_list = arguments_spec_list
 
         self.spec_node_parser_type = spec_node_parser_type
+        if isinstance(spec_node_parser_type, _basestring):
+            self.spec_node_parser_type = _spec_node_parser_types[spec_node_parser_type]
+
         if macroname is not _NotSpecified:
             self.macroname = macroname
         if environmentname is not _NotSpecified:

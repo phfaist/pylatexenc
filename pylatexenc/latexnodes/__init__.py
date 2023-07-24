@@ -46,6 +46,7 @@ from ._parsingstate import (
 from ._parsingstatedelta import (
     ParsingStateDelta,
     ParsingStateDeltaReplaceParsingState,
+    ParsingStateDeltaChained,
     ParsingStateDeltaWalkerEvent,
     ParsingStateDeltaEnterMathMode,
     ParsingStateDeltaLeaveMathMode,

@@ -101,6 +101,28 @@ class ParsingStateDeltaReplaceParsingState(ParsingStateDelta):
         return parsing_state
 
 
+
+
+class ParsingStateDeltaChained(ParsingStateDelta):
+    r"""
+    Apply multiple parsing state deltas, in the order specified.
+    """
+    def __init__(self, parsing_state_deltas, **kwargs):
+        super(ParsingStateDeltaChained, self).__init__(
+            _fields=('parsing_state_deltas',),
+            **kwargs
+        )
+        self.parsing_state_deltas = parsing_state_deltas
+
+    def get_updated_parsing_state(self, parsing_state, latex_walker):
+        ps = parsing_state
+        for delta in self.parsing_state_deltas:
+            if delta is not None:
+                ps = delta.get_updated_parsing_state(ps, latex_walker)
+        return ps
+
+
+
 # ------------------------------------------------------------------------------
 
 #
