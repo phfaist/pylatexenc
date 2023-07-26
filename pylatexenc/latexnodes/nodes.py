@@ -1266,7 +1266,9 @@ class LatexNodesVisitor(object):
 # we'll be using "from _types import *" for convenience, so to avoid polluting
 # the other modules' namespaces, we define __all__ here.
 
-latex_node_types = [
+
+# use tuple()  so that this can be used in " isinstance(x, latex_node_types) "
+latex_node_types = (
     LatexNode,
     LatexCharsNode,
     LatexGroupNode,
@@ -1275,7 +1277,7 @@ latex_node_types = [
     LatexEnvironmentNode,
     LatexSpecialsNode,
     LatexMathNode
-]
+)
 
 __all__ = [ nc.__name__ for nc in latex_node_types ] + [
     'LatexNodeList',

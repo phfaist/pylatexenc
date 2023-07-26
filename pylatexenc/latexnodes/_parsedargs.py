@@ -94,6 +94,9 @@ class LatexArgumentSpec(object):
 
         self.parsing_state_delta = parsing_state_delta
 
+    _fields = ('parser', 'argname', 'parsing_state_delta', )
+
+
     def __repr__(self):
         return (
             "{cls}(argname={argname!r}, parser={parser!r}, "

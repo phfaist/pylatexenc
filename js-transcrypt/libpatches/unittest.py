@@ -6,7 +6,7 @@ from pylatexenc import latexnodes
 
 
 # Javascript's maximum stack trace
-Error.stack_trace_limit = -1
+Error.stackTraceLimit = 999
 
 
 class _AssertRaisesContext:
