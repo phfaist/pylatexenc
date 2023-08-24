@@ -94,6 +94,8 @@ class LatexContextDb(object):
     See :py:func:`pylatexenc.latex2text.get_default_latex_context_db()` for the
     default latex context for `latex2text` with a set of text replacements for a
     collection of known macros and environments.
+
+    The constructor doesn't accept any meaningful arguments.
     """
     def __init__(self, **kwargs):
         super(LatexContextDb, self).__init__(**kwargs)
@@ -346,13 +348,13 @@ class LatexContextDb(object):
         best_match_len = 0
         best_match_s = None
 
-        logger.debug("test_for_specials() category_list=%r", self.category_list)
+        # logger.debug("test_for_specials() category_list=%r", self.category_list)
 
         for cat in self.category_list:
             # search categories in the given order
             for specials_chars in self.d[cat]['specials'].keys():
-                logger.debug("test_for_specials() ‘%s...’ testing %r",
-                             s[pos:pos+4], specials_chars)
+                # logger.debug("test_for_specials() ‘%s...’ testing %r",
+                #              s[pos:pos+4], specials_chars)
                 if len(specials_chars) > best_match_len and s.startswith(specials_chars, pos):
                     best_match_s = self.d[cat]['specials'][specials_chars]
                     best_match_len = len(specials_chars)
