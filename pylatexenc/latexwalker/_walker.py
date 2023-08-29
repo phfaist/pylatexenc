@@ -545,7 +545,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         if pc.recovery_from_exception is not None:
             nodes, info = pc.perform_recovery_nodes_info(the_token_reader)
 
-        logger.debug(":: PARSED content (%s @ %r) - %r - result %r %r DONE ::",
+        logger.debug(":: PARSED content (%s @ %r) - %r - result %r + %r DONE ::",
                      open_context_name, start_pos, parser, nodes, info)
 
         return nodes, info
