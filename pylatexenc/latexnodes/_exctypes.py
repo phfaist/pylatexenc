@@ -136,7 +136,7 @@ class LatexWalkerLocatedError(LatexWalkerError):
         self.open_contexts = kwargs.pop('open_contexts', [])
 
         if len(kwargs):
-            raise ValueError("Unexpected keyword argument(s) to LatexWalkerParseError(): "
+            raise ValueError("Unexpected keyword argument(s) to LatexWalkerLocatedError(): "
                              + repr(kwargs))
 
         super(LatexWalkerLocatedError, self).__init__(
