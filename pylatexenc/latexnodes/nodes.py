@@ -53,10 +53,14 @@ def _display_abbrev_str(s, maxlen=40):
 
 
 def _display_str_delimiters(delimiters):
+
+    open_delim = '<??>'
+    close_delim = '<??>'
+
     try:
         open_delim, close_delim = delimiters
-    except Exception:
-        open_delim, close_delim = '<??>', '<??>'
+    except: # Transcrypt-friendly
+        pass
 
     if open_delim is None:
         open_delim = ''
