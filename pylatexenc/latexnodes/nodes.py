@@ -44,6 +44,28 @@ if sys.version_info.major == 2:
 
 
 
+def _display_abbrev_str(s, maxlen=40):
+    if not maxlen or maxlen < 2: # also catches None
+        maxlen = 2
+    if len(s) < maxlen:
+        return s
+    return s[:maxlen-2] + '…'
+
+
+def _display_str_delimiters(delimiters):
+    try:
+        open_delim, close_delim = delimiters
+    except Exception:
+        open_delim, close_delim = '<??>', '<??>'
+
+    if open_delim is None:
+        open_delim = ''
+    if close_delim is None:
+        close_delim = ''
+
+    return open_delim, close_delim
+
+
 #
 # see __all__ defined at the bottom of this module.
 #
@@ -220,6 +242,9 @@ class LatexNode(object):
             ")"
             )
 
+    def display_str(self):
+        return r'<UNKNOWN NODE TYPE>: ' + repr(self)
+
     def accept_node_visitor(self, visitor):
         visitor.visit_unknown_node(self)
 
@@ -266,6 +291,9 @@ class LatexCharsNode(LatexNode):
     def nodeType(self):
         return LatexCharsNode
 
+    def display_str(self):
+        return 'chars ‘' + _display_abbrev_str(self.chars) + '’'
+
     def accept_node_visitor(self, visitor):
         visitor.visit_chars_node(self)
 
@@ -308,6 +336,10 @@ class LatexGroupNode(LatexNode):
     def nodeType(self):
         return LatexGroupNode
 
+    def display_str(self):
+        open_delim, close_delim = _display_str_delimiters(self.delimiters)
+        return "group ‘" + open_delim + "…" + close_delim + "’"
+
     def accept_node_visitor(self, visitor):
         if self.nodelist is not None:
             for node in self.nodelist:
@@ -343,6 +375,9 @@ class LatexCommentNode(LatexNode):
 
     def nodeType(self):
         return LatexCommentNode
+
+    def display_str(self):
+        return "comment ‘" + _display_abbrev_str(self.comment.strip()) + "’"
 
     def accept_node_visitor(self, visitor):
         visitor.visit_comment_node(self)
@@ -429,6 +464,9 @@ class LatexMacroNode(LatexNode):
 
     def nodeType(self):
         return LatexMacroNode
+
+    def display_str(self):
+        return "macro ‘\\" + self.macroname + "’"
 
     def accept_node_visitor(self, visitor):
         if self.nodeargd is not None:
@@ -542,20 +580,20 @@ class LatexEnvironmentNode(LatexNode):
         #self.optargs = optargs
         #self.args = args
 
+
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
     @property
     def envname(self):
         # Obsolete, don't use.
         return self.environmentname
 
-    # @property
-    # def optargs(self):
-    #     return None
-    # @property
-    # def args(self):
-    #     return self.nodeargd.argnlist
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
     def nodeType(self):
         return LatexEnvironmentNode
+
+    def display_str(self):
+        return "environment ‘{" + self.environmentname + "}’"
 
     def accept_node_visitor(self, visitor):
         if self.nodeargd is not None:
@@ -622,6 +660,9 @@ class LatexSpecialsNode(LatexNode):
     def nodeType(self):
         return LatexSpecialsNode
 
+    def display_str(self):
+        return "specials ‘" + self.specials_chars + "’"
+
     def accept_node_visitor(self, visitor):
         if self.nodeargd is not None:
             self.nodeargd.accept_node_visitor(visitor)
@@ -669,6 +710,9 @@ class LatexMathNode(LatexNode):
     def nodeType(self):
         return LatexMathNode
 
+    def display_str(self):
+        open_delim, close_delim = _display_str_delimiters(self.delimiters)
+        return self.displaytype + " math ‘" + open_delim + "…" + close_delim + "’"
 
     def accept_node_visitor(self, visitor):
         if self.nodelist is not None:
@@ -818,6 +862,25 @@ class LatexNodeList(object):
             if n is not None
         ])
 
+
+    def display_str(self):
+        r"""
+        Return a string that is not too long
+        """
+        if self.nodelist is None:
+            list_len = 'null list'
+            list_preview = ''
+        else:
+            list_len = len(self.nodelist)
+            list_preview = (
+                ": "
+                + ", ".join([
+                    n.display_str() if n is not None else 'None'
+                    for n in self.nodelist[:2]
+                ])
+                + (" …" if list_len > 2 else '')
+            )
+        return "list of nodes (" + str(list_len) + ")" + list_preview
 
     def accept_node_visitor(self, visitor):
         if self.nodelist is not None:

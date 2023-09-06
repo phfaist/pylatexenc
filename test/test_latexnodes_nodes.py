@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals, print_function
+
 import unittest
 import re
 import logging
@@ -13,6 +16,121 @@ from pylatexenc.latexnodes import (
     ParsedArguments,
 )
 
+
+
+
+
+
+class TestLatexNodeClasses(unittest.TestCase):
+
+    maxDiff = None
+
+    def test_methods_display_str(self):
+        
+        self.assertEqual(
+            LatexCharsNode(
+                chars='Hello world',
+                pos=13,
+                pos_end=13+11, # 11 == len('Hello world')
+            ).display_str(),
+            r"chars ‘Hello world’"
+        )
+        # abbreviates whenever necessary
+        self.assertEqual(
+            LatexCharsNode(
+                chars='01234567890123456789012345678901234567890123456789', # 50 chars
+                pos=13,
+                pos_end=13+11, # 11 == len('Hello world')
+            ).display_str(),
+            r"chars ‘01234567890123456789012345678901234567…’"
+        )
+
+        self.assertEqual(
+            LatexMacroNode(
+                macroname='cref',
+                pos=45,
+                pos_end=55,
+            ).display_str(),
+            r"macro ‘\cref’"
+        )
+
+        self.assertEqual(
+            LatexEnvironmentNode(
+                environmentname='itemize',
+                nodelist=[ LatexCharsNode(chars='fooba', pos=40, pos_end=45) ],
+                pos=33,
+                pos_end=99,
+            ).display_str(),
+            r"environment ‘{itemize}’"
+        )
+
+        self.assertEqual(
+            LatexSpecialsNode(
+                specials_chars='``',
+                pos=45,
+                pos_end=47,
+            ).display_str(),
+            r"specials ‘``’"
+        )
+
+        self.assertEqual(
+            LatexCommentNode(
+                comment=' this is a comment',
+                comment_post_space='\n  ',
+                pos=45,
+                pos_end=67, # or whatever
+            ).display_str(),
+            r"comment ‘this is a comment’"
+        )
+        self.assertEqual(
+            LatexCommentNode(
+                comment='  01234567890123456789012345678901234567890123456789',
+                comment_post_space='\n',
+                pos=45,
+                pos_end=150,
+            ).display_str(),
+            r"comment ‘01234567890123456789012345678901234567…’"
+        )
+
+        self.assertEqual(
+            LatexGroupNode(
+                delimiters=(r'{', r'}'),
+                nodelist=[ LatexCharsNode(chars='fooba', pos=40, pos_end=45) ],
+                pos=38,
+                pos_end=47,
+            ).display_str(),
+            r"group ‘{…}’"
+        )
+        # don't fail on sketchy delimiters argument
+        self.assertEqual(
+            LatexGroupNode(
+                delimiters=None,
+                nodelist=[ LatexCharsNode(chars='fooba', pos=40, pos_end=45) ],
+                pos=38,
+                pos_end=47,
+            ).display_str(),
+            r"group ‘<??>…<??>’"
+        )
+        self.assertEqual(
+            LatexGroupNode(
+                delimiters=('', None),
+                nodelist=[ LatexCharsNode(chars='fooba', pos=40, pos_end=45) ],
+                pos=38,
+                pos_end=47,
+            ).display_str(),
+            r"group ‘…’"
+        )
+
+        self.assertEqual(
+            LatexMathNode(
+                displaytype='inline',
+                delimiters=(r'\(', r'\)'),
+                nodelist=[ LatexCharsNode(chars='a+b=c', pos=40, pos_end=45) ],
+                pos=38,
+                pos_end=47,
+            ).display_str(),
+            r"inline math ‘\(…\)’"
+        )
 
 
 class TestLatexNodeList(unittest.TestCase):

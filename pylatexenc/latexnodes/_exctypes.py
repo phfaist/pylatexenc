@@ -103,6 +103,11 @@ class LatexWalkerLocatedError(LatexWalkerError):
        The column number where the error occurred in the line `lineno`, starting
        at 0.
 
+    .. py:attribute:: input_source
+
+       The name of the source (e.g. file name) from which the LaTeX code was
+       obtained. (Optional.)
+
     .. py:attribute:: error_type_info
 
        Specify additional information about the error so that specific
@@ -140,6 +145,33 @@ class LatexWalkerLocatedError(LatexWalkerError):
 
     def __str__(self):
         return LatexWalkerLocatedErrorFormatter(self).to_display_string()
+
+    def set_pos_or_add_open_context_from_node(self, node, what=None):
+        if node is None:
+            return
+
+        pos = node.pos
+
+        if hasattr(node, 'latex_walker') and node.latex_walker \
+           and hasattr(node.latex_walker, 'pos_to_lineno_colno'):
+            lineno, colno = node.latex_walker.pos_to_lineno_colno(pos)
+        else:
+            lineno, colno = None, None
+
+        if what is None:
+            what = node.display_str()
+
+        if self.pos is None:
+            self.pos = pos
+            self.lineno = lineno
+            self.colno = colno
+            return
+
+        if self.open_contexts is None:
+            self.open_contexts = []
+        self.open_contexts.append(
+            (what, pos, lineno, colno)
+        )
 
     #
     # ### Problem: other_exception might have properties (e.g., from a

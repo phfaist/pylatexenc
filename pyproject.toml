@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pylatexenc"
-version = "3.0alpha000020" # ALSO BUMP IN pylatexenc/version.py
+version = "3.0alpha000021" # ALSO BUMP IN pylatexenc/version.py
 description = "Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion"
 authors = ["Philippe Faist <philippe.faist@bluewin.ch>"]
 license = "MIT"
