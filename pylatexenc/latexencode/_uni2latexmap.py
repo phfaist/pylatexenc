@@ -146,10 +146,10 @@ uni2latex = {
 0x00E9: "\\'e",                                  # character é
 0x00EA: r'\^e',                                  # character ê
 0x00EB: r'\"e',                                  # character ë
-0x00EC: r'\`\i',                                 # character ì
-0x00ED: "\\'\\i",                                # character í
-0x00EE: r'\^\i',                                 # character î
-0x00EF: r'\"\i',                                 # character ï
+0x00EC: r'\`i',                                  # character ì
+0x00ED: "\\'i",                                  # character í
+0x00EE: r'\^i',                                  # character î
+0x00EF: r'\"i',                                  # character ï
 0x00F0: r'\dh',                                  # character ð
 0x00F1: r'\~n',                                  # character ñ
 0x00F2: r'\`o',                                  # character ò

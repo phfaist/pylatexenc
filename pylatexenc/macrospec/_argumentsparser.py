@@ -146,10 +146,6 @@ class LatexArgumentsParser(LatexParserBase):
 
         argnlist = []
 
-        # pos_start_default = token_reader.cur_pos()
-        # pos_start = None
-        # last_arg_node = None
-
         for argj, arg in enumerate(self.arguments_spec_list):
 
             arg_node_parser = arg.parser
@@ -186,23 +182,9 @@ class LatexArgumentsParser(LatexParserBase):
                 )
             argnlist.append( argnodes )
 
-            # if argnodes is not None:
-            #     if pos_start is None:
-            #         pos_start = argnodes.pos
-            #     last_arg_node = argnodes
-
-        # if pos_start is not None and last_arg_node is not None:
-        #     pos = pos_start
-        #     pos_end = last_arg_node.pos_end
-        # else:
-        #     pos = pos_start_default
-        #     pos_end = pos
-
         parsed = ParsedArguments(
             arguments_spec_list=self.arguments_spec_list,
             argnlist=argnlist,
-            # pos=pos,
-            # pos_end=pos_end
         )
 
         logger.debug("Parsed arguments = %r", parsed)
