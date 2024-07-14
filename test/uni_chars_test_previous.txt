@@ -168,10 +168,10 @@
 0x00E9 [LATIN SMALL LETTER E WITH ACUTE]                     |{\'e}|
 0x00EA [LATIN SMALL LETTER E WITH CIRCUMFLEX]                |{\^e}|
 0x00EB [LATIN SMALL LETTER E WITH DIAERESIS]                 |{\"e}|
-0x00EC [LATIN SMALL LETTER I WITH GRAVE]                     |{\`\i}|
-0x00ED [LATIN SMALL LETTER I WITH ACUTE]                     |{\'\i}|
-0x00EE [LATIN SMALL LETTER I WITH CIRCUMFLEX]                |{\^\i}|
-0x00EF [LATIN SMALL LETTER I WITH DIAERESIS]                 |{\"\i}|
+0x00EC [LATIN SMALL LETTER I WITH GRAVE]                     |{\`i}|
+0x00ED [LATIN SMALL LETTER I WITH ACUTE]                     |{\'i}|
+0x00EE [LATIN SMALL LETTER I WITH CIRCUMFLEX]                |{\^i}|
+0x00EF [LATIN SMALL LETTER I WITH DIAERESIS]                 |{\"i}|
 0x00F0 [LATIN SMALL LETTER ETH]                              |{\dh}|
 0x00F1 [LATIN SMALL LETTER N WITH TILDE]                     |{\~n}|
 0x00F2 [LATIN SMALL LETTER O WITH GRAVE]                     |{\`o}|

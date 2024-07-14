@@ -484,7 +484,7 @@ class LatexNodesCollector(object):
             logger.debug("nodes collector read token %r", tok)
 
         except LatexWalkerEndOfStream as e:
-            final_space = getattr(e, 'final_space', None)
+            final_space = getattr(e, 'final_space') if hasattr(e, 'final_space') else None
             if final_space:
                 # process the final space as an extra char token
                 final_space_pos = token_reader.cur_pos()+len(final_space)
@@ -854,7 +854,11 @@ class LatexNodesCollector(object):
         specials_spec = tok.arg
 
         node_class = LatexSpecialsNode
-        what = 'specials ‘{}’'.format(getattr(specials_spec, 'specials_chars', '<unkonwn>'))
+        what = 'specials ‘{}’'.format(
+            getattr(specials_spec, 'specials_chars')
+            if hasattr(specials_spec, 'specials_chars')
+            else '<unkonwn>',
+        )
 
         return self.parse_invocable_token_type(tok, specials_spec, node_class, what)
 

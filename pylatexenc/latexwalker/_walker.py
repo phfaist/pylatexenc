@@ -369,7 +369,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
                             )
 
                 if hasattr(e, 'pos') and e.lineno is None and e.colno is None:
-                    epos = getattr(e, 'pos', None)
+                    epos = getattr(e, 'pos')
                     e.lineno, e.colno = self.latex_walker.pos_to_lineno_colno(epos)
                 e = self.latex_walker.check_tolerant_parsing_ignore_error(e)
                 if e is None:
@@ -1094,7 +1094,9 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
         # the input stream and let the next call report an error.  (I don't know
         # why this is the best behavior, but it's needed because that's how
         # pylatexenc 2 worked.)
-        if getattr(e, '_error_was_unexpected_closing_brace_in_expression', False) \
+        #if getattr(e, '_error_was_unexpected_closing_brace_in_expression', False) \
+        if hasattr(e, '_error_was_unexpected_closing_brace_in_expression') \
+           and getattr(e, '_error_was_unexpected_closing_brace_in_expression') \
            and not strict_braces:
             logger.warning(
                 "Ignoring parse error (strict_braces=False in "

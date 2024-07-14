@@ -59,7 +59,7 @@ class ParsingStateDelta(object):
         return (
             self.__class__.__name__ + "("
             + ", ".join([
-                "{}={!r}".format(k, getattr(self, k, '<??>'))
+                "{}={!r}".format(k, getattr(self, k) if hasattr(self, k) else '<??>')
                 for k in self._fields
             ])
             + ")"
