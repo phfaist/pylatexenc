@@ -931,7 +931,7 @@ class LatexNodeList(object):
     
 
     def split_at_node(self, node_predicate_fn, skip_none=True, keep_separators=False,
-                      max_split=None):
+                      max_split=None, call_make_nodelist=True):
 
         nodelists_list = [ [] ]
 
@@ -954,7 +954,7 @@ class LatexNodeList(object):
             else:
                 nodelists_list[len(nodelists_list)-1].append(n)
         
-        if self.latex_walker is not None:
+        if call_make_nodelist and self.latex_walker is not None:
             make_latex_node_list = self.latex_walker.make_nodelist
         else:
             make_latex_node_list = lambda nl, **kwargs: LatexNodeList(nl, **kwargs)
