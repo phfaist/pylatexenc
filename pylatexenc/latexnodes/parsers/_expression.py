@@ -145,8 +145,18 @@ class LatexExpressionParser(LatexParserBase):
 
             if self.return_full_node_list:
                 result = thenodelist
-            else:
+            elif len(thenodelist):
                 result = thenodelist[-1] # last node is the main content node
+            else:
+                # happens e.g. if end of stream is reached in tolerant parsing mode
+                result = latex_walker.make_node(
+                    LatexGroupNode,
+                    parsing_state=parsing_state,
+                    nodelist=thenodelist,
+                    delimiters=('',''),
+                    pos=thenodelist.pos,
+                    pos_end=thenodelist.pos_end,
+                )
 
             return result, None
 
