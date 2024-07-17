@@ -22,8 +22,14 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
         latex = recomposer.latex_recompose(node)
     """
 
+
     def latex_recompose(self, node):
-        
+        r"""
+        Recompose a node into a corresponding latex code representation.
+
+        Returns the recomposed string.
+        """
+
         return self.start(node)
 
 
@@ -31,23 +37,40 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
 
 
     def recompose_chars(self, chars, n):
+        r"""
+        Produce latex code for the given chars from a chars node.
+        """
         if not chars:
             chars = '' # not None or other stuff
         return str(chars)
 
     def recompose_nodelist(self, recomposed_list, n):
+        r"""
+        Produce latex code for a node list.  Each node in the list was
+        already recomposed into a string.  The strings are collected in the list
+        `recomposed_list`.
+        """
         return "".join([
             recomposed for recomposed in recomposed_list
             if recomposed is not None
         ])
 
     def recompose_delimited_nodelist(self, delimiters, recomposed_list, n):
+        r"""
+        Produce latex code for a node list enclosed by delimiters.  Each
+        node in the list was already recomposed into a string.  The strings are
+        collected in the list `recomposed_list`.  The delimiters are specified
+        as a tuple (opening delimiter, closing delimiter).
+        """
         if not delimiters:
             delimiters = ('', '')
         return (delimiters[0] + self.recompose_nodelist(recomposed_list, n)
                 + delimiters[1])
     
     def recompose_comment(self, comment, comment_post_space, n):
+        r"""
+        Produce latex code for a comment.
+        """
         if not comment:
             comment = ''
         if not comment_post_space:
@@ -55,6 +78,11 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
         return n.parsing_state.comment_start + comment + comment_post_space
 
     def recompose_macro_call(self, macroname, macro_post_space, recomposed_arguments_str, n):
+        r"""
+        Produce latex code for macro call, including the macro call and
+        arguments.  The arguments have already been recomposed into a single
+        string provided in `recomposed_arguments_str`.
+        """
         #logger.debug('recompose_macro_call:  recomposed_arguments_str=%r', recomposed_arguments_str)
         if not recomposed_arguments_str:
             recomposed_arguments_str = ''
@@ -63,6 +91,14 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
     def recompose_environment_call(
             self, environmentname, recomposed_arguments_str, recomposed_body_list, n
     ):
+        r"""
+        Produce latex code for a latex environment, including the begin/end
+        calls, arguments, and the body contents.  The arguments have already
+        been recomposed into a single string provided in
+        `recomposed_arguments_str`.  The body nodes have already been recomposed
+        into one string for each body content node; the strings are given in
+        `recomposed_body_list`.
+        """
         if not recomposed_arguments_str:
             recomposed_arguments_str = ''
         return (
@@ -72,20 +108,41 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
         )
 
     def recompose_specials_call(self, specials_chars, recomposed_arguments_str, n):
+        r"""
+        Produce latex code for latex specials call, including the specials
+        chars and possible arguments.  The arguments have already been
+        recomposed into a single string provided in `recomposed_arguments_str`.
+        """
         if not recomposed_arguments_str:
             recomposed_arguments_str = ''
         return specials_chars + recomposed_arguments_str
 
     def recompose_math_content(self, delimiters, recomposed_list, n):
+        r"""
+        Produce latex code for a latex math construt (e.g., `$...$`),
+        including delimiters and content.  The content nodes have already been
+        recomposed into one string for each content node; the strings are given
+        in `recomposed_body_list`.
+        """
         return self.recompose_delimited_nodelist(delimiters, recomposed_list, n)
 
     def recompose_parsed_arguments(self, recomposed_list, pa):
+        r"""
+        Produce latex code for a sequence of arguments provided to a macro,
+        environment, or specials call.  The individual argument nodes have
+        already been recomposed into one string for each argument node; the
+        strings are given in `recomposed_list`.
+        """
         #logger.debug('recompose_parsed_arguments:  %r', recomposed_list)
         return self.recompose_nodelist(recomposed_list, pa)
 
 
     def recompose_unknown(self, node):
+        r"""
+        Produce something for an unknown node.
+        """
         return '<<< UNKNOWN NODE: ' + repr(node) + ' >>>'
+
 
 
     # ---
@@ -126,9 +183,5 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
     def visit_parsed_arguments(self, parsed_args, visited_results_argnlist, **kwargs):
         return self.recompose_parsed_arguments(visited_results_argnlist, parsed_args)
 
-
     def visit_unknown_node(self, node, **kwargs):
-        r"""
-        Called when visiting a node whose type is unknown.
-        """
         return self.recompose_unknown(node)
