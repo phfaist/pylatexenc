@@ -211,7 +211,8 @@ class ParsedArgumentsInfo(object):
                                #*,
                                allow_additional_arguments=False,
                                skip_nonexistent_arguments=False,
-                               return_argnames_only=True):
+                               include_unrequested_argnames=None,
+                               include_unrequested_argindices=None):
         r"""
         A helper function to return info objects for all arguments.
     
@@ -220,10 +221,31 @@ class ParsedArgumentsInfo(object):
         Otherwise, you can specify a list wherein each item is an argument name
         or an argument index.
 
-        This method returns a dictionary of argument names to
-        :py:class:`ParsedArgumentInfo` instances.  (Unless you set
-        `return_argnames_only=False`, in which case the returned dictionary keys
-        match exactly what you specified in `args` if the latter is non-`None`.)
+        This method returns a dictionary of argument names or argument indices
+        to :py:class:`ParsedArgumentInfo` instances.
+
+        Which keys are included in the returned dictionary is determined by
+        `args`, `include_unrequested_argnames`, and
+        `include_unrequested_argindices`:
+
+          - If `args` is non-None, then `include_unrequested_argnames` and
+            `include_unrequested_argindices` both default to `False` if they
+            are not specified or if they are set to `None`.  All argument names
+            and indices specified in `args` are included in the returned
+            dictionary (except those corresponding to missing args in case
+            `skip_nonexistent_arguments=True`, see below).  If some argument
+            names (resp., indicies) are not specified in `args`, they are
+            included only if `include_unrequested_argnames`
+            (resp. `include_unrequested_argindices`) is `True`.
+
+          - If `args` is `None`, then `include_unrequested_argnames` and
+            `include_unrequested_argindices` both default to `True` if they are
+            not specified or if they are set to `None`.  If
+            `include_unrequested_argnames` is `True`, then the returned
+            dictionary contains all the known argument names for the parsed
+            arguments.  If `include_unrequested_argindices` is `True`, then the
+            returned dictionary contains all the known argument indices for the
+            parsed arguments.
 
         The `allow_additional_arguments` flag sets the behavior to adopt if an
         argument was found in the present argument list that is not in `args`.
@@ -253,20 +275,26 @@ class ParsedArgumentsInfo(object):
         arg_names_seen = set()
         arg_i_seen = set()
 
+        if args is None and include_unrequested_argnames is None:
+            include_unrequested_argnames = True
+        if args is None and include_unrequested_argindices is None:
+            include_unrequested_argindices = True
+
         for j, arg_spec in enumerate(self.parsed_arguments.arguments_spec_list):
             
             argument_node_object = self.parsed_arguments.argnlist[j]
 
             arg_requested = False
-            arg_requested_by = None
+            arg_requested_by_name = False
+            arg_requested_by_index = False
             if args is not None:
-                if arg_spec.argname in args:
+                if arg_spec.argname and arg_spec.argname in args:
                     arg_requested = True
-                    arg_requested_by = arg_spec.argname
+                    arg_requested_by_name = True
                     arg_names_seen.add(arg_spec.argname)
-                elif j in args:
+                if j in args:
                     arg_requested = True
-                    arg_requested_by = j
+                    arg_requested_by_index = True
                     arg_i_seen.add(j)
             else:
                 arg_requested = True
@@ -283,12 +311,11 @@ class ParsedArgumentsInfo(object):
 
             arg_info = SingleParsedArgumentInfo( argument_node_object )
 
-            if not return_argnames_only and arg_requested_by is not None:
-                args_info[arg_requested_by] = arg_info
-            elif arg_spec.argname:
+            if arg_spec.argname and (arg_requested_by_name or include_unrequested_argnames):
                 args_info[arg_spec.argname] = arg_info
-            else:
+            if arg_requested_by_index or include_unrequested_argindices:
                 args_info[j] = arg_info
+
 
         if not skip_nonexistent_arguments and args is not None:
             # if there's an argument in args that wasn't seen, that's an error
