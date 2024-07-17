@@ -627,15 +627,6 @@ class TestLatexNodeList(unittest.TestCase):
 
 
 
-# class TestLatexNodesVisitor(unittest.TestCase):
-
-#     # @unittest.skip
-#     # def test_are_these_tests_written(self):
-#     #
-#     #     self.assertTrue(False)
-
-#     pass
-
 
 
 

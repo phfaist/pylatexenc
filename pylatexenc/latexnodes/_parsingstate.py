@@ -156,6 +156,10 @@ class ParsingState(object):
 
        Doc ................
 
+    .. py:attribute:: comment_start
+
+       Doc .............
+
     .. py:attribute:: forbidden_characters
 
        Characters that are simply forbidden to occur as regular characters.  You

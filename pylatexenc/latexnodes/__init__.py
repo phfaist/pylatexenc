@@ -83,3 +83,6 @@ from ._parsedargsinfo import (
     SingleParsedArgumentInfo,
 )
 
+from ._latex_recomposer import (
+    LatexNodesLatexRecomposer
+)

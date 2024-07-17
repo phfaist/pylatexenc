@@ -79,7 +79,7 @@ class SingleParsedArgumentInfo(object):
         """
         return (self.argument_node_object is not None)
 
-    def get_content_nodelist(self):
+    def get_content_nodelist(self, make_nodelist=None):
         r"""
         Return a node list with the contents of the argument.  The returned object
         is always a :py:class:`LatexNodeList` instance.
@@ -92,9 +92,13 @@ class SingleParsedArgumentInfo(object):
         optional argument was not provided, then we return a node list that
         contains a single `None` item.
         """
+
+        if make_nodelist is None:
+            make_nodelist = LatexNodeList
+
         argument_node_object = self.argument_node_object
         if argument_node_object is None:
-            return LatexNodeList([None])
+            return make_nodelist([None])
 
         if isinstance(argument_node_object, LatexNodeList):
             return argument_node_object
@@ -102,7 +106,7 @@ class SingleParsedArgumentInfo(object):
         if argument_node_object.isNodeType(LatexGroupNode):
             return argument_node_object.nodelist
 
-        return LatexNodeList([argument_node_object])
+        return make_nodelist([argument_node_object])
 
 
     def get_content_as_chars(self):

@@ -248,11 +248,20 @@ class ParsedArguments(object):
 ### END_PYLATEXENC1_LEGACY_SUPPORT_CODE
 
     def accept_node_visitor(self, visitor):
+        visited_results_argnlist = None
         if self.argnlist is not None:
+            visited_results_argnlist = []
             for argnode in self.argnlist:
                 if argnode is not None:
-                    argnode.accept_node_visitor(visitor)
-        visitor.visit_parsed_arguments(self)
+                    visited_results_argnlist.append(
+                        argnode.accept_node_visitor(visitor)
+                    )
+                else:
+                    visited_results_argnlist.append( None )
+        return visitor.visit_parsed_arguments(
+            self,
+            visited_results_argnlist=visited_results_argnlist,
+        )
 
 
     def __eq__(self, other):

@@ -250,7 +250,7 @@ class LatexNode(object):
         return r'<UNKNOWN NODE TYPE>: ' + repr(self)
 
     def accept_node_visitor(self, visitor):
-        visitor.visit_unknown_node(self)
+        return visitor.visit_unknown_node(self)
 
     def to_json_object_with_latexwalker(self, latexwalker):
         # Prepare a dictionary with the correct keys and values.
@@ -299,7 +299,7 @@ class LatexCharsNode(LatexNode):
         return 'chars ‘' + _display_abbrev_str(self.chars) + '’'
 
     def accept_node_visitor(self, visitor):
-        visitor.visit_chars_node(self)
+        return visitor.visit_chars_node(self)
 
 
 
@@ -345,11 +345,21 @@ class LatexGroupNode(LatexNode):
         return "group ‘" + open_delim + "…" + close_delim + "’"
 
     def accept_node_visitor(self, visitor):
+        visited_results_nodelist = []
         if self.nodelist is not None:
             for node in self.nodelist:
                 if node is not None:
-                    node.accept_node_visitor(visitor)
-        visitor.visit_group_node(self)
+                    visited_results_nodelist.append(
+                        node.accept_node_visitor(visitor)
+                    )
+                else:
+                    visited_results_nodelist.append(
+                        None
+                    )
+        return visitor.visit_group_node(
+            self,
+            visited_results_nodelist=visited_results_nodelist
+        )
 
 
 class LatexCommentNode(LatexNode):
@@ -384,7 +394,7 @@ class LatexCommentNode(LatexNode):
         return "comment ‘" + _display_abbrev_str(self.comment.strip()) + "’"
 
     def accept_node_visitor(self, visitor):
-        visitor.visit_comment_node(self)
+        return visitor.visit_comment_node(self)
 
 
 class LatexMacroNode(LatexNode):
@@ -473,9 +483,13 @@ class LatexMacroNode(LatexNode):
         return "macro ‘\\" + self.macroname + "’"
 
     def accept_node_visitor(self, visitor):
+        visited_results_arguments = None
         if self.nodeargd is not None:
-            self.nodeargd.accept_node_visitor(visitor)
-        visitor.visit_macro_node(self)
+            visited_results_arguments = self.nodeargd.accept_node_visitor(visitor)
+        return visitor.visit_macro_node(
+            self,
+            visited_results_arguments=visited_results_arguments
+        )
 
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
@@ -600,13 +614,24 @@ class LatexEnvironmentNode(LatexNode):
         return "environment ‘{" + self.environmentname + "}’"
 
     def accept_node_visitor(self, visitor):
+        visited_results_arguments = None
+        visited_results_body = None
         if self.nodeargd is not None:
-            self.nodeargd.accept_node_visitor(visitor)
+            visited_results_arguments = self.nodeargd.accept_node_visitor(visitor)
         if self.nodelist is not None:
+            visited_results_body = []
             for node in self.nodelist:
                 if node is not None:
-                    node.accept_node_visitor(visitor)
-        visitor.visit_environment_node(self)
+                    visited_results_body.append(
+                        node.accept_node_visitor(visitor)
+                    )
+                else:
+                    visited_results_body.append( None )
+        return visitor.visit_environment_node(
+            self,
+            visited_results_arguments=visited_results_arguments,
+            visited_results_body=visited_results_body,
+        )
 
 
 
@@ -668,9 +693,13 @@ class LatexSpecialsNode(LatexNode):
         return "specials ‘" + self.specials_chars + "’"
 
     def accept_node_visitor(self, visitor):
+        visited_results_arguments = None
         if self.nodeargd is not None:
-            self.nodeargd.accept_node_visitor(visitor)
-        visitor.visit_specials_node(self)
+            visited_results_arguments = self.nodeargd.accept_node_visitor(visitor)
+        return visitor.visit_specials_node(
+            self,
+            visited_results_arguments=visited_results_arguments,
+        )
 
 
 class LatexMathNode(LatexNode):
@@ -719,11 +748,20 @@ class LatexMathNode(LatexNode):
         return self.displaytype + " math ‘" + open_delim + "…" + close_delim + "’"
 
     def accept_node_visitor(self, visitor):
+        visited_results_nodelist = None
         if self.nodelist is not None:
+            visited_results_nodelist = []
             for node in self.nodelist:
                 if node is not None:
-                    node.accept_node_visitor(visitor)
-        visitor.visit_math_node(self)
+                    visited_results_nodelist.append(
+                        node.accept_node_visitor(visitor)
+                    )
+                else:
+                    visited_results_nodelist.append( None )
+        return visitor.visit_math_node(
+            self,
+            visited_results_nodelist=visited_results_nodelist,
+        )
 
 
 
@@ -887,11 +925,20 @@ class LatexNodeList(object):
         return "list of nodes (" + str(list_len) + ")" + list_preview
 
     def accept_node_visitor(self, visitor):
+        visited_results_nodelist = None
         if self.nodelist is not None:
+            visited_results_nodelist = []
             for node in self.nodelist:
                 if node is not None:
-                    node.accept_node_visitor(visitor)
-        visitor.visit_node_list(self)
+                    visited_results_nodelist.append(
+                        node.accept_node_visitor(visitor)
+                    )
+                else:
+                    visited_results_nodelist.append( None )
+        return visitor.visit_node_list(
+            self,
+            visited_results_nodelist=visited_results_nodelist
+        )
 
 
     def filter(self, node_predicate_fn=None,
@@ -1260,52 +1307,146 @@ class LatexNodesVisitor(object):
     r"""
     Implement a visitor pattern on a node structure.
 
-    Doc ......................
+    This pattern can be used when we need to traverse all the node tree in
+    order, descending into child nodes as necessary.  For instance, to search
+    for all citation keys that are encountered in `\cite{}` commands, one can
+    use such a visitor pattern to traverse all nodes and record all occurrences
+    of citation keys.
+
+    How to:
+
+    - Create your subclass of `LatexNodesVisitor`, let's call it
+      `MyNodesVisitor`.  Reimplement the methods you're interested in; to
+      inspect all macro calls, for instance, reimplement
+      :py:meth:`visit_macro_node()`.
+
+    - Pick a root node or node list you'd like to traverse with your visitor.
+      Call `start()` on that node::
+
+          visitor = MyNodesVisitor()
+          visitor.start(n) # traverse all nodes that are `n` or descendants of `n`
+
+    - During the call of the start() method, the visitor traverses through `n`
+      and descends into all the nodes that are included in `n` as macro
+      arguments, environment arguments and body, group or math contents, etc.,
+      etc.  For each encountered node, the corresponding callback
+      `visit_XXX_node()` is called.  The default implementation of these
+      callbacks is to relay the call to `visit()`.  You can therefore
+      reimplement `visit()` instead if you want to catch all nodes, regardless
+      of their type.
+
+    - Your `visit_XXX_node()` reimplementation can return something.  In this
+      case, the return value is collected and is included in an additional
+      argument to the node that caused this visit in the form of a
+      `visited_results_XXX` keyword argument.
 
     .. versionadded: 3.0
 
        The `LatexNodesVisitor` class was introduced in `pylatexenc 3.0`.
     """
 
-    def visit(self, node):
+    def visit(self, node, **kwargs):
         r"""
         Fallback for visiting any type of node.  This is called by the `visit_XXX()`
         methods below.  In your subclass, you can reimplement a subset of the
         `visit_XXXX()` methods, and whichever objects you didn't reimplement the
         `visit_XXX()` method for, you can catch with the `visit()` method.
         """
-        pass
+        return None
 
-    def visit_chars_node(self, node):
-        self.visit(node)
+    def visit_chars_node(self, node, **kwargs):
+        r"""
+        Called when visiting a `LatexCharsNode`.
+        """
+        return self.visit(node, **kwargs)
 
-    def visit_group_node(self, node):
-        self.visit(node)
+    def visit_group_node(self, node, **kwargs):
+        r"""
+        Called when visiting a `LatexGroupNode`.  The content nodes of the
+        group are visited first; the return values of their visit calls are
+        collected in a list which is provided to the keyword argument
+        `visited_results_nodelist=...`.
+        """
+        return self.visit(node, **kwargs)
 
-    def visit_comment_node(self, node):
-        self.visit(node)
+    def visit_comment_node(self, node, **kwargs):
+        r"""
+        Called when visiting a `LatexCommentNode`.
+        """
+        return self.visit(node, **kwargs)
 
-    def visit_macro_node(self, node):
-        self.visit(node)
+    def visit_macro_node(self, node, **kwargs):
+        r"""
+        Called when visiting a `LatexMacroNode`.  The arguments object is
+        visited first; the return value of the visit call to that object is
+        provided as the keyword argument `visited_results_arguments=...`
+        """
+        return self.visit(node, **kwargs)
 
-    def visit_environment_node(self, node):
-        self.visit(node)
+    def visit_environment_node(self, node, **kwargs):
+        r"""
+        Called when visiting a `LatexEnvironmentNode`.  The arguments
+        object is visited first; the return value of the visit call to that
+        object is provided as the keyword argument
+        `visited_results_arguments=...`.  The body nodes are visited immedately
+        after the arguments; the return values of the visit calls to those nodes
+        are collected in a list which is provided to the keyword argument
+        `visited_results_body=...`.
+        """
+        return self.visit(node, **kwargs)
 
-    def visit_specials_node(self, node):
-        self.visit(node)
+    def visit_specials_node(self, node, **kwargs):
+        r"""
+        Called when visiting a `LatexSpecialsNode`.  The arguments object
+        is visited first; the return value of the visit call to that object is
+        provided as the keyword argument `visited_results_arguments=...`
+        """
+        return self.visit(node, **kwargs)
 
-    def visit_math_node(self, node):
-        self.visit(node)
+    def visit_math_node(self, node, **kwargs):
+        r"""
+        Called when visiting a `LatexMathNode`.  The content nodes of the
+        math construct are visited; a list corresponding to the return values of
+        their visit calls is collected in a keyword argument
+        `visited_results_nodelist=...]`.
+        """
+        return self.visit(node, **kwargs)
 
-    def visit_node_list(self, nodes):
-        self.visit(nodes)
+    def visit_node_list(self, nodes, **kwargs):
+        r"""
+        Called when visiting a `LatexNodeList` object.  The individual
+        nodes in the list are visited first; the return values of their visit
+        calls are collected in a list, which is provided to the keyword argument
+        `visited_results_nodelist=...]`.
 
-    def visit_parsed_arguments(self, parsed_args):
-        self.visit(parsed_args)
+        .. note::
+
+            When visiting environment nodes, group nodes, and math nodes (nodes
+            with body contents stored as a nodelist), the nodes in the body are
+            visited directly individually, even if the nodelist attribute of the
+            parent node is set to a `LatexNodeList` instance.  I.e., when
+            visiting a group node, we get a call to `visit_XXX_node()` for the
+            individual nodes in the group's content node list and then one call
+            to `visit_group_node()`, but no explicit call to
+            `visit_node_list()`.
+        """
+        return self.visit(nodes, **kwargs)
+
+    def visit_parsed_arguments(self, parsed_args, **kwargs):
+        r"""
+        Called when visiting a `ParsedArguments` object.  The individual
+        argument nodes in the parsed argument list are visited first; the return
+        values of their visit calls are collected in a list, which is provided
+        to the keyword argument `visited_results_argnlist=...`.
+        """
+        return self.visit(parsed_args, **kwargs)
 
 
-    def visit_unknown_node(self, node):
-        self.visit(node)
+    def visit_unknown_node(self, node, **kwargs):
+        r"""
+        Called when visiting a node whose type is unknown.
+        """
+        return self.visit(node, **kwargs)
 
 
     # --
@@ -1322,7 +1463,7 @@ class LatexNodesVisitor(object):
 
         You probably shouldn't override this method in your visitor subclass.
         """
-        node.accept_node_visitor(self)
+        return node.accept_node_visitor(self)
 
 
 
