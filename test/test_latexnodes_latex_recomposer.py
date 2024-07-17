@@ -8,13 +8,12 @@ from pylatexenc.latexnodes._latex_recomposer import (
 )
 
 from pylatexenc.latexnodes import (
-    ParsingState
+    ParsingState, ParsedArguments
 )
 from pylatexenc.latexnodes.nodes import (
     LatexCharsNode, LatexGroupNode, LatexMacroNode, LatexEnvironmentNode, LatexSpecialsNode,
     LatexCommentNode, LatexMathNode, LatexNodeList
 )
-from pylatexenc.macrospec import ParsedMacroArgs
 
 from ._helpers_tests import (
     #DummyWalker,
@@ -111,7 +110,7 @@ class TestLatexNodesLatexRecomposer(unittest.TestCase):
                     LatexMacroNode(
                         parsing_state=ps,
                         macroname='myname',
-                        nodeargd=ParsedMacroArgs(argspec='<', argnlist=[
+                        nodeargd=ParsedArguments(argspec='<', argnlist=[
                             LatexGroupNode(
                                 parsing_state=ps,
                                 delimiters=('<', '>'),
@@ -132,7 +131,7 @@ class TestLatexNodesLatexRecomposer(unittest.TestCase):
                     LatexEnvironmentNode(
                         parsing_state=ps,
                         environmentname='figure',
-                        nodeargd=ParsedMacroArgs(argspec='[', argnlist=[
+                        nodeargd=ParsedArguments(argspec='[', argnlist=[
                             LatexGroupNode(
                                 parsing_state=ps,
                                 delimiters=('[', ']'),
@@ -154,7 +153,7 @@ class TestLatexNodesLatexRecomposer(unittest.TestCase):
                                         parsing_state=psm,
                                         macroname='vec',
                                         macro_post_space=' ',
-                                        nodeargd=ParsedMacroArgs(
+                                        nodeargd=ParsedArguments(
                                             argspec='{',
                                             argnlist=[
                                                 LatexCharsNode(
@@ -179,7 +178,7 @@ class TestLatexNodesLatexRecomposer(unittest.TestCase):
                         parsing_state=ps,
                         macroname=r'mymacro',
                         macro_post_space='\n',
-                        nodeargd=ParsedMacroArgs(
+                        nodeargd=ParsedArguments(
                                             argspec='*',
                                             argnlist=[
                                                 None
