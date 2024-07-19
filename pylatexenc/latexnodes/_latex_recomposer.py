@@ -77,45 +77,49 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
             comment_post_space = ''
         return n.parsing_state.comment_start + comment + comment_post_space
 
-    def recompose_macro_call(self, macroname, macro_post_space, recomposed_arguments_str, n):
+    def recompose_macro_call(self, macroname, macro_post_space, recomposed_arguments_list, n):
         r"""
         Produce latex code for macro call, including the macro call and
-        arguments.  The arguments have already been recomposed into a single
-        string provided in `recomposed_arguments_str`.
+        arguments.  The arguments have already been recomposed into strings,
+        which are provided as a list in `recomposed_arguments_list`.
         """
-        #logger.debug('recompose_macro_call:  recomposed_arguments_str=%r', recomposed_arguments_str)
-        if not recomposed_arguments_str:
-            recomposed_arguments_str = ''
-        return '\\' + macroname + macro_post_space + recomposed_arguments_str
+        if recomposed_arguments_list is None:
+            recomposed_arguments_list = []
+        return (
+            '\\' + macroname + macro_post_space
+            + self.recompose_nodelist(recomposed_arguments_list, n)
+        )
 
     def recompose_environment_call(
-            self, environmentname, recomposed_arguments_str, recomposed_body_list, n
+            self, environmentname, recomposed_arguments_list, recomposed_body_list, n
     ):
         r"""
         Produce latex code for a latex environment, including the begin/end
         calls, arguments, and the body contents.  The arguments have already
-        been recomposed into a single string provided in
-        `recomposed_arguments_str`.  The body nodes have already been recomposed
-        into one string for each body content node; the strings are given in
-        `recomposed_body_list`.
+        been recomposed into strings, which are provided as a list in
+        `recomposed_arguments_list`.  The body nodes have already been
+        recomposed into one string for each body content node; the strings are
+        given in `recomposed_body_list`.
         """
-        if not recomposed_arguments_str:
-            recomposed_arguments_str = ''
+        if recomposed_arguments_list is None:
+            recomposed_arguments_list = []
         return (
-            '\\begin{' + str(environmentname) + '}' + recomposed_arguments_str
+            '\\begin{' + str(environmentname) + '}'
+            + self.recompose_nodelist(recomposed_arguments_list, n)
             + self.recompose_nodelist(recomposed_body_list, n)
             + '\\end{' + str(environmentname) + '}'
         )
 
-    def recompose_specials_call(self, specials_chars, recomposed_arguments_str, n):
+    def recompose_specials_call(self, specials_chars, recomposed_arguments_list, n):
         r"""
         Produce latex code for latex specials call, including the specials
-        chars and possible arguments.  The arguments have already been
-        recomposed into a single string provided in `recomposed_arguments_str`.
+        chars and possible arguments.  The arguments have already
+        been recomposed into strings, which are provided as a list in
+        `recomposed_arguments_list`.
         """
-        if not recomposed_arguments_str:
-            recomposed_arguments_str = ''
-        return specials_chars + recomposed_arguments_str
+        if not recomposed_arguments_list:
+            recomposed_arguments_list = ''
+        return specials_chars + recomposed_arguments_list
 
     def recompose_math_content(self, delimiters, recomposed_list, n):
         r"""
@@ -134,7 +138,9 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
         strings are given in `recomposed_list`.
         """
         #logger.debug('recompose_parsed_arguments:  %r', recomposed_list)
-        return self.recompose_nodelist(recomposed_list, pa)
+        #return self.recompose_nodelist(recomposed_list, pa)
+
+        return recomposed_list
 
 
     def recompose_unknown(self, node):
