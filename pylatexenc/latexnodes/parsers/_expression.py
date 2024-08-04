@@ -126,21 +126,6 @@ class LatexExpressionParser(LatexParserBase):
                     parsing_state=parsing_state,
                 )
 
-                # # determine (pos,len) automatically please...
-                # expr_nodelist = latex_walker.make_nodelist(
-                #     exprnodes,
-                #     parsing_state=parsing_state,
-                # )
-
-                # thenodelist = latex_walker.make_node(
-                #     LatexGroupNode,
-                #     parsing_state=parsing_state,
-                #     nodelist=expr_nodelist,
-                #     delimiters=('',''),
-                #     pos=expr_nodelist.pos,
-                #     pos_end=expr_nodelist.pos_end,
-                # )
-
             logger.debug("thenodelist = %r", thenodelist)
 
             if self.return_full_node_list:

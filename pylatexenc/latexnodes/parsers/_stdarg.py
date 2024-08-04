@@ -43,7 +43,9 @@ from ._delimited import (
     LatexDelimitedGroupParserInfo,
     LatexDelimitedGroupParser,
 )
-from ._optionals import LatexOptionalCharsMarkerParser
+from ._optionals import (
+    LatexOptionalCharsMarkerParser, LatexOptionalEmbellishmentArgsParser
+)
 from ._expression import LatexExpressionParser
 from ._verbatim import LatexDelimitedVerbatimParser
 
@@ -148,9 +150,25 @@ class LatexStandardArgumentParser(LatexParserBase):
         elif arg_spec in ('s', '*'):
 
             return LatexOptionalCharsMarkerParser(
-                chars='*',
+                chars_list=['*'],
                 allow_pre_space=self.allow_pre_space,
                 return_full_node_list=self.return_full_node_list,
+            )
+
+        elif arg_spec.startswith('e'):
+        
+            arg_spec_arg = arg_spec[1:].strip()
+
+            if len(arg_spec_arg) <= 2 or \
+               arg_spec_arg[0] != '{' or arg_spec_arg[len(arg_spec_arg)-1] != '}':
+                raise ValueError("Expected embellishment chars with syntax ‘e{<chars>}’ in "
+                                 + "arg_spec; got ‘{}’".format(arg_spec))
+
+            embellishment_chars = arg_spec_arg[1:len(arg_spec)-1]
+
+            return LatexOptionalEmbellishmentArgsParser(
+                embellishment_chars=embellishment_chars,
+                allow_pre_space=self.allow_pre_space,
             )
 
         elif arg_spec.startswith('t'):
@@ -161,7 +179,7 @@ class LatexStandardArgumentParser(LatexParserBase):
             the_char = arg_spec[1]
 
             return LatexOptionalCharsMarkerParser(
-                chars=the_char,
+                chars_list=[the_char],
                 allow_pre_space=self.allow_pre_space,
             )
 
@@ -229,6 +247,8 @@ class LatexStandardArgumentParser(LatexParserBase):
         return nodes, parsing_state_delta
 
             
+
+
 
 
 # --------------------------------------------------------------------

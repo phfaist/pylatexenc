@@ -144,7 +144,7 @@ class _LatexCallableParserBase(LatexParserBase):
         else:
             if arg_parsing_state_delta is not None:
                 logger.warning(
-                    "Parsing carry-over information (%r) ignored after arguments to %s!",
+                    "Parsing state delta (%r) ignored after arguments to %s!",
                     arg_parsing_state_delta,
                     self.what
                 )
@@ -154,7 +154,7 @@ class _LatexCallableParserBase(LatexParserBase):
 
         if body_parsing_state_delta is not None:
             logger.warning(
-                "Parsing carry-over information (%r) ignored after body!",
+                "Parsing state delta (%r) ignored after body!",
                 body_parsing_state_delta
             )
 

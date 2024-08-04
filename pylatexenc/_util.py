@@ -32,7 +32,9 @@ import bisect
 bisect_right = bisect.bisect_right
 
 
+
 # ------------------------------------------------------------------------------
+
 
 
 class LineNumbersCalculator(object):

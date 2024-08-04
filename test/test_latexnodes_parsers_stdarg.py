@@ -31,6 +31,8 @@ class DummyWalkerWithGroupsAndMath(DummyWalker):
 
 class TestLatexStandardArgumentParser(unittest.TestCase):
 
+    maxDiff = None
+
     def test_arg_m_0(self):
         latextext = r'''{mandatory argument} (more stuff)'''
 
@@ -184,7 +186,8 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
             return_full_node_list=True,
         )
 
-        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = \
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -233,7 +236,8 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
             
         )
 
-        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        nodes, parsing_state_delta = \
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
         self.assertEqual(
             nodes,
@@ -268,6 +272,111 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
                 pos=2,
                 pos_end=3,
             ),
+        )
+
+
+    def test_arg_embelishments_1(self):
+        latextext = r'''^{test}_x{more stuff} stuff'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalkerWithGroupsAndMath()
+
+        parser = LatexStandardArgumentParser(
+            arg_spec=r'e{_^`}'
+        )
+
+        nodes, parsing_state_delta = \
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        print("NODES:\n", nodes)
+
+        self.assertEqual(
+            nodes,
+            LatexNodeList(
+                parsing_state=ps,
+                nodelist=[
+                    LatexGroupNode(
+                        parsing_state=ps,
+                        delimiters=('^', ''),
+                        nodelist=LatexNodeList(
+                            parsing_state=ps,
+                            nodelist=[
+                                LatexGroupNode(
+                                    parsing_state=ps,
+                                    delimiters=('{', '}'),
+                                    nodelist=LatexNodeList(
+                                        parsing_state=ps,
+                                        nodelist=[
+                                            LatexCharsNode(
+                                                parsing_state=ps,
+                                                chars='test',
+                                                pos=2,
+                                                pos_end=6,
+                                            ),
+                                        ],
+                                        pos=2,
+                                        pos_end=6,
+                                    ),
+                                    pos=1,
+                                    pos_end=7,
+                                ),
+                            ],
+                            pos=1,
+                            pos_end=7,
+                        ),
+                        pos=0,
+                        pos_end=7,
+                    ),
+                    LatexGroupNode(
+                        parsing_state=ps,
+                        delimiters=('_', ''),
+                        nodelist=LatexNodeList(
+                            parsing_state=ps,
+                            nodelist=[
+                                LatexCharsNode(
+                                    parsing_state=ps,
+                                    chars='x',
+                                    pos=8,
+                                    pos_end=9,
+                                ),
+                            ],
+                            pos=8,
+                            pos_end=9,
+                        ),
+                        pos=7,
+                        pos_end=9,
+                    ),
+                ],
+                pos=0,
+                pos_end=9
+            )
+
+        )
+
+    def test_arg_embelishments_2(self):
+        latextext = r'''more stuff'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalkerWithGroupsAndMath()
+
+        parser = LatexStandardArgumentParser(
+            arg_spec=r'e{_^`}'
+        )
+
+        nodes, parsing_state_delta = \
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            nodes,
+            LatexNodeList(
+                parsing_state=ps,
+                nodelist=[],
+                pos=0,
+                pos_end=0,
+            )
+            
         )
 
 
