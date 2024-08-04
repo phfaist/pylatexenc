@@ -309,7 +309,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
 
 class LatexOptionalEmbellishmentArgsParser(LatexOptionalCharsMarkerParser):
     def __init__(self, embellishment_chars, allow_pre_space=True, **kwargs):
-        super().__init__(
+        super(LatexOptionalEmbellishmentArgsParser, self).__init__(
             chars_list=embellishment_chars,
             following_arg_parser=LatexExpressionParser(
                 allow_pre_space=allow_pre_space,
