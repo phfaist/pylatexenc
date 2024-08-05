@@ -1192,6 +1192,110 @@ class LatexNodeList(object):
         return split_node_lists
 
 
+    def parse_keyval_content(
+            self,
+            comma_sep_chars=',',
+            eq_sep_chars='=',
+            repeated_key_aggregate_action='concatenate', # 'error', 'concatenate', 'last'
+            default_value_nodelist=None,
+            extract_value_group_contents=True,
+            dict_type=dict,
+    ):
+        r"""
+        Parse the contents of this node list as a sequence of
+        "key1=<value1>,key2=<value2>,..." arguments.
+
+        Each value may be any node list.  Key-value pairs are split at commas
+        (or at `comma_sep_chars`), but any commas in child nodes (e.g. group
+        nodes, macro arguments, etc.) are protected, as in usual LaTeX.  In each
+        pair, the first (unprotected) '=' character (or `eq_sep_chars`) serves
+        to identify the key, any following nodes form the value associated with
+        that key.  Keys are expected to be simple strings.
+
+        Returns a dictionary with keys and values, where values are node lists.
+
+        Additional arguments:
+
+        - `repeated_key_aggregate_action` specifies the action to take if a key
+          is provided multiple times.  One of 'error' (raise an error),
+          'concatenate' (concatenate the provided node lists), 'first' or 'last'
+          (keep first/last occurrence), or any custom callable.  A custom
+          callable will be called with the signature `callable(key, prev_value,
+          new_value, result_keyvals=result_keyvals)` whenever a key is
+          encountered for which we already have the value; the callable should
+          return the aggregated value to store.
+
+        - `default_value_nodelist` specifies the value to set to keys that
+          aren't given an explicit value.  Will be wrapped in a `LatexNodeList` if
+          this value is not a `LatexNodeList` instance.
+
+        - If `extract_value_group_contents` is True (the default), then we
+          remove any initial set of braces (or parsing-state-dependent LaTeX
+          group delimiters) around values. If set to False, the group node is
+          left as is in the value noe list.
+        """
+        
+        result_keyvals = dict_type()
+
+        lw = self.latex_walker
+        if lw is not None:
+            make_nodelist = lw.make_nodelist
+        else:
+            make_nodelist = lambda nl, **kwargs: LatexNodeList(nl, **kwargs)
+
+        comma_sep_parts = self.split_at_chars(comma_sep_chars)
+        for part in comma_sep_parts:
+            eq_sep_parts = part.split_at_chars(eq_sep_chars, max_split=1)
+            if len(eq_sep_parts) == 0:
+                continue
+            key_nl = eq_sep_parts[0]
+            value_nl = None
+            if len(eq_sep_parts) > 2:
+                raise RuntimeError("[internal error?] unexpected split length past max_split?")
+            if len(eq_sep_parts) == 2:                
+                value_nl = eq_sep_parts[1]
+                if extract_value_group_contents and value_nl is not None \
+                   and len(value_nl) == 1 and value_nl.nodelist[0].isNodeType(LatexGroupNode):
+                    value_nl = value_nl.nodelist[0].nodelist
+
+            if value_nl is None:
+                value_nl = default_value_nodelist
+
+            if not isinstance(value_nl, LatexNodeList):
+                value_nl = make_nodelist(
+                    [value_nl],
+                    parsing_state=self.parsing_state,
+                )
+            
+            key_s = key_nl.get_content_as_chars()
+            if key_s in result_keyvals:
+                if repeated_key_aggregate_action == 'concatenate':
+                    value_nl = make_nodelist(
+                        result_keyvals[key_s].nodelist
+                        + (value_nl.nodelist if isinstance(value_nl, LatexNodeList)
+                           else [value_nl]),
+                        parsing_state=self.parsing_state,
+                        pos=result_keyvals[key_s].pos
+                        # auto-detect pos_end
+                    )
+                elif repeated_key_aggregate_action == 'error':
+                    raise ValueError("Repeated Key: ‘{}’".format(key_s))
+                elif repeated_key_aggregate_action == 'first':
+                    value_nl = result_keyvals[key_s].nodelist
+                elif repeated_key_aggregate_action == 'last':
+                    pass # keep value_nl
+                else:
+                    value_nl = repeated_key_aggregate_action(
+                        key_s,
+                        result_keyvals[key_s].nodelist,
+                        value_nl,
+                        result_keyvals=result_keyvals
+                    )
+
+            result_keyvals[key_s] = value_nl
+                
+        return result_keyvals
+
 
     def get_content_as_chars(self):
         r"""

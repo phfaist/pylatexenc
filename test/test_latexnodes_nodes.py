@@ -622,6 +622,108 @@ class TestLatexNodeList(unittest.TestCase):
         )
 
 
+    def test_parse_keyval_content(self):
+
+        charsnode = LatexCharsNode(
+            chars='X=one,YY=two,Z',
+            pos=0,
+            pos_end=14,
+        )
+
+        nodelist = LatexNodeList(
+            [
+                charsnode,
+            ],
+        )
+
+        self.assertEqual(
+            nodelist.parse_keyval_content(),
+            {
+                'X': LatexNodeList([
+                    LatexCharsNode(
+                        chars='one',
+                        pos=2,
+                        pos_end=5,
+                    ),
+                ]),
+                'YY': LatexNodeList([
+                    LatexCharsNode(
+                        chars='two',
+                        pos=9,
+                        pos_end=12,
+                    ),
+                ]),
+                'Z': LatexNodeList([
+                    None
+                ]),
+            }
+        )
+
+    def test_parse_keyval_content(self):
+
+        # 'X={on{\macro}},,Z'
+        Xargcontentnodes = LatexNodeList(
+            [
+                LatexCharsNode(
+                    chars='on',
+                    pos=3,
+                    pos_end=5,
+                ),
+                LatexGroupNode(
+                    delimiters=('{','}'),
+                    nodelist=LatexNodeList(
+                        [
+                            LatexMacroNode(
+                                macroname='macro',
+                                nodeargd=None,
+                                pos=6,
+                                pos_end=11,
+                            ),
+                        ],
+                        pos=6,
+                        pos_end=11,
+                    ),
+                    pos=5,
+                    pos_end=12,
+                ),
+            ],
+            pos=3,
+            pos_end=13,
+        )
+        nodes = LatexNodeList(
+            [
+                LatexCharsNode(
+                    chars='X=',
+                    pos=0,
+                    pos_end=2,
+                ),
+                LatexGroupNode(
+                    delimiters=('{','}'),
+                    nodelist=Xargcontentnodes,
+                    pos=2,
+                    pos_end=14,
+                ),
+                LatexCharsNode(
+                    chars=',,Z',
+                    pos=14,
+                    pos_end=17,
+                )
+            ],
+            pos=0,
+            pos_end=17,
+        )
+
+        self.assertEqual(
+            nodes.parse_keyval_content(),
+            {
+                'X': Xargcontentnodes,
+                'Z': LatexNodeList([
+                    None
+                ]),
+            }
+        )
+
+
 
 
 
