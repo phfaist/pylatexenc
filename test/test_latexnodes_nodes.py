@@ -713,8 +713,10 @@ class TestLatexNodeList(unittest.TestCase):
             pos_end=17,
         )
 
+        kv = nodes.parse_keyval_content()
+        
         self.assertEqual(
-            nodes.parse_keyval_content(),
+            kv,
             {
                 'X': Xargcontentnodes,
                 'Z': LatexNodeList([

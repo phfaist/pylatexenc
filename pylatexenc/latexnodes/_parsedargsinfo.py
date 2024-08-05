@@ -134,6 +134,17 @@ class SingleParsedArgumentInfo(object):
         nodelist = self.get_content_nodelist()
         return nodelist.get_content_as_chars()
 
+    def parse_content_as_keyval(self, **kwargs):
+        r"""
+        Return a dictionary of key-values, parsing the present argument as
+        key-value pairs of the form ``key1=<value1>,key2=<value2>,...``.
+
+        This method is a shorthand for
+        :py:meth:`~pylatexenc.latexnodes.nodes.LatexNodeList.parse_keyval_content()`
+        """
+        nodelist = self.get_content_nodelist()
+        return nodelist.parse_keyval_content(**kwargs)
+
 
     def __repr__(self):
         return (

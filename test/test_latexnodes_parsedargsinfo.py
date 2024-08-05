@@ -198,6 +198,28 @@ class TestSingleParsedArgumentInfo(unittest.TestCase):
         with self.assertRaises(LatexWalkerParseError):
             _ = arginfo.get_content_as_chars()
 
+    def test_parse_content_as_keyval(self):
+        arginfo = SingleParsedArgumentInfo(
+            LatexGroupNode(
+                delimiters=('{','}'),
+                nodelist=LatexNodeList(
+                    [
+                        LatexCharsNode(
+                            chars='x=one,y=two,,z=three3',
+                            pos=0,
+                            pos_end=21,
+                        ),
+                    ],
+                ),
+            )
+        )
+
+        kv = arginfo.parse_content_as_keyval()
+
+        self.assertEqual(kv['x'].get_content_as_chars(), 'one')
+        self.assertEqual(kv['y'].get_content_as_chars(), 'two')
+        self.assertEqual(kv['z'].get_content_as_chars(), 'three3')
+
 
 
 
