@@ -379,6 +379,45 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
             
         )
 
+    def test_arg_any_delimited_angleb(self):
+        latextext = r'''<delimited>more stuff'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalkerWithGroupsAndMath()
+
+        parser = LatexStandardArgumentParser(
+            arg_spec=r'AnyDelimited'
+        )
+
+        nodes, parsing_state_delta = \
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+
+        gps = nodes.parsing_state
+        cps = nodes.nodelist[0].parsing_state
+
+        self.assertEqual(
+            nodes,
+            LatexGroupNode(
+                parsing_state=gps,
+                nodelist=LatexNodeList(
+                    [
+                        LatexCharsNode(
+                            parsing_state=cps,
+                            chars='delimited',
+                            pos=1,
+                            pos_end=10,
+                        )
+                    ],
+                    pos=1,
+                    pos_end=10,
+                ),
+                delimiters=('<','>'),
+                pos=0,
+                pos_end=11,
+            )
+        )
 
 
 

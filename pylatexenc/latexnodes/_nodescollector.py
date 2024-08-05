@@ -662,7 +662,7 @@ class LatexNodesCollector(object):
     # Methods that can be reimplemented:
     #
 
-    def make_child_parsing_state(self, parsing_state, node_class):
+    def make_child_parsing_state(self, parsing_state, node_class, token):
         r"""
         Create a parsing state a child node of the given type `node_class`.
 
@@ -670,8 +670,11 @@ class LatexNodesCollector(object):
         nodes.
         """
         if self._make_child_parsing_state_fn is not None:
-            return self._make_child_parsing_state_fn(parsing_state=parsing_state,
-                                                     node_class=node_class)
+            return self._make_child_parsing_state_fn(
+                parsing_state=parsing_state,
+                node_class=node_class,
+                token=token,
+            )
         return self.parsing_state
 
 
@@ -733,8 +736,11 @@ class LatexNodesCollector(object):
             self.latex_walker.parse_content(
                 group_parser,
                 token_reader=self.token_reader,
-                parsing_state=self.make_child_parsing_state(self.parsing_state,
-                                                            LatexGroupNode),
+                parsing_state=self.make_child_parsing_state(
+                    self.parsing_state,
+                    LatexGroupNode,
+                    token=tok
+                ),
         )
 
         if parsing_state_delta is not None:
@@ -909,7 +915,11 @@ class LatexNodesCollector(object):
             result_node, parsing_state_delta = latex_walker.parse_content(
                 node_parser,
                 token_reader,
-                self.make_child_parsing_state(self.parsing_state, node_class),
+                self.make_child_parsing_state(
+                    self.parsing_state,
+                    node_class,
+                    tok,
+                ),
                 open_context=(what, tok),
             )
 
@@ -949,7 +959,8 @@ class LatexNodesCollector(object):
 
         child_math_parsing_state = self.make_child_parsing_state(
             self.parsing_state,
-            LatexMathNode
+            LatexMathNode,
+            tok,
         )
         logger.debug("child_math_parsing_state = %r", child_math_parsing_state)
 

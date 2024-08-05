@@ -681,7 +681,7 @@ class TestLatexNodesCollector(unittest.TestCase):
         # let's set a flag such as in_math_mode to distinguish child_ps from ps
         child_ps = ps.sub_context(in_math_mode=True)
 
-        def my_make_child_parsing_state(parsing_state, node_class):
+        def my_make_child_parsing_state(parsing_state, node_class, token):
             self.assertIs(parsing_state, ps)
             if node_class is LatexGroupNode:
                 return child_ps
@@ -736,7 +736,7 @@ class TestLatexNodesCollector(unittest.TestCase):
         # let's set a flag such as in_math_mode to distinguish macro_ps from ps
         macro_ps = ps.sub_context(in_math_mode=True)
 
-        def my_make_child_parsing_state(parsing_state, node_class):
+        def my_make_child_parsing_state(parsing_state, node_class, token):
             self.assertIs(parsing_state, ps)
             if node_class is LatexMacroNode:
                 return macro_ps
@@ -791,7 +791,7 @@ class TestLatexNodesCollector(unittest.TestCase):
         # let's set a flag such as in_math_mode to distinguish child_ps from ps
         child_ps = ps.sub_context(in_math_mode=True)
 
-        def my_make_child_parsing_state(parsing_state, node_class):
+        def my_make_child_parsing_state(parsing_state, node_class, token):
             self.assertIs(parsing_state, ps)
             if node_class is LatexEnvironmentNode:
                 return child_ps
@@ -846,7 +846,7 @@ class TestLatexNodesCollector(unittest.TestCase):
         # let's set a flag such as in_math_mode to distinguish child_ps from ps
         child_ps = ps.sub_context(in_math_mode=True)
 
-        def my_make_child_parsing_state(parsing_state, node_class):
+        def my_make_child_parsing_state(parsing_state, node_class, token):
             self.assertIs(parsing_state, ps)
             if node_class is LatexSpecialsNode:
                 return child_ps
@@ -901,7 +901,7 @@ class TestLatexNodesCollector(unittest.TestCase):
         # child_ps from ps
         child_ps = ps.sub_context(enable_comments=False)
 
-        def my_make_child_parsing_state(parsing_state, node_class):
+        def my_make_child_parsing_state(parsing_state, node_class, token):
             if node_class is LatexMathNode:
                 return child_ps
             self.assertTrue(False) # Didn't expect this node class with our latex input code

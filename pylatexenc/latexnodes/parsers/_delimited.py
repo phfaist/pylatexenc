@@ -34,7 +34,10 @@ logger = logging.getLogger(__name__)
 
 from .._exctypes import *
 from .. import nodes
-from .._parsingstatedelta import get_updated_parsing_state_from_delta
+from .._parsingstatedelta import (
+    get_updated_parsing_state_from_delta,
+    ParsingStateDeltaReplaceParsingState
+)
 
 from ._base import LatexParserBase
 from ._generalnodes import LatexGeneralNodesParser
@@ -118,6 +121,9 @@ class LatexDelimitedExpressionParserInfo(object):
       associated with the LatexGroupNode, this might be the same parsing
       state as surrounding code, but it might also be modified if it is to
       include special delimiters, etc.).
+
+      The `group_parsing_state` (not the `contents_parsing_state`) is used to
+      parse the opening delimiter.
 
       NOTE: the `group_parsing_state` is determined by the
       `LatexDelimitedGroupParser` object before this
@@ -452,7 +458,7 @@ class LatexDelimitedExpressionParserInfo(object):
             token
         )
 
-    def make_child_parsing_state(self, parsing_state, node_class):
+    def make_child_parsing_state(self, parsing_state, node_class, token):
         r"""
         When parsing the delimited expression's contents, we might need to recurse
         into child groups etc.; in such cases, this method is used to create a
@@ -927,6 +933,20 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
         return self.group_parsing_state._latex_group_delimchars_by_open[opening_delimiter]
 
 
+    def make_child_parsing_state(self, parsing_state, node_class, token):
+        
+        # as long as the child is not a group node with any
+        # temporarily-promoted-group-delimiter-tokens as opening delimiter,
+        # restore the parent parsing state.  (Enable constructions like "[{[}]")
+
+        if token.tok == 'brace_open' and token.arg == self.parsed_delimiters[0]:
+            # group with same delimiter, keep contents parsing state
+            return self.contents_parsing_state
+
+        # return the outer, original parsing state.
+        return self.parsing_state
+
+
 
 class LatexDelimitedGroupParser(LatexDelimitedExpressionParser):
     r"""
@@ -956,3 +976,72 @@ class LatexDelimitedGroupParser(LatexDelimitedExpressionParser):
             delimited_expression_parser_info_class=delimited_expression_parser_info_class,
             **kwargs
         )
+
+
+
+
+
+# ------------------------------------------------
+
+_default_delimiter_multi_delim_list = (
+    ('{', '}'),
+    ('[', ']'),
+    ('(', ')'),
+    ('<', '>'),
+)
+
+
+class LatexDelimitedMultiDelimGroupParserInfo(LatexDelimitedGroupParserInfo):
+    
+
+    @classmethod
+    def get_group_parsing_state(cls, parsing_state, delimiters, delimited_expression_parser,
+                                latex_walker, **kwargs):
+        assert delimiters is None
+ 
+        delimiters_list = delimited_expression_parser.delimiters_list
+
+        return parsing_state.sub_context(
+            latex_group_delimiters=delimiters_list
+        )
+
+    def initialize(self):
+        super(LatexDelimitedMultiDelimGroupParserInfo, self).initialize()
+
+        # don't keep all options for open/close delimiters when parsing
+        # contents; only keep the default/outer ones (e.g. '{') plus the one we
+        # encountered for this group
+        contents_delimiters_list = list(self.parsing_state.latex_group_delimiters)
+
+        parsed_delimiters = self.parsed_delimiters
+        parsed_open_delim = parsed_delimiters[0]
+        already_has_relevant_open_delim = False
+        for (od, cd) in contents_delimiters_list:
+            if parsed_open_delim == od:
+                # all ok, the delimiters we encountered were already known group
+                # delimiters
+                already_has_relevant_open_delim = True
+        if not already_has_relevant_open_delim:
+            contents_delimiters_list.append( parsed_delimiters )
+
+        self.contents_parsing_state = self.parsing_state.sub_context(
+            latex_group_delimiters=contents_delimiters_list
+        )
+
+
+
+class LatexDelimitedMultiDelimGroupParser(LatexDelimitedExpressionParser):
+    r"""
+    Doc.........................
+    """
+
+    def __init__(self,
+                 delimiters_list=_default_delimiter_multi_delim_list,
+                 delimited_expression_parser_info_class=LatexDelimitedMultiDelimGroupParserInfo,
+                 **kwargs):
+        super(LatexDelimitedMultiDelimGroupParser, self).__init__(
+            delimiters=None,
+            delimited_expression_parser_info_class=delimited_expression_parser_info_class,
+            **kwargs
+        )
+        self.delimiters_list = delimiters_list

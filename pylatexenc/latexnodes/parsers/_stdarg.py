@@ -42,6 +42,7 @@ from ._delimited import (
     LatexDelimitedExpressionParserInfo,
     LatexDelimitedGroupParserInfo,
     LatexDelimitedGroupParser,
+    LatexDelimitedMultiDelimGroupParser,
 )
 from ._optionals import (
     LatexOptionalCharsMarkerParser, LatexOptionalEmbellishmentArgsParser
@@ -225,6 +226,21 @@ class LatexStandardArgumentParser(LatexParserBase):
                 delimiter_chars=delimiter_chars
             )
 
+
+        elif arg_spec == 'AnyDelimited':
+
+            return LatexDelimitedMultiDelimGroupParser(
+                optional=False,
+                allow_pre_space=self.allow_pre_space,
+            )
+
+        elif arg_spec == 'AnyDelimitedOptional':
+
+            return LatexDelimitedMultiDelimGroupParser(
+                optional=True,
+                allow_pre_space=self.allow_pre_space,
+            )
+
         else:
             
             raise ValueError("Unknown argument specification: {!r}".format(arg_spec))
@@ -295,7 +311,7 @@ class LatexCharsGroupParser(LatexDelimitedGroupParser):
 
             logger.debug("Initialized CharsContentsParserInfo; %r", self.__dict__)
 
-        def make_child_parsing_state(self, parsing_state, node_class):
+        def make_child_parsing_state(self, parsing_state, node_class, token):
             return self.parsing_state
 
         def stop_token_condition(self, token):
@@ -347,7 +363,7 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
 
             logger.debug("Initialized CommaSepContentsParserInfo; %r", self.__dict__)
 
-        def make_child_parsing_state(self, parsing_state, node_class):
+        def make_child_parsing_state(self, parsing_state, node_class, token):
             return self.parsing_state
 
         def make_content_parser(self, latex_walker, token_reader):

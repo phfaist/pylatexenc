@@ -47,6 +47,14 @@ Delimited expressions
    :members:
    :show-inheritance:
 
+.. autoclass:: LatexDelimitedMultiDelimGroupParserInfo
+   :members:
+   :show-inheritance:
+
+.. autoclass:: LatexDelimitedMultiDelimGroupParser
+   :members:
+   :show-inheritance:
+
 .. autoclass:: LatexDelimitedExpressionParserOpeningDelimiterNotFound
    :members:
    :show-inheritance:

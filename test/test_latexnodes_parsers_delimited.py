@@ -7,6 +7,7 @@ from pylatexenc.latexnodes.parsers._delimited import (
     LatexDelimitedExpressionParserInfo,
     #LatexDelimitedExpressionParser,
     LatexDelimitedGroupParser,
+    LatexDelimitedMultiDelimGroupParser,
 )
 
 from pylatexenc.latexnodes import (
@@ -24,6 +25,7 @@ from ._helpers_tests import (
     DummyLatexContextDb,
 )
 
+from pylatexenc.latexwalker import LatexWalker
 
 
 
@@ -199,7 +201,7 @@ class MyHelperTestDEPInfo(LatexDelimitedExpressionParserInfo):
             in_math_mode=True,
         )
 
-    def make_child_parsing_state(self, parsing_state, node_class):
+    def make_child_parsing_state(self, parsing_state, node_class, token):
         return self.group_parsing_state.sub_context(
             in_math_mode=False,
             enable_environments=False,
@@ -257,10 +259,10 @@ def helper_make_log_calls_expression_parser_info_class(BaseClass):
             d['handle_stop_condition_token'] = {'token': token}
             return
 
-        def make_child_parsing_state(self, parsing_state, node_class):
+        def make_child_parsing_state(self, parsing_state, node_class, token):
             d['make_child_parsing_state'] = {'node_class_is_group_node':
                                              node_class is LatexGroupNode}
-            return super(LogDEPInfo, self).make_child_parsing_state(parsing_state, node_class)
+            return super(LogDEPInfo, self).make_child_parsing_state(parsing_state, node_class, token)
 
         def make_content_parser(self, latex_walker, token_reader):
             d['make_content_parser'] = True
@@ -584,6 +586,70 @@ class TestDelimitedGroupParser(unittest.TestCase):
             )
         )
 
+    def test_protect_inner_raw_delimiter(self):
+
+        latextext = r'''[{[}] more stuff...'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb(), )
+        lw = LatexWalker(s=latextext, tolerant_parsing=False)
+
+        parser = LatexDelimitedGroupParser(
+            delimiters=('[',']'),
+        )
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        gps = nodes.parsing_state
+
+        correct_node = LatexGroupNode(
+                parsing_state=gps,
+                latex_walker=lw,
+                delimiters=('[',']'),
+                nodelist=LatexNodeList(
+                    [
+                        LatexGroupNode(
+                            parsing_state=ps,
+                            latex_walker=lw,
+                            delimiters=('{','}'),
+                            nodelist=LatexNodeList(
+                                [
+                                    LatexCharsNode(
+                                        parsing_state=ps,
+                                        latex_walker=lw,
+                                        chars='[',
+                                        pos=2,
+                                        pos_end=3,
+                                    ),
+                                ],
+                                parsing_state=ps,
+                                latex_walker=lw,
+                                pos=2,
+                                pos_end=3,
+                            ),
+                            pos=1,
+                            pos_end=4,
+                        ),
+                    ],
+                    parsing_state=ps,
+                    latex_walker=lw,
+                    pos=1,
+                    pos_end=4,
+                ),
+                pos=0,
+                pos_end=5,
+            )
+
+        print("GROUP NODE    = ", nodes)
+        print("CORRECT NODES = ", correct_node)
+
+        self.assertEqual(
+            nodes,
+            correct_node,
+        )
+
+
+
     def test_skip_space_albeit_unnecessary(self):
 
         latextext = r'''{Hello there} did the parser stop after the group?'''
@@ -675,6 +741,267 @@ class TestDelimitedGroupParser(unittest.TestCase):
                 pos=0+3,
                 pos_end=37-24+3,
             )
+        )
+
+
+
+    def test_multidelim_0(self):
+
+        latextext = r'''[Hello there] did the parser stop after the group?'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb(), )
+        lw = DummyWalker()
+
+        parser = LatexDelimitedMultiDelimGroupParser(delimiters_list=(('<', '>'),('[',']')))
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        gps = nodes.parsing_state
+        cps = nodes.nodelist[0].parsing_state
+
+        self.assertEqual(tuple(gps.latex_group_delimiters), (('<','>'), ('[',']')))
+        self.assertEqual(tuple(cps.latex_group_delimiters), (('{', '}'), ('[',']')))
+
+        self.assertEqual(
+            nodes,
+            LatexGroupNode(
+                parsing_state=gps,
+                delimiters=('[',']'),
+                nodelist=LatexNodeList(
+                    [
+                        LatexCharsNode(
+                            parsing_state=cps,
+                            chars='Hello there',
+                            pos=1,
+                            pos_end=36-24,
+                        ),
+                    ],
+                    pos=1,
+                    pos_end=36-24,
+                ),
+                pos=0,
+                pos_end=37-24,
+            )
+        )
+
+    def test_multidelim_1(self):
+
+        latextext = r'''<Hello there> did the parser stop after the group?'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb(), )
+        lw = DummyWalker()
+
+        parser = LatexDelimitedMultiDelimGroupParser(delimiters_list=(('<', '>'),('[',']')))
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        gps = nodes.parsing_state
+        cps = nodes.nodelist[0].parsing_state
+
+        self.assertEqual(tuple(gps.latex_group_delimiters), (('<','>'), ('[',']')))
+        self.assertEqual(tuple(cps.latex_group_delimiters), (('{', '}'), ('<','>')))
+
+        self.assertEqual(
+            nodes,
+            LatexGroupNode(
+                parsing_state=gps,
+                delimiters=('<','>'),
+                nodelist=LatexNodeList(
+                    [
+                        LatexCharsNode(
+                            parsing_state=cps,
+                            chars='Hello there',
+                            pos=1,
+                            pos_end=36-24,
+                        ),
+                    ],
+                    pos=1,
+                    pos_end=36-24,
+                ),
+                pos=0,
+                pos_end=37-24,
+            )
+        )
+
+
+    def test_multidelim_mandatory(self):
+
+        latextext = r'''X<Hello there> did the parser stop after the group?'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb(), )
+        lw = DummyWalker()
+
+        parser = LatexDelimitedMultiDelimGroupParser(delimiters_list=(('<', '>'),('[',']')))
+
+        with self.assertRaises(LatexWalkerParseError):
+            nodes, parsing_state_delta = \
+                lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+
+
+    def test_multidelim_optional(self):
+
+        latextext = r'''XXX<Hello there> did the parser stop after the group?'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb(), )
+        lw = DummyWalker()
+
+        parser = LatexDelimitedMultiDelimGroupParser(
+            optional=True,
+            delimiters_list=(('<', '>'),('[',']'))
+        )
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertTrue(nodes is None)
+
+
+    def test_multidelim_sg(self):
+
+        latextext = r'''<Hello {there>}> did the parser stop after the group?'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb(), )
+        lw = LatexWalker(s=latextext, tolerant_parsing=False)
+
+        parser = LatexDelimitedMultiDelimGroupParser(delimiters_list=(('<', '>'),('[',']')))
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        print("GROUP NODE =\n", nodes)
+
+        gps = nodes.parsing_state
+        cps = nodes.nodelist[0].parsing_state
+
+        self.assertEqual(tuple(gps.latex_group_delimiters), (('<','>'), ('[',']')))
+        self.assertEqual(tuple(cps.latex_group_delimiters), (('{', '}'), ('<','>')))
+
+        correct_node = LatexGroupNode(
+                parsing_state=gps,
+                latex_walker=lw,
+                delimiters=('<','>'),
+                nodelist=LatexNodeList(
+                    [
+                        LatexCharsNode(
+                            parsing_state=cps,
+                            latex_walker=lw,
+                            chars='Hello ',
+                            pos=1,
+                            pos_end=31-24,
+                        ),
+                        LatexGroupNode(
+                            parsing_state=ps,
+                            latex_walker=lw,
+                            delimiters=('{','}'),
+                            nodelist=LatexNodeList(
+                                nodelist=[
+                                    LatexCharsNode(
+                                        parsing_state=ps,
+                                        latex_walker=lw,
+                                        chars='there>',
+                                        pos=32-24,
+                                        pos_end=38-24,
+                                    )
+                                ],
+                                parsing_state=ps,
+                                latex_walker=lw,
+                                pos=32-24,
+                                pos_end=38-24,
+                            ),
+                            pos=31-24,
+                            pos_end=39-24,
+                        )
+                    ],
+                    parsing_state=cps,
+                    latex_walker=lw,
+                    pos=1,
+                    pos_end=39-24,
+                ),
+                pos=0,
+                pos_end=40-24,
+            )
+
+        print("CORRECT NODE =\n", correct_node)
+
+        self.assertEqual(
+            nodes,
+            correct_node
+        )
+
+    def test_multidelim_sg2(self):
+
+        latextext = r'''<Hello <there]>> did the parser stop after the group?'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb(), )
+        lw = LatexWalker(s=latextext)
+
+        parser = LatexDelimitedMultiDelimGroupParser(delimiters_list=(('<', '>'),('[',']')))
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        gps = nodes.parsing_state
+        cps = nodes.nodelist[0].parsing_state
+
+        self.assertEqual(tuple(gps.latex_group_delimiters), (('<','>'), ('[',']')))
+        self.assertEqual(tuple(cps.latex_group_delimiters), (('{', '}'), ('<','>')))
+
+        correct_node = LatexGroupNode(
+                parsing_state=gps,
+                latex_walker=lw,
+                delimiters=('<','>'),
+                nodelist=LatexNodeList(
+                    [
+                        LatexCharsNode(
+                            parsing_state=cps,
+                            latex_walker=lw,
+                            chars='Hello ',
+                            pos=1,
+                            pos_end=31-24,
+                        ),
+                        LatexGroupNode(
+                            parsing_state=cps,
+                            latex_walker=lw,
+                            delimiters=('<','>'),
+                            nodelist=LatexNodeList(
+                                nodelist=[
+                                    LatexCharsNode(
+                                        parsing_state=cps,
+                                        latex_walker=lw,
+                                        chars='there]',
+                                        pos=32-24,
+                                        pos_end=38-24,
+                                    )
+                                ],
+                                parsing_state=cps,
+                                latex_walker=lw,
+                                pos=32-24,
+                                pos_end=38-24,
+                            ),
+                            pos=31-24,
+                            pos_end=39-24,
+                        )
+                    ],
+                    parsing_state=cps,
+                    latex_walker=lw,
+                    pos=1,
+                    pos_end=39-24,
+                ),
+                pos=0,
+                pos_end=40-24,
+            )
+
+        print("GROUP NODE =\n", nodes)
+
+        print("CORRECT NODE =\n", correct_node)
+
+        self.assertEqual(
+            nodes,
+            correct_node
         )
 
 
