@@ -75,7 +75,9 @@ class ChainMap:
         'New ChainMap or subclass with a new copy of maps[0] and refs to maps[1:]'
         return self.__class__(self.maps[0].copy(), *self.maps[1:])
 
-    __copy__ = copy
+    def __copy__(self):
+        'New ChainMap or subclass with a new copy of maps[0] and refs to maps[1:]'
+        return self.__class__(self.maps[0].copy(), *self.maps[1:])
 
     def new_child(self, m=None):                # like Django's Context.push()
         '''New ChainMap with a new map followed by all previous maps.
