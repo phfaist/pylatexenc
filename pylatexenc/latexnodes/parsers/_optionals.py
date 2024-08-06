@@ -316,7 +316,6 @@ class LatexOptionalEmbellishmentArgsParser(LatexOptionalCharsMarkerParser):
                 return_full_node_list=True,
             ),
             allow_pre_space=allow_pre_space,
-            return_none_instead_of_empty=False,
             collect_chars_with_following_arg_as_delimited_group=True,
             return_full_node_list=True,
             **kwargs

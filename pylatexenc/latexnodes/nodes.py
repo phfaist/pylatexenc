@@ -29,6 +29,9 @@
 
 from __future__ import print_function, unicode_literals
 
+import logging
+logger = logging.getLogger(__name__)
+
 from ._exctypes import LatexWalkerParseError
 from ._parsedargs import ParsedArguments
 
@@ -825,8 +828,7 @@ class LatexNodeList(object):
         self.nodelist = nodelist
 
         if self.nodelist is None:
-            logger.warning("You're creating a LatexNodeList with nodelist=None. That's "
-                           "likely to cause crashes!")
+            raise ValueError("Cannot create a LatexNodeList with nodelist=None")
 
         self.parsing_state = kwargs.pop('parsing_state', None)
         self.latex_walker = kwargs.pop('latex_walker', None)

@@ -60,6 +60,11 @@ class SingleParsedArgumentInfo(object):
     instances are returned by :py:meth:`ParsedArgumentsInfo.get_argument_info()`
     and :py:meth:`ParsedArgumentsInfo.get_all_arguments_info()`.
 
+    .. py::attribute:: argument_node_object
+
+       The argument node or node list that represents the value provided to this
+       argument.
+
     .. versionadded:: 3.0
 
        This class was introduced in `pylatexenc 3`.
@@ -79,7 +84,7 @@ class SingleParsedArgumentInfo(object):
         """
         return (self.argument_node_object is not None)
 
-    def get_content_nodelist(self, make_nodelist=None):
+    def get_content_nodelist(self, unwrap_double_group=True, make_nodelist=None):
         r"""
         Return a node list with the contents of the argument.  The returned object
         is always a :py:class:`LatexNodeList` instance.
@@ -91,6 +96,13 @@ class SingleParsedArgumentInfo(object):
         then we return a new node list containing that single node.  If an
         optional argument was not provided, then we return a node list that
         contains a single `None` item.
+
+        Additionally, if `unwrap_double_group` is `True`, and if the argument
+        was wrapped in a LatexGroupNode, and if the group node has only a single
+        node that is itself a LatexGroupNode *with different delimiters*, then
+        the contents of the inner group is returned.  This makes sure that for
+        instance, we can pass a raw brace (`[`) as an optional argument with the
+        construct ``[{[}]``.
         """
 
         if make_nodelist is None:
@@ -104,6 +116,16 @@ class SingleParsedArgumentInfo(object):
             return argument_node_object
 
         if argument_node_object.isNodeType(LatexGroupNode):
+
+            # possibly unwrap a further inner group node (double unwrap), see
+            # method doc
+            if unwrap_double_group and len(argument_node_object.nodelist) == 1 \
+               and argument_node_object.nodelist[0]:
+                innernode = argument_node_object.nodelist[0]
+                if innernode.isNodeType(LatexGroupNode) \
+                   and innernode.delimiters[0] != argument_node_object.delimiters[0]:
+                    return innernode.nodelist
+
             return argument_node_object.nodelist
 
         return make_nodelist([argument_node_object])
