@@ -331,6 +331,16 @@ class LatexCharsGroupParser(LatexDelimitedGroupParser):
 
 class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
     r"""
+    Doc..........
+
+    NOTE: It might be better to use a standard argument, and parse the argument
+    as a comma-separated list using
+    :py:meth:`~pylatexenc.latexnodes.nodes.LatexNodeList.split_at_chars()`.
+
+    Careful, when accessing the value of this group via a `ParsedArgumentsInfo`
+    and `get_contents_nodelist()`, make sure to use `unwrap_double_group=False`
+    as otherwise the inner group is going to be unwrapped if a single group is
+    present.
     """
     def __init__(self, comma_char=',', delimiters=('{','}'),
                  enable_comments=True, enable_groups=True,

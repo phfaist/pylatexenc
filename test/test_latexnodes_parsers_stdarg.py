@@ -368,16 +368,8 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
         nodes, parsing_state_delta = \
             lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
-        self.assertEqual(
-            nodes,
-            LatexNodeList(
-                parsing_state=ps,
-                nodelist=[],
-                pos=0,
-                pos_end=0,
-            )
-            
-        )
+        self.assertIsNone(nodes)
+
 
     def test_arg_any_delimited_angleb(self):
         latextext = r'''<delimited>more stuff'''

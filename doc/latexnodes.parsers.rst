@@ -84,6 +84,10 @@ Optional expression parser
    :members:
    :show-inheritance:
 
+.. autoclass:: LatexOptionalEmbellishmentArgsParser
+   :members:
+   :show-inheritance:
+
 
 Verbatim/literal expressions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

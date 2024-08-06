@@ -308,6 +308,11 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
 # ------------------------------------------------------------------------------
 
 class LatexOptionalEmbellishmentArgsParser(LatexOptionalCharsMarkerParser):
+    r"""
+    Doc...............
+
+    inspired by xparse's ``e{tokens}`` argument type.....
+    """
     def __init__(self, embellishment_chars, allow_pre_space=True, **kwargs):
         super(LatexOptionalEmbellishmentArgsParser, self).__init__(
             chars_list=embellishment_chars,
