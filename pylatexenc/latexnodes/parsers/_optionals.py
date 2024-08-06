@@ -206,6 +206,12 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
                     if len(first_token.pre_space) and not self.allow_pre_space:
                         # no pre-space allowed, the optional marker was not provided.
                         return None, None, None, first_token.pos
+                # allow continuing with 'specials' because they can count as
+                # chars for markers.
+                if tok.tok == 'specials':
+                    # pretend it's a char
+                    tok.tok = 'char'
+                    tok.arg = tok.arg.specials_chars
                 if tok.tok != 'char':
                     break
                 if read_s and len(tok.pre_space):
