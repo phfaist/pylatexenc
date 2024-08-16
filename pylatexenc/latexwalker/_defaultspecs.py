@@ -26,6 +26,14 @@
 
 # Internal module. May change without notice.
 
+from ..latexnodes import (
+    LatexArgumentSpec,
+    ParsingStateDeltaEnterMathMode,
+    ParsingStateDeltaLeaveMathMode,
+)
+from ..latexnodes.parsers import (
+    LatexStandardArgumentParser,
+)
 
 from ..macrospec import (
     std_macro,
@@ -34,6 +42,14 @@ from ..macrospec import (
     MacroSpec, EnvironmentSpec, MacroStandardArgsParser,
     VerbatimArgsParser, LstListingArgsParser,
 )
+
+
+def _arg_mathmode(parser):
+    return LatexArgumentSpec(parser, parsing_state_delta=ParsingStateDeltaEnterMathMode())
+
+def _arg_textmode(parser):
+    return LatexArgumentSpec(parser, parsing_state_delta=ParsingStateDeltaLeaveMathMode())
+
 
 
 specs = [
@@ -74,8 +90,7 @@ specs = [
             std_macro('hspace', '*{'),
             std_macro('vspace', '*{'),
 
-            MacroSpec('mbox',
-                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('mbox', arguments_spec_list=[ _arg_textmode('{') ]),
 
             # \title, \author, \date
             MacroSpec('title', '{'),
@@ -90,8 +105,10 @@ specs = [
             # emulates the behavior in AMS environments, and avoids some errors;
             # e.g. in "\begin{align} A=0 \\ [C,D]=0 \end{align}" the "[C,D]"
             # does not get captured as an optional macro argument.
-            MacroSpec('\\',
-                      args_parser=MacroStandardArgsParser('*[', optional_arg_no_space=True)),
+            MacroSpec('\\', arguments_spec_list=[
+                LatexArgumentSpec('*'),
+                LatexArgumentSpec(LatexStandardArgumentParser('[', allow_pre_space=False)),
+            ]),
 
             std_macro('item', True, 0),
 
@@ -112,26 +129,16 @@ specs = [
 
 
             std_macro('emph', False, 1),
-            MacroSpec('textrm',
-                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textit',
-                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textbf',
-                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textmd',
-                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textsc',
-                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textsf',
-                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textsl',
-                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('texttt',
-                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('textup',
-                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
-            MacroSpec('text',
-                      args_parser=MacroStandardArgsParser('{', args_math_mode=[False])),
+            MacroSpec('textrm', arguments_spec_list=[ _arg_textmode('{') ]),
+            MacroSpec('textit', arguments_spec_list=[ _arg_textmode('{') ]),
+            MacroSpec('textbf', arguments_spec_list=[ _arg_textmode('{') ]),
+            MacroSpec('textmd', arguments_spec_list=[ _arg_textmode('{') ]),
+            MacroSpec('textsc', arguments_spec_list=[ _arg_textmode('{') ]),
+            MacroSpec('textsf', arguments_spec_list=[ _arg_textmode('{') ]),
+            MacroSpec('textsl', arguments_spec_list=[ _arg_textmode('{') ]),
+            MacroSpec('texttt', arguments_spec_list=[ _arg_textmode('{') ]),
+            MacroSpec('textup', arguments_spec_list=[ _arg_textmode('{') ]),
+            MacroSpec('text',   arguments_spec_list=[ _arg_textmode('{') ]),
             std_macro('mathrm', False, 1), # only allowed in math mode anyway
             std_macro('mathbb', False, 1), # only allowed in math mode anyway
             std_macro('mathbf', False, 1),
@@ -173,8 +180,7 @@ specs = [
             std_macro("u", False, 1),
             std_macro("v", False, 1),
 
-            MacroSpec('ensuremath',
-                      args_parser=MacroStandardArgsParser('{', args_math_mode=[True])),
+            MacroSpec('ensuremath', arguments_spec_list=[ _arg_mathmode('{') ]),
 
             std_macro("not", False, 1),
 

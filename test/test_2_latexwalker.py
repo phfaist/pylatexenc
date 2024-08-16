@@ -987,8 +987,10 @@ Also: {\itshape some italic text}.
         nodes, pos, len_ = lw.get_latex_nodes(pos=p, read_max_nodes=5,
                                               parsing_state=parsing_state)
         # inner state -- math mode -- get this
-        parsing_state_inner = nodes[3].nodelist[0].parsing_state
-        self.assertTrue(parsing_state_inner.in_math_mode)
+        parsing_state_innertextbf = nodes[1].nodeargd.argnlist[0].parsing_state
+        parsing_state_innermath = nodes[3].nodelist[0].parsing_state
+        self.assertFalse(parsing_state_innertextbf.in_math_mode)
+        self.assertTrue(parsing_state_innermath.in_math_mode)
         self.assertEqual(
             (nodes, pos, len_),
             ([
@@ -998,10 +1000,10 @@ Also: {\itshape some italic text}.
                 LatexMacroNode(parsing_state=parsing_state,
                                macroname='textbf',
                                nodeargd=macrospec.ParsedMacroArgs(argspec='{', argnlist=[
-                                   LatexGroupNode(parsing_state=parsing_state,
+                                   LatexGroupNode(parsing_state=parsing_state_innertextbf,
                                                   delimiters=('{', '}'),
                                                   nodelist=[
-                                                      LatexCharsNode(parsing_state=parsing_state,
+                                                      LatexCharsNode(parsing_state=parsing_state_innertextbf,
                                                                      chars='bold text',
                                                                      pos=p+54-42, len=9)
                                                   ],
@@ -1015,11 +1017,11 @@ Also: {\itshape some italic text}.
                               displaytype='inline',
                               delimiters=('$', '$'),
                               nodelist=[
-                                  LatexMacroNode(parsing_state=parsing_state_inner,
+                                  LatexMacroNode(parsing_state=parsing_state_innermath,
                                                  macroname='vec',
                                                  macro_post_space=' ',
                                                  nodeargd=macrospec.ParsedMacroArgs(argspec='{', argnlist=[
-                                                     LatexCharsNode(parsing_state=parsing_state_inner,
+                                                     LatexCharsNode(parsing_state=parsing_state_innermath,
                                                                     chars='b',
                                                                     pos=p+75-42, len=1)
                                                  ]),

@@ -1031,6 +1031,9 @@ class LatexNodes2Text(object):
         according to the class options.)
         """
 
+        if nodelist is None:
+            return ''
+
         s = ''
         prev_node = None
         for node in nodelist:
@@ -1356,7 +1359,19 @@ class LatexNodes2Text(object):
 
             nodeargs = []
             if node.nodeargd and node.nodeargd.argnlist:
-                nodeargs = node.nodeargd.argnlist
+                nodeargs = list(node.nodeargd.argnlist)
+            # make sure the argument list is long enough for the macro
+            # arguments.  This can happen, for instance, if a macro is parsed as
+            # a single-token argument to another macro.  E.g., in the (invalid)
+            # r"\hat\sqrt{2}", the token "\sqrt" is the argument of "\hat"; in
+            # tolerant parsing mode, the "\sqrt" node has a nodeargd that is
+            # None.
+            spec = getattr(node, 'spec', None)
+            if spec is not None and spec.arguments_spec_list is not None \
+               and len(nodeargs) < len(spec.arguments_spec_list):
+                nodeargs += [
+                    None for _ in range(len(spec.arguments_spec_list) - len(nodeargs))
+                ]
 
             has_percent_s = re.search('(^|[^%])(%%)*%s', simplify_repl)
 
@@ -1382,7 +1397,7 @@ class LatexNodes2Text(object):
 
             try:
                 return simplify_repl % x
-            except (TypeError, ValueError):
+            except (TypeError, ValueError, KeyError):
                 logger.warning(
                     "WARNING: Error in configuration: {} failed its substitution!"
                     .format(what)

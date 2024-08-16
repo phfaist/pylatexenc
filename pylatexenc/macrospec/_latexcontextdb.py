@@ -689,8 +689,9 @@ class ParsingStateDeltaExtendLatexContextDb(ParsingStateDelta):
        A dictionary with keys 'macros', 'environments', 'specials', as accepted
        by :py:meth:`LatexContextDb.add_context_category()`.
         
-       Can be used along with set_parsing_state; in which case definitions are
-       added on top of the parsing state change.
+       Can be used along with `set_attributes` (see
+       :py:class:`~pylatexenc.latexnodes.ParsingStateDelta`), in which case
+       definitions are added on top of the parsing state change.
     """
     def __init__(self, extend_latex_context, **kwargs):
         super(ParsingStateDeltaExtendLatexContextDb, self).__init__(

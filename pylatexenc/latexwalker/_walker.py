@@ -479,7 +479,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
         - `parsing_state` is a :py:class:`ParsingState` instance that represents
           the current parsing state.  If `None`, then
-          :py:meth:`make_parsing_sttae()` is called to create a parsing state.
+          :py:meth:`make_parsing_state()` is called to create a parsing state.
 
         - `open_context`, if non-`None`, is a tuple `( open_context_name,
           open_context_token )` with a textual description of the open context
@@ -491,16 +491,9 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         The return value is a tuple `(result, parser_parsing_state_delta)` where
         `result` is the return value of the parser, which is expected to be a
         :py:class:`LatexNode` or :py:class:`LatexNodeList` instance, and where
-        `parser_parsing_state_delta`, if non-`None`, is a dictionary with
-        information to carry over when parsing further content, for instance, on
-        how to update the current parsing state.
-
-        What keys can be set in the `parser_parsing_state_delta` dictionary is
-        up to the parsers.  See :py:class:`LatexGeneralNodesParser` and
-        :py:class:`LatexInvocableWithArgumentsParser` for examples.  An example
-        where `parser_parsing_state_delta` is important is to implement the
-        ``\newcommand`` macro which should update the current latex context to
-        include the new macro definition.
+        `parsing_state_delta`, if non-`None`, is a parsing state delta object,
+        see :py:class:`pylatexenc.latexnodes.ParsingStateDelta`.  It represents
+        changes to the parsing state for parsing subsequent content.
         """
 
         the_token_reader = None
