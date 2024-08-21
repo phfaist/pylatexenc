@@ -166,8 +166,9 @@ class UnicodeToLatexEncoder(object):
          conversion_rules = [
              # our custom rules
              UnicodeToLatexConversionRule(RULE_REGEX, [
-                 # double \\ needed, see UnicodeToLatexConversionRule
-                 ( re.compile(r'...'), r'\\ldots' ),
+                 # double \\ needed in replacement text for regex rule,
+                 # see UnicodeToLatexConversionRule
+                 ( re.compile(r'\.\.\.'), r'\\ldots' ),
                  ( re.compile(r'î'), r'\\^i' ),
              ]),
              # plus all the default rules
