@@ -223,7 +223,7 @@ class LatexStandardArgumentParser(LatexParserBase):
                 raise ValueError("arg_spec for a verbatim argument should be either ‘v’ "
                                  "or ‘v<char1><char2>’")
             return LatexDelimitedVerbatimParser(
-                delimiter_chars=delimiter_chars
+                delimiters=delimiter_chars,
             )
 
 
