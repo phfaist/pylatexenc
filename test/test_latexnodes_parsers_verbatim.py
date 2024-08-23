@@ -35,10 +35,19 @@ class TestLatexVerbatimBaseParser(unittest.TestCase):
 
         node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
+        vps = node.parsing_state
+        self.assertFalse(vps.enable_macros)
+        self.assertFalse(vps.enable_environments)
+        self.assertFalse(vps.enable_specials)
+        self.assertFalse(vps.enable_groups)
+        self.assertFalse(vps.enable_comments)
+        self.assertFalse(vps.enable_math)
+        self.assertFalse(vps.enable_double_newline_paragraphs)
+
         self.assertEqual(
             node,
             LatexCharsNode(
-                parsing_state=ps,
+                parsing_state=vps,
                 chars='$',
                 pos=0,
                 pos_end=1,
@@ -56,10 +65,12 @@ class TestLatexVerbatimBaseParser(unittest.TestCase):
 
         node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
+        vps = node.parsing_state
+
         self.assertEqual(
             node,
             LatexCharsNode(
-                parsing_state=ps,
+                parsing_state=vps,
                 chars='\\',
                 pos=0,
                 pos_end=1,
@@ -95,6 +106,16 @@ class TestLatexDelimitedVerbatimParser(unittest.TestCase):
 
         node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
+        vps = node.nodelist[0].parsing_state
+
+        self.assertFalse(vps.enable_macros)
+        self.assertFalse(vps.enable_environments)
+        self.assertFalse(vps.enable_specials)
+        self.assertFalse(vps.enable_groups)
+        self.assertFalse(vps.enable_comments)
+        self.assertFalse(vps.enable_math)
+        self.assertFalse(vps.enable_double_newline_paragraphs)
+
         self.assertEqual(
             node,
             LatexGroupNode(
@@ -102,7 +123,7 @@ class TestLatexDelimitedVerbatimParser(unittest.TestCase):
                 delimiters=('|','|'),
                 nodelist=LatexNodeList([
                     LatexCharsNode(
-                        parsing_state=ps,
+                        parsing_state=vps,
                         chars='verbatim',
                         pos=1,
                         pos_end=9,
@@ -124,6 +145,8 @@ class TestLatexDelimitedVerbatimParser(unittest.TestCase):
 
         node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
+        vps = node.nodelist[0].parsing_state
+
         self.assertEqual(
             node,
             LatexGroupNode(
@@ -131,7 +154,7 @@ class TestLatexDelimitedVerbatimParser(unittest.TestCase):
                 delimiters=('|','|'),
                 nodelist=LatexNodeList([
                     LatexCharsNode(
-                        parsing_state=ps,
+                        parsing_state=vps,
                         chars='verbatim',
                         pos=3+1,
                         pos_end=3+9,
@@ -153,6 +176,8 @@ class TestLatexDelimitedVerbatimParser(unittest.TestCase):
 
         node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
+        vps = node.nodelist[0].parsing_state
+
         self.assertEqual(
             node,
             LatexGroupNode(
@@ -160,7 +185,7 @@ class TestLatexDelimitedVerbatimParser(unittest.TestCase):
                 delimiters=('{','}'),
                 nodelist=LatexNodeList([
                     LatexCharsNode(
-                        parsing_state=ps,
+                        parsing_state=vps,
                         chars='verbatim',
                         pos=1,
                         pos_end=9,
@@ -185,6 +210,8 @@ verbatim>"""
 
         node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
+        vps = node.nodelist[0].parsing_state
+
         self.assertEqual(
             node,
             LatexGroupNode(
@@ -192,7 +219,7 @@ verbatim>"""
                 delimiters=('<','>'),
                 nodelist=LatexNodeList([
                     LatexCharsNode(
-                        parsing_state=ps,
+                        parsing_state=vps,
                         chars=latextext[1:-1],
                         pos=1,
                         pos_end=len(latextext)-1,
@@ -215,6 +242,8 @@ verbatim>"""
 
         node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
+        vps = node.nodelist[0].parsing_state
+
         self.assertEqual(
             node,
             LatexGroupNode(
@@ -222,7 +251,7 @@ verbatim>"""
                 delimiters=('{','>'),
                 nodelist=LatexNodeList([
                     LatexCharsNode(
-                        parsing_state=ps,
+                        parsing_state=vps,
                         chars='verbatim',
                         pos=1,
                         pos_end=9,
@@ -249,6 +278,8 @@ verbatim>"""
 
         node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
+        vps = node.nodelist[0].parsing_state
+
         self.assertEqual(
             node,
             LatexGroupNode(
@@ -256,7 +287,7 @@ verbatim>"""
                 delimiters=('`','\''),
                 nodelist=LatexNodeList([
                     LatexCharsNode(
-                        parsing_state=ps,
+                        parsing_state=vps,
                         chars='verbatim',
                         pos=1,
                         pos_end=9,
@@ -288,6 +319,8 @@ special characters should be captured verbatim.
 
         node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
+        vps = node.nodelist[0].parsing_state
+
         evpos = latextext.find(r'\end{verbatim}')
 
         self.assertEqual(
@@ -295,7 +328,7 @@ special characters should be captured verbatim.
             LatexNodeList(
                 [
                     LatexCharsNode(
-                        parsing_state=ps,
+                        parsing_state=vps,
                         chars=latextext[1:evpos],
                         pos=1,
                         pos_end=evpos,
@@ -324,6 +357,8 @@ special characters should be captured verbatim.
 
         node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
+        vps = node.nodelist[0].parsing_state
+
         evpos = latextext.find(r'\end{verbatim}')
 
         self.assertEqual(
@@ -331,7 +366,7 @@ special characters should be captured verbatim.
             LatexNodeList(
                 [
                     LatexCharsNode(
-                        parsing_state=ps,
+                        parsing_state=vps,
                         chars=latextext[1:evpos],
                         pos=1,
                         pos_end=evpos,

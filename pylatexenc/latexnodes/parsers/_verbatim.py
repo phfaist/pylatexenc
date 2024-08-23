@@ -140,7 +140,17 @@ class LatexVerbatimBaseParser(LatexParserBase):
             chars=verbatim_string,
             pos=pos_start,
             pos_end=pos_end,
-            parsing_state=parsing_state,
+            parsing_state=parsing_state.sub_context(
+                # emulate a parsing state in which "special"/"active" features
+                # have been disabled.
+                enable_double_newline_paragraphs=False,
+                enable_macros=False,
+                enable_environments=False,
+                enable_specials=False,
+                enable_comments=False,
+                enable_groups=False,
+                enable_math=False,
+            ),
         )
 
         if not stop_condition_met and ended_with_eos:
