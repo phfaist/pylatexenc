@@ -552,8 +552,25 @@ class LatexTackOnInformationFieldMacrosParser(LatexParserBase):
       information field macro.  Providing a set (or iterable or list) of macro
       names (w/o backslash) will allow repeated specification of those macro
       names only and not the other macro names in `macronames`.
+
+    - `default_macro_arg_parser` is a `LatexParserBase` instance or `True` (the
+      default) or `None`.  It is used to parse arguments to each of the
+      tacked-on macros that we encounter, except for ones for which a specific
+      parser is found in `macro_arg_parsers`.  If set to `True` (the default), a
+      standard single-expression parser is used (single token or braced group).
+      If set to `None`, no arguments are expected to the given tack-on macros
+      for which the default parser is used.
+
+    - `macro_arg_parsers` can be set to a dictionary containing specific parsers
+      to use for specific macro names of tacked-on macros.  Specifying
+      `macro_arg_parsers=None` is equivalent to specifying an empty dictionary.
+      The keys in the dictionaries are the macro names.  Each value is either
+      `None` (no argument is expected), `True` (use the default parser), or a
+      parser instance.
     """
-    def __init__(self, macronames, allow_multiple=False, **kwargs):
+    def __init__(self, macronames, allow_multiple=False,
+                 macro_arg_parsers=None, default_macro_arg_parser=True,
+                 **kwargs):
         super(LatexTackOnInformationFieldMacrosParser, self).__init__(**kwargs)
 
         self.macronames = set(macronames)
@@ -564,17 +581,36 @@ class LatexTackOnInformationFieldMacrosParser(LatexParserBase):
         else:
             self.allow_multiple = set(allow_multiple)
 
-        self.expression_parser = LatexExpressionParser()
+        if default_macro_arg_parser is True:
+            self.default_macro_arg_parser = LatexExpressionParser()
+        else:
+            # might be None for no arguments
+            self.default_macro_arg_parser = default_macro_arg_parser
+
+        self.macro_arg_parsers = macro_arg_parsers # might be None
         
     def contents_can_be_empty(self):
         return True
 
     def get_macro_arg_parser(self, macroname):
         r"""
-        You can reimplement this method if you want to be able to read more complex
-        macro call syntaxes.
+        You can reimplement this method if you want to be able to read more
+        complex macro call syntaxes. It is probably simpler, however, to use the
+        `macro_arg_parsers` constructor argument.  If you reimplement this
+        function, then `macro_arg_parsers` and `default_macro_arg_parser` have
+        no effect unless you call the base implementation.
         """
-        return self.expression_parser
+        if self.macro_arg_parsers is None:
+            # remember, default_macro_arg_parser might be None to indicate that
+            # we don't expect any args
+            return self.default_macro_arg_parser
+        if macroname not in self.macro_arg_parsers:
+            return self.default_macro_arg_parser
+        parser = self.macro_arg_parsers[macroname]
+        if parser is True:
+            return self.default_macro_arg_parser
+        return parser # might be None
+            
 
     def parse(self, latex_walker, token_reader, parsing_state):
         
@@ -616,23 +652,30 @@ class LatexTackOnInformationFieldMacrosParser(LatexParserBase):
                 tolerant_parsing_skip_add_this_node = True
 
             macro_arg_parser = self.get_macro_arg_parser(macroname)
-            
-            arg_content_node, arg_parsing_state_delta = latex_walker.parse_content(
-                macro_arg_parser,
-                token_reader=token_reader,
-                parsing_state=parsing_state,
-                open_context=(
-                    'Argument of information field macro \\{}'.format(macroname),
-                    tok,
-                )
-            )
 
-            if arg_parsing_state_delta is not None:
-                logger.warning(
-                    "Parsing state delta is ignored when parsing tack-on information "
-                    "field macro \\{}: {}"
-                    .format(macroname, arg_parsing_state_delta)
+            if macro_arg_parser is None:
+
+                arg_content_node = None
+                arg_parsing_state_delta = None
+
+            else:
+            
+                arg_content_node, arg_parsing_state_delta = latex_walker.parse_content(
+                    macro_arg_parser,
+                    token_reader=token_reader,
+                    parsing_state=parsing_state,
+                    open_context=(
+                        'Argument of information field macro \\{}'.format(macroname),
+                        tok,
+                    )
                 )
+
+                if arg_parsing_state_delta is not None:
+                    logger.warning(
+                        "Parsing state delta is ignored when parsing tack-on information "
+                        "field macro \\{}: {}"
+                        .format(macroname, arg_parsing_state_delta)
+                    )
 
             if tolerant_parsing_skip_add_this_node:
                 continue
@@ -651,7 +694,11 @@ class LatexTackOnInformationFieldMacrosParser(LatexParserBase):
                 delimiters=('\\'+macroname, ''),
                 nodelist=arg_content_nodelist,
                 pos=tok.pos,
-                pos_end=arg_content_node.pos_end
+                pos_end=(
+                    arg_content_node.pos_end
+                    if (arg_content_node is not None)
+                    else tok.pos_end
+                )
             )
 
             arg_nodes.append( arg_node )
