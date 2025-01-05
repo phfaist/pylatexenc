@@ -55,4 +55,6 @@
 #   8) upload package to PyPI (twine upload dist/pylatexenc-X.X.tar.gz -r realpypi)
 #
 
+
+# ALSO BUMP IN pyproject.toml !
 version_str = "3.0alpha000031"
