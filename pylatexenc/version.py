@@ -57,4 +57,4 @@
 
 
 # ALSO BUMP IN pyproject.toml !
-version_str = "3.0alpha000031"
+version_str = "3.0alpha000032"
