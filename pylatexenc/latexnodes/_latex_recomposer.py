@@ -44,27 +44,34 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
             chars = '' # not None or other stuff
         return str(chars)
 
-    def recompose_nodelist(self, recomposed_list, n):
+    def recompose_nodelist(self, nodelist, n):
         r"""
-        Produce latex code for a node list.  Each node in the list was
-        already recomposed into a string.  The strings are collected in the list
-        `recomposed_list`.
+        Produce latex code for a node list.
+
+        The nodes in the list have not been recomposed yet, and should be done
+        so in the course of this method by calling `node.accept_node_visitor()`
+        or using a helper function such as `self.descend_into_nodelist()`.
         """
+        recomposed_list = self.descend_into_nodelist(nodelist)
         return "".join([
             recomposed for recomposed in recomposed_list
             if recomposed is not None
         ])
 
-    def recompose_delimited_nodelist(self, delimiters, recomposed_list, n):
+    def recompose_delimited_nodelist(self, delimiters, nodelist, n):
         r"""
-        Produce latex code for a node list enclosed by delimiters.  Each
-        node in the list was already recomposed into a string.  The strings are
-        collected in the list `recomposed_list`.  The delimiters are specified
-        as a tuple (opening delimiter, closing delimiter).
+        Produce latex code for a node list enclosed by delimiters.
+
+        The nodes in the list have not been recomposed yet, and should be done
+        so in the course of this method by calling `node.accept_node_visitor()`
+        or using a helper function such as `self.descend_into_nodelist()`.
+
+        The delimiters are specified as a tuple (opening delimiter, closing
+        delimiter).
         """
         if not delimiters:
             delimiters = ('', '')
-        return (delimiters[0] + self.recompose_nodelist(recomposed_list, n)
+        return (delimiters[0] + self.recompose_nodelist(nodelist, n)
                 + delimiters[1])
     
     def recompose_comment(self, comment, comment_post_space, n):
@@ -77,70 +84,85 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
             comment_post_space = ''
         return n.parsing_state.comment_start + comment + comment_post_space
 
-    def recompose_macro_call(self, macroname, macro_post_space, recomposed_arguments_list, n):
+    def recompose_macro_call(self, macroname, macro_post_space, parsed_arguments, n):
         r"""
         Produce latex code for macro call, including the macro call and
-        arguments.  The arguments have already been recomposed into strings,
-        which are provided as a list in `recomposed_arguments_list`.
+        arguments.
+
+        The nodes in `parsed_arguments` list have not been recomposed yet, and
+        should be done so in the course of this method by calling
+        `node.accept_node_visitor()` or using a helper function such as
+        `self.descend_into_nodelist()`.
         """
-        if recomposed_arguments_list is None:
-            recomposed_arguments_list = []
+        recomposed_arguments = self.descend_into_parsed_arguments(parsed_arguments)
         return (
             '\\' + macroname + macro_post_space
-            + self.recompose_nodelist(recomposed_arguments_list, n)
+            + recomposed_arguments
         )
 
     def recompose_environment_call(
-            self, environmentname, recomposed_arguments_list, recomposed_body_list, n
+            self, environmentname, parsed_arguments, body_node_list, n
     ):
         r"""
         Produce latex code for a latex environment, including the begin/end
-        calls, arguments, and the body contents.  The arguments have already
-        been recomposed into strings, which are provided as a list in
-        `recomposed_arguments_list`.  The body nodes have already been
-        recomposed into one string for each body content node; the strings are
-        given in `recomposed_body_list`.
+        calls, arguments, and the body contents.
+
+        The nodes in the lists `parsed_arguments` and `body_node_list` have not
+        been recomposed yet, and should be done so in the course of this method
+        by calling `node.accept_node_visitor()` or using a helper function such
+        as `self.descend_into_nodelist()`.
         """
-        if recomposed_arguments_list is None:
-            recomposed_arguments_list = []
+
+        recomposed_arguments = self.descend_into_parsed_arguments(parsed_arguments)
+        recomposed_body = self.recompose_nodelist(body_node_list, n)
+
         return (
             '\\begin{' + str(environmentname) + '}'
-            + self.recompose_nodelist(recomposed_arguments_list, n)
-            + self.recompose_nodelist(recomposed_body_list, n)
+            + recomposed_arguments
+            + recomposed_body
             + '\\end{' + str(environmentname) + '}'
         )
 
-    def recompose_specials_call(self, specials_chars, recomposed_arguments_list, n):
+    def recompose_specials_call(self, specials_chars, parsed_arguments, n):
         r"""
         Produce latex code for latex specials call, including the specials
-        chars and possible arguments.  The arguments have already
-        been recomposed into strings, which are provided as a list in
-        `recomposed_arguments_list`.
-        """
-        if not recomposed_arguments_list:
-            recomposed_arguments_list = ''
-        return specials_chars + recomposed_arguments_list
+        chars and possible arguments.
 
-    def recompose_math_content(self, delimiters, recomposed_list, n):
+        The nodes in the list `parsed_arguments` have not been recomposed
+        yet, and should be done so in the course of this method by calling
+        `node.accept_node_visitor()` or using a helper function such as
+        `self.descend_into_nodelist()`.
+        """
+        recomposed_arguments = self.descend_into_parsed_arguments(parsed_arguments)
+        return specials_chars + recomposed_arguments
+
+    def recompose_math_content(self, delimiters, nodelist, n):
         r"""
         Produce latex code for a latex math construt (e.g., `$...$`),
-        including delimiters and content.  The content nodes have already been
-        recomposed into one string for each content node; the strings are given
-        in `recomposed_body_list`.
-        """
-        return self.recompose_delimited_nodelist(delimiters, recomposed_list, n)
+        including delimiters and content.  
 
-    def recompose_parsed_arguments(self, recomposed_list, pa):
+        The nodes in the list `node_list` have not been recomposed yet, and
+        should be done so in the course of this method by calling
+        `node.accept_node_visitor()` or using a helper function such as
+        `self.descend_into_nodelist()`.
+        """
+        return self.recompose_delimited_nodelist(delimiters, nodelist, n)
+
+    def recompose_parsed_arguments(self, parsed_arguments):
         r"""
         Produce latex code for a sequence of arguments provided to a macro,
-        environment, or specials call.  The individual argument nodes have
-        already been recomposed into one string for each argument node; the
-        strings are given in `recomposed_list`.
+        environment, or specials call.
+        
+        The nodes in the list `parsed_arguments` have not been recomposed yet,
+        and should be done so in the course of this method by calling
+        `node.accept_node_visitor()` or using a helper function such as
+        `self.descend_into_nodelist()`.
         """
-        #logger.debug('recompose_parsed_arguments:  %r', recomposed_list)
-        #return self.recompose_nodelist(recomposed_list, pa)
 
-        return recomposed_list
+        ### FIXME: At this point, we should have a node or at least a
+        ### parsing_state that we can pass over to recompose_nodelist????
+
+        return self.recompose_nodelist(parsed_arguments.argnlist, None)
 
 
     def recompose_unknown(self, node):
@@ -153,41 +175,61 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
 
     # ---
 
-    def visit_chars_node(self, node, **kwargs):
+    def node_standard_process_chars(self, node):
         return self.recompose_chars(node.chars, node)
 
-    def visit_group_node(self, node, visited_results_nodelist, **kwargs):
+    def node_standard_process_group(self, node):
         return self.recompose_delimited_nodelist(
-            node.delimiters, visited_results_nodelist, node
+            node.delimiters,
+            node.nodelist,
+            node
         )
 
-    def visit_comment_node(self, node, **kwargs):
+    def node_standard_process_comment(self, node):
         return self.recompose_comment(node.comment, node.comment_post_space, node)
 
-    def visit_macro_node(self, node, visited_results_arguments, **kwargs):
+    def node_standard_process_macro(self, node):
         return self.recompose_macro_call(
-            node.macroname, node.macro_post_space, visited_results_arguments, node
+            node.macroname,
+            node.macro_post_space,
+            node.nodeargd,
+            node
         )
 
-    def visit_environment_node(self, node, visited_results_arguments,
-                               visited_results_body, **kwargs):
+    def node_standard_process_environment(self, node):
         return self.recompose_environment_call(
-            node.environmentname, visited_results_arguments, visited_results_body, node
+            node.environmentname,
+            node.nodeargd,
+            node.nodelist,
+            node
         )
 
-    def visit_specials_node(self, node, visited_results_arguments, **kwargs):
+    def node_standard_process_specials(self, node):
         return self.recompose_specials_call(
-            node.specials_chars, visited_results_arguments, node
+            node.specials_chars,
+            node.nodeargd,
+            node
         )
 
-    def visit_math_node(self, node, visited_results_nodelist, **kwargs):
-        return self.recompose_math_content(node.delimiters, visited_results_nodelist, node)
+    def node_standard_process_math(self, node):
+        return self.recompose_math_content(
+            node.delimiters,
+            node.nodelist,
+            node
+        )
 
-    def visit_node_list(self, nodelist, visited_results_nodelist, **kwargs):
-        return self.recompose_nodelist(visited_results_nodelist, nodelist)
+    def node_standard_process_list(self, nodelist):
+        return self.recompose_nodelist(
+            nodelist.nodelist,
+            nodelist
+        )
 
-    def visit_parsed_arguments(self, parsed_args, visited_results_argnlist, **kwargs):
-        return self.recompose_parsed_arguments(visited_results_argnlist, parsed_args)
+    def node_standard_process_parsed_arguments(self, parsed_arguments):
+        return self.recompose_parsed_arguments(parsed_arguments)
 
-    def visit_unknown_node(self, node, **kwargs):
+
+
+    # handle something we don't recognize
+
+    def visit(self, node, **kwargs):
         return self.recompose_unknown(node)

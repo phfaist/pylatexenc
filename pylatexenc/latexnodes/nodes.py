@@ -253,7 +253,7 @@ class LatexNode(object):
         return r'<UNKNOWN NODE TYPE>: ' + repr(self)
 
     def accept_node_visitor(self, visitor):
-        return visitor.visit_unknown_node(self)
+        return visitor.node_standard_process_unknown(self)
 
     def to_json_object_with_latexwalker(self, latexwalker):
         # Prepare a dictionary with the correct keys and values.
@@ -302,7 +302,7 @@ class LatexCharsNode(LatexNode):
         return 'chars ‘' + _display_abbrev_str(self.chars) + '’'
 
     def accept_node_visitor(self, visitor):
-        return visitor.visit_chars_node(self)
+        return visitor.node_standard_process_chars(self)
 
 
 
@@ -348,21 +348,7 @@ class LatexGroupNode(LatexNode):
         return "group ‘" + open_delim + "…" + close_delim + "’"
 
     def accept_node_visitor(self, visitor):
-        visited_results_nodelist = []
-        if self.nodelist is not None:
-            for node in self.nodelist:
-                if node is not None:
-                    visited_results_nodelist.append(
-                        node.accept_node_visitor(visitor)
-                    )
-                else:
-                    visited_results_nodelist.append(
-                        None
-                    )
-        return visitor.visit_group_node(
-            self,
-            visited_results_nodelist=visited_results_nodelist
-        )
+        return visitor.node_standard_process_group(self)
 
 
 class LatexCommentNode(LatexNode):
@@ -397,7 +383,7 @@ class LatexCommentNode(LatexNode):
         return "comment ‘" + _display_abbrev_str(self.comment.strip()) + "’"
 
     def accept_node_visitor(self, visitor):
-        return visitor.visit_comment_node(self)
+        return visitor.node_standard_process_comment(self)
 
 
 class LatexMacroNode(LatexNode):
@@ -486,13 +472,7 @@ class LatexMacroNode(LatexNode):
         return "macro ‘\\" + self.macroname + "’"
 
     def accept_node_visitor(self, visitor):
-        visited_results_arguments = None
-        if self.nodeargd is not None:
-            visited_results_arguments = self.nodeargd.accept_node_visitor(visitor)
-        return visitor.visit_macro_node(
-            self,
-            visited_results_arguments=visited_results_arguments
-        )
+        return visitor.node_standard_process_macro(self)
 
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
@@ -617,24 +597,7 @@ class LatexEnvironmentNode(LatexNode):
         return "environment ‘{" + self.environmentname + "}’"
 
     def accept_node_visitor(self, visitor):
-        visited_results_arguments = None
-        visited_results_body = None
-        if self.nodeargd is not None:
-            visited_results_arguments = self.nodeargd.accept_node_visitor(visitor)
-        if self.nodelist is not None:
-            visited_results_body = []
-            for node in self.nodelist:
-                if node is not None:
-                    visited_results_body.append(
-                        node.accept_node_visitor(visitor)
-                    )
-                else:
-                    visited_results_body.append( None )
-        return visitor.visit_environment_node(
-            self,
-            visited_results_arguments=visited_results_arguments,
-            visited_results_body=visited_results_body,
-        )
+        return visitor.node_standard_process_environment(self)
 
 
 
@@ -696,13 +659,7 @@ class LatexSpecialsNode(LatexNode):
         return "specials ‘" + self.specials_chars + "’"
 
     def accept_node_visitor(self, visitor):
-        visited_results_arguments = None
-        if self.nodeargd is not None:
-            visited_results_arguments = self.nodeargd.accept_node_visitor(visitor)
-        return visitor.visit_specials_node(
-            self,
-            visited_results_arguments=visited_results_arguments,
-        )
+        return visitor.node_standard_process_specials(self)
 
 
 class LatexMathNode(LatexNode):
@@ -751,20 +708,7 @@ class LatexMathNode(LatexNode):
         return self.displaytype + " math ‘" + open_delim + "…" + close_delim + "’"
 
     def accept_node_visitor(self, visitor):
-        visited_results_nodelist = None
-        if self.nodelist is not None:
-            visited_results_nodelist = []
-            for node in self.nodelist:
-                if node is not None:
-                    visited_results_nodelist.append(
-                        node.accept_node_visitor(visitor)
-                    )
-                else:
-                    visited_results_nodelist.append( None )
-        return visitor.visit_math_node(
-            self,
-            visited_results_nodelist=visited_results_nodelist,
-        )
+        return visitor.node_standard_process_math(self)
 
 
 
@@ -927,20 +871,7 @@ class LatexNodeList(object):
         return "list of nodes (" + str(list_len) + ")" + list_preview
 
     def accept_node_visitor(self, visitor):
-        visited_results_nodelist = None
-        if self.nodelist is not None:
-            visited_results_nodelist = []
-            for node in self.nodelist:
-                if node is not None:
-                    visited_results_nodelist.append(
-                        node.accept_node_visitor(visitor)
-                    )
-                else:
-                    visited_results_nodelist.append( None )
-        return visitor.visit_node_list(
-            self,
-            visited_results_nodelist=visited_results_nodelist
-        )
+        return visitor.node_standard_process_list(self)
 
 
     def filter(self, node_predicate_fn=None,
@@ -1409,6 +1340,13 @@ def _update_posposend_from_nodelist(pos, pos_end, nodelist):
 # ------------------------------------------------------------------------------
 
 
+
+# internal flag for default argument
+class _UseList:
+    pass
+
+
+
 class LatexNodesVisitor(object):
     r"""
     Implement a visitor pattern on a node structure.
@@ -1450,6 +1388,27 @@ class LatexNodesVisitor(object):
 
        The `LatexNodesVisitor` class was introduced in `pylatexenc 3.0`.
     """
+
+
+
+    def start(self, node):
+        r"""
+        A shortcut for calling `node.accept_node_visitor()` with this visitor
+        object.  It's a convenient starting point for your visiting pattern:
+
+        .. code::
+
+           visitor = MyNodeVisitor()
+           visitor.start(node)
+
+        You probably shouldn't override this method in your visitor subclass.
+        """
+        return node.accept_node_visitor(self)
+
+
+
+    # ------
+
 
     def visit(self, node, **kwargs):
         r"""
@@ -1555,21 +1514,133 @@ class LatexNodesVisitor(object):
         return self.visit(node, **kwargs)
 
 
-    # --
 
-    def start(self, node):
+    # -----
+
+
+    def descend_into_nodelist(self, nodelist, default=_UseList):
         r"""
-        A shortcut for calling `node.accept_node_visitor()` with this visitor
-        object.  It's a convenient starting point for your visiting pattern:
+        Helper method designed to be called from the body of the
+        `node_standard_process_***()` methods to descend into argument lists,
+        body nodes, etc.
 
-        .. code::
+        This method iterates through the list and calls
+        `node.accept_node_visitor(self)` on each non-None node of the list.
+        This method returns a list of return values of each node visit call.
 
-           visitor = MyNodeVisitor()
-           visitor.start(node)
+        If an element of the list is `None` instead of a node instance, a
+        corresponding value `None` is included in the returned list.
 
-        You probably shouldn't override this method in your visitor subclass.
+        If `nodelist` itself is None, then we return `default`.  If you do not
+        specify a default value, an empty list is used as default.
         """
-        return node.accept_node_visitor(self)
+        if nodelist is None:
+            if default is _UseList:
+                return []
+            return default
+
+        visited_results_nodelist = []
+        for cnode in nodelist:
+            if cnode is not None:
+                visited_results_nodelist.append(
+                    cnode.accept_node_visitor(self)
+                )
+            else:
+                visited_results_nodelist.append( None )
+
+        return visited_results_nodelist
+
+    def descend_into_parsed_arguments(self, parsed_arguments):
+        if parsed_arguments is None:
+            return ''
+        return parsed_arguments.accept_node_visitor(self)
+
+
+    # -----
+
+    def node_standard_process_unknown(self, node):
+        return self.visit_unknown_node(node)
+
+    def node_standard_process_chars(self, node):
+        return self.visit_chars_node(node)
+
+    def node_standard_process_group(self, node):
+
+        visited_results_nodelist = self.descend_into_nodelist(node.nodelist)
+
+        return self.visit_group_node(
+            node,
+            visited_results_nodelist=visited_results_nodelist
+        )
+
+    def node_standard_process_comment(self, node):
+        return self.visit_comment_node(node)
+
+    def node_standard_process_macro(self, node):
+
+        visited_results_arguments = self.descend_into_parsed_arguments(node.nodeargd)
+
+        return self.visit_macro_node(
+            node,
+            visited_results_arguments=visited_results_arguments
+        )
+
+    def node_standard_process_environment(self, node):
+
+        visited_results_arguments = self.descend_into_parsed_arguments(node.nodeargd)
+        visited_results_body = self.descend_into_nodelist(node.nodelist)
+
+        return self.visit_environment_node(
+            node,
+            visited_results_arguments=visited_results_arguments,
+            visited_results_body=visited_results_body,
+        )
+
+    def node_standard_process_specials(self, node):
+
+        visited_results_arguments = self.descend_into_parsed_arguments(node.nodeargd)
+
+        return self.visit_specials_node(
+            node,
+            visited_results_arguments=visited_results_arguments,
+        )
+
+    def node_standard_process_math(self, node):
+
+        visited_results_nodelist = self.descend_into_nodelist(
+            node.nodelist,
+            default=None
+        )
+
+        return self.visit_math_node(
+            node,
+            visited_results_nodelist=visited_results_nodelist,
+        )
+
+
+    def node_standard_process_list(self, nodelist):
+
+        visited_results_nodelist = self.descend_into_nodelist(nodelist.nodelist)
+
+        return self.visit_node_list(
+            nodelist,
+            visited_results_nodelist=visited_results_nodelist
+        )
+
+    def node_standard_process_parsed_arguments(self, parsed_arguments):
+
+        visited_results_argnlist = self.descend_into_nodelist(
+            parsed_arguments.argnlist,
+            default=None
+        )
+
+        return self.visit_parsed_arguments(
+            parsed_arguments,
+            visited_results_argnlist=visited_results_argnlist,
+        )
+
+
+
 
 
 
