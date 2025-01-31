@@ -622,7 +622,7 @@ class TestLatexNodeList(unittest.TestCase):
         )
 
 
-    def test_parse_keyval_content(self):
+    def test_parse_keyval_content_more(self):
 
         charsnode = LatexCharsNode(
             chars='X=one,YY=two,Z',
