@@ -258,7 +258,11 @@ def format_pos(pos, lineno, colno):
     if lineno is not None:
         if colno is not None:
             return '@ (line {}, col {})'.format(lineno, colno)
+        if isinstance(lineno, _basestring):
+            return '@ '+lineno
         return '@ line {}'.format(lineno)
+    if isinstance(pos, _basestring):
+        return '@ '+pos
     if pos is not None:
         return '@ char pos {}'.format(pos)
     return '@ <unknown>'

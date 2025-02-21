@@ -1401,7 +1401,9 @@ class LatexNodesVisitor(object):
            visitor = MyNodeVisitor()
            visitor.start(node)
 
-        You probably shouldn't override this method in your visitor subclass.
+        Subclasses may override this method in case there is any additional
+        setup to perform at the beginning of the visiting process or after all
+        nodes have been visited.
         """
         return node.accept_node_visitor(self)
 
