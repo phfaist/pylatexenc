@@ -122,7 +122,7 @@ specs = [
             std_macro('section', '*[{'),
             std_macro('subsection', '*[{'),
             std_macro('subsubsection', '*[{'),
-            std_macro('pagagraph', '*[{'),
+            std_macro('paragraph', '*[{'),
             std_macro('subparagraph', '*[{'),
 
             std_macro('bibliography', '{'),
