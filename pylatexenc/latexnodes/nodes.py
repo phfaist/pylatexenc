@@ -48,6 +48,7 @@ if sys.version_info.major == 2:
 
 
 def _display_abbrev_str(s, maxlen=40):
+    s = str(s)
     if not maxlen or maxlen < 2: # also catches None
         maxlen = 2
     if len(s) < maxlen:
@@ -70,7 +71,7 @@ def _display_str_delimiters(delimiters):
     if close_delim is None:
         close_delim = ''
 
-    return open_delim, close_delim
+    return str(open_delim), str(close_delim)
 
 
 #
@@ -345,7 +346,7 @@ class LatexGroupNode(LatexNode):
 
     def display_str(self):
         open_delim, close_delim = _display_str_delimiters(self.delimiters)
-        return "group ‘" + open_delim + "…" + close_delim + "’"
+        return "group ‘" + str(open_delim) + "…" + str(close_delim) + "’"
 
     def accept_node_visitor(self, visitor):
         return visitor.node_standard_process_group(self)
@@ -469,7 +470,7 @@ class LatexMacroNode(LatexNode):
         return LatexMacroNode
 
     def display_str(self):
-        return "macro ‘\\" + self.macroname + "’"
+        return "macro ‘\\" + str(self.macroname or '??') + "’"
 
     def accept_node_visitor(self, visitor):
         return visitor.node_standard_process_macro(self)
@@ -594,7 +595,7 @@ class LatexEnvironmentNode(LatexNode):
         return LatexEnvironmentNode
 
     def display_str(self):
-        return "environment ‘{" + self.environmentname + "}’"
+        return "environment ‘{" + str(self.environmentname) + "}’"
 
     def accept_node_visitor(self, visitor):
         return visitor.node_standard_process_environment(self)
@@ -656,7 +657,7 @@ class LatexSpecialsNode(LatexNode):
         return LatexSpecialsNode
 
     def display_str(self):
-        return "specials ‘" + self.specials_chars + "’"
+        return "specials ‘" + str(self.specials_chars) + "’"
 
     def accept_node_visitor(self, visitor):
         return visitor.node_standard_process_specials(self)

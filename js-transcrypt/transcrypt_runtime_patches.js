@@ -1,7 +1,7 @@
 /*** PhF/PYLATEXENC - BEGIN CUSTOM PATCHES ***/
 
 //
-// Patch Transcrypt's implemnetations of some builtin object methods.
+// Patch Transcrypt's implementations of some builtin object methods.
 //
 String.prototype.startswith = function (prefix, start) {
     //console.log("Custom startswith()! prefix = ", prefix, ", start = ", start);
