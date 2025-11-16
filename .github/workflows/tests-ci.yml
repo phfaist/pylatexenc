@@ -5,8 +5,8 @@ on:
     branches: [ "main", "devel" ]
   pull_request:
     branches: [ "main", "devel" ]
-  schedule:
-    - cron: "13 20 * * 3"
+#  schedule:
+#    - cron: "13 20 * * 3"
 
 jobs:
   tests-ci:
@@ -15,8 +15,8 @@ jobs:
       #fail-fast: true
       matrix:
         python-version:
-          - "3.8"
-          - "3.9"
+          #- "3.8"
+          #- "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
