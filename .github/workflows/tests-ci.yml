@@ -23,16 +23,16 @@ jobs:
           - "3.13"
         os:
           - 'ubuntu-latest'
-        include:
+        # include:
           # Deprecated system for github actions :/
           # - python-version: "3.4"
           #   os: "ubuntu-18.04"
           # - python-version: "2.7"
           #   os: 'ubuntu-20.04'
-          - python-version: "3.6"
-            os: 'ubuntu-20.04'
-          - python-version: "3.7"
-            os: 'ubuntu-20.04'
+          # - python-version: "3.6"
+          #   os: 'ubuntu-20.04'
+          # - python-version: "3.7"
+          #   os: 'ubuntu-20.04'
 
     runs-on: '${{ matrix.os }}'
 
