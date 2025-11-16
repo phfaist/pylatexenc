@@ -7,8 +7,8 @@ on:
     branches: [ "main", "devel" ]
   pull_request:
     branches: [ "main", "devel" ]
-  schedule:
-    - cron: "13 20 * * 3"
+  # schedule:
+  #   - cron: "13 20 * * 3"
 
 jobs:
   tests-ci-js:
