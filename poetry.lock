@@ -846,14 +846,14 @@ files = [
 
 [[package]]
 name = "transcrypt"
-version = "3.9.4"
+version = "3.9.3"
 description = "Python to JavaScript transpiler, supporting multiple inheritance and generating lean, highly readable code"
 optional = false
 python-versions = "*"
 groups = ["buildjslib"]
 files = [
-    {file = "transcrypt-3.9.4-py2.py3-none-any.whl", hash = "sha256:1da6d32953a6c081a93b47ccb4f7a573eb9b799ed890804246b1d3e1476e550b"},
-    {file = "transcrypt-3.9.4.tar.gz", hash = "sha256:5709c881934e988df05751ed58280e9c6ff5cc3e3faa8bb0f0f528d54dfbd5ca"},
+    {file = "Transcrypt-3.9.3-py2.py3-none-any.whl", hash = "sha256:04d7b92b9035be11c4aa7b4d6a3a97459bcb957d893b4d1cfda6e5472b7bdcfe"},
+    {file = "transcrypt-3.9.3.tar.gz", hash = "sha256:cd25cc6017a88a178816773c668f3cb73cd6026e168cb57be23c746fdb1d0920"},
 ]
 
 [package.dependencies]
@@ -914,4 +914,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.8"
-content-hash = "8c137e55c36091ab49ec812fe961b25522db79f9f7df51caa625f89621582335"
+content-hash = "88e5ed223f8bde0877503670a6ad0b3337569abff685bb626d6a928bf492df6b"

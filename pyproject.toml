@@ -32,7 +32,7 @@ sphinx-issues = ">=3.0.0"
 optional = true
 
 [tool.poetry.group.buildjslib.dependencies]
-Transcrypt = ">=3.9.0"
+Transcrypt = "==3.9.3"
 PyYAML = ">=5.0"
 
 
