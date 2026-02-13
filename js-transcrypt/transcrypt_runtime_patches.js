@@ -59,6 +59,22 @@ __pop__ = function (aKey, aDefault) {
     }
     return aDefault;
 }
+//
+// Similar bug in __getdefault__() for dictionaries' .get() method
+//
+__getdefault__ = function (aKey, aDefault) {
+    var result = this [aKey];
+    if (result === undefined) {
+        result = this ['py_' + aKey]
+    }
+    if (result !== undefined) {
+        return result;
+    }
+    if (aDefault === undefined) {
+        return null;
+    }
+    return aDefault;
+}
 
 //
 // Check that a is not null, too, otherwise we get errors with "'__eq__' in a".
