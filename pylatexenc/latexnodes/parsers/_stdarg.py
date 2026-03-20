@@ -520,7 +520,7 @@ class _CommaSepContentCustomParser(LatexParserBase):
                 # should not generate any group node, even if keep_empty_parts
                 # is set.
                 add_group_node = False
-            elif self.keep_empty_parts:
+            elif self.contents_parser_info.keep_empty_parts:
                 add_group_node = True
             else:
                 add_group_node = False
