@@ -297,7 +297,69 @@ verbatim>"""
                 pos_end=10,
             )
         )
-        
+
+    def test_nested_delims_repeated_use(self):
+        latextext = "{verbatim}"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexDelimitedVerbatimParser()
+
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        vps = node.nodelist[0].parsing_state
+
+        self.assertEqual(
+            node,
+            LatexGroupNode(
+                parsing_state=ps,
+                delimiters=('{','}'),
+                nodelist=LatexNodeList([
+                    LatexCharsNode(
+                        parsing_state=vps,
+                        chars='verbatim',
+                        pos=1,
+                        pos_end=9,
+                    )
+                ]),
+                pos=0,
+                pos_end=10,
+            )
+        )
+
+        # Below we re-use `parser` to ensure that it can be invoked repeatedly and still report appropriately.
+        latextext = "{hello{}world}"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        # Intentionally re-using same `parser` object
+
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        vps = node.nodelist[0].parsing_state
+
+        self.assertEqual(
+            node,
+            LatexGroupNode(
+                parsing_state=ps,
+                delimiters=('{','}'),
+                nodelist=LatexNodeList([
+                    LatexCharsNode(
+                        parsing_state=vps,
+                        chars='hello{}world',
+                        pos=1,
+                        pos_end=13,
+                    )
+                ]),
+                pos=0,
+                pos_end=14,
+            )
+        )
+
 
 
 class TestLatexVerbatimEnvironmentContentsParser(unittest.TestCase):

@@ -218,6 +218,8 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
 
 
     def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
+        # Reset depth counter (may be dirty from prior use)
+        self.depth_counter = 1
         
         verbatim_info = LatexVerbatimBaseParser.VerbatimInfo()
 
