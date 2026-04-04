@@ -503,7 +503,7 @@ class LatexTokenReader(LatexTokenReaderBase):
                     tok='char',
                     arg='',
                     pos=pos,
-                    pos_end=pos,
+                    pos_end=pos+1,
                     pre_space=pre_space
                 ),
                 recovery_token_at_pos=len(s)
@@ -686,6 +686,5 @@ class LatexTokenReader(LatexTokenReaderBase):
             post_space=post_space
         )
     
-
 
 

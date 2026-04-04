@@ -156,6 +156,7 @@ specs = [
             std_macro('Cref', False, 1),
             std_macro('eqref', False, 1),
             std_macro('url', False, 1),
+            std_macro('href', False, 2),
             std_macro('hypersetup', False, 1),
             std_macro('footnote', True, 1),
 
@@ -477,7 +478,6 @@ specs = [
         ]
     }),
 ]
-
 
 
 

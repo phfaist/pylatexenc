@@ -371,10 +371,11 @@ class LatexWalker(latexnodes.LatexWalkerBase):
                 if hasattr(e, 'pos') and e.lineno is None and e.colno is None:
                     epos = getattr(e, 'pos')
                     e.lineno, e.colno = self.latex_walker.pos_to_lineno_colno(epos)
+                handled_exc = e
                 e = self.latex_walker.check_tolerant_parsing_ignore_error(e)
                 if e is None:
                     # we're trying to recover from this error (tolerant parsing mode)
-                    self.recovery_from_exception = e
+                    self.recovery_from_exception = handled_exc
                     return True # error was handled
 
                 return None # raise the same error further
@@ -536,7 +537,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
                 nodes, info = None, None
 
         if pc.recovery_from_exception is not None:
-            nodes, info = pc.perform_recovery_nodes_info(the_token_reader)
+            nodes, info = pc.perform_recovery_nodes_and_parsing_state_delta(the_token_reader)
 
         logger.debug(":: PARSED content (%s @ %r) - %r - result %r + %r DONE ::",
                      open_context_name, start_pos, parser, nodes, info)

@@ -101,6 +101,18 @@ where $i$ is the “imaginary unit.”
             '''{A}{XYZ}{ABCD}'''
         )
 
+    def test_href_macro(self):
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r"\href{https://x.org}{Link}"),
+            "Link <https://x.org>"
+        )
+
+    def test_trailing_escape_character_is_dropped_in_tolerant_mode(self):
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text("hello\\"),
+            "hello"
+        )
+
     #
     # Handling of spaces
     #

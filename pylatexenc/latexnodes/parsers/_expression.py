@@ -406,7 +406,7 @@ class LatexExpressionParser(LatexParserBase):
                                                         pos_end=tok.pos_end)
                 
             raise LatexWalkerNodesParseError(
-                "Unexpected math mode delimiter ‘{}’, was expecting a LaTeX expression"
+                msg="Unexpected math mode delimiter ‘{}’, was expecting a LaTeX expression"
                 .format(tok.arg),
                 pos=tok.pos,
                 recovery_nodes=recovery_nodes,

@@ -1734,6 +1734,27 @@ Use macros: \a{} and \b{xxx}{yyy}.
         self.assertTrue(node.nodeargd)
         self.assertEqual(len(node.nodeargd.argnlist), 3)
 
+    def test_href_macro_parses_two_arguments(self):
+
+        latextext = r'\href{https://x.org}{Link}'
+        lw = LatexWalker(latextext)
+
+        (nodelist, npos, nlen) = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 1)
+        node = nodelist[0]
+        self.assertEqual(node.macroname, 'href')
+        self.assertTrue(node.nodeargd)
+        self.assertEqual(len(node.nodeargd.argnlist), 2)
+        self.assertEqual(
+            node.nodeargd.argnlist[0].latex_verbatim(),
+            '{https://x.org}'
+        )
+        self.assertEqual(
+            node.nodeargd.argnlist[1].latex_verbatim(),
+            '{Link}'
+        )
+
 
 
 
@@ -1803,4 +1824,3 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     unittest.main()
 #
-

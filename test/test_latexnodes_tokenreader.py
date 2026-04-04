@@ -50,6 +50,54 @@ class TestLatexTokenReader(unittest.TestCase):
                                     pos=0, pos_end=len(r'\somemacro '),
                                     pre_space='', post_space=' '))
 
+    def test_trailing_escape_character_strict_raises(self):
+        latextext = "hello\\"
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext)
+
+        tr.next_token(ps)
+        tr.next_token(ps)
+        tr.next_token(ps)
+        tr.next_token(ps)
+        tr.next_token(ps)
+
+        with self.assertRaises(LatexWalkerTokenParseError):
+            tr.peek_token(ps)
+
+    def test_trailing_escape_character_tolerant_is_dropped(self):
+        latextext = "hello\\"
+
+        tr = LatexTokenReader(latextext, tolerant_parsing=True)
+        ps = ParsingState(s=latextext)
+
+        self.assertEqual(
+            tr.next_token(ps),
+            LatexToken(tok='char', arg='h', pos=0, pos_end=1, pre_space='')
+        )
+        self.assertEqual(
+            tr.next_token(ps),
+            LatexToken(tok='char', arg='e', pos=1, pos_end=2, pre_space='')
+        )
+        self.assertEqual(
+            tr.next_token(ps),
+            LatexToken(tok='char', arg='l', pos=2, pos_end=3, pre_space='')
+        )
+        self.assertEqual(
+            tr.next_token(ps),
+            LatexToken(tok='char', arg='l', pos=3, pos_end=4, pre_space='')
+        )
+        self.assertEqual(
+            tr.next_token(ps),
+            LatexToken(tok='char', arg='o', pos=4, pos_end=5, pre_space='')
+        )
+        self.assertEqual(
+            tr.next_token(ps),
+            LatexToken(tok='char', arg='', pos=5, pos_end=6, pre_space='')
+        )
+        with self.assertRaises(LatexWalkerEndOfStream):
+            tr.next_token(ps)
+
     def test_macro_pre_space(self):
         pre_space = '   \t\n \t'
         latextext = pre_space+r"\somemacro and more stuff"

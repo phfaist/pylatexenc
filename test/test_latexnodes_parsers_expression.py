@@ -8,6 +8,7 @@ from pylatexenc.latexnodes.parsers._expression import (
 
 from pylatexenc.latexnodes import (
     LatexWalkerParseError,
+    LatexWalkerNodesParseError,
     LatexTokenReader,
     LatexToken,
     ParsingState,
@@ -231,6 +232,20 @@ class TestLatexExpression(unittest.TestCase):
                 ],
             )
         )
+
+    def test_unexpected_math_delimiter_raises_nodes_parse_error(self):
+        latextext = '$'
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexExpressionParser()
+
+        with self.assertRaises(LatexWalkerNodesParseError) as ctx:
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertIn("Unexpected math mode delimiter", ctx.exception.msg)
 
     def test_simple_group_char_wspace_nofulllist(self):
         latextext = ' \n \t {char}acters'
