@@ -478,6 +478,15 @@ class UnicodeToLatexEncoder(object):
         if res is None:
             return None
         (consumed, repl) = res
+        if consumed <= 0:
+            raise ValueError(
+                "A RULE_CALLABLE returned numchars_consumed={!r} (must be >= 1) "
+                "for input {!r} at position {}. "
+                "Hint: check that your callable is not returning a zero (or "
+                "negative) number of consumed characters.".format(
+                    consumed, s, p.pos
+                )
+            )
         self._apply_replacement(p, repl, consumed, rule)
         return True
 
