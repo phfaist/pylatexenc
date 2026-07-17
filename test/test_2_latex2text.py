@@ -614,6 +614,20 @@ above. """
                 "[      1      2 abcdef;      3      4 ]"
             )
 
+    def test_repl_matrix_environment_empty(self):
+
+        # an empty matrix/array is valid LaTeX and must not raise ValueError
+        for env, arg in (('array', '{c}'), ('array', '{cc}'), ('pmatrix', ''),
+                          ('bmatrix', ''), ('smallmatrix', ''),
+                          ('psmallmatrix', ''), ('bsmallmatrix', '')):
+            self.assertEqual(
+                LatexNodes2Text().latex_to_text(
+                    r"\begin{%(env)s}%(arg)s\end{%(env)s}"
+                    %{'env':env,'arg':arg}
+                ),
+                "[  ]"
+            )
+
     def test_repl_doc_title(self):
 
         # test that \title/\author/\date work and produce something reasonable
