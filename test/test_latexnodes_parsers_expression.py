@@ -8,6 +8,7 @@ from pylatexenc.latexnodes.parsers._expression import (
 
 from pylatexenc.latexnodes import (
     LatexWalkerParseError,
+    LatexWalkerNodesParseError,
     LatexTokenReader,
     LatexToken,
     ParsingState,
@@ -340,6 +341,23 @@ class TestLatexExpression(unittest.TestCase):
                 pos_end=14+20,
             ),
         )
+
+
+    def test_math_mode_delimiter_raises_nodes_parse_error(self):
+        # Positional msg used to collide with recovery_nodes= (TypeError).
+        latextext = '$'
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+        parser = LatexExpressionParser()
+
+        with self.assertRaises(LatexWalkerNodesParseError) as cm:
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        exc = cm.exception
+        self.assertIn('math mode delimiter', exc.msg)
+        self.assertIsNotNone(exc.recovery_nodes)
+        self.assertEqual(exc.recovery_nodes.chars, '$')
 
 
 
