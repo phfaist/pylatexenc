@@ -771,6 +771,13 @@ The Title
         self.assertEqual(a2, b2)
 
 
+    def test_href(self):
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r'\href{http://example.com}{click}'),
+            'click <http://example.com>'
+        )
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     unittest.main()
