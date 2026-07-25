@@ -9,15 +9,16 @@ Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion
 .. image:: https://img.shields.io/pypi/v/pylatexenc.svg?style=flat
    :target: https://pypi.org/project/pylatexenc/
 
-Python: ≥ 3.8.  The library has no runtime dependencies and is designed to be as
+Python: ≥ 3.6.  The library has no runtime dependencies and is designed to be as
 backwards-compatible as reasonably possible.
 
-**NEW (4/2023)**: *PYLATEXENC 3.0alpha* is in pre-release on PyPI.  See `new features
-and major changes <https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-3/>`_.
-The `documentation <https://pylatexenc.readthedocs.io/en/latest/>`_ is still
-incomplete, and the new APIs are still subject to changes.  The code is meant
-to be as backwards compatible as is reasonably possible.  Feel free to try it
-out & submit feedback!
+**NEW (4/2023)**: *PYLATEXENC 3.0alpha* is in pre-release on PyPI.  Try ``pip
+install --pre pylatexenc``.  See `new features and major changes
+<https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-3/>`_.  The
+`documentation <https://pylatexenc.readthedocs.io/en/latest/>`_ is still
+incomplete, and the new APIs are still subject to changes.  The code is meant to
+be as backwards compatible as is reasonably possible.  Feel free to try it out &
+submit feedback!
 
 
 Unicode Text to LaTeX code
