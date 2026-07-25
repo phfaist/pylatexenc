@@ -50,6 +50,39 @@ class TestLatexTokenReader(unittest.TestCase):
                                     pos=0, pos_end=len(r'\somemacro '),
                                     pre_space='', post_space=' '))
 
+    def test_macro_lone_escape_char_at_end_tolerant(self):
+        # a lone escape character at the very end of the string; in tolerant
+        # parsing mode we get a recovery token that must span that character,
+        # otherwise callers that advance with move_past_token() never make any
+        # progress and loop forever
+        latextext = "hello\\"
+
+        tr = LatexTokenReader(latextext, tolerant_parsing=True)
+        ps = ParsingState(s=latextext)
+
+        tr.move_to_pos_chars(len("hello"))
+
+        tok = tr.peek_token(ps)
+        self.assertEqual(tok,
+                         LatexToken(tok='char', arg='',
+                                    pos=len("hello"), pos_end=len(latextext),
+                                    pre_space=''))
+
+        tr.move_to_pos_chars(len("hello"))
+        tr.move_past_token(tok)
+        self.assertEqual(tr.cur_pos(), len(latextext))
+
+    def test_macro_lone_escape_char_at_end_not_tolerant(self):
+        latextext = "hello\\"
+
+        tr = LatexTokenReader(latextext, tolerant_parsing=False)
+        ps = ParsingState(s=latextext)
+
+        tr.move_to_pos_chars(len("hello"))
+
+        with self.assertRaises(LatexWalkerTokenParseError):
+            tr.peek_token(ps)
+
     def test_macro_pre_space(self):
         pre_space = '   \t\n \t'
         latextext = pre_space+r"\somemacro and more stuff"

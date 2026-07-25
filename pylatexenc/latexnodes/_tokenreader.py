@@ -503,7 +503,11 @@ class LatexTokenReader(LatexTokenReaderBase):
                     tok='char',
                     arg='',
                     pos=pos,
-                    pos_end=pos,
+                    # the recovery token must span the lone escape character
+                    # itself.  A zero-length token would cause callers that
+                    # advance with move_past_token() to jump back onto the
+                    # escape character, looping forever.
+                    pos_end=pos+1,
                     pre_space=pre_space
                 ),
                 recovery_token_at_pos=len(s)
