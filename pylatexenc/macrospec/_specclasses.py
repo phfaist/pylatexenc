@@ -164,7 +164,7 @@ class CallableSpec(CallableSpecBase):
                 self.arguments_parser = LatexNoArgumentsParser()
 
 
-    def get_node_parser(self, token):
+    def get_node_parser(self, token, parsing_state):
         r"""
         Return a parser instance that is capable of parsing this node
         construct.

@@ -173,11 +173,11 @@ class DummyMacroSpec(CallableSpecBase):
         super(DummyMacroSpec, self).__init__()
         #self.macroname = macroname
 
-    def get_node_parser(self, token):
+    def get_node_parser(self, token, parsing_state):
         return make_dummy_macro_node_parser(token, self)
 
 class DefineMacroZMacroSpec(DummyMacroSpec):
-    def get_node_parser(self, token):
+    def get_node_parser(self, token, parsing_state):
         def _mkparsing_state_delta(ps):
             return ParsingStateDeltaReplaceParsingState(
                 set_parsing_state=ps.sub_context(latex_context=DummyLatexContextDb2())
@@ -214,7 +214,7 @@ class DummyEnvironmentSpec(CallableSpecBase):
         super(DummyEnvironmentSpec, self).__init__()
         #self.environmentname = environmentname
 
-    def get_node_parser(self, token):
+    def get_node_parser(self, token, parsing_state):
         return make_dummy_environment_node_parser(token, self)
 
 class make_dummy_specials_node_parser:
@@ -240,7 +240,7 @@ class DummySpecialsSpec(CallableSpecBase):
         super(DummySpecialsSpec, self).__init__()
         self.specials_chars = specials_chars
 
-    def get_node_parser(self, token):
+    def get_node_parser(self, token, parsing_state):
         return make_dummy_specials_node_parser(token, self)
 
 

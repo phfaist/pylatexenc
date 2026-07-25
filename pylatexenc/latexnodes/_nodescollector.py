@@ -428,7 +428,17 @@ class LatexNodesCollector(object):
             raise
 
         finally:
-            self.finalize()
+            try:
+                self.finalize()
+            except LatexNodesCollector.ReachedStoppingCondition as e:
+                # The pending characters that finalize() flushed into a chars
+                # node completed the node list and met the stopping condition.
+                # That's a normal way for the collection to end, not an error to
+                # report to whoever called us.  (This happens e.g. with a
+                # `stop_nodelist_condition` that is met by a chars node that
+                # runs until the end of the stream.)
+                self._stop_condition_stop_data = e.stop_data
+                logger.debug("nodes collector reached stop condition while finalizing")
 
 
 
@@ -892,7 +902,7 @@ class LatexNodesCollector(object):
         token_reader = self.token_reader
 
         if spec is not None:
-            node_parser = spec.get_node_parser(tok)
+            node_parser = spec.get_node_parser(tok, self.parsing_state)
         else:
             node_parser = None
 

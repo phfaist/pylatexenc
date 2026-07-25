@@ -73,12 +73,21 @@ class LatexExpressionParser(LatexParserBase):
     returned by the :py:meth:`parse()` method.  While you directly get the
     expression you're interested in, you might lose information about how to
     recompose the node into its source LaTeX string.
+
+    If `parse_callable_arguments` is `True`, then a macro or a "latex specials"
+    that forms the expression is parsed along with its own arguments.  For
+    instance, the expression in ``x^\mathrm{max}`` is then the entire
+    ``\mathrm{max}``.  By default (`parse_callable_arguments=False`) the macro
+    or specials is picked up on its own, without its arguments, and
+    `single_token_requiring_arg_is_error` determines whether or not a macro that
+    requires arguments is reported as an error.
     """
     def __init__(self,
                  allow_pre_space=True,
                  allow_pre_comments=True,
                  return_full_node_list=True,
                  single_token_requiring_arg_is_error=True,
+                 parse_callable_arguments=False,
                  **kwargs
                  ):
         super(LatexExpressionParser, self).__init__(**kwargs)
@@ -86,6 +95,7 @@ class LatexExpressionParser(LatexParserBase):
         self.allow_pre_comments = allow_pre_comments
         self.return_full_node_list = return_full_node_list
         self.single_token_requiring_arg_is_error = single_token_requiring_arg_is_error
+        self.parse_callable_arguments = parse_callable_arguments
 
 
     def contents_can_be_empty(self):
@@ -215,8 +225,14 @@ class LatexExpressionParser(LatexParserBase):
 
             mspec = parsing_state.latex_context.get_macro_spec(macroname)
 
+            if self.parse_callable_arguments:
+                return self._parse_callable_with_arguments(
+                    latex_walker, token_reader, parsing_state, tok, mspec,
+                    r"a single macro ‘\{}’".format(macroname)
+                )
+
             parsed_arguments = self._check_if_requires_args(
-                latex_walker, mspec, tok,
+                latex_walker, mspec, tok, parsing_state,
                 r"a single macro ‘\{}’".format(macroname)
             )
 
@@ -237,8 +253,14 @@ class LatexExpressionParser(LatexParserBase):
 
             specialsspec = tok.arg
 
+            if self.parse_callable_arguments:
+                return self._parse_callable_with_arguments(
+                    latex_walker, token_reader, parsing_state, tok, specialsspec,
+                    r"specials ‘{}’".format(specialsspec.specials_chars)
+                )
+
             parsed_arguments = self._check_if_requires_args(
-                latex_walker, specialsspec, tok,
+                latex_walker, specialsspec, tok, parsing_state,
                 r"specials ‘{}’".format(specialsspec.specials_chars)
             )
 
@@ -425,11 +447,55 @@ class LatexExpressionParser(LatexParserBase):
         )
 
 
-    def _check_if_requires_args(self, latex_walker, spec, got_token, what_we_got):
+    def _parse_callable_with_arguments(self, latex_walker, token_reader, parsing_state,
+                                       got_token, spec, what_we_got):
+        r"""
+        Read the macro or specials associated with the token `got_token` along with
+        its own arguments, by deferring to the parser that the spec object
+        provides (``spec.get_node_parser()``).  This is the same mechanism that
+        is used when the macro or specials is encountered while collecting an
+        ordinary node list.
+        """
+
+        node_parser = None
+        if spec is not None:
+            node_parser = spec.get_node_parser(got_token, parsing_state)
+
+        if node_parser is None:
+            exc = latex_walker.check_tolerant_parsing_ignore_error(
+                LatexWalkerParseError(
+                    "No parser found for {}".format(what_we_got),
+                    pos=got_token.pos,
+                    error_type_info={
+                        'what': 'expression_required_got_unexpected',
+                        'unexpected': 'callable_without_parser',
+                        'callable_token': got_token,
+                    },
+                )
+            )
+            if exc is not None:
+                raise exc
+            return []
+
+        thenode, _ = latex_walker.parse_content(
+            node_parser,
+            token_reader,
+            parsing_state,
+            open_context=(what_we_got, got_token,),
+        )
+
+        if thenode is None:
+            return []
+
+        return [ thenode ]
+
+
+    def _check_if_requires_args(self, latex_walker, spec, got_token, parsing_state, what_we_got):
 
         if self.single_token_requiring_arg_is_error:
 
-            arg_contents_empty_ok = spec.get_node_parser(got_token).contents_can_be_empty()
+            arg_contents_empty_ok = \
+                spec.get_node_parser(got_token, parsing_state).contents_can_be_empty()
             logger.debug("Checking if %s/‘%s’ requires an arg: %r",
                          got_token.tok, got_token.arg, arg_contents_empty_ok)
 

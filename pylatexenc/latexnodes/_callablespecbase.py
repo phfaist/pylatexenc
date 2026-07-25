@@ -51,5 +51,5 @@ class CallableSpecBase(object):
        The :py:class:`CallableSpecBase` class was added in `pylatexenc 3.0`.
     """
 
-    def get_node_parser(self, token):
+    def get_node_parser(self, token, parsing_state):
         raise RuntimeError("Subclasses must reimplement get_node_parser()")
