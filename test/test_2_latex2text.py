@@ -627,6 +627,15 @@ above. """
                 "[ ]"
             )
 
+    def test_repl_part(self):
+
+        # \part is rendered like \chapter and friends; check that its argument
+        # is actually picked up and not left in the text
+        self.assertEqualUpToWhitespace(
+            LatexNodes2Text().latex_to_text(r"\part{The Part}" + "\nSome text."),
+            "PART: THE PART Some text."
+        )
+
     def test_repl_href(self):
 
         self.assertEqual(

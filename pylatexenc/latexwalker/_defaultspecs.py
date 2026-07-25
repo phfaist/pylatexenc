@@ -189,6 +189,7 @@ specs = [
 
             std_macro('includegraphics', True, 1),
 
+            std_macro('part', '*[{'),
             std_macro('chapter', '*[{'),
             std_macro('section', '*[{'),
             std_macro('subsection', '*[{'),
