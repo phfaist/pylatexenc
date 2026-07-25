@@ -627,6 +627,41 @@ above. """
                 "[ ]"
             )
 
+    def test_repl_sqrt(self):
+
+        # the root degree must not be silently dropped; unicode has dedicated
+        # signs for the cube and the fourth root
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r"\sqrt{x}"),
+            u"\N{SQUARE ROOT}(x)"
+        )
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r"\sqrt[3]{x}"),
+            u"\N{CUBE ROOT}(x)"
+        )
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r"\sqrt[4]{x}"),
+            u"\N{FOURTH ROOT}(x)"
+        )
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r"\sqrt[n]{x+y}"),
+            u"n\N{SQUARE ROOT}(x+y)"
+        )
+
+    def test_repl_escape_char_at_end_of_line(self):
+
+        # an escape character immediately followed by the end of a line is the
+        # control space, so it stands for a space
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text("chair\\\ntable"),
+            "chair table"
+        )
+        # a double escape character is still a line break
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text("chair\\\\table"),
+            "chair\ntable"
+        )
+
     def test_repl_part(self):
 
         # \part is rendered like \chapter and friends; check that its argument

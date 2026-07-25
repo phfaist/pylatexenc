@@ -55,6 +55,24 @@ def _format_uebung(n, l2tobj):
         s += '[{}]\n'.format(l2tobj.nodelist_to_text([optarg]))
     return s
 
+_sqrt_root_signs = {
+    '3': u'\N{CUBE ROOT}',
+    '4': u'\N{FOURTH ROOT}',
+}
+
+def _format_sqrt(n, l2tobj):
+    # \sqrt[degree]{radicand}, where the degree is optional
+    radicand = l2tobj.node_arg_to_text(n, 1)
+    degree = l2tobj.node_arg_to_text(n, 0).strip()
+    if not degree:
+        return u'\N{SQUARE ROOT}(' + radicand + ')'
+    if degree in _sqrt_root_signs:
+        # unicode has dedicated signs for the cube and fourth roots
+        return _sqrt_root_signs[degree] + '(' + radicand + ')'
+    # any other degree, including a symbolic one, is written out in front of
+    # the root sign the way it is typeset
+    return degree + u'\N{SQUARE ROOT}(' + radicand + ')'
+
 def _format_maketitle(title, author, date):
     s = title + '\n'
     s += '    ' + author + '\n'
@@ -353,7 +371,7 @@ _latex_specs_base = {
         ('ast', u'\N{ASTERISK OPERATOR}'),
         ('circ', u'\N{RING OPERATOR}'),
         ('bullet', u'\N{BULLET OPERATOR}'),
-        ('sqrt', u'\N{SQUARE ROOT}(%(2)s)'),
+        ('sqrt', _format_sqrt),
         ('propto', u'\N{PROPORTIONAL TO}'),
         ('infty', u'\N{INFINITY}'),
         ('parallel', u'\N{PARALLEL TO}'),
@@ -454,6 +472,9 @@ _latex_specs_base = {
         (';', u" "),
         (':', u" "),
         (' ', u" "),
+        # an escape character immediately followed by the end of a line is the
+        # control space ‘\ ’, so it stands for a space and not for nothing
+        ('\n', u" "),
         ('!', u""), # sorry, no negative space in ascii
         ('quad', u"  "),
         ('qquad', u"    "),
