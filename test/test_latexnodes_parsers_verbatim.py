@@ -297,7 +297,47 @@ verbatim>"""
                 pos_end=10,
             )
         )
-        
+
+
+    def test_simple_delimiters_parser_reused(self):
+        # the same parser object is reused for each verbatim argument that a
+        # given macro spec introduces, so parsing must not depend on state left
+        # over from an earlier parse() call
+        parser = LatexDelimitedVerbatimParser()
+
+        for latextext, verbatim_chars in (
+                (r"{verbatim}", 'verbatim'),
+                (r"{nested{braces}here}", 'nested{braces}here'),
+                (r"{verbatim}", 'verbatim'),
+                (r"{a{b}c{d}e}", 'a{b}c{d}e'),
+        ):
+            tr = LatexTokenReader(latextext)
+            ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+            lw = DummyWalker()
+
+            node, parsing_state_delta = \
+                lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+            vps = node.nodelist[0].parsing_state
+
+            self.assertEqual(
+                node,
+                LatexGroupNode(
+                    parsing_state=ps,
+                    delimiters=('{','}'),
+                    nodelist=LatexNodeList([
+                        LatexCharsNode(
+                            parsing_state=vps,
+                            chars=verbatim_chars,
+                            pos=1,
+                            pos_end=1+len(verbatim_chars),
+                        )
+                    ]),
+                    pos=0,
+                    pos_end=len(latextext),
+                )
+            )
+
 
 
 class TestLatexVerbatimEnvironmentContentsParser(unittest.TestCase):

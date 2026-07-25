@@ -242,6 +242,12 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
 
     def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
 
+        # the depth counter is state that only makes sense for the duration of a
+        # single parse() call; reset it here so that this parser object can be
+        # reused for further verbatim arguments (as happens when the same spec
+        # object is used repeatedly while parsing a document)
+        self.depth_counter = 1
+
         verbatim_info = LatexVerbatimBaseParser.VerbatimInfo()
 
         token_reader.skip_space_chars(parsing_state)
@@ -267,7 +273,7 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
                     msg="Expected opening delimiter ‘{}’ for verbatim content".format(
                         verbatim_info.parsed_delimiters[0]
                     ),
-                    pos=pos,
+                    pos=verbatim_info.original_pos,
                     error_type_info={
                         'what': 'verbatim_expected_opening_delimiter_not_found',
                         'expected_delimiters': verbatim_info.parsed_delimiters,
