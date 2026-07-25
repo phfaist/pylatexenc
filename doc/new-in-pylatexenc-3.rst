@@ -77,17 +77,19 @@ A couple things to look out for
 Some bug fixes in behavior
 --------------------------
 
-- The :py:mod:`~pylatexenc.latex2text` module places the title of a
-  ``\paragraph{...}`` differently.  Pylatexenc 2 emitted the line break before
-  the title, which left the title glued to the text that follows it
-  (``\paragraph{Par}Body`` gave ``"\nParBody"``); pylatexenc 3 emits the title
-  followed by the line break (``"Par\nBody"``).
+- The :py:mod:`~pylatexenc.latex2text` 's ``\paragraph{...}`` output
+  was fixed to produce simply ``"Paragraph Title\nBody"``.  (Pylatexenc 2
+  didn't get the newlines quite right.)
 
-- The ``verbatim`` environment no longer reports the newline that immediately
-  follows ``\begin{verbatim}`` as part of its contents, mirroring what LaTeX
-  itself does.  Pylatexenc 2 reported ``"\ncode\n"`` for
-  ``\begin{verbatim}\ncode\n\end{verbatim}``, pylatexenc 3 reports ``"code\n"``.
-  Note that the ``lstlisting`` environment still keeps that first newline.
+- The ``verbatim`` and ``lstlisting`` environments no longer report the newline
+  that immediately follows ``\begin{...}`` as part of their contents, mirroring
+  what LaTeX itself does.
+
+- An unterminated ``lstlisting`` environment no longer loses its parsed
+  arguments in tolerant parsing mode; ``nodeargd`` used to be `None` there.
+
+
+- You might notice other fixes that we forgot to include here.
 
 
 Details that v3 might get different
@@ -105,4 +107,5 @@ of here for completeness:
   remember to use a "latex replacement protection" option, see
   :py:attr:`pylatexenc.latexencode.UnicodeToLatexEncoder.replacement_latex_protection`.)
 
-- (ADD HERE)
+
+- You might notice other differences that we forgot to include here.

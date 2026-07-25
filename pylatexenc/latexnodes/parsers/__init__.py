@@ -54,6 +54,7 @@ from ._expression import (
 from ._optionals import (
     LatexOptionalSquareBracketsParser,
     LatexOptionalCharsMarkerParser,
+    LatexOptionalEmbellishmentArgsParser,
 )
 
 from ._stdarg import (

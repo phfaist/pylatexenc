@@ -44,8 +44,8 @@ from ..macrospec import (
     std_macro,
     std_environment,
     std_specials,
-    MacroSpec, EnvironmentSpec, MacroStandardArgsParser,
-    LstListingArgsParser,
+    MacroSpec, EnvironmentSpec,
+    # MacroStandardArgsParser,
 )
 
 
@@ -106,6 +106,18 @@ def _finalize_verbatim_environment_node(node):
     """
     node.nodeargd.verbatim_text = _verbatim_chars_of(node.nodelist)
     node.nodeargd.verbatim_delimiters = None
+
+    return node
+
+
+def _finalize_lstlisting_environment_node(node):
+    r"""
+    Same as :py:func:`_finalize_verbatim_environment_node()`, plus the
+    `lstlisting_text` attribute that `pylatexenc 2` provided in addition on
+    ``lstlisting`` environments.
+    """
+    node = _finalize_verbatim_environment_node(node)
+    node.nodeargd.lstlisting_text = node.nodeargd.verbatim_text
 
     return node
 
@@ -404,7 +416,19 @@ specs = [
     ('lstlisting', {
         'macros': [],
         'environments': [
-            EnvironmentSpec('lstlisting', args_parser=LstListingArgsParser()),
+            EnvironmentSpec('lstlisting',
+                            arguments_spec_list=[
+                                LatexArgumentSpec(
+                                    # a ‘[’ that doesn't immediately follow
+                                    # \begin{lstlisting} is verbatim content,
+                                    # not an optional argument
+                                    LatexStandardArgumentParser(
+                                        '[', allow_pre_space=False),
+                                    argname='lstlisting_options',
+                                ),
+                            ],
+                            make_body_parser=_make_verbatim_environment_body_parser,
+                            finalize_node=_finalize_lstlisting_environment_node),
         ],
         'specials': [
             # optionally users could include the specials "|" like in latex-doc

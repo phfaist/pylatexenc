@@ -79,7 +79,7 @@ class LatexWalkerBase(object):
     classes and methods in the :py:mod:`latexnodes` module need to know about
     what a LatexWalker does.
 
-    See also :py:class:`latexwalker.LatexWalker`.
+    See also :py:class:`pylatexenc.latexwalker.LatexWalker`.
 
     .. versionadded:: 3.0
     

@@ -1093,6 +1093,16 @@ This is it."""
         # the contents of the verbatim environment are its body
         self.assertEqual(nodelist[3].environmentname, 'verbatim')
         self.assertEqual((nodelist[3].pos, nodelist[3].pos_end), (64, 155))
+        #
+        # BEHAVIOR CHANGE vs pylatexenc 2 — the expected value below had to be
+        # updated, it is *not* what pylatexenc 2 produced.
+        #
+        # Pylatexenc 2 reported the newline that immediately follows
+        # ‘\begin{verbatim}’ as part of the verbatim contents, i.e. it expected
+        # '\ntypeset \\verbatim text with ...'.  Pylatexenc 3 gobbles that first
+        # newline, mirroring what LaTeX itself does, so the leading '\n' is
+        # gone.  Everything else about this construct is unchanged.
+        #
         self.assertEqual(
             nodelist[3].nodelist[0].chars,
             'typeset \\verbatim text with \\LaTeX $ escapes \\(like this\\).\n'
@@ -1208,11 +1218,20 @@ This is it."""
         self.assertEqual(len(nodelist), 1)
         n = nodelist[0]
         self.assertEqual(n.environmentname, 'verbatim')
-        # the verbatim content is the environment body; the newline that
-        # immediately follows \begin{verbatim} is gobbled, as LaTeX does
+        #
+        # BEHAVIOR CHANGE vs pylatexenc 2 — the expected values below are *not*
+        # what pylatexenc 2 produced.
+        #
+        # Pylatexenc 2 reported the newline that immediately follows
+        # ‘\begin{verbatim}’ as part of the verbatim contents, i.e.
+        # '\nline1\nline2\n'.  Pylatexenc 3 gobbles that first newline,
+        # mirroring what LaTeX itself does.
+        #
+        # The verbatim content is the environment body, and is also reachable
+        # the way ‘pylatexenc 2’ provided it, through `verbatim_text`.
+        #
         self.assertEqual(len(n.nodelist), 1)
         self.assertEqual(n.nodelist[0].chars, 'line1\nline2\n')
-        # ... and is also reachable the way ‘pylatexenc 2’ provided it
         self.assertEqual(n.nodeargd.verbatim_text, 'line1\nline2\n')
         self.assertIsNone(n.nodeargd.verbatim_delimiters)
         self.assertEqual(n.pos, 0)
@@ -1239,7 +1258,22 @@ This is it."""
         self.assertEqual(len(nodelist), 1)
         n = nodelist[0]
         self.assertEqual(n.environmentname, 'lstlisting')
-        self.assertEqual(n.nodeargd.verbatim_text, '\ncode\n')
+        #
+        # BEHAVIOR CHANGE vs pylatexenc 2 — the expected values below are *not*
+        # what pylatexenc 2 produced.
+        #
+        # Pylatexenc 2 reported the newline that immediately follows
+        # ‘\begin{lstlisting}’ as part of the contents, i.e. '\ncode\n'.
+        # Pylatexenc 3 gobbles that first newline, mirroring what LaTeX itself
+        # does.
+        #
+        # The contents are the environment body, and are also reachable through
+        # the attributes that ‘pylatexenc 2’ provided.
+        #
+        self.assertEqual(n.nodelist[0].chars, 'code\n')
+        self.assertEqual(n.nodeargd.verbatim_text, 'code\n')
+        self.assertEqual(n.nodeargd.lstlisting_text, 'code\n')
+        self.assertIsNone(n.nodeargd.verbatim_delimiters)
         self.assertEqual(n.pos_end, len(latextext))
 
     def test_verbatim_lstlisting_with_optional_argument(self):
@@ -1250,12 +1284,77 @@ This is it."""
 
         self.assertEqual(len(nodelist), 1)
         n = nodelist[0]
-        self.assertEqual(n.nodeargd.verbatim_text, '\ncode\n')
+        #
+        # BEHAVIOR CHANGE vs pylatexenc 2 — the expected values below are *not*
+        # what pylatexenc 2 produced.
+        #
+        # Pylatexenc 2 reported the newline that immediately follows the
+        # optional argument as part of the contents, i.e. '\ncode\n'.
+        # Pylatexenc 3 gobbles that first newline, mirroring what LaTeX itself
+        # does.  The optional argument itself is parsed exactly as before.
+        #
+        self.assertEqual(n.nodelist[0].chars, 'code\n')
+        self.assertEqual(n.nodeargd.verbatim_text, 'code\n')
+        self.assertEqual(n.nodeargd.lstlisting_text, 'code\n')
         # the optional argument is parsed as a normal (non-verbatim) argument
         optarg = n.nodeargd.argnlist[0]
         self.assertIsNotNone(optarg)
         self.assertEqual(optarg.latex_verbatim(), '[language=Python]')
         self.assertEqual(n.pos_end, len(latextext))
+
+    def test_verbatim_lstlisting_optional_argument_needs_no_pre_space(self):
+        # a ‘[’ that does not immediately follow \begin{lstlisting} is part of
+        # the verbatim contents, and not an optional argument
+        for latextext in ['\\begin{lstlisting}\n[nope]\n\\end{lstlisting}',
+                          '\\begin{lstlisting} [nope]\n\\end{lstlisting}']:
+            lw = LatexWalker(latextext, tolerant_parsing=False)
+            nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+            self.assertEqual(len(nodelist), 1)
+            n = nodelist[0]
+            self.assertIsNone(n.nodeargd.argnlist[0])
+            self.assertIn('[nope]', n.nodeargd.verbatim_text)
+            self.assertEqual(n.pos_end, len(latextext))
+
+    def test_verbatim_lstlisting_empty(self):
+        latextext = '\\begin{lstlisting}\\end{lstlisting}'
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 1)
+        self.assertEqual(nodelist[0].nodeargd.verbatim_text, '')
+        self.assertEqual(nodelist[0].pos_end, len(latextext))
+
+    def test_verbatim_unterminated_lstlisting_raises(self):
+        latextext = '\\begin{lstlisting}\ncode'
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        with self.assertRaises(LatexWalkerParseError):
+            lw.get_latex_nodes(pos=0)
+
+    def test_verbatim_unterminated_lstlisting_tolerant(self):
+        latextext = '\\begin{lstlisting}\ncode'
+
+        lw = LatexWalker(latextext, tolerant_parsing=True)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 1)
+        self.assertEqual(nodelist[0].environmentname, 'lstlisting')
+        #
+        # BEHAVIOR CHANGE vs pylatexenc 2 — the expected values below are *not*
+        # what pylatexenc 2 produced.  Two changes meet here:
+        #
+        #  - the first newline is gobbled, as it is for a well-terminated
+        #    environment, so the recovered contents are 'code' and not '\ncode';
+        #
+        #  - `nodeargd` used to be `None` on an unterminated ‘lstlisting’, so
+        #    `verbatim_text` was not reachable at all.  It is now populated from
+        #    the contents that could be read before the end of the stream.
+        #
+        # the content that could be read is recovered as the environment body
+        self.assertEqual(nodelist[0].nodelist[0].chars, 'code')
+        self.assertEqual(nodelist[0].nodeargd.verbatim_text, 'code')
 
     def test_verbatim_unterminated_verb_raises(self):
         latextext = r'''\verb+unterminated'''
@@ -1436,43 +1535,41 @@ This is it."""
 
         parsing_state = lw.make_parsing_state()
 
-        print("DEBUG")
-        print(lw.get_latex_nodes(pos=0, parsing_state=parsing_state)[0][1])
-
         p=0
-        self.assertEqual(
-            lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
-            ([
-                LatexCharsNode(parsing_state=parsing_state, pos=0, len=(53-18)+1,
-                               chars='Use lstlisting environment for code\n'),
-                LatexEnvironmentNode(
-                    parsing_state=parsing_state,
-                    pos=(53-18)+1, len=19+12+41+58+16,
-                    environmentname='lstlisting',
-                    nodelist=[],
-                    nodeargd=macrospec.ParsedLstListingArgs(
-                        verbatim_chars_node=
-                        LatexCharsNode(
-                            parsing_state=parsing_state,
-                            pos=(53-18)+1+18,
-                            len=1+12+41+58,
-                            chars=r"""
-int foo() {
+        nodelist, npos, nlen = lw.get_latex_nodes(pos=p, parsing_state=parsing_state)
+
+        self.assertEqual((npos, nlen), (0, len(s)))
+        self.assertEqual(len(nodelist), 3)
+
+        self.assertEqual(nodelist[0].chars, 'Use lstlisting environment for code\n')
+
+        #
+        # BEHAVIOR CHANGE vs pylatexenc 2 — the expected value below had to be
+        # updated, it is *not* what pylatexenc 2 produced.
+        #
+        # Pylatexenc 2 reported the newline that immediately follows
+        # ‘\begin{lstlisting}’ as part of the contents, i.e. this string used to
+        # start with an empty first line.  Pylatexenc 3 gobbles that first
+        # newline, mirroring what LaTeX itself does.  Everything else about this
+        # construct is unchanged.
+        #
+        expected_contents = r"""int foo() {
     "^\\[1-9]+\n$" // some special chars
     // unmatched open brace confuses non-verbatim parsing
 """
-                        ),
-                        verbatim_argspec='[',
-                        verbatim_argnlist=[None],
-                    )
-                ),
-                LatexCharsNode(parsing_state=parsing_state,
-                               pos=s.find(r'\end{lstlisting}')+16, len=12,
-                               chars='\nThis is it.')
-            ],
-            0,
-            len(s))
-        )
+
+        n = nodelist[1]
+        self.assertEqual(n.environmentname, 'lstlisting')
+        self.assertEqual((n.pos, n.pos_end), ((53-18)+1, s.find(r'\end{lstlisting}')+16))
+        self.assertIsNone(n.nodeargd.argnlist[0])
+        # the contents are the environment body, and are also reachable through
+        # the attributes that ‘pylatexenc 2’ provided
+        self.assertEqual(n.nodelist[0].chars, expected_contents)
+        self.assertEqual(n.nodeargd.verbatim_text, expected_contents)
+        self.assertEqual(n.nodeargd.lstlisting_text, expected_contents)
+        self.assertIsNone(n.nodeargd.verbatim_delimiters)
+
+        self.assertEqual(nodelist[2].chars, '\nThis is it.')
 
     def test_lstlisting_withoptarg(self):
 
@@ -1492,56 +1589,48 @@ This is it."""
         #print(lw.get_latex_nodes(pos=0, parsing_state=parsing_state)[0][1])
 
         p=0
-        nl, nl_pos, nl_len = \
+        nodelist, npos, nlen = \
             lw.get_latex_nodes(pos=p, parsing_state=parsing_state)
-        pssq = nl[1].nodeargd.argnlist[0].nodelist[0].parsing_state
+
+        pssq = nodelist[1].nodeargd.argnlist[0].nodelist[0].parsing_state
         self.assertEqual(set(pssq.latex_group_delimiters),
                          set([ ('{','}'), ('[',']'), ]))
-        self.assertEqual(
-            (nl, nl_pos, nl_len),
-            ([
-                LatexCharsNode(parsing_state=parsing_state, pos=0, len=(60-24),
-                               chars='Use lstlisting environment for code\n'),
-                LatexEnvironmentNode(
-                    parsing_state=parsing_state,
-                    pos=(60-24), len=31+12+41+58+16,
-                    environmentname='lstlisting',
-                    nodelist=[],
-                    nodeargd=macrospec.ParsedLstListingArgs(
-                        verbatim_chars_node=
-                        LatexCharsNode(
-                            parsing_state=parsing_state,
-                            pos=(60-24)+30,
-                            len=1+12+41+58,
-                            chars=r"""
-int foo() {
+
+        self.assertEqual((npos, nlen), (0, len(latextext)))
+        self.assertEqual(len(nodelist), 3)
+
+        self.assertEqual(nodelist[0].chars, 'Use lstlisting environment for code\n')
+
+        #
+        # BEHAVIOR CHANGE vs pylatexenc 2 — the expected value below had to be
+        # updated, it is *not* what pylatexenc 2 produced.
+        #
+        # Pylatexenc 2 reported the newline that immediately follows the
+        # ‘[language=C]’ optional argument as part of the contents, i.e. this
+        # string used to start with an empty first line.  Pylatexenc 3 gobbles
+        # that first newline, mirroring what LaTeX itself does.  The optional
+        # argument itself is parsed exactly as before.
+        #
+        expected_contents = r"""int foo() {
     "^\\[1-9]+\n$" // some special chars
     // unmatched open brace confuses non-verbatim parsing
 """
-                        ),
-                        verbatim_argspec='[',
-                        verbatim_argnlist=[
-                            LatexGroupNode(
-                                parsing_state=pssq,
-                                pos=(60-24)+18, len=30-18,
-                                nodelist=[
-                                    LatexCharsNode(parsing_state=pssq,
-                                                   pos=(60-24)+19,
-                                                   len=29-19,
-                                                   chars='language=C')
-                                ],
-                                delimiters=('[', ']'),
-                            )
-                        ],
-                    )
-                ),
-                LatexCharsNode(parsing_state=parsing_state,
-                               pos=latextext.find(r'\end{lstlisting}')+16, len=12,
-                               chars='\nThis is it.')
-            ],
-            0,
-            len(latextext))
-        )
+
+        n = nodelist[1]
+        self.assertEqual(n.environmentname, 'lstlisting')
+        self.assertEqual((n.pos, n.pos_end),
+                         ((60-24), latextext.find(r'\end{lstlisting}')+16))
+
+        optarg = n.nodeargd.argnlist[0]
+        self.assertEqual(optarg.delimiters, ('[', ']'))
+        self.assertEqual(optarg.nodelist[0].chars, 'language=C')
+        self.assertEqual((optarg.pos, optarg.pos_end), ((60-24)+18, (60-24)+30))
+
+        self.assertEqual(n.nodelist[0].chars, expected_contents)
+        self.assertEqual(n.nodeargd.verbatim_text, expected_contents)
+        self.assertEqual(n.nodeargd.lstlisting_text, expected_contents)
+
+        self.assertEqual(nodelist[2].chars, '\nThis is it.')
 
 
 
