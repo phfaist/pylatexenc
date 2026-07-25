@@ -66,6 +66,10 @@ Latex to Text Converter Class
    :members:
 
 
+.. autoclass:: pylatexenc.latex2text.TextConversionState
+   :members:
+
+
 .. autofunction:: pylatexenc.latex2text.get_default_latex_context_db
 
 

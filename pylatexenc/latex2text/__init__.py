@@ -108,7 +108,9 @@ class MacroTextSpec(object):
            accepts.  If it accepts an argument named `l2tobj`, the
            :py:class:`LatexNodes2Text` instance is provided to that argument.
            If it accepts an argument named `macroname`, the name of the macro is
-           provided to that argument.
+           provided to that argument.  If it accepts an argument named
+           `l2tstate`, the :py:class:`TextConversionState` that applies where
+           this macro sits in the node tree is provided to that argument.
 
     .. py:attribute:: discard
 
@@ -162,7 +164,10 @@ class EnvironmentTextSpec(object):
            accepts.  If it accepts an argument named `l2tobj`, the
            :py:class:`LatexNodes2Text` instance is provided to that argument.
            If it accepts an argument named `environmentname`, the name of the
-           environment is provided to that argument.
+           environment is provided to that argument.  If it accepts an argument
+           named `l2tstate`, the :py:class:`TextConversionState` that applies
+           where this environment sits in the node tree is provided to that
+           argument.
 
     .. py:attribute:: discard
 
@@ -214,6 +219,9 @@ class SpecialsTextSpec(object):
            :py:class:`LatexNodes2Text` instance is provided to that argument.
            If it accepts an argument named `specials_chars`, the characters that
            were parsed this "latex specials" node are provided to that argument.
+           If it accepts an argument named `l2tstate`, the
+           :py:class:`TextConversionState` that applies where these specials
+           sit in the node tree is provided to that argument.
 
     .. versionadded:: 2.0
 
@@ -405,6 +413,267 @@ def fmt_matrix_environment_node(node, l2tobj):
         for row in state.matrix_rows
     ) )
     return "[ " + matrix_contents + " ]"
+
+#
+# List environments (itemize, enumerate, description, ...).
+#
+# The item markers mirror LaTeX's own defaults for the successive nesting
+# levels, so that nested lists remain readable in the text rendering.
+#
+
+_itemize_markers = (
+    u"\N{BULLET}",
+    u"\N{EN DASH}",
+    u"*",
+    u"\N{MIDDLE DOT}",
+)
+
+def _fmt_counter_alph(value):
+    # 1 -> 'a', 26 -> 'z', 27 -> 'aa', ...
+    s = ''
+    while value > 0:
+        value, r = divmod(value-1, 26)
+        s = chr(ord('a')+r) + s
+    return s
+
+_roman_numerals = (
+    (1000, 'm'), (900, 'cm'), (500, 'd'), (400, 'cd'), (100, 'c'), (90, 'xc'),
+    (50, 'l'), (40, 'xl'), (10, 'x'), (9, 'ix'), (5, 'v'), (4, 'iv'), (1, 'i'),
+)
+
+def _fmt_counter_roman(value):
+    s = ''
+    for numvalue, numsym in _roman_numerals:
+        while value >= numvalue:
+            s += numsym
+            value -= numvalue
+    return s
+
+_enumerate_markers = (
+    lambda value: '{}.'.format(value),
+    lambda value: '({})'.format(_fmt_counter_alph(value)),
+    lambda value: '{}.'.format(_fmt_counter_roman(value)),
+    lambda value: '{}.'.format(_fmt_counter_alph(value).upper()),
+)
+
+_list_environment_kinds = {
+    'itemize': 'itemize',
+    'list': 'itemize',
+    'trivlist': 'itemize',
+    'enumerate': 'enumerate',
+    'exenumerate': 'enumerate',
+    'description': 'description',
+}
+
+
+class _ListLevel(object):
+    r"""
+    One nesting level of a list environment.  Instances of this class are what
+    make up the `list_stack` field of a
+    :py:class:`TextConversionState` object.
+
+    .. py:attribute:: environmentname
+
+       The name of the list environment that opened this level.
+
+    .. py:attribute:: kind
+
+       One of 'itemize', 'enumerate' or 'description'; it determines how the
+       item markers are generated.
+
+    .. py:attribute:: depth
+
+       The nesting depth of this level among all list environments, starting at
+       1 for an outermost list.
+
+    .. py:attribute:: marker_depth
+
+       The nesting depth of this level among the list environments of the same
+       `kind`, starting at 1.  This is what selects the marker style, so that,
+       as in LaTeX, an `itemize` nested inside an `enumerate` still uses the
+       first-level itemize marker.
+
+    .. py:attribute:: counter
+
+       How many items have been seen so far in this level.
+    """
+    def __init__(self, environmentname, kind, depth, marker_depth):
+        super(_ListLevel, self).__init__()
+        self.environmentname = environmentname
+        self.kind = kind
+        self.depth = depth
+        self.marker_depth = marker_depth
+        self.counter = 0
+
+    def next_marker(self):
+        r"""
+        Advance the item counter of this level and return the marker text for the
+        new item (e.g. '•' or '2.').  Descriptions have no automatic marker, so
+        an empty string is returned for those.
+        """
+        self.counter += 1
+        if self.kind == 'description':
+            return ''
+        if self.kind == 'enumerate':
+            fmt = _enumerate_markers[(self.marker_depth-1) % len(_enumerate_markers)]
+            return fmt(self.counter)
+        return _itemize_markers[(self.marker_depth-1) % len(_itemize_markers)]
+
+    def __repr__(self):
+        return ("_ListLevel(environmentname={!r}, kind={!r}, depth={!r}, "
+                "marker_depth={!r}, counter={!r})").format(
+                    self.environmentname, self.kind, self.depth,
+                    self.marker_depth, self.counter)
+
+
+def _split_nodelist_at_items(nodelist):
+    # Split a list environment's contents at the '\item' macro nodes.  Returns
+    # the nodes that precede the first '\item' along with a list of
+    # (item node, item body node list) pairs.
+    preamble = []
+    items = []
+    item_node = None
+    item_body = None
+    for n in (nodelist if nodelist is not None else []):
+        if n is not None and n.isNodeType(latexwalker.LatexMacroNode) \
+           and n.macroname == 'item':
+            if item_body is not None:
+                items.append( (item_node, item_body,) )
+            item_node = n
+            item_body = []
+            continue
+        if item_body is None:
+            preamble.append(n)
+        else:
+            item_body.append(n)
+    if item_body is not None:
+        items.append( (item_node, item_body,) )
+    return preamble, items
+
+
+def _fmt_indent_block(contents, indent):
+    # Indent all lines of `contents`, leaving blank lines empty rather than
+    # filling them with trailing whitespace.
+    return "\n".join([
+        (indent + line).rstrip() if line.strip() else ''
+        for line in contents.split('\n')
+    ])
+
+
+def _fmt_hanging_indent(prefix, contents):
+    # Place `prefix` in front of the first line of `contents` and align the
+    # remaining lines with the text that follows the prefix.
+    if not contents:
+        return prefix.rstrip()
+    lines = contents.split('\n')
+    hang = ' ' * len(prefix)
+    return "\n".join(
+        [ (prefix + lines[0]).rstrip() ] + [
+            (hang + line).rstrip() if line.strip() else ''
+            for line in lines[1:]
+        ]
+    )
+
+
+def fmt_list_environment(node, l2tobj, environmentname):
+    r"""
+    This function can be used as a callable in :py:class:`EnvironmentTextSpec`
+    for list environments like ``\begin{itemize}...\end{itemize}`` and
+    ``\begin{enumerate}...\end{enumerate}``.
+
+    The environment contents is split at the ``\item`` macros and each item is
+    rendered as an indented block introduced by an item marker.  Items are
+    numbered where relevant, and the marker style is chosen according to the
+    lists that we are already inside of, as recorded in the `list_stack` field
+    of the current :py:class:`TextConversionState`, so that nested lists are
+    rendered correctly.
+
+    An explicit item label given as ``\item[label]`` is used as the item marker
+    and, as in LaTeX, does not advance the item counter.
+
+    .. versionadded:: 3.0
+
+       This function was introduced in `pylatexenc 3.0`.
+    """
+
+    kind = _list_environment_kinds.get(environmentname, 'itemize')
+    list_stack = l2tobj.state.list_stack
+    level = _ListLevel(
+        environmentname,
+        kind,
+        depth=len(list_stack)+1,
+        marker_depth=1 + len([ lvl for lvl in list_stack if lvl.kind == kind ]),
+    )
+
+    with l2tobj.push_state(list_stack=list_stack + [level]):
+        preamble_nodes, items = _split_nodelist_at_items(node.nodelist)
+        preamble = l2tobj.nodelist_to_text(preamble_nodes).strip()
+        item_texts = [
+            fmt_list_item(itemnode, itembody, l2tobj, level)
+            for (itemnode, itembody) in items
+        ]
+
+    chunks = [ x for x in ([preamble] + item_texts) if x ]
+    if not chunks:
+        return "\n"
+
+    contents = "\n".join(chunks)
+
+    # Only the outermost list is indented as a block; deeper levels are already
+    # offset by the hanging indent of the item they appear in.
+    if level.depth == 1:
+        contents = _fmt_indent_block(contents, '  ')
+
+    return "\n" + contents + "\n"
+
+
+def fmt_list_item(itemnode, itembody, l2tobj, level):
+    r"""
+    Render a single item of a list environment.  The `itemnode` is the
+    ``\item`` macro node (or `None`), `itembody` is the list of nodes that make
+    up the contents of the item, and `level` describes the list level in which
+    this item appears (see :py:func:`fmt_list_environment`).
+
+    .. versionadded:: 3.0
+
+       This function was introduced in `pylatexenc 3.0`.
+    """
+    label = ''
+    if itemnode is not None:
+        label = l2tobj.node_arg_to_text(itemnode, 0).strip()
+
+    if label:
+        # an explicit \item[label] doesn't advance the counter, as in LaTeX
+        marker = label
+    else:
+        marker = level.next_marker()
+
+    contents = l2tobj.nodelist_to_text(itembody).strip()
+
+    prefix = (marker + ' ') if marker else ''
+    return _fmt_hanging_indent(prefix, contents)
+
+
+def fmt_item_macro(node, l2tobj):
+    r"""
+    This function can be used as a callable in :py:class:`MacroTextSpec` for the
+    ``\item`` macro.  It is only used for ``\item`` macros that appear outside
+    of any list environment that we know how to format; items within a known
+    list environment are rendered by :py:func:`fmt_list_environment`.
+
+    .. versionadded:: 3.0
+
+       This function was introduced in `pylatexenc 3.0`.
+    """
+    label = l2tobj.node_arg_to_text(node, 0).strip()
+    if not label:
+        list_stack = l2tobj.state.list_stack
+        if list_stack:
+            label = list_stack[-1].next_marker()
+        else:
+            label = _itemize_markers[0]
+    return '\n  ' + label + ' '
+
 
 #
 # see reference: https://unicode.org/charts/PDF/U1D400.pdf
@@ -677,6 +946,92 @@ def _parse_strict_latex_spaces_dict(strict_latex_spaces):
 #
 
 
+# ------------------------------------------------------------------------------
+
+
+class TextConversionState(object):
+    r"""
+    Describes the surroundings in which a node is being converted to text, that
+    is, everything that the text representation of a node may depend on beyond
+    the node itself.
+
+    This is the `latex2text` counterpart of
+    :py:class:`pylatexenc.latexnodes.ParsingState`, which plays the same role
+    while the LaTeX code is being parsed.  Note that the latex context database
+    (:py:class:`pylatexenc.macrospec.LatexContextDb`) is a different thing
+    altogether: it holds the definitions of macros, environments and specials,
+    and it does not change as we walk the node tree.
+
+    A :py:class:`LatexNodes2Text` object always has a "current state", stored in
+    its :py:attr:`~LatexNodes2Text.state` attribute.  The state is inherited by
+    the nodes that are converted deeper down in the node tree; a node that
+    changes the surroundings of its contents (say, an equation, or a list
+    environment) installs a modified state for the duration of the conversion of
+    its contents.  See :py:meth:`LatexNodes2Text.push_state()`.
+
+    A `simplify_repl` callable in a :py:class:`MacroTextSpec`,
+    :py:class:`EnvironmentTextSpec` or :py:class:`SpecialsTextSpec` receives the
+    current state if it declares an argument named `l2tstate` (see
+    :py:meth:`LatexNodes2Text.apply_simplify_repl()`).
+
+    .. py:attribute:: strict_latex_spaces
+
+       The whitespace behavior that applies here, as a dictionary in the form
+       returned by parsing the `strict_latex_spaces=` option of
+       :py:class:`LatexNodes2Text` (with the keys 'between-macro-and-chars',
+       'between-latex-constructs', 'after-comment' and 'in-equations').
+
+    .. py:attribute:: in_math_mode
+
+       Whether or not the node being converted lies in math mode.
+
+    .. py:attribute:: list_stack
+
+       The list environments that we are currently inside of, outermost first.
+       Each entry describes one nesting level and provides the attributes
+       `environmentname`, `kind`, `depth` and `counter`.  The list is empty
+       outside of any list environment.
+
+    .. versionadded:: 3.0
+
+       This class was introduced in `pylatexenc 3.0`.
+    """
+
+    _fields = ('strict_latex_spaces', 'in_math_mode', 'list_stack',)
+
+    def __init__(self, strict_latex_spaces=None, in_math_mode=False,
+                 list_stack=None):
+        super(TextConversionState, self).__init__()
+        self.strict_latex_spaces = strict_latex_spaces
+        self.in_math_mode = in_math_mode
+        self.list_stack = list_stack if list_stack is not None else []
+
+    def sub_state(self, **kwargs):
+        r"""
+        Return a copy of this state in which the fields given as keyword
+        arguments take the given new values.  All other fields keep the value
+        they have in the present state.
+
+        This state object itself is left unchanged.
+        """
+        d = dict([ (field, getattr(self, field)) for field in self._fields ])
+        for field, value in kwargs.items():
+            if field not in self._fields:
+                raise ValueError("Invalid latex2text state field: {!r}".format(field))
+            d[field] = value
+        return TextConversionState(**d)
+
+    def __repr__(self):
+        return "{}({})".format(
+            self.__class__.__name__,
+            ", ".join([ "{}={!r}".format(field, getattr(self, field))
+                        for field in self._fields ])
+        )
+
+
+# ------------------------------------------------------------------------------
+
+
 
 from ._inputlatexfile import read_latex_file
 
@@ -847,6 +1202,11 @@ class LatexNodes2Text(object):
     def __init__(self, latex_context=None, **flags):
         super(LatexNodes2Text, self).__init__()
 
+        # The state describes the surroundings of the node that is currently
+        # being converted; it is set up here and then updated as we descend into
+        # the node tree (see push_state()).
+        self.state = TextConversionState()
+
         if latex_context is None:
             if 'macro_dict' in flags or 'env_dict' in flags:
                 # LEGACY -- build a latex context using the given macro_dict
@@ -917,6 +1277,42 @@ class LatexNodes2Text(object):
             # any flags left which we haven't recognized
             logger.warning("LatexNodes2Text(): Unknown flag(s) encountered: %r",
                            list(flags.keys()))
+
+
+    @property
+    def strict_latex_spaces(self):
+        r"""
+        The whitespace behavior that applies where we currently are in the node
+        tree.  This is a shorthand for the `strict_latex_spaces` field of the
+        current :py:attr:`state`.
+        """
+        return self.state.strict_latex_spaces
+
+    @strict_latex_spaces.setter
+    def strict_latex_spaces(self, value):
+        self.state.strict_latex_spaces = value
+
+
+    def push_state(self, **kwargs):
+        r"""
+        Install a new current :py:attr:`state` in which the fields given as
+        keyword arguments take the given new values (see
+        :py:meth:`TextConversionState.sub_state()`), and restore the present
+        state when we are done.
+
+        The return value is meant to be used as a context manager::
+
+            with l2tobj.push_state(in_math_mode=True):
+                contents = l2tobj.nodelist_to_text(node.nodelist)
+
+        Any conversion that happens within the ``with`` block, including in
+        `simplify_repl` callables that are invoked there, sees the new state.
+
+        .. versionadded:: 3.0
+
+           This method was introduced in `pylatexenc 3.0`.
+        """
+        return _util.PushPropOverride(self, 'state', self.state.sub_state(**kwargs))
 
 
     def set_tex_input_directory(self, tex_input_directory, latex_walker_init_args=None,
@@ -1020,7 +1416,7 @@ class LatexNodes2Text(object):
         return self.nodelist_to_text( nodelist )
 
 
-    def nodelist_to_text(self, nodelist):
+    def nodelist_to_text(self, nodelist, state=None):
         """
         Extracts text from a node list. `nodelist` is a list of
         `latexwalker` nodes, typically parsed using a
@@ -1031,46 +1427,66 @@ class LatexNodes2Text(object):
         concatenates the results into one string.  (This is not quite actually
         the case, since we take some care as to where we add whitespace
         according to the class options.)
+
+        If `state` is given, it is a :py:class:`TextConversionState` instance
+        that is used as the current conversion state while converting the given
+        nodes.  By default (`state=None`) we keep the current state, which is
+        what you want in the vast majority of cases; see
+        :py:meth:`push_state()` to install a modified state.
+
+        .. versionadded:: 3.0
+
+           The `state` argument was introduced in `pylatexenc 3.0`.
         """
 
         if nodelist is None:
             return ''
 
-        s = ''
-        prev_node = None
-        for node in nodelist:
-            if self._is_bare_macro_node(prev_node) and \
-               node.isNodeType(latexwalker.LatexCharsNode):
+        with _util.PushPropOverride(self, 'state', state):
 
-                if not self.strict_latex_spaces['between-macro-and-chars']:
-                    # after a macro with absolutely no arguments, include
-                    # post_space in output by default if there are other chars
-                    # that follow.  This is for more breathing space (especially
-                    # in equations(?)), and for compatibility with earlier
-                    # versions of pylatexenc (<= 1.3).  This is NOT LaTeX'
-                    # default behavior (see issue #11), so only do this if the
-                    # corresponding `strict_latex_spaces=` flag is set.
-                    s += prev_node.macro_post_space
+            s = ''
+            prev_node = None
+            for node in nodelist:
+                if self._is_bare_macro_node(prev_node) and \
+                   node.isNodeType(latexwalker.LatexCharsNode):
 
-            last_nl_pos = s.rfind('\n')
-            if last_nl_pos != -1:
-                textcol = len(s)-last_nl_pos-1
-            else:
-                textcol = len(s)
+                    if not self.strict_latex_spaces['between-macro-and-chars']:
+                        # after a macro with absolutely no arguments, include
+                        # post_space in output by default if there are other
+                        # chars that follow.  This is for more breathing space
+                        # (especially in equations(?)), and for compatibility
+                        # with earlier versions of pylatexenc (<= 1.3).  This is
+                        # NOT LaTeX' default behavior (see issue #11), so only do
+                        # this if the corresponding `strict_latex_spaces=` flag
+                        # is set.
+                        s += prev_node.macro_post_space
 
-            s += self.node_to_text(node, textcol=textcol)
+                last_nl_pos = s.rfind('\n')
+                if last_nl_pos != -1:
+                    textcol = len(s)-last_nl_pos-1
+                else:
+                    textcol = len(s)
 
-            prev_node = node
+                s += self.node_to_text(node, textcol=textcol)
 
-        return s
+                prev_node = node
 
-    def node_to_text(self, node, prev_node_hint=None, textcol=0):
+            return s
+
+    def node_to_text(self, node, prev_node_hint=None, textcol=0, state=None):
         """
         Return the textual representation of the given `node`.
 
         If `prev_node_hint` is specified, then the current node is formatted
         suitably as following the node given in `prev_node_hint`.  This might
         affect how much space we keep/discard, etc.
+
+        The `state` argument has the same meaning as in
+        :py:meth:`nodelist_to_text()`.
+
+        .. versionadded:: 3.0
+
+           The `state` argument was introduced in `pylatexenc 3.0`.
         """
         if node is None:
             return ""
@@ -1078,31 +1494,33 @@ class LatexNodes2Text(object):
         # ### It doesn't look like we use prev_node_hint at all.  Eliminate at
         # ### some point?
 
-        if node.isNodeType(latexwalker.LatexCharsNode):
-            return self.chars_node_to_text(node, textcol=textcol)
+        with _util.PushPropOverride(self, 'state', state):
 
-        if node.isNodeType(latexwalker.LatexCommentNode):
-            return self.comment_node_to_text(node)
+            if node.isNodeType(latexwalker.LatexCharsNode):
+                return self.chars_node_to_text(node, textcol=textcol)
 
-        if node.isNodeType(latexwalker.LatexGroupNode):
-            return self.group_node_to_text(node)
+            if node.isNodeType(latexwalker.LatexCommentNode):
+                return self.comment_node_to_text(node)
 
-        if node.isNodeType(latexwalker.LatexMacroNode):
-            return self.macro_node_to_text(node)
+            if node.isNodeType(latexwalker.LatexGroupNode):
+                return self.group_node_to_text(node)
 
-        if node.isNodeType(latexwalker.LatexEnvironmentNode):
-            return self.environment_node_to_text(node)
+            if node.isNodeType(latexwalker.LatexMacroNode):
+                return self.macro_node_to_text(node)
 
-        if node.isNodeType(latexwalker.LatexSpecialsNode):
-            return self.specials_node_to_text(node)
+            if node.isNodeType(latexwalker.LatexEnvironmentNode):
+                return self.environment_node_to_text(node)
 
-        if node.isNodeType(latexwalker.LatexMathNode):
-            return self.math_node_to_text(node)
+            if node.isNodeType(latexwalker.LatexSpecialsNode):
+                return self.specials_node_to_text(node)
 
-        logger.warning("LatexNodes2Text.node_to_text(): Unknown node: %r", node)
+            if node.isNodeType(latexwalker.LatexMathNode):
+                return self.math_node_to_text(node)
 
-        # discard anything else.
-        return ""
+            logger.warning("LatexNodes2Text.node_to_text(): Unknown node: %r", node)
+
+            # discard anything else.
+            return ""
 
     def chars_node_to_text(self, node, textcol=0):
         r"""
@@ -1260,7 +1678,7 @@ class LatexNodes2Text(object):
             return ''
 
         elif self.math_mode == 'with-delimiters':
-            with _PushEquationContext(self):
+            with _PushEquationState(self):
                 content = self.nodelist_to_text(node.nodelist).strip()
             if node.isNodeType(latexwalker.LatexMathNode):
                 delims = node.delimiters
@@ -1274,7 +1692,7 @@ class LatexNodes2Text(object):
                 return delims[0] + content + delims[1]
 
         elif self.math_mode == 'text':
-            with _PushEquationContext(self):
+            with _PushEquationState(self):
                 content = self.nodelist_to_text(node.nodelist).strip()
             if node.isNodeType(latexwalker.LatexEnvironmentNode) \
                or node.displaytype == 'display':
@@ -1338,6 +1756,11 @@ class LatexNodes2Text(object):
             if 'l2tobj' in fn_args:
                 # callable accepts an argument named 'l2tobj', provide pointer to self
                 kwargs['l2tobj'] = self
+            if 'l2tstate' in fn_args:
+                # callable accepts an argument named 'l2tstate', provide the
+                # conversion state that applies where this node sits in the
+                # node tree
+                kwargs['l2tstate'] = self.state
             if node.isNodeType(latexwalker.LatexEnvironmentNode) and \
                'environmentname' in fn_args:
                 kwargs['environmentname'] = node.environmentname
@@ -1489,17 +1912,18 @@ class LatexNodes2Text(object):
 
 
 
-class _PushEquationContext(_util.PushPropOverride):
+class _PushEquationState(_util.PushPropOverride):
     def __init__(self, l2t):
 
-        new_strict_latex_spaces = None
+        changes = {'in_math_mode': True}
+
         if l2t.strict_latex_spaces['in-equations'] is not None:
-            new_strict_latex_spaces = _parse_strict_latex_spaces_dict(
+            changes['strict_latex_spaces'] = _parse_strict_latex_spaces_dict(
                 l2t.strict_latex_spaces['in-equations']
             )
 
-        super(_PushEquationContext, self).__init__(l2t, 'strict_latex_spaces',
-                                                   new_strict_latex_spaces)
+        super(_PushEquationState, self).__init__(l2t, 'state',
+                                                   l2t.state.sub_state(**changes))
 
 
 

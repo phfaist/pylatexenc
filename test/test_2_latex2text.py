@@ -545,8 +545,7 @@ above. """
 
     def test_repl_item(self):
 
-        # exact replacement text may change in the future (e.g. within
-        # {enumerate} environments)
+        # exact replacement text may change in the future
 
         self.assertEqual(
             LatexNodes2Text().latex_to_text(
@@ -558,14 +557,112 @@ above. """
 \end{itemize}
 """.strip()
             ),
-            r"""
-
-  * First item
-
+            u"""
+  \N{BULLET} First item
   b The item “B”
-
-  * Last item
+  \N{BULLET} Last item
 """
+        )
+
+    def test_repl_item_enumerate(self):
+
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(
+                r"""
+\begin{enumerate}
+\item First item
+\item Second item
+\item[(*)] Item with an explicit label
+\item Last item
+\end{enumerate}
+""".strip()
+            ),
+            u"""
+  1. First item
+  2. Second item
+  (*) Item with an explicit label
+  3. Last item
+"""
+        )
+
+    def test_repl_item_nested(self):
+
+        # nested lists get their own item counters and marker styles, and are
+        # indented according to the item they appear in.  As in LaTeX, the
+        # marker style follows the nesting depth among lists of the same kind,
+        # so the {itemize} here is still a first-level itemize.
+
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(
+                r"""
+\begin{enumerate}
+\item one \begin{enumerate}\item inner a \item inner b \begin{itemize}\item deep\end{itemize}\end{enumerate}
+\item two
+\end{enumerate}
+""".strip()
+            ),
+            u"""
+  1. one
+     (a) inner a
+     (b) inner b
+         \N{BULLET} deep
+  2. two
+"""
+        )
+
+    def test_repl_item_multiline(self):
+
+        # continuation lines of an item are aligned with the item text
+
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(
+                r"""
+\begin{enumerate}
+\item first line
+second line
+\item another item
+\end{enumerate}
+""".strip()
+            ),
+            u"""
+  1. first line
+     second line
+  2. another item
+"""
+        )
+
+    def test_repl_item_description(self):
+
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(
+                r"""
+\begin{description}
+\item[Foo] a thing
+\item[Bar] another thing
+\end{description}
+""".strip()
+            ),
+            u"""
+  Foo a thing
+  Bar another thing
+"""
+        )
+
+    def test_repl_item_stray(self):
+
+        # an \item outside of any known list environment still produces a
+        # bullet, as it did in earlier versions of pylatexenc
+
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r"Stray \item here."),
+            u"Stray \n  \N{BULLET} here."
+        )
+
+    def test_repl_item_empty_list(self):
+
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r"\begin{itemize}\end{itemize}"),
+            u"\n"
         )
 
     def test_repl_placeholders(self):

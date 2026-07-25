@@ -10,7 +10,7 @@ run without any chagnes.  You might get some deprecation warnings which you can
 silence using python's warnings filter management (e.g., ``python -W
 'ignore::DeprecationWarnings'`` or using :py:func:`warnings.simplefilter`)
 
-The `latex2text` and `latexencode` modules have barely changed.
+The parser-related modules have seen a number of changes, including:
 
 - New parsing mechanism in a new `latexnodes` module — everything gets delegated
   to "parser objects" that are specialized in parsing a specific construct.  See
@@ -35,6 +35,24 @@ The `latex2text` and `latexencode` modules have barely changed.
 - The `len` attribute in node objects is replaced by a `pos_end` attribute.  The
   `len` attribute can still be accessed as a read-only computed attribute for
   compatibility with existing code using pylatexenc 2.
+
+
+The `latex2text` module was improved:
+
+- :py:mod:`~pylatexenc.latex2text` now keeps track of the surroundings in which
+  a node is being converted, in a
+  :py:class:`pylatexenc.latex2text.TextConversionState` object available as
+  :py:attr:`LatexNodes2Text.state <pylatexenc.latex2text.LatexNodes2Text.state>`.
+
+- :py:mod:`~pylatexenc.latex2text` renders list environments
+  (``{itemize}``, ``{enumerate}``, ``{description}``) properly, including nested
+  lists: items are numbered where relevant, the item marker style follows the
+  nesting depth as it does in LaTeX, and the contents of an item that spans
+  several lines is aligned with the item text.
+
+The `latexencode` module has barely changed.
+
+
 
 
 

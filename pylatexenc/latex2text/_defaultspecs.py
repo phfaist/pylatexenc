@@ -44,7 +44,8 @@ from ..latex2text import (
     MacroTextSpec, EnvironmentTextSpec, SpecialsTextSpec,
     fmt_equation_environment, #fmt_placeholder_node,
     placeholder_node_formatter,
-    fmt_matrix_environment_node, fmt_input_macro, fmt_math_text_style
+    fmt_matrix_environment_node, fmt_input_macro, fmt_math_text_style,
+    fmt_list_environment, fmt_item_macro
 )
 
 
@@ -135,10 +136,11 @@ _latex_specs_approximations = {
         EnvironmentTextSpec('flushleft', simplify_repl='\n%s\n'),
         EnvironmentTextSpec('flushright', simplify_repl='\n%s\n'),
 
-        EnvironmentTextSpec('exenumerate', discard=False),
-        EnvironmentTextSpec('enumerate', discard=False),
-        EnvironmentTextSpec('list', discard=False),
-        EnvironmentTextSpec('itemize', discard=False),
+        EnvironmentTextSpec('exenumerate', simplify_repl=fmt_list_environment),
+        EnvironmentTextSpec('enumerate', simplify_repl=fmt_list_environment),
+        EnvironmentTextSpec('list', simplify_repl=fmt_list_environment),
+        EnvironmentTextSpec('itemize', simplify_repl=fmt_list_environment),
+        EnvironmentTextSpec('description', simplify_repl=fmt_list_environment),
         EnvironmentTextSpec('subequations', discard=False),
         EnvironmentTextSpec('figure', discard=False),
         EnvironmentTextSpec('table', discard=False),
@@ -202,11 +204,10 @@ _latex_specs_approximations = {
                            getattr(l2tobj, '_doc_date', _latex_today()))),
 
         ('url', '<%s>'),
-        ('item',
-         lambda r, l2tobj: '\n  '+(
-             l2tobj.nodelist_to_text([r.nodeoptarg]) if r.nodeoptarg else '* '
-         )
-        ) ,
+        # NOTE: this only handles '\item' macros that appear outside of a list
+        # environment that we know how to format; items inside a known list
+        # environment are rendered by `fmt_list_environment()`.
+        ('item', fmt_item_macro),
         ('footnote', '[%(2)s]'), # \footnote[optional mark]{footnote text}
         ('href', lambda n, l2tobj:  \
          '{} <{}>'.format(l2tobj.nodelist_to_text([n.nodeargd.argnlist[1]]), 
