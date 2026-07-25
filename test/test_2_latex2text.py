@@ -678,6 +678,59 @@ above. """
             "the link <https://example.com/>"
         )
 
+    def test_repl_url(self):
+
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r"\url{https://example.com/}"),
+            "<https://example.com/>"
+        )
+
+    def test_repl_href_url_special_chars(self):
+
+        # the target of \href and \url is read verbatim, so characters that are
+        # special to LaTeX survive.  Without that, a percent sign starts a
+        # comment and swallows the rest of the line, and a tilde turns into a
+        # non-breaking space.
+        for latex, text in (
+                (r"\url{http://x.org/a%20b}", "<http://x.org/a%20b>"),
+                (r"\url{http://x.org/~user}", "<http://x.org/~user>"),
+                (r"\url{http://x.org/page#frag}", "<http://x.org/page#frag>"),
+                (r"\url{http://x.org/a_b}", "<http://x.org/a_b>"),
+                (r"\url{http://x.org/a&b=c}", "<http://x.org/a&b=c>"),
+                (r"\href{http://x.org/a%20b}{link}", "link <http://x.org/a%20b>"),
+                (r"\href{http://x.org/q?a=1&b=2#f}{link}",
+                 "link <http://x.org/q?a=1&b=2#f>"),
+        ):
+            self.assertEqual(LatexNodes2Text().latex_to_text(latex), text)
+
+    def test_repl_href_url_repeated_with_braces(self):
+
+        # the verbatim parser reading the target lives in the macro's
+        # specification and is reused for every occurrence, so its nesting
+        # depth bookkeeping must not leak from one target to the next
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(
+                r"\url{http://a.org/x{y}} and \url{http://b.org/p{q}}"
+            ),
+            "<http://a.org/x{y}> and <http://b.org/p{q}>"
+        )
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(
+                r"\href{http://a.org/{x}}{A} and \href{http://b.org/{y}}{B}"
+            ),
+            "A <http://a.org/{x}> and B <http://b.org/{y}>"
+        )
+
+    def test_repl_href_text_is_still_latex(self):
+
+        # only the target is verbatim; the link text is ordinary LaTeX
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(
+                r"\href{http://x.org/a%20b}{\textbf{bold} link}"
+            ),
+            "bold link <http://x.org/a%20b>"
+        )
+
     def test_repl_doc_title(self):
 
         # test that \title/\author/\date work and produce something reasonable

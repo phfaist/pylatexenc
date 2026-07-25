@@ -18,6 +18,8 @@ from pylatexenc.latexwalker import (
 
 from pylatexenc import macrospec
 
+from pylatexenc.latexnodes import ParsedArgumentsInfo
+
 from ._helpers_tests import HelperProvideAssertEqualsForLegacyTests
 
 # # patch __eq__ for comparison with lists
@@ -2106,6 +2108,83 @@ Use macros: \a{} and \b{xxx}{yyy}.
         self.assertTrue(node.macroname == 'foo')
         self.assertTrue(node.nodeargd)
         self.assertEqual(len(node.nodeargd.argnlist), 3)
+
+
+    def test_href_url_argument_is_verbatim(self):
+        # the target of \href is read verbatim, because a URL may well contain
+        # characters that are special to LaTeX.  A percent sign in particular
+        # would otherwise start a comment and swallow the rest of the line.
+
+        latextext = r'\href{http://x.org/a%20b#f~g_h}{the \textbf{link}}'
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+
+        (nodelist, npos, nlen) = lw.get_latex_nodes(pos=0, read_max_nodes=1)
+        self.assertEqual(len(nodelist), 1)
+        node = nodelist[0]
+
+        self.assertEqual(node.macroname, 'href')
+        self.assertEqual(len(node.nodeargd.argnlist), 2)
+
+        # the URL argument is a group whose contents are a single chars node
+        # holding the target exactly as it was written
+        urlarg = node.nodeargd.argnlist[0]
+        self.assertEqual(urlarg.delimiters, ('{','}'))
+        self.assertEqual(len(urlarg.nodelist), 1)
+        self.assertEqual(urlarg.nodelist[0].chars, 'http://x.org/a%20b#f~g_h')
+
+        # the argument is named, so it can also be picked out by name
+        argsinfo = ParsedArgumentsInfo(node=node).get_all_arguments_info(
+            ('url',), allow_additional_arguments=True)
+        self.assertEqual(
+            argsinfo['url'].get_content_nodelist().get_content_as_chars(),
+            'http://x.org/a%20b#f~g_h'
+        )
+
+        # the link text, in contrast, is still parsed as ordinary LaTeX
+        textarg = node.nodeargd.argnlist[1]
+        self.assertEqual(len(textarg.nodelist), 2)
+        self.assertEqual(textarg.nodelist[0].chars, 'the ')
+        self.assertEqual(textarg.nodelist[1].macroname, 'textbf')
+
+
+    def test_url_argument_is_verbatim(self):
+        # same for \url, which takes only the target
+
+        latextext = r'\url{http://x.org/a%20b#f~g_h}'
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+
+        (nodelist, npos, nlen) = lw.get_latex_nodes(pos=0, read_max_nodes=1)
+        node = nodelist[0]
+
+        self.assertEqual(node.macroname, 'url')
+        self.assertEqual(len(node.nodeargd.argnlist), 1)
+
+        urlarg = node.nodeargd.argnlist[0]
+        self.assertEqual(urlarg.delimiters, ('{','}'))
+        self.assertEqual(urlarg.nodelist[0].chars, 'http://x.org/a%20b#f~g_h')
+
+
+    def test_href_url_repeated_with_braces(self):
+        # the verbatim parser that reads the target is stored in the macro's
+        # specification, so the very same parser object is used again for each
+        # occurrence in the document.  Braces inside a target exercise the
+        # parser's nesting depth bookkeeping, which must therefore not carry
+        # over from one occurrence to the next.
+
+        latextext = r'\url{http://a.org/x{y}} \url{http://b.org/p{q}} \href{http://c.org/{z}}{C}'
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+
+        (nodelist, npos, nlen) = lw.get_latex_nodes(pos=0)
+
+        urls = []
+        for n in nodelist:
+            if n.isNodeType(LatexMacroNode) and n.macroname in ('url', 'href'):
+                urls.append(n.nodeargd.argnlist[0].nodelist[0].chars)
+
+        self.assertEqual(
+            urls,
+            ['http://a.org/x{y}', 'http://b.org/p{q}', 'http://c.org/{z}']
+        )
 
 
 
