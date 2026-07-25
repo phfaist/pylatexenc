@@ -358,13 +358,6 @@ class MacroSpec(CallableSpec):
             macroname=macroname,
             **kwargs
         )
-        #self.macroname = macroname
-
-    # def get_node_parser(self, token):
-    #     r"""
-    #     Doc.........
-    #     """
-    #     return LatexMacroCallParser(token, self)
 
 
 
@@ -435,23 +428,6 @@ class EnvironmentSpec(CallableSpec):
             environmentname=environmentname,
             **kwargs
         )
-        #self.environmentname = environmentname
-
-    # def get_node_parser(self, token):
-    #     r"""
-    #     Doc.........
-    #     """
-    #     return LatexEnvironmentCallParser(token, self)
-
-    # def make_body_parser(self, token, nodeargd, arg_parsing_state_delta):
-    #     r"""
-    #     Doc. ................
-    #     """
-    #     if self._fn_make_body_parser is not None:
-    #         return self._fn_make_body_parser(token, nodeargd, arg_parsing_state_delta)
-    #     return LatexEnvironmentBodyContentsParser(
-    #         environmentname=token.arg,
-    #     )
 
 
 
@@ -488,17 +464,6 @@ class SpecialsSpec(CallableSpec):
             **kwargs
         )
         #self.specials_chars = specials_chars
-
-    # def __repr__(self):
-    #     return 'SpecialsSpec(specials_chars={!r}, arguments_spec_list={!r})'.format(
-    #         self.specials_chars, self.arguments_spec_list
-    #     )
-
-    # def get_node_parser(self, token):
-    #     r"""
-    #     Doc.........
-    #     """
-    #     return LatexSpecialsCallParser(token, self)
 
 
 
