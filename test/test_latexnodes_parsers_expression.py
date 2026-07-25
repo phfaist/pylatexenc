@@ -60,7 +60,9 @@ class TestLatexExpression(unittest.TestCase):
 
     def test_unexpected_math_mode_delimiter(self):
         # a math mode delimiter where an expression is expected is an error; the
-        # error object must carry the recovery nodes for tolerant parsing mode
+        # error object must carry the recovery nodes for tolerant parsing mode.
+        # As for an unexpected closing brace, the delimiter itself is not
+        # consumed so that whichever parser is waiting for it can still see it.
         latextext = r'''$'''
 
         tr = LatexTokenReader(latextext)
@@ -81,11 +83,16 @@ class TestLatexExpression(unittest.TestCase):
             exc.recovery_nodes,
             LatexCharsNode(
                 parsing_state=ps,
-                chars='$',
+                chars='',
                 pos=0,
-                pos_end=1,
+                pos_end=0,
             )
         )
+        # the math mode delimiter is not consumed
+        self.assertEqual(tr.cur_pos(), 0)
+        self.assertTrue(exc.recovery_past_token is None)
+        self.assertEqual(exc.recovery_at_token.tok, 'mathmode_inline')
+        self.assertEqual(exc.recovery_at_token.pos, 0)
 
     def test_simple_first_char_nofulllist(self):
         latextext = r'''characters'''

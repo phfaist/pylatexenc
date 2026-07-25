@@ -412,27 +412,23 @@ class LatexExpressionParser(LatexParserBase):
             # token), then it should provide its own argument parser for that
             # argument.
 
-            # try to figure out a smart recovery node
-            if tok.arg.startswith('\\'):
-                recovery_nodes = latex_walker.make_node(LatexMacroNode,
-                                                        parsing_state=parsing_state,
-                                                        macroname=tok.arg,
-                                                        macro_post_space=tok.post_space,
-                                                        pos=tok.pos,
-                                                        pos_end=tok.pos_end)
-            else:
-                recovery_nodes = latex_walker.make_node(LatexCharsNode,
-                                                        parsing_state=parsing_state,
-                                                        chars=tok.arg,
-                                                        pos=tok.pos,
-                                                        pos_end=tok.pos_end)
-                
+            # put the token back so that it can be processed by whichever parser
+            # actually needs it (e.g., the math mode parser that is waiting for
+            # its closing delimiter)
+            token_reader.move_to_token(tok)
+
             raise LatexWalkerNodesParseError(
                 msg=("Unexpected math mode delimiter ‘{}’, was expecting a LaTeX "
                      "expression".format(tok.arg)),
                 pos=tok.pos,
-                recovery_nodes=recovery_nodes,
-                recovery_past_token=tok,
+                recovery_nodes=latex_walker.make_node(LatexCharsNode,
+                                                      parsing_state=parsing_state,
+                                                      chars='',
+                                                      pos=tok.pos,
+                                                      pos_end=tok.pos), # not pos_end
+                # don't consume the math mode delimiter if we're trying to
+                # recover from the parse error
+                recovery_at_token=tok,
                 error_type_info={
                     'what': 'expression_required_got_unexpected',
                     'unexpected': 'math_mode_delimiter',
