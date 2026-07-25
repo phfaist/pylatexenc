@@ -753,6 +753,47 @@ The Title
             )
 
 
+    #
+    # The verbatim constructs, as rendered to text.  These tests pin down the
+    # behavior independently of which argument parser implements the verbatim
+    # constructs of the default latex context.
+    #
+
+    def test_verbatim_verb_is_not_interpreted(self):
+        # the verbatim content is not interpreted as latex code; note that
+        # latex2text does not currently reproduce the content of \verb itself
+        self.assertEqual(
+            LatexNodes2Text().nodelist_to_text(
+                LatexWalker(r'before \verb+\textbf{x}$y$+ after').get_latex_nodes()[0]),
+            'before  after'
+        )
+
+    def test_verbatim_environment_is_not_interpreted(self):
+        # the contents of a verbatim environment are reproduced as they appear
+        # in the source, and are not interpreted as latex code
+        latex = '\\begin{verbatim}\n\\textbf{x} $y$\n\\end{verbatim}'
+        self.assertEqual(
+            LatexNodes2Text().nodelist_to_text(
+                LatexWalker(latex).get_latex_nodes()[0]),
+            '\\textbf{x} $y$\n'
+        )
+
+    def test_verbatim_content_available_on_the_node(self):
+        # the verbatim content must be reachable on the parsed nodes, both
+        # through the node structure and through the `verbatim_text` and
+        # `verbatim_delimiters` attributes that ‘pylatexenc 2’ provided
+        nodelist = LatexWalker(r'\verb+\textbf{x}+').get_latex_nodes()[0]
+        verbgroup = nodelist[0].nodeargd.argnlist[0]
+        self.assertEqual(verbgroup.nodelist[0].chars, r'\textbf{x}')
+        self.assertEqual(verbgroup.delimiters, ('+', '+'))
+        self.assertEqual(nodelist[0].nodeargd.verbatim_text, r'\textbf{x}')
+        self.assertEqual(nodelist[0].nodeargd.verbatim_delimiters, ('+', '+'))
+
+        nodelist = LatexWalker(
+            '\\begin{verbatim}\nraw $ text\n\\end{verbatim}').get_latex_nodes()[0]
+        self.assertEqual(nodelist[0].nodelist[0].chars, 'raw $ text\n')
+        self.assertEqual(nodelist[0].nodeargd.verbatim_text, 'raw $ text\n')
+        self.assertIsNone(nodelist[0].nodeargd.verbatim_delimiters)
 
 
 

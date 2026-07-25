@@ -71,3 +71,38 @@ A couple things to look out for
   satisfy ``isinstance(nodelist, list)``.  If you relied on such tests, you'll
   need to update them to the liking of ``isinstance(nodelist, (LatexNodeList,
   list))``.
+
+
+
+Some bug fixes in behavior
+--------------------------
+
+- The :py:mod:`~pylatexenc.latex2text` module places the title of a
+  ``\paragraph{...}`` differently.  Pylatexenc 2 emitted the line break before
+  the title, which left the title glued to the text that follows it
+  (``\paragraph{Par}Body`` gave ``"\nParBody"``); pylatexenc 3 emits the title
+  followed by the line break (``"Par\nBody"``).
+
+- The ``verbatim`` environment no longer reports the newline that immediately
+  follows ``\begin{verbatim}`` as part of its contents, mirroring what LaTeX
+  itself does.  Pylatexenc 2 reported ``"\ncode\n"`` for
+  ``\begin{verbatim}\ncode\n\end{verbatim}``, pylatexenc 3 reports ``"code\n"``.
+  Note that the ``lstlisting`` environment still keeps that first newline.
+
+
+Details that v3 might get different
+-----------------------------------
+
+Pylatexenc v3's behavior might get some minor things a bit differently.  We don't
+expect these to lead to downstream issues, but we're listing the ones we're aware
+of here for completeness:
+
+- The :py:mod:`~pylatexenc.latexencode` module no longer uses the dotless
+  ``\i`` command when encoding the accented characters ‘ì’, ‘í’, ‘î’ and ‘ï’
+  (U+00EC–U+00EF), producing ``\'i`` instead of ``{\'\i}``.  This follows
+  a long-standing change in LaTeX where ``\i`` is no longer needed for such
+  accented characters.  (If you prefer to keep braces around your replacement,
+  remember to use a "latex replacement protection" option, see
+  :py:attr:`pylatexenc.latexencode.UnicodeToLatexEncoder.replacement_latex_protection`.)
+
+- (ADD HERE)

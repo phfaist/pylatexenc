@@ -2,6 +2,7 @@
 *~
 
 .cache
+.claude
 
 *.py[cdo]
 pylatexenc.egg-info

@@ -217,8 +217,31 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
         return False
 
 
+    def error_end_of_stream(self, pos, recovery_nodes, latex_walker, verbatim_info):
+        # report the same node structure as a successful parse would, i.e. the
+        # verbatim contents wrapped in a group node with the delimiters that we
+        # did read, so that recovering from this error in tolerant parsing mode
+        # yields a verbatim argument of the usual shape
+        return super(LatexDelimitedVerbatimParser, self).error_end_of_stream(
+            pos=pos,
+            recovery_nodes=latex_walker.make_node(
+                LatexGroupNode,
+                delimiters=verbatim_info.parsed_delimiters,
+                nodelist=latex_walker.make_nodelist(
+                    [ recovery_nodes ],
+                    parsing_state=recovery_nodes.parsing_state,
+                ),
+                pos=verbatim_info.original_pos,
+                pos_end=recovery_nodes.pos_end,
+                parsing_state=recovery_nodes.parsing_state,
+            ),
+            latex_walker=latex_walker,
+            verbatim_info=verbatim_info,
+        )
+
+
     def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
-        
+
         verbatim_info = LatexVerbatimBaseParser.VerbatimInfo()
 
         token_reader.skip_space_chars(parsing_state)
@@ -288,12 +311,28 @@ class LatexVerbatimEnvironmentContentsParser(LatexVerbatimBaseParser):
             return {'put_back_char': True}
         return False
 
+    def error_end_of_stream(self, pos, recovery_nodes, latex_walker, verbatim_info):
+        # an environment body is always reported as a node list, including when
+        # we recover from this error in tolerant parsing mode
+        return super(LatexVerbatimEnvironmentContentsParser, self).error_end_of_stream(
+            pos=pos,
+            recovery_nodes=latex_walker.make_nodelist(
+                [ recovery_nodes ],
+                parsing_state=recovery_nodes.parsing_state,
+            ),
+            latex_walker=latex_walker,
+            verbatim_info=verbatim_info,
+        )
+
     def finalize_verbatim_string(self, verbatim_string, verbatim_info):
 
         end_environment_code = verbatim_info.end_environment_code
-        assert( verbatim_string.endswith(end_environment_code) )
-
-        verbatim_string = verbatim_string[:-len(end_environment_code)]
+        if verbatim_string.endswith(end_environment_code):
+            verbatim_string = verbatim_string[:-len(end_environment_code)]
+        # If the end environment code is not there, we ran into the end of the
+        # stream before finding the closing \end{...}.  Don't fail here; return
+        # the content that we did read so that read_verbatim_content() can
+        # report the parse error and offer these contents as recovery nodes.
 
         pos_start = verbatim_info.original_pos
 

@@ -31,8 +31,13 @@ from ..latexnodes import (
     ParsingStateDeltaEnterMathMode,
     ParsingStateDeltaLeaveMathMode,
 )
+from ..latexnodes.nodes import (
+    LatexCharsNode,
+)
 from ..latexnodes.parsers import (
     LatexStandardArgumentParser,
+    LatexDelimitedVerbatimParser,
+    LatexVerbatimEnvironmentContentsParser,
 )
 
 from ..macrospec import (
@@ -40,7 +45,7 @@ from ..macrospec import (
     std_environment,
     std_specials,
     MacroSpec, EnvironmentSpec, MacroStandardArgsParser,
-    VerbatimArgsParser, LstListingArgsParser,
+    LstListingArgsParser,
 )
 
 
@@ -49,6 +54,60 @@ def _arg_mathmode(parser):
 
 def _arg_textmode(parser):
     return LatexArgumentSpec(parser, parsing_state_delta=ParsingStateDeltaLeaveMathMode())
+
+
+def _make_verbatim_environment_body_parser(token, nodeargd, arg_parsing_state_delta):
+    r"""
+    Body parser factory for environments whose contents are to be read
+    verbatim, up to the matching ``\end{...}``.
+    """
+    return LatexVerbatimEnvironmentContentsParser(environment_name=token.arg)
+
+
+def _verbatim_chars_of(nodelist):
+    r"""
+    Return the concatenated characters of the chars nodes in `nodelist`, or
+    `None` if there is no node list at all (e.g. because the verbatim contents
+    could not be parsed).
+    """
+    if nodelist is None:
+        return None
+    chars = ''
+    for n in nodelist:
+        if n is not None and n.isNodeType(LatexCharsNode):
+            chars += n.chars
+    return chars
+
+
+def _finalize_verb_macro_node(node):
+    r"""
+    Expose the verbatim content of a ``\verb`` call on its parsed-arguments
+    object as `verbatim_text` and `verbatim_delimiters`, the way `pylatexenc 2`
+    did.  The content itself lives in the argument group node.
+    """
+    verbatim_text, verbatim_delimiters = None, None
+
+    argnlist = node.nodeargd.argnlist
+    if argnlist and argnlist[0] is not None:
+        verbatim_group_node = argnlist[0]
+        verbatim_text = _verbatim_chars_of(verbatim_group_node.nodelist)
+        verbatim_delimiters = verbatim_group_node.delimiters
+
+    node.nodeargd.verbatim_text = verbatim_text
+    node.nodeargd.verbatim_delimiters = verbatim_delimiters
+
+    return node
+
+
+def _finalize_verbatim_environment_node(node):
+    r"""
+    Same as :py:func:`_finalize_verb_macro_node()`, for verbatim environments.
+    Here the content is the environment body, and there are no delimiters.
+    """
+    node.nodeargd.verbatim_text = _verbatim_chars_of(node.nodelist)
+    node.nodeargd.verbatim_delimiters = None
+
+    return node
 
 
 
@@ -320,11 +379,19 @@ specs = [
     ('verbatim', {
         'macros': [
             MacroSpec('verb',
-                      args_parser=VerbatimArgsParser(verbatim_arg_type='verb-macro')),
+                      arguments_spec_list=[
+                          LatexArgumentSpec(
+                              LatexDelimitedVerbatimParser(),
+                              argname='verbatim_content',
+                          ),
+                      ],
+                      finalize_node=_finalize_verb_macro_node),
             ],
         'environments': [
             EnvironmentSpec('verbatim',
-                            args_parser=VerbatimArgsParser(verbatim_arg_type='verbatim-environment')),
+                            arguments_spec_list=[],
+                            make_body_parser=_make_verbatim_environment_body_parser,
+                            finalize_node=_finalize_verbatim_environment_node),
         ],
         'specials': [
             # optionally users could include the specials "|" like in latex-doc

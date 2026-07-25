@@ -1066,39 +1066,261 @@ This is it."""
         parsing_state = lw.make_parsing_state()
 
         p=0
+        nodelist, npos, nlen = lw.get_latex_nodes(pos=p, parsing_state=parsing_state)
+
+        self.assertEqual((npos, nlen), (0, 167))
+        self.assertEqual(len(nodelist), 5)
+
+        self.assertEqual(nodelist[0].chars, 'Use the environment ')
+        self.assertEqual((nodelist[0].pos, nodelist[0].pos_end), (0, 20))
+
+        # the verbatim argument of \verb is a group node delimited by the
+        # verbatim delimiters, holding a single chars node
+        self.assertEqual(nodelist[1].macroname, 'verb')
+        self.assertEqual((nodelist[1].pos, nodelist[1].pos_end), (20, 60))
+        verbgroup = nodelist[1].nodeargd.argnlist[0]
+        self.assertEqual(verbgroup.delimiters, ('+', '+'))
+        self.assertEqual(verbgroup.nodelist[0].chars,
+                         '\\begin{verbatim}...\\end{verbatim}')
+        self.assertEqual((verbgroup.nodelist[0].pos, verbgroup.nodelist[0].pos_end),
+                         (26, 59))
+        self.assertEqual(nodelist[1].nodeargd.verbatim_text,
+                         '\\begin{verbatim}...\\end{verbatim}')
+        self.assertEqual(nodelist[1].nodeargd.verbatim_delimiters, ('+', '+'))
+
+        self.assertEqual(nodelist[2].chars, ' to\n')
+
+        # the contents of the verbatim environment are its body
+        self.assertEqual(nodelist[3].environmentname, 'verbatim')
+        self.assertEqual((nodelist[3].pos, nodelist[3].pos_end), (64, 155))
         self.assertEqual(
-            lw.get_latex_nodes(pos=p, parsing_state=parsing_state),
-            ([
-                LatexCharsNode(parsing_state=parsing_state, pos=0, len=20,
-                               chars='Use the environment '),
-                LatexMacroNode(parsing_state=parsing_state, pos=20, len=40,
-                               macroname='verb',
-                               macro_post_space='',
-                               nodeargd=macrospec.ParsedVerbatimArgs(
-                                   verbatim_chars_node=
-                                   LatexCharsNode(parsing_state=parsing_state, pos=26, len=33,
-                                                  chars='\\begin{verbatim}...\\end{verbatim}'),
-                                   verbatim_delimiters=('+', '+'),
-                               )),
-                LatexCharsNode(parsing_state=parsing_state, pos=60, len=4, chars=' to\n'),
-                LatexEnvironmentNode(
-                    parsing_state=parsing_state, pos=64, len=91,
-                    environmentname='verbatim', nodelist=[],
-                    nodeargd=macrospec.ParsedVerbatimArgs(
-                        verbatim_chars_node=
-                        LatexCharsNode(
-                            parsing_state=parsing_state, pos=80, len=61,
-                            chars='\ntypeset \\verbatim text with \\LaTeX $ escapes \\(like this\\).\n'
-                        ),
-                        verbatim_delimiters=None,
-                    )
-                ),
-                LatexCharsNode(parsing_state=parsing_state, pos=155, len=12,
-                               chars='\nThis is it.')
-            ],
-            0,
-            167)
+            nodelist[3].nodelist[0].chars,
+            'typeset \\verbatim text with \\LaTeX $ escapes \\(like this\\).\n'
         )
+        self.assertEqual(
+            nodelist[3].nodeargd.verbatim_text,
+            'typeset \\verbatim text with \\LaTeX $ escapes \\(like this\\).\n'
+        )
+        self.assertIsNone(nodelist[3].nodeargd.verbatim_delimiters)
+
+        self.assertEqual(nodelist[4].chars, '\nThis is it.')
+
+    #
+    # The following tests pin down the behavior of the verbatim constructs of
+    # the default latex context (‘\verb’, the ‘verbatim’ environment and the
+    # ‘lstlisting’ environment), independently of which argument parser
+    # implements them.  They are meant to keep the observable behavior stable if
+    # the underlying parser implementation is changed.
+    #
+
+    def _verb_arg_group(self, node):
+        # The verbatim argument of ‘\verb’ is a group node whose delimiters are
+        # the verbatim delimiters and whose single child is a chars node with
+        # the verbatim content.
+        self.assertEqual(len(node.nodeargd.argnlist), 1)
+        groupnode = node.nodeargd.argnlist[0]
+        self.assertEqual(len(groupnode.nodelist), 1)
+        return groupnode
+
+    def assertVerbatimContent(self, node, verbatim_text, verbatim_delimiters):
+        # The verbatim content of a ‘\verb’ call must be reachable in two ways:
+        # through the argument group node, and through the `verbatim_text` and
+        # `verbatim_delimiters` attributes that ‘pylatexenc 2’ provided on the
+        # parsed-arguments object.
+        groupnode = self._verb_arg_group(node)
+        self.assertEqual(groupnode.nodelist[0].chars, verbatim_text)
+        self.assertEqual(groupnode.delimiters, verbatim_delimiters)
+
+        self.assertEqual(node.nodeargd.verbatim_text, verbatim_text)
+        self.assertEqual(node.nodeargd.verbatim_delimiters, verbatim_delimiters)
+
+    def test_verbatim_verb_delimiters(self):
+        # \verb uses the first non-whitespace character that follows as its
+        # delimiter, whichever character that is.
+        for delimiter in ['+', '|', '!', '#', '"', ';', '/', '=']:
+            latextext = '\\verb' + delimiter + 'foo bar' + delimiter
+
+            lw = LatexWalker(latextext, tolerant_parsing=False)
+            nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+            self.assertEqual(len(nodelist), 1)
+            n = nodelist[0]
+            self.assertEqual(n.macroname, 'verb')
+            self.assertVerbatimContent(n, 'foo bar', (delimiter, delimiter))
+            self.assertEqual(n.pos, 0)
+            self.assertEqual(n.pos_end, len(latextext))
+            # the node covers the delimiters, too
+            self.assertEqual(n.latex_verbatim(), latextext)
+
+    def test_verbatim_verb_contents_are_not_interpreted(self):
+        # macros, braces, dollar signs and comment characters in the verbatim
+        # content must be reported as they appear in the source
+        latextext = r'''\verb!a\b{c}$d%e!'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 1)
+        self.assertVerbatimContent(nodelist[0], 'a\\b{c}$d%e', ('!', '!'))
+
+    def test_verbatim_verb_post_space(self):
+        # whitespace between \verb and the delimiter is allowed; it is recorded
+        # as the macro's post-space and is not part of the verbatim content
+        latextext = r'''\verb  +spaced+'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 1)
+        n = nodelist[0]
+        self.assertEqual(n.macro_post_space, '  ')
+        self.assertVerbatimContent(n, 'spaced', ('+', '+'))
+        self.assertEqual(n.pos_end, len(latextext))
+
+    def test_verbatim_verb_empty_content(self):
+        latextext = r'''\verb++'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 1)
+        self.assertVerbatimContent(nodelist[0], '', ('+', '+'))
+        self.assertEqual(nodelist[0].pos_end, len(latextext))
+
+    def test_verbatim_verb_in_surrounding_text(self):
+        # parsing must resume immediately after the closing delimiter
+        latextext = r'''a\verb+x+b'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 3)
+        self.assertEqual(nodelist[0].chars, 'a')
+        self.assertVerbatimContent(nodelist[1], 'x', ('+', '+'))
+        self.assertEqual(nodelist[2].chars, 'b')
+
+    def test_verbatim_environment_contents(self):
+        latextext = '\\begin{verbatim}\nline1\nline2\n\\end{verbatim}'
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 1)
+        n = nodelist[0]
+        self.assertEqual(n.environmentname, 'verbatim')
+        # the verbatim content is the environment body; the newline that
+        # immediately follows \begin{verbatim} is gobbled, as LaTeX does
+        self.assertEqual(len(n.nodelist), 1)
+        self.assertEqual(n.nodelist[0].chars, 'line1\nline2\n')
+        # ... and is also reachable the way ‘pylatexenc 2’ provided it
+        self.assertEqual(n.nodeargd.verbatim_text, 'line1\nline2\n')
+        self.assertIsNone(n.nodeargd.verbatim_delimiters)
+        self.assertEqual(n.pos, 0)
+        self.assertEqual(n.pos_end, len(latextext))
+        self.assertEqual(n.latex_verbatim(), latextext)
+
+    def test_verbatim_environment_empty(self):
+        latextext = '\\begin{verbatim}\\end{verbatim}'
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 1)
+        self.assertEqual(nodelist[0].nodelist[0].chars, '')
+        self.assertEqual(nodelist[0].nodeargd.verbatim_text, '')
+        self.assertEqual(nodelist[0].pos_end, len(latextext))
+
+    def test_verbatim_lstlisting_contents(self):
+        latextext = '\\begin{lstlisting}\ncode\n\\end{lstlisting}'
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 1)
+        n = nodelist[0]
+        self.assertEqual(n.environmentname, 'lstlisting')
+        self.assertEqual(n.nodeargd.verbatim_text, '\ncode\n')
+        self.assertEqual(n.pos_end, len(latextext))
+
+    def test_verbatim_lstlisting_with_optional_argument(self):
+        latextext = '\\begin{lstlisting}[language=Python]\ncode\n\\end{lstlisting}'
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 1)
+        n = nodelist[0]
+        self.assertEqual(n.nodeargd.verbatim_text, '\ncode\n')
+        # the optional argument is parsed as a normal (non-verbatim) argument
+        optarg = n.nodeargd.argnlist[0]
+        self.assertIsNotNone(optarg)
+        self.assertEqual(optarg.latex_verbatim(), '[language=Python]')
+        self.assertEqual(n.pos_end, len(latextext))
+
+    def test_verbatim_unterminated_verb_raises(self):
+        latextext = r'''\verb+unterminated'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        with self.assertRaises(LatexWalkerParseError):
+            lw.get_latex_nodes(pos=0)
+
+    def test_verbatim_unterminated_environment_raises(self):
+        latextext = '\\begin{verbatim}unterminated'
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        with self.assertRaises(LatexWalkerParseError):
+            lw.get_latex_nodes(pos=0)
+
+    def test_verbatim_unterminated_verb_tolerant(self):
+        # in tolerant parsing mode we still get a \verb macro node, and parsing
+        # continues instead of raising.  The recovered argument has the same
+        # shape as a successfully parsed one, so both ways of reaching the
+        # verbatim content work here as well.
+        latextext = r'''\verb+unterminated'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=True)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertTrue(len(nodelist) >= 1)
+        self.assertEqual(nodelist[0].macroname, 'verb')
+        self.assertVerbatimContent(nodelist[0], 'unterminated', ('+', '+'))
+
+    def test_verbatim_unterminated_environment_tolerant(self):
+        latextext = '\\begin{verbatim}unterminated'
+
+        lw = LatexWalker(latextext, tolerant_parsing=True)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 1)
+        self.assertEqual(nodelist[0].environmentname, 'verbatim')
+        # the content that could be read is recovered as the environment body
+        self.assertEqual(nodelist[0].nodelist[0].chars, 'unterminated')
+        self.assertEqual(nodelist[0].nodeargd.verbatim_text, 'unterminated')
+
+    def test_verbatim_verb_opening_brace_delimiter(self):
+        # ‘{’ is auto-matched with ‘}’, so the content of ‘\verb{...}’ ends at
+        # the closing brace.  (LaTeX itself would instead look for a second ‘{’.)
+        latextext = r'''\verb{braced}'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=False)
+        nodelist, p, l = lw.get_latex_nodes(pos=0)
+
+        self.assertEqual(len(nodelist), 1)
+        self.assertVerbatimContent(nodelist[0], 'braced', ('{', '}'))
+        self.assertEqual(nodelist[0].pos_end, len(latextext))
+
+    def test_verbatim_verb_at_end_of_stream(self):
+        # a ‘\verb’ with nothing at all following it must not blow up; there is
+        # no verbatim content to report in that case
+        latextext = r'''\verb'''
+
+        for tolerant in [False, True]:
+            lw = LatexWalker(latextext, tolerant_parsing=tolerant)
+            nodelist, p, l = lw.get_latex_nodes(pos=0)
+            self.assertEqual(len(nodelist), 1)
+            self.assertEqual(nodelist[0].macroname, 'verb')
+            self.assertIsNone(nodelist[0].nodeargd.verbatim_text)
+            self.assertIsNone(nodelist[0].nodeargd.verbatim_delimiters)
 
     def test_verbatim_via_specials(self):
 
@@ -1670,6 +1892,52 @@ Use macros: \a{} and \b{xxx}{yyy}.
                                pos=7+8, len=13+1-8+4),
             ], p, 7+14+4))
 
+
+    def test_tolerant_recovery_unterminated_group(self):
+        # In tolerant parsing mode, whatever could be parsed before the error
+        # occurred must be kept.  Here the stream ends before the closing brace
+        # of the \textbf{...} argument; the argument group node must still
+        # report the contents that were parsed so far, and in particular its
+        # nodelist must not be None.
+
+        latextext = r'''Text \textbf{unclosed bold'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=True)
+        parsing_state = lw.make_parsing_state()
+
+        nodelist, p, l = lw.get_latex_nodes(pos=0, parsing_state=parsing_state)
+
+        self.assertEqual(len(nodelist), 2)
+
+        groupnode = nodelist[1].nodeargd.argnlist[0]
+        self.assertIsNotNone(groupnode.nodelist)
+        self.assertEqual(len(groupnode.nodelist), 1)
+        self.assertEqual(groupnode.nodelist[0].chars, 'unclosed bold')
+
+        # the recovered group spans up to the end of the stream
+        self.assertEqual(groupnode.pos, len('Text \\textbf'))
+        self.assertEqual(groupnode.pos_end, len(latextext))
+
+
+    def test_tolerant_recovery_unterminated_environment(self):
+        # Same as above for an environment body that is never closed by a
+        # matching \end{...}.
+
+        latextext = r'''\begin{itemize}\item one'''
+
+        lw = LatexWalker(latextext, tolerant_parsing=True)
+        parsing_state = lw.make_parsing_state()
+
+        nodelist, p, l = lw.get_latex_nodes(pos=0, parsing_state=parsing_state)
+
+        self.assertEqual(len(nodelist), 1)
+
+        envnode = nodelist[0]
+        self.assertEqual(envnode.environmentname, 'itemize')
+        self.assertIsNotNone(envnode.nodelist)
+        self.assertEqual(len(envnode.nodelist), 2)
+        self.assertEqual(envnode.nodelist[0].macroname, 'item')
+        self.assertEqual(envnode.nodelist[1].chars, 'one')
 
 
     def test_bug_issueno49(self):

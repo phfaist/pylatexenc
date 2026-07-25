@@ -213,7 +213,7 @@ class MacroStandardArgsParser(object):
                     argnlist.append(
                         w.make_node(LatexCharsNode,
                                     parsing_state=get_inner_parsing_state(j),
-                                    chars='*', pos=tok.pos, len=1)
+                                    chars='*', pos=tok.pos, pos_end=tok.pos+1)
                     )
                     p = tok.pos + 1
                 else:
