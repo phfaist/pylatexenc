@@ -1074,8 +1074,24 @@ This is it."""
         self.assertEqual(nodelist[0].chars, 'Use the environment ')
         self.assertEqual((nodelist[0].pos, nodelist[0].pos_end), (0, 20))
 
-        # the verbatim argument of \verb is a group node delimited by the
-        # verbatim delimiters, holding a single chars node
+        #
+        # BEHAVIOR CHANGE vs pylatexenc 2 — the shape asserted below is *not*
+        # the one pylatexenc 2 produced.
+        #
+        # Pylatexenc 2 exposed the verbatim content of ‘\verb’ as a chars node
+        # placed directly at `nodeargd.argnlist[0]`, and carried the delimiters
+        # on the parsed-arguments object (a `ParsedVerbatimArgs` instance).
+        # Pylatexenc 3 parses the argument with
+        # :py:class:`~pylatexenc.latexnodes.parsers.LatexDelimitedVerbatimParser`,
+        # which reports a group node whose `delimiters` are the verbatim
+        # delimiters and whose single child is the chars node; `nodeargd` is now
+        # an ordinary `ParsedArguments` instance.
+        #
+        # Code written against pylatexenc 2 that read `verbatim_text` and
+        # `verbatim_delimiters` keeps working — those attributes are still set,
+        # see the two assertions at the end of this block — but code that
+        # reached into `argnlist[0]` expecting a chars node needs updating.
+        #
         self.assertEqual(nodelist[1].macroname, 'verb')
         self.assertEqual((nodelist[1].pos, nodelist[1].pos_end), (20, 60))
         verbgroup = nodelist[1].nodeargd.argnlist[0]

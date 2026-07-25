@@ -72,6 +72,8 @@ A couple things to look out for
   need to update them to the liking of ``isinstance(nodelist, (LatexNodeList,
   list))``.
 
+- Verbatim arguments to `\verb` are now reported with a ``LatexGroupNode`` that
+  contains a chars node, rather than a ``LatexCharsNode`` directly.
 
 
 Some bug fixes in behavior
