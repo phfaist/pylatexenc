@@ -15,3 +15,5 @@ build
 tools/error.log
 tools/output.log
 tools/transcryptable_output
+
+V3TODO.md
