@@ -124,6 +124,48 @@ from ._rule import (
 )
 
 
+# LaTeX accent macros indexed by the unicode combining character they render.
+# Only accents that LaTeX renders with a standard accent macro are listed here;
+# combining characters without such a macro (e.g. the Vietnamese horn) are left
+# to the unknown-character policy.
+_accent_macros = {
+    0x0300: '`',    # COMBINING GRAVE ACCENT
+    0x0301: "'",    # COMBINING ACUTE ACCENT
+    0x0302: '^',    # COMBINING CIRCUMFLEX ACCENT
+    0x0303: '~',    # COMBINING TILDE
+    0x0306: 'u',    # COMBINING BREVE
+    0x0323: 'd',    # COMBINING DOT BELOW
+}
+
+def _get_accent_decomposition_latex(ch):
+    r"""
+    Return LaTeX code for the character `ch` by decomposing it into a base
+    character and combining accents (e.g. ``ị`` → ``\d{i}``), or `None` if `ch`
+    has no such decomposition or if one of its combining characters is not a
+    known LaTeX accent.
+
+    This is used as a fallback for characters that have no direct entry in the
+    unicode-to-latex conversion rules; many precomposed letters (Vietnamese and
+    Romanian ones in particular) are otherwise reported as unknown.
+    """
+    decomposed = unicodedata.normalize('NFD', ch)
+    if len(decomposed) < 2:
+        return None
+    base = decomposed[0]
+    o = ord(base)
+    if not ((o >= 32 and o <= 127)):
+        # only accept a plain ascii base character; anything else would itself
+        # need to be encoded, which the rules already failed to do.
+        return None
+    latex = base
+    for accent_char in decomposed[1:]:
+        accent_macro = _accent_macros.get(ord(accent_char), None)
+        if accent_macro is None:
+            return None
+        latex = '\\' + accent_macro + '{' + latex + '}'
+    return latex
+
+
 
 class UnicodeToLatexEncoder(object):
     r"""
@@ -440,9 +482,14 @@ class UnicodeToLatexEncoder(object):
                     p.latex += ch
                     p.pos += 1
                 else:
-                    self._do_warn_unknown_char(ch)
-                    p.latex += self._do_unknown_char(ch)
-                    p.pos += 1
+                    decomposed_latex = _get_accent_decomposition_latex(ch)
+                    if decomposed_latex is not None:
+                        p.latex += decomposed_latex
+                        p.pos += 1
+                    else:
+                        self._do_warn_unknown_char(ch)
+                        p.latex += self._do_unknown_char(ch)
+                        p.pos += 1
                 
         return p.latex
 
