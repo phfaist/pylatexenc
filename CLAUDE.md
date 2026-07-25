@@ -98,3 +98,6 @@ and mechanical cleanups should preserve existing patterns.
 - Ask before opening pull requests.
 - Background agents work in worktrees and commit to a local branch; when done,
   ask whether to merge into local `main` or open a pull request.
+- Do not guess when making design decisions.  If a feature requires developing
+  a new structural pattern (or extending an existing one), always ask the
+  user for feedback before doing so.

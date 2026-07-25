@@ -651,10 +651,26 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
 
 
         p = latextext.find(r'\[')
+        superscript_arguments_spec_list = \
+            parsing_state.latex_context.get_specials_spec('^').arguments_spec_list
         good_parsed_structure = lambda parsing_state, ps2, ps3: [
             LatexCharsNode(parsing_state=parsing_state,
-                           chars=' cx^2+z=-d',
-                           pos=p+2,len=12-2),
+                           chars=' cx',
+                           pos=p+2,len=5-2),
+            # '^' picks up the single following token as its argument
+            LatexSpecialsNode(parsing_state=parsing_state,
+                              specials_chars='^',
+                              nodeargd=macrospec.ParsedMacroArgs(
+                                  arguments_spec_list=superscript_arguments_spec_list,
+                                  argnlist=[
+                                  LatexCharsNode(parsing_state=parsing_state,
+                                                 chars='2',
+                                                 pos=p+6,len=1)
+                              ]),
+                              pos=p+5,len=7-5),
+            LatexCharsNode(parsing_state=parsing_state,
+                           chars='+z=-d',
+                           pos=p+7,len=12-7),
             LatexMacroNode(parsing_state=parsing_state,
                            macroname='quad',
                            pos=p+12,len=17-12),
@@ -686,8 +702,8 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
         ]
         nodes, pos, len_ = lw.get_latex_nodes(pos=p+2, stop_upon_closing_mathmode=r'\]',
                                               parsing_state=parsing_state_math)
-        parsing_state2 = nodes[2].nodeargd.argnlist[0].parsing_state # "inner text mode" state
-        parsing_state3 = nodes[2].nodeargd.argnlist[0].nodelist[1].nodelist[0].parsing_state
+        parsing_state2 = nodes[4].nodeargd.argnlist[0].parsing_state # "inner text mode" state
+        parsing_state3 = nodes[4].nodeargd.argnlist[0].nodelist[1].nodelist[0].parsing_state
         self.assertFalse(parsing_state2.in_math_mode)
         self.assertTrue(parsing_state3.in_math_mode)
         self.assertEqual(
@@ -698,8 +714,8 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if \(x>0\)})=1\).
         # check that first node is math mode node when parsing including the math mode start
         nodes = lw.get_latex_nodes(pos=p, parsing_state=parsing_state)[0]
         parsing_state1 = nodes[0].nodelist[0].parsing_state
-        parsing_state2 = nodes[0].nodelist[2].nodeargd.argnlist[0].parsing_state
-        parsing_state3 = nodes[0].nodelist[2].nodeargd.argnlist[0].nodelist[1].nodelist[0].parsing_state
+        parsing_state2 = nodes[0].nodelist[4].nodeargd.argnlist[0].parsing_state
+        parsing_state3 = nodes[0].nodelist[4].nodeargd.argnlist[0].nodelist[1].nodelist[0].parsing_state
         self.assertEqual(
             nodes[0],
             LatexMathNode(parsing_state=parsing_state,

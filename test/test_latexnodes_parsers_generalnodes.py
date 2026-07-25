@@ -326,14 +326,33 @@ Hello there, \yourname. What's that about {}?'''
                 ),
             ])
         )
-        
 
+    def test_simple_chars_up_to_end_of_stream(self):
+        # A run of characters is only collected into a chars node once the end
+        # of the stream is reached.  The stopping condition of this parser is
+        # therefore met while the node list is being finalized, which must still
+        # count as a normal end of the collection.
+        latextext = r'''Hello there'''
 
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
 
+        parser = LatexSingleNodeParser()
 
+        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
 
-
-
+        self.assertEqual(
+            nodes,
+            LatexNodeList([
+                LatexCharsNode(
+                    parsing_state=ps,
+                    chars='Hello there',
+                    pos=0,
+                    pos_end=len('Hello there'),
+                ),
+            ])
+        )
 
 
 

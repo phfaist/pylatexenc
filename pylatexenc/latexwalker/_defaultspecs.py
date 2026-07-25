@@ -36,6 +36,7 @@ from ..latexnodes.nodes import (
 )
 from ..latexnodes.parsers import (
     LatexStandardArgumentParser,
+    LatexExpressionParser,
     LatexDelimitedVerbatimParser,
     LatexVerbatimEnvironmentContentsParser,
 )
@@ -44,9 +45,48 @@ from ..macrospec import (
     std_macro,
     std_environment,
     std_specials,
-    MacroSpec, EnvironmentSpec,
+    MacroSpec, EnvironmentSpec, SpecialsSpec,
+    LatexSpecialsCallParser,
     # MacroStandardArgsParser,
 )
+
+
+class _SubSuperscriptSpec(SpecialsSpec):
+    r"""
+    The '^' and '_' specials, which pick up an argument in math mode but which
+    are ordinary characters in text mode.
+
+    In math mode, the argument is a single token, exactly as TeX reads it: in
+    ``x^12`` only the ``1`` is superscripted.  A group ``x^{12}`` is picked up in
+    its entirety, and so is a macro along with its own arguments, as in
+    ``x_\mathrm{initial}``.
+
+    In text mode, ``^`` and ``_`` don't pick up any argument at all.  (They are
+    in fact errors in LaTeX there.)  This keeps for instance the file name in
+    ``\input{my_file.tex}`` in one piece.
+    """
+    def __init__(self, specials_chars, argname):
+        super(_SubSuperscriptSpec, self).__init__(
+            specials_chars,
+            arguments_spec_list=[
+                LatexArgumentSpec(
+                    LatexExpressionParser(parse_callable_arguments=True,
+                                          return_full_node_list=False),
+                    argname=argname,
+                ),
+            ],
+        )
+        # the spec to use in text mode: the same specials characters, but
+        # without any arguments
+        self.text_mode_spec = SpecialsSpec(specials_chars)
+
+    def get_node_parser(self, token, parsing_state):
+        if parsing_state.in_math_mode:
+            return super(_SubSuperscriptSpec, self).get_node_parser(token, parsing_state)
+        # NOTE: a call parser is bound to the token it is given---the node's
+        # `pos` and `pos_end` are taken from it---so it has to be created for
+        # each call rather than stored once and for all on this spec object.
+        return LatexSpecialsCallParser(token, self.text_mode_spec)
 
 
 def _arg_mathmode(parser):
@@ -370,12 +410,8 @@ specs = [
         'specials': [
             std_specials('&'),
 
-            # TODO --- for this, we need to parse their argument but don't use
-            #          the standard args parser because we need to be able to
-            #          accept arguments like "x_\mathrm{initial}"
-            #
-            #std_specials('^'),
-            #std_specials('_'),
+            _SubSuperscriptSpec('^', 'superscript'),
+            _SubSuperscriptSpec('_', 'subscript'),
         ]}),
 
 

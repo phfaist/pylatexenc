@@ -12,6 +12,9 @@ from pylatexenc.latexnodes import (
     LatexTokenReader,
     LatexToken,
     ParsingState,
+    CallableSpecBase,
+    LatexArgumentSpec,
+    ParsedArguments,
 )
 from pylatexenc.latexnodes.nodes import *
 
@@ -377,7 +380,255 @@ class TestLatexExpression(unittest.TestCase):
 
 # ---
 
+
+#
+
+
+# --------------------------------------
+
+#
+# Dummy specs whose node parser actually reads an argument.  The dummy specs in
+# `_helpers_tests` never consume any arguments, so they cannot exercise the
+# `parse_callable_arguments=` option.  These are kept local to this test module
+# so that adding them cannot disturb any other test's context database.
+#
+
+class _DummyMacroWithArgParser(object):
+    def __init__(self, tok, spec):
+        self.tok = tok
+        self.spec = spec
+
+    def contents_can_be_empty(self):
+        return False
+
+    def parse(self, latex_walker, token_reader, parsing_state):
+        argnode, _ = latex_walker.parse_content(
+            LatexExpressionParser(return_full_node_list=False),
+            token_reader=token_reader,
+            parsing_state=parsing_state,
+        )
+        n = latex_walker.make_node(
+            LatexMacroNode,
+            parsing_state=parsing_state,
+            macroname=self.tok.arg,
+            spec=self.spec,
+            nodeargd=ParsedArguments(argnlist=[argnode],
+                                     arguments_spec_list=[LatexArgumentSpec('{')]),
+            macro_post_space=self.tok.post_space,
+            pos=self.tok.pos,
+            pos_end=argnode.pos_end,
+        )
+        return n, None
+
+class DummyMacroWithArgSpec(CallableSpecBase):
+    def __init__(self, macroname):
+        super(DummyMacroWithArgSpec, self).__init__()
+        self.macroname = macroname
+
+    def get_node_parser(self, token, parsing_state):
+        return _DummyMacroWithArgParser(token, self)
+
+
+class _DummySpecialsWithArgParser(object):
+    def __init__(self, tok, spec):
+        self.tok = tok
+        self.spec = spec
+
+    def contents_can_be_empty(self):
+        return False
+
+    def parse(self, latex_walker, token_reader, parsing_state):
+        argnode, _ = latex_walker.parse_content(
+            LatexExpressionParser(return_full_node_list=False),
+            token_reader=token_reader,
+            parsing_state=parsing_state,
+        )
+        n = latex_walker.make_node(
+            LatexSpecialsNode,
+            parsing_state=parsing_state,
+            specials_chars=self.tok.arg.specials_chars,
+            spec=self.spec,
+            nodeargd=ParsedArguments(argnlist=[argnode],
+                                     arguments_spec_list=[LatexArgumentSpec('{')]),
+            pos=self.tok.pos,
+            pos_end=argnode.pos_end,
+        )
+        return n, None
+
+class DummySpecialsWithArgSpec(CallableSpecBase):
+    def __init__(self, specials_chars):
+        super(DummySpecialsWithArgSpec, self).__init__()
+        self.specials_chars = specials_chars
+
+    def get_node_parser(self, token, parsing_state):
+        return _DummySpecialsWithArgParser(token, self)
+
+
+class DummyLatexContextDbWithArgSpecs(DummyLatexContextDb):
+    def __init__(self):
+        super(DummyLatexContextDbWithArgSpecs, self).__init__()
+        self.specs['macros']['macrowitharg'] = DummyMacroWithArgSpec('macrowitharg')
+        self.specs['specials']['^'] = DummySpecialsWithArgSpec('^')
+        self.specials_by_len = sorted(
+            self.specs['specials'].keys(),
+            key=lambda x: len(x),
+            reverse=True
+        )
+
+
+
+class TestLatexExpressionParseCallableArguments(unittest.TestCase):
+
+    maxDiff = None
+
+    def test_macro_without_its_arguments_by_default(self):
+        # by default, the macro that forms the expression is picked up on its
+        # own and its argument is left for whoever parses the following content
+        latextext = r'''\macrowitharg{value}acters'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDbWithArgSpecs())
+        lw = DummyWalker()
+
+        parser = LatexExpressionParser(return_full_node_list=False,
+                                       single_token_requiring_arg_is_error=False)
+
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr,
+                                                     parsing_state=ps)
+
+        self.assertEqual(
+            node,
+            LatexMacroNode(
+                parsing_state=ps,
+                macroname='macrowitharg',
+                spec=ps.latex_context.get_macro_spec('macrowitharg'),
+                nodeargd=ParsedArguments(),
+                macro_post_space='',
+                pos=0,
+                pos_end=len(r'\macrowitharg'),
+            )
+        )
+        self.assertEqual(tr.cur_pos(), len(r'\macrowitharg'))
+
+    def test_macro_with_its_arguments(self):
+        latextext = r'''\macrowitharg{value}acters'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDbWithArgSpecs())
+        lw = DummyWalker()
+
+        parser = LatexExpressionParser(parse_callable_arguments=True,
+                                       return_full_node_list=False)
+
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr,
+                                                     parsing_state=ps)
+
+        p = len(r'\macrowitharg')
+        self.assertEqual(
+            node,
+            LatexMacroNode(
+                parsing_state=ps,
+                macroname='macrowitharg',
+                spec=ps.latex_context.get_macro_spec('macrowitharg'),
+                nodeargd=ParsedArguments(
+                    arguments_spec_list=[LatexArgumentSpec('{')],
+                    argnlist=[
+                        LatexGroupNode(
+                            parsing_state=ps,
+                            nodelist=LatexNodeList(
+                                [
+                                    LatexCharsNode(
+                                        parsing_state=ps,
+                                        chars='value',
+                                        pos=p+1,
+                                        pos_end=p+6,
+                                    ),
+                                ],
+                                parsing_state=ps,
+                            ),
+                            delimiters=('{','}'),
+                            pos=p,
+                            pos_end=p+7,
+                        ),
+                    ],
+                ),
+                macro_post_space='',
+                pos=0,
+                pos_end=p+7,
+            )
+        )
+        # the token reader is left immediately after the macro's argument
+        self.assertEqual(tr.cur_pos(), p+7)
+
+    def test_specials_with_its_arguments(self):
+        # the same applies to a "latex specials" that accepts arguments; this is
+        # what '^' and '_' need in math mode
+        latextext = r'''^{value}acters'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDbWithArgSpecs())
+        lw = DummyWalker()
+
+        parser = LatexExpressionParser(parse_callable_arguments=True,
+                                       return_full_node_list=False)
+
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr,
+                                                     parsing_state=ps)
+
+        self.assertEqual(
+            node,
+            LatexSpecialsNode(
+                parsing_state=ps,
+                specials_chars='^',
+                spec=ps.latex_context.get_specials_spec('^'),
+                nodeargd=ParsedArguments(
+                    arguments_spec_list=[LatexArgumentSpec('{')],
+                    argnlist=[
+                        LatexGroupNode(
+                            parsing_state=ps,
+                            nodelist=LatexNodeList(
+                                [
+                                    LatexCharsNode(
+                                        parsing_state=ps,
+                                        chars='value',
+                                        pos=2,
+                                        pos_end=7,
+                                    ),
+                                ],
+                                parsing_state=ps,
+                            ),
+                            delimiters=('{','}'),
+                            pos=1,
+                            pos_end=8,
+                        ),
+                    ],
+                ),
+                pos=0,
+                pos_end=8,
+            )
+        )
+        self.assertEqual(tr.cur_pos(), 8)
+
+    def test_macro_with_single_token_argument(self):
+        # only a single token is picked up as the macro's own argument, so that
+        # "\macrowitharg 12" reads the "1" and leaves the "2"
+        latextext = r'''\macrowitharg 12'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDbWithArgSpecs())
+        lw = DummyWalker()
+
+        parser = LatexExpressionParser(parse_callable_arguments=True,
+                                       return_full_node_list=False)
+
+        node, parsing_state_delta = lw.parse_content(parser, token_reader=tr,
+                                                     parsing_state=ps)
+
+        self.assertEqual(node.nodeargd.argnlist[0].chars, '1')
+        self.assertEqual(tr.cur_pos(), len(r'\macrowitharg 1'))
+
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     unittest.main()
-#
