@@ -227,8 +227,19 @@ specs = [
             std_macro('cref', False, 1),
             std_macro('Cref', False, 1),
             std_macro('eqref', False, 1),
-            std_macro('url', False, 1),
-            std_macro('href', False, 2),
+            MacroSpec('href', arguments_spec_list=[
+                LatexArgumentSpec(
+                    LatexDelimitedVerbatimParser(delimiters=('{','}'),),
+                    argname='url',
+                ),
+                '{'
+            ]),
+            MacroSpec('url', arguments_spec_list=[
+                LatexArgumentSpec(
+                    LatexDelimitedVerbatimParser(delimiters=('{','}'),),
+                    argname='url',
+                ),
+            ]),
             std_macro('hypersetup', False, 1),
             std_macro('footnote', True, 1),
 
