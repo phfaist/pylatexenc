@@ -6,6 +6,8 @@ import sys
 import logging
 import warnings
 
+import pytest
+
 if sys.version_info.major > 2:
     def unicode(string): return string
     basestring = str
@@ -21,6 +23,13 @@ from pylatexenc import macrospec
 from pylatexenc.latexnodes import ParsedArgumentsInfo
 
 from ._helpers_tests import HelperProvideAssertEqualsForLegacyTests
+
+# These tests exercise the pylatexenc 2.x compatibility API on purpose, so the
+# associated deprecation warnings are expected and would only drown out the
+# pytest output.  (The warnings.simplefilter() calls in the test case
+# constructors below don't help under pytest, which resets the warning filters
+# around each test.)
+pytestmark = pytest.mark.filterwarnings("ignore:Deprecated \\(pylatexenc")
 
 # # patch __eq__ for comparison with lists
 # from pylatexenc.latexnodes import LatexNode, LatexNodeList
