@@ -775,6 +775,176 @@ def fmt_math_text_style(text, style):
 
 
 
+#
+# Unicode only provides superscript and subscript versions of a limited set of
+# characters.  The tables below list those that are of interest for rendering
+# latex superscripts and subscripts; they are collected from the "superscripts
+# and subscripts" chart (https://unicode.org/charts/PDF/U2070.pdf) along with
+# the modifier letters that live in the "spacing modifier letters" and
+# "phonetic extensions" charts.
+#
+# (Note: MODIFIER LETTER CAPITAL C, F and Q also exist as of Unicode 14, but
+# they are recent enough that most fonts don't have them yet, so we don't use
+# them here.  There are no capital-letter subscripts at all.)
+#
+
+_fmt_superscript_chars = {
+    '0': u'\N{SUPERSCRIPT ZERO}',
+    '1': u'\N{SUPERSCRIPT ONE}',
+    '2': u'\N{SUPERSCRIPT TWO}',
+    '3': u'\N{SUPERSCRIPT THREE}',
+    '4': u'\N{SUPERSCRIPT FOUR}',
+    '5': u'\N{SUPERSCRIPT FIVE}',
+    '6': u'\N{SUPERSCRIPT SIX}',
+    '7': u'\N{SUPERSCRIPT SEVEN}',
+    '8': u'\N{SUPERSCRIPT EIGHT}',
+    '9': u'\N{SUPERSCRIPT NINE}',
+    '+': u'\N{SUPERSCRIPT PLUS SIGN}',
+    '-': u'\N{SUPERSCRIPT MINUS}',
+    u'\N{MINUS SIGN}': u'\N{SUPERSCRIPT MINUS}',
+    '=': u'\N{SUPERSCRIPT EQUALS SIGN}',
+    '(': u'\N{SUPERSCRIPT LEFT PARENTHESIS}',
+    ')': u'\N{SUPERSCRIPT RIGHT PARENTHESIS}',
+    # lowercase latin letters; all of them except 'q'
+    'a': u'\N{MODIFIER LETTER SMALL A}',
+    'b': u'\N{MODIFIER LETTER SMALL B}',
+    'c': u'\N{MODIFIER LETTER SMALL C}',
+    'd': u'\N{MODIFIER LETTER SMALL D}',
+    'e': u'\N{MODIFIER LETTER SMALL E}',
+    'f': u'\N{MODIFIER LETTER SMALL F}',
+    'g': u'\N{MODIFIER LETTER SMALL G}',
+    'h': u'\N{MODIFIER LETTER SMALL H}',
+    'i': u'\N{SUPERSCRIPT LATIN SMALL LETTER I}',
+    'j': u'\N{MODIFIER LETTER SMALL J}',
+    'k': u'\N{MODIFIER LETTER SMALL K}',
+    'l': u'\N{MODIFIER LETTER SMALL L}',
+    'm': u'\N{MODIFIER LETTER SMALL M}',
+    'n': u'\N{SUPERSCRIPT LATIN SMALL LETTER N}',
+    'o': u'\N{MODIFIER LETTER SMALL O}',
+    'p': u'\N{MODIFIER LETTER SMALL P}',
+    'r': u'\N{MODIFIER LETTER SMALL R}',
+    's': u'\N{MODIFIER LETTER SMALL S}',
+    't': u'\N{MODIFIER LETTER SMALL T}',
+    'u': u'\N{MODIFIER LETTER SMALL U}',
+    'v': u'\N{MODIFIER LETTER SMALL V}',
+    'w': u'\N{MODIFIER LETTER SMALL W}',
+    'x': u'\N{MODIFIER LETTER SMALL X}',
+    'y': u'\N{MODIFIER LETTER SMALL Y}',
+    'z': u'\N{MODIFIER LETTER SMALL Z}',
+    # uppercase latin letters; 'C', 'F', 'Q', 'S', 'X', 'Y' and 'Z' are missing
+    'A': u'\N{MODIFIER LETTER CAPITAL A}',
+    'B': u'\N{MODIFIER LETTER CAPITAL B}',
+    'D': u'\N{MODIFIER LETTER CAPITAL D}',
+    'E': u'\N{MODIFIER LETTER CAPITAL E}',
+    'G': u'\N{MODIFIER LETTER CAPITAL G}',
+    'H': u'\N{MODIFIER LETTER CAPITAL H}',
+    'I': u'\N{MODIFIER LETTER CAPITAL I}',
+    'J': u'\N{MODIFIER LETTER CAPITAL J}',
+    'K': u'\N{MODIFIER LETTER CAPITAL K}',
+    'L': u'\N{MODIFIER LETTER CAPITAL L}',
+    'M': u'\N{MODIFIER LETTER CAPITAL M}',
+    'N': u'\N{MODIFIER LETTER CAPITAL N}',
+    'O': u'\N{MODIFIER LETTER CAPITAL O}',
+    'P': u'\N{MODIFIER LETTER CAPITAL P}',
+    'R': u'\N{MODIFIER LETTER CAPITAL R}',
+    'T': u'\N{MODIFIER LETTER CAPITAL T}',
+    'U': u'\N{MODIFIER LETTER CAPITAL U}',
+    'V': u'\N{MODIFIER LETTER CAPITAL V}',
+    'W': u'\N{MODIFIER LETTER CAPITAL W}',
+    # greek letters.  The variant forms (e.g. 'ϕ', which is what we render
+    # \phi as, vs 'φ' for \varphi) share the same superscript character.
+    u'\N{GREEK SMALL LETTER BETA}': u'\N{MODIFIER LETTER SMALL BETA}',
+    u'\N{GREEK SMALL LETTER GAMMA}': u'\N{MODIFIER LETTER SMALL GREEK GAMMA}',
+    u'\N{GREEK SMALL LETTER DELTA}': u'\N{MODIFIER LETTER SMALL DELTA}',
+    u'\N{GREEK SMALL LETTER THETA}': u'\N{MODIFIER LETTER SMALL THETA}',
+    u'\N{GREEK THETA SYMBOL}': u'\N{MODIFIER LETTER SMALL THETA}',
+    u'\N{GREEK SMALL LETTER PHI}': u'\N{MODIFIER LETTER SMALL GREEK PHI}',
+    u'\N{GREEK PHI SYMBOL}': u'\N{MODIFIER LETTER SMALL GREEK PHI}',
+    u'\N{GREEK SMALL LETTER CHI}': u'\N{MODIFIER LETTER SMALL CHI}',
+}
+
+_fmt_subscript_chars = {
+    '0': u'\N{SUBSCRIPT ZERO}',
+    '1': u'\N{SUBSCRIPT ONE}',
+    '2': u'\N{SUBSCRIPT TWO}',
+    '3': u'\N{SUBSCRIPT THREE}',
+    '4': u'\N{SUBSCRIPT FOUR}',
+    '5': u'\N{SUBSCRIPT FIVE}',
+    '6': u'\N{SUBSCRIPT SIX}',
+    '7': u'\N{SUBSCRIPT SEVEN}',
+    '8': u'\N{SUBSCRIPT EIGHT}',
+    '9': u'\N{SUBSCRIPT NINE}',
+    '+': u'\N{SUBSCRIPT PLUS SIGN}',
+    '-': u'\N{SUBSCRIPT MINUS}',
+    u'\N{MINUS SIGN}': u'\N{SUBSCRIPT MINUS}',
+    '=': u'\N{SUBSCRIPT EQUALS SIGN}',
+    '(': u'\N{SUBSCRIPT LEFT PARENTHESIS}',
+    ')': u'\N{SUBSCRIPT RIGHT PARENTHESIS}',
+    # lowercase latin letters; 'b', 'c', 'd', 'f', 'g', 'q', 'w', 'y' and 'z'
+    # are missing
+    'a': u'\N{LATIN SUBSCRIPT SMALL LETTER A}',
+    'e': u'\N{LATIN SUBSCRIPT SMALL LETTER E}',
+    'h': u'\N{LATIN SUBSCRIPT SMALL LETTER H}',
+    'i': u'\N{LATIN SUBSCRIPT SMALL LETTER I}',
+    'j': u'\N{LATIN SUBSCRIPT SMALL LETTER J}',
+    'k': u'\N{LATIN SUBSCRIPT SMALL LETTER K}',
+    'l': u'\N{LATIN SUBSCRIPT SMALL LETTER L}',
+    'm': u'\N{LATIN SUBSCRIPT SMALL LETTER M}',
+    'n': u'\N{LATIN SUBSCRIPT SMALL LETTER N}',
+    'o': u'\N{LATIN SUBSCRIPT SMALL LETTER O}',
+    'p': u'\N{LATIN SUBSCRIPT SMALL LETTER P}',
+    'r': u'\N{LATIN SUBSCRIPT SMALL LETTER R}',
+    's': u'\N{LATIN SUBSCRIPT SMALL LETTER S}',
+    't': u'\N{LATIN SUBSCRIPT SMALL LETTER T}',
+    'u': u'\N{LATIN SUBSCRIPT SMALL LETTER U}',
+    'v': u'\N{LATIN SUBSCRIPT SMALL LETTER V}',
+    'x': u'\N{LATIN SUBSCRIPT SMALL LETTER X}',
+    # greek letters, cf. the remark in _fmt_superscript_chars above
+    u'\N{GREEK SMALL LETTER BETA}': u'\N{GREEK SUBSCRIPT SMALL LETTER BETA}',
+    u'\N{GREEK SMALL LETTER GAMMA}': u'\N{GREEK SUBSCRIPT SMALL LETTER GAMMA}',
+    u'\N{GREEK SMALL LETTER RHO}': u'\N{GREEK SUBSCRIPT SMALL LETTER RHO}',
+    u'\N{GREEK RHO SYMBOL}': u'\N{GREEK SUBSCRIPT SMALL LETTER RHO}',
+    u'\N{GREEK SMALL LETTER PHI}': u'\N{GREEK SUBSCRIPT SMALL LETTER PHI}',
+    u'\N{GREEK PHI SYMBOL}': u'\N{GREEK SUBSCRIPT SMALL LETTER PHI}',
+    u'\N{GREEK SMALL LETTER CHI}': u'\N{GREEK SUBSCRIPT SMALL LETTER CHI}',
+}
+
+_fmt_subsuperscript_charmaps = {
+    'superscript': _fmt_superscript_chars,
+    'subscript': _fmt_subscript_chars,
+}
+
+
+def fmt_subsuperscript_text(text, which):
+    r"""
+    Return `text` typeset with unicode superscript characters
+    (`which='superscript'`) or with unicode subscript characters
+    (`which='subscript'`).
+
+    Unicode only offers superscript and subscript versions of a limited set of
+    characters.  If any character in `text` does not have a corresponding
+    superscript/subscript character, then `None` is returned.  It is then up to
+    the caller to represent the superscript or subscript in some other way (for
+    instance, by keeping a latex-like ``^{...}`` or ``_{...}`` notation).
+
+    .. versionadded:: 3.0
+
+       This function was introduced in `pylatexenc 3.0`.
+    """
+    charmap = _fmt_subsuperscript_charmaps[which]
+    result = []
+    for c in text:
+        cc = charmap.get(c, None)
+        if cc is None:
+            # this character has no superscript/subscript version; the text
+            # cannot be typeset in unicode super/subscript characters
+            return None
+        result.append(cc)
+    return "".join(result)
+
+
+
+
 
 
 def get_default_latex_context_db():

@@ -45,7 +45,7 @@ from ..latex2text import (
     fmt_equation_environment, #fmt_placeholder_node,
     placeholder_node_formatter,
     fmt_matrix_environment_node, fmt_input_macro, fmt_math_text_style,
-    fmt_list_environment, fmt_item_macro
+    fmt_list_environment, fmt_item_macro, fmt_subsuperscript_text
 )
 
 
@@ -89,6 +89,35 @@ def _mathxx_formatter(style):
     def formatter(node, l2tobj, style=style):
         arg_text = l2tobj.node_arg_to_text(node, 0)
         return fmt_math_text_style(arg_text, style)
+
+    return formatter
+
+
+def _subsuperscript_formatter(which):
+    def formatter(node, l2tobj, specials_chars, which=which):
+        if node.nodeargd is None or not node.nodeargd.argnlist:
+            # In text mode, '^' and '_' don't pick up any argument (see the
+            # specials definitions in pylatexenc.latexwalker._defaultspecs), so
+            # there's nothing to typeset as a superscript or subscript; simply
+            # render the character itself.
+            return specials_chars
+
+        arg_text = l2tobj.node_arg_to_text(node, 0).strip()
+        if not arg_text:
+            return ''
+
+        # if the full argument can be rendered with unicode superscript or
+        # subscript characters, then that's the best we can do in plain text
+        subsuper_text = fmt_subsuperscript_text(arg_text, which)
+        if subsuper_text is not None:
+            return subsuper_text
+
+        # otherwise, fall back onto latex's own notation, with the argument
+        # rendered as text.  Braces are only needed if the argument is longer
+        # than a single character.
+        if len(arg_text) == 1:
+            return specials_chars + arg_text
+        return specials_chars + '{' + arg_text + '}'
 
     return formatter
 
@@ -278,10 +307,15 @@ _latex_specs_approximations = {
 }
 
 _latex_specs_base = {
-    
+
     'environments': [
     ],
     'specials': [
+        # in math mode, these pick up an argument that we render as a unicode
+        # superscript/subscript whenever we can; in text mode they have no
+        # argument and are simply rendered as themselves
+        SpecialsTextSpec('^', simplify_repl=_subsuperscript_formatter('superscript')),
+        SpecialsTextSpec('_', simplify_repl=_subsuperscript_formatter('subscript')),
     ],
 
     'macros': [

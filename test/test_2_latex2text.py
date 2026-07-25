@@ -745,6 +745,63 @@ second line
             u"n\N{SQUARE ROOT}(x+y)"
         )
 
+    def test_repl_subsuperscript(self):
+
+        # in math mode, '^' and '_' pick up an argument which we render with
+        # unicode superscript/subscript characters whenever we can
+        for latex, text in (
+                (r"$x^2$", u"x\N{SUPERSCRIPT TWO}"),
+                (r"$x^{10}$", u"x\N{SUPERSCRIPT ONE}\N{SUPERSCRIPT ZERO}"),
+                (r"$x^{-1}$", u"x\N{SUPERSCRIPT MINUS}\N{SUPERSCRIPT ONE}"),
+                (r"$H_2O$", u"H\N{SUBSCRIPT TWO}O"),
+                (r"$a_{n+1}$", u"a\N{LATIN SUBSCRIPT SMALL LETTER N}"
+                 u"\N{SUBSCRIPT PLUS SIGN}\N{SUBSCRIPT ONE}"),
+                # the argument can be a macro along with its own arguments
+                (r"$x_\mathrm{max}$", u"x\N{LATIN SUBSCRIPT SMALL LETTER M}"
+                 u"\N{LATIN SUBSCRIPT SMALL LETTER A}\N{LATIN SUBSCRIPT SMALL LETTER X}"),
+                (r"$x_\beta$", u"x\N{GREEK SUBSCRIPT SMALL LETTER BETA}"),
+                # capital letters have superscript versions, but no subscript ones
+                (r"$X^{AB}$", u"X\N{MODIFIER LETTER CAPITAL A}\N{MODIFIER LETTER CAPITAL B}"),
+        ):
+            self.assertEqual(LatexNodes2Text().latex_to_text(latex), text)
+
+    def test_repl_subsuperscript_no_unicode_version(self):
+
+        # if the argument cannot be fully typeset with unicode
+        # superscript/subscript characters, we keep latex's own notation, with
+        # braces only if the argument is longer than a single character
+        for latex, text in (
+                # there is no unicode superscript alpha
+                (r"$x^\alpha$", u"x^\N{GREEK SMALL LETTER ALPHA}"),
+                (r"$A^\dagger$", u"A^\N{DAGGER}"),
+                # 'C' has no superscript version, so the whole argument falls back
+                (r"$X^{ABC}$", u"X^{ABC}"),
+                (r"$e^{i\pi}$", u"e^{i\N{GREEK SMALL LETTER PI}}"),
+                # capital letters have no subscript version at all
+                (r"$x_N$", u"x_N"),
+                # a superscript within a superscript can't be typeset in unicode
+                (r"$x^{a^b}$", u"x^{a\N{MODIFIER LETTER SMALL B}}"),
+        ):
+            self.assertEqual(LatexNodes2Text().latex_to_text(latex), text)
+
+    def test_repl_subsuperscript_text_mode(self):
+
+        # outside of math mode, '^' and '_' don't pick up any argument (they
+        # are in fact errors in LaTeX there); they're rendered as themselves so
+        # that e.g. file names in \input{...} stay in one piece
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r"a_b and a^b"),
+            "a_b and a^b"
+        )
+
+    def test_repl_subsuperscript_empty_argument(self):
+
+        # an empty superscript or subscript renders as nothing at all
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r"$x^{}$"),
+            "x"
+        )
+
     def test_repl_escape_char_at_end_of_line(self):
 
         # an escape character immediately followed by the end of a line is the
