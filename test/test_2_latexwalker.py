@@ -2170,6 +2170,33 @@ Use macros: \a{} and \b{xxx}{yyy}.
         self.assertEqual(len(node.nodeargd.argnlist), 3)
 
 
+    def test_title_author_date_optional_short_argument(self):
+        # see issue #114.  The default specs declare \title, \author and \date
+        # with the optional "short form" argument that beamer and the AMS
+        # classes accept, in addition to the mandatory argument.
+
+        for macroname in ('title', 'author', 'date'):
+
+            lw = LatexWalker('\\'+macroname+r'[Short]{The Full Form}',
+                             tolerant_parsing=False)
+            (nodelist, npos, nlen) = lw.get_latex_nodes()
+            self.assertEqual(len(nodelist), 1)
+            argnlist = nodelist[0].nodeargd.argnlist
+            self.assertEqual(len(argnlist), 2)
+            self.assertEqual(argnlist[0].nodelist[0].chars, 'Short')
+            self.assertEqual(argnlist[1].nodelist[0].chars, 'The Full Form')
+
+            # the standard classes' form, with the optional argument absent
+            lw = LatexWalker('\\'+macroname+r'{The Full Form}',
+                             tolerant_parsing=False)
+            (nodelist, npos, nlen) = lw.get_latex_nodes()
+            self.assertEqual(len(nodelist), 1)
+            argnlist = nodelist[0].nodeargd.argnlist
+            self.assertEqual(len(argnlist), 2)
+            self.assertTrue(argnlist[0] is None)
+            self.assertEqual(argnlist[1].nodelist[0].chars, 'The Full Form')
+
+
     def test_href_url_argument_is_verbatim(self):
         # the target of \href is read verbatim, because a URL may well contain
         # characters that are special to LaTeX.  A percent sign in particular

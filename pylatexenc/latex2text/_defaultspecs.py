@@ -579,12 +579,20 @@ _latex_specs_approximations = {
         # later, by '\maketitle', so what is stored has to be a string; in math
         # mode the 'fancy' math mode renders a node list to a math
         # piece rather than to a string
+        #
+        # the argnlist[-1:] slices: the default specs declare these macros with
+        # a leading optional argument, the "short" form of the field that
+        # beamer and the AMS classes accept (see the macro specs in
+        # pylatexenc/latexwalker/_defaultspecs.py), so the field itself is the
+        # *last* argument.  Taking the last one rather than a fixed position
+        # also keeps these formatters working with a latex context in which the
+        # macros were declared with the mandatory argument alone.
         ('title', lambda n, l2tobj: \
-         setattr(l2tobj, '_doc_title', str(l2tobj.nodelist_to_text(n.nodeargd.argnlist[0:1])))),
+         setattr(l2tobj, '_doc_title', str(l2tobj.nodelist_to_text(n.nodeargd.argnlist[-1:])))),
         ('author', lambda n, l2tobj: \
-         setattr(l2tobj, '_doc_author', str(l2tobj.nodelist_to_text(n.nodeargd.argnlist[0:1])))),
+         setattr(l2tobj, '_doc_author', str(l2tobj.nodelist_to_text(n.nodeargd.argnlist[-1:])))),
         ('date', lambda n, l2tobj: \
-         setattr(l2tobj, '_doc_date', str(l2tobj.nodelist_to_text(n.nodeargd.argnlist[0:1])))),
+         setattr(l2tobj, '_doc_date', str(l2tobj.nodelist_to_text(n.nodeargd.argnlist[-1:])))),
         ('maketitle', lambda n, l2tobj: \
          _format_maketitle(getattr(l2tobj, '_doc_title', r'[NO \title GIVEN]'),
                            getattr(l2tobj, '_doc_author', r'[NO \author GIVEN]'),

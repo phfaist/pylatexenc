@@ -206,10 +206,24 @@ specs = [
 
             MacroSpec('mbox', arguments_spec_list=[ _arg_textmode('{') ]),
 
-            # \title, \author, \date
-            MacroSpec('title', '{'),
-            MacroSpec('author', '{'),
-            MacroSpec('date', '{'),
+            # \title, \author, \date.
+            #
+            # The standard classes (article, report, book) declare these with a
+            # single mandatory argument.  A number of widely used classes add a
+            # leading optional argument that holds a short form of the field,
+            # meant for running heads and similar places:
+            #
+            #     \title[Short title]{The full and rather long title}
+            #
+            # beamer does this for all three commands; the AMS classes (amsart,
+            # amsbook, amsproc — and acmart, which is built on amsart) do it for
+            # \title and \author.  Documents that use the standard classes
+            # simply never have the optional argument present, so declaring it
+            # here costs them nothing while letting the common non-standard
+            # forms parse correctly.
+            MacroSpec('title', '[{'),
+            MacroSpec('author', '[{'),
+            MacroSpec('date', '[{'),
 
             # (Note: single backslash) end of line with optional no-break ('*') and
             # additional vertical spacing, e.g. \\*[2mm]

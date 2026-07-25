@@ -16,6 +16,7 @@ import warnings
 import pytest
 
 from pylatexenc.latexwalker import LatexWalker
+from pylatexenc import macrospec
 from pylatexenc import latex2text
 from pylatexenc.latex2text import LatexNodes2Text
 
@@ -1829,6 +1830,67 @@ The Title
     %(today)s
 %(eqhrule)s
 """ % { 'today': today, 'eqhrule': eqhrule }
+        )
+
+    def test_repl_doc_title_optional_short_arg(self):
+
+        # \title[short]{full}, \author[short]{full} and \date[short]{full}, as
+        # accepted by beamer and by the AMS classes: the optional "short"
+        # argument must be consumed as an argument, and the mandatory argument
+        # is the one that goes into the rendered title block.
+
+        self.assertEqualUpToWhitespace(
+                LatexNodes2Text().latex_to_text(
+                    r"""
+\title[Short Title]{The Title}
+\author[T. A.]{The Author(s)}
+\date[2020]{July 4, 2020}
+\maketitle
+"""
+                ),
+            r"""
+The Title
+    The Author(s)
+    July 4, 2020
+=================
+"""
+        )
+
+    def test_repl_doc_title_macros_declared_without_optional_arg(self):
+
+        # the \title/\author/\date text specs pick the *last* argument, so they
+        # keep working with a latex context in which these macros were declared
+        # with the mandatory argument alone (as pylatexenc 2 did)
+
+        latex_context = macrospec.LatexContextDb()
+        latex_context.add_context_category(
+            'my-title-macros',
+            macros=[
+                macrospec.MacroSpec('title', '{'),
+                macrospec.MacroSpec('author', '{'),
+                macrospec.MacroSpec('date', '{'),
+                macrospec.MacroSpec('maketitle', ''),
+            ]
+        )
+        lw = LatexWalker(
+            r"""
+\title{The Title}
+\author{The Author(s)}
+\date{July 4, 2020}
+\maketitle
+""",
+            latex_context=latex_context
+        )
+        (nodelist, npos, nlen) = lw.get_latex_nodes()
+
+        self.assertEqualUpToWhitespace(
+            LatexNodes2Text().nodelist_to_text(nodelist),
+            r"""
+The Title
+    The Author(s)
+    July 4, 2020
+=================
+"""
         )
 
 
