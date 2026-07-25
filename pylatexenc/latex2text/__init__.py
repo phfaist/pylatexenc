@@ -394,7 +394,9 @@ def fmt_matrix_environment_node(node, l2tobj):
     state.new_row() # finish the last row
 
     # now format the contents as array --
-    max_char_width = max( ( len(x)  for row in state.matrix_rows  for x in row ) )
+    all_char_widths = [ len(x)  for row in state.matrix_rows  for x in row ]
+    # an empty matrix or array is valid LaTeX, and max() has no default here
+    max_char_width = max(all_char_widths) if all_char_widths else 0
     matrix_contents = "; ".join( (
         " ".join( (
             x.rjust(max_char_width, ' ')
