@@ -627,6 +627,13 @@ above. """
                 "[ ]"
             )
 
+    def test_repl_href(self):
+
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r"\href{https://example.com/}{the link}"),
+            "the link <https://example.com/>"
+        )
+
     def test_repl_doc_title(self):
 
         # test that \title/\author/\date work and produce something reasonable
