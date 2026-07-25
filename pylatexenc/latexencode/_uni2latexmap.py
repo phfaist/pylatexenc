@@ -294,9 +294,10 @@ uni2latex = {
 0x017D: r'\v{Z}',
 0x017E: r'\v{z}',
 0x0192: r'\textflorin',                          # 0x0192
-0x0195: r'\texthvlig',                            # LATIN SMALL LETTER HV [ƕ]
-0x019E: r'\textnrleg',                            # LATIN SMALL LETTER N WITH LONG RIGHT LEG [ƞ]
-0x01F5: r"\'{g}",                                 # LATIN SMALL LETTER G WITH ACUTE [ǵ]
+0x0195: r'\texthvlig',                           # LATIN SMALL LETTER HV [ƕ]
+0x019E: r'\textnrleg',                           # LATIN SMALL LETTER N WITH LONG RIGHT LEG [ƞ]
+0x01E7: r'\v{g}',                                # character ǧ
+0x01F5: r"\'{g}",                                # LATIN SMALL LETTER G WITH ACUTE [ǵ]
 
 
 0x0228: r'\c{E}',
@@ -711,6 +712,49 @@ uni2latex = {
 0x205F: r'\hspace{0.22em}',                             # MEDIUM MATHEMATICAL SPACE [ ]
 0x2060: r'\nolinebreak',                          # WORD JOINER [⁠]
 0x2061: r'',                                     # FUNCTION APPLICATION
+
+# superscripts and subscripts
+0x2070: r'\ensuremath{^0}',                       # SUPERSCRIPT ZERO [⁰]
+0x2071: r'\ensuremath{^i}',                       # SUPERSCRIPT LATIN SMALL LETTER I [ⁱ]
+0x2074: r'\ensuremath{^4}',                       # SUPERSCRIPT FOUR [⁴]
+0x2075: r'\ensuremath{^5}',                       # SUPERSCRIPT FIVE [⁵]
+0x2076: r'\ensuremath{^6}',                       # SUPERSCRIPT SIX [⁶]
+0x2077: r'\ensuremath{^7}',                       # SUPERSCRIPT SEVEN [⁷]
+0x2078: r'\ensuremath{^8}',                       # SUPERSCRIPT EIGHT [⁸]
+0x2079: r'\ensuremath{^9}',                       # SUPERSCRIPT NINE [⁹]
+0x207A: r'\ensuremath{^+}',                       # SUPERSCRIPT PLUS SIGN [⁺]
+0x207B: r'\ensuremath{^-}',                       # SUPERSCRIPT MINUS [⁻]
+0x207C: r'\ensuremath{^=}',                       # SUPERSCRIPT EQUALS SIGN [⁼]
+0x207D: r'\ensuremath{^(}',                       # SUPERSCRIPT LEFT PARENTHESIS [⁽]
+0x207E: r'\ensuremath{^)}',                       # SUPERSCRIPT RIGHT PARENTHESIS [⁾]
+0x207F: r'\ensuremath{^n}',                       # SUPERSCRIPT LATIN SMALL LETTER N [ⁿ]
+0x2080: r'\ensuremath{_0}',                       # SUBSCRIPT ZERO [₀]
+0x2081: r'\ensuremath{_1}',                       # SUBSCRIPT ONE [₁]
+0x2082: r'\ensuremath{_2}',                       # SUBSCRIPT TWO [₂]
+0x2083: r'\ensuremath{_3}',                       # SUBSCRIPT THREE [₃]
+0x2084: r'\ensuremath{_4}',                       # SUBSCRIPT FOUR [₄]
+0x2085: r'\ensuremath{_5}',                       # SUBSCRIPT FIVE [₅]
+0x2086: r'\ensuremath{_6}',                       # SUBSCRIPT SIX [₆]
+0x2087: r'\ensuremath{_7}',                       # SUBSCRIPT SEVEN [₇]
+0x2088: r'\ensuremath{_8}',                       # SUBSCRIPT EIGHT [₈]
+0x2089: r'\ensuremath{_9}',                       # SUBSCRIPT NINE [₉]
+0x208A: r'\ensuremath{_+}',                       # SUBSCRIPT PLUS SIGN [₊]
+0x208B: r'\ensuremath{_-}',                       # SUBSCRIPT MINUS [₋]
+0x208C: r'\ensuremath{_=}',                       # SUBSCRIPT EQUALS SIGN [₌]
+0x208D: r'\ensuremath{_(}',                       # SUBSCRIPT LEFT PARENTHESIS [₍]
+0x208E: r'\ensuremath{_)}',                       # SUBSCRIPT RIGHT PARENTHESIS [₎]
+0x2090: r'\ensuremath{_a}',                       # LATIN SUBSCRIPT SMALL LETTER A [ₐ]
+0x2091: r'\ensuremath{_e}',                       # LATIN SUBSCRIPT SMALL LETTER E [ₑ]
+0x2092: r'\ensuremath{_o}',                       # LATIN SUBSCRIPT SMALL LETTER O [ₒ]
+0x2093: r'\ensuremath{_x}',                       # LATIN SUBSCRIPT SMALL LETTER X [ₓ]
+0x2095: r'\ensuremath{_h}',                       # LATIN SUBSCRIPT SMALL LETTER H [ₕ]
+0x2096: r'\ensuremath{_k}',                       # LATIN SUBSCRIPT SMALL LETTER K [ₖ]
+0x2097: r'\ensuremath{_l}',                       # LATIN SUBSCRIPT SMALL LETTER L [ₗ]
+0x2098: r'\ensuremath{_m}',                       # LATIN SUBSCRIPT SMALL LETTER M [ₘ]
+0x2099: r'\ensuremath{_n}',                       # LATIN SUBSCRIPT SMALL LETTER N [ₙ]
+0x209A: r'\ensuremath{_p}',                       # LATIN SUBSCRIPT SMALL LETTER P [ₚ]
+0x209B: r'\ensuremath{_s}',                       # LATIN SUBSCRIPT SMALL LETTER S [ₛ]
+0x209C: r'\ensuremath{_t}',                       # LATIN SUBSCRIPT SMALL LETTER T [ₜ]
 
 0x20A1: r'\textcolonmonetary',                   # 0x20A1
 0x20A4: r'\textlira',
