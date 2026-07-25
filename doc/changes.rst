@@ -3,6 +3,15 @@ Changes
 ============
 
 
+pylatexenc 2.11
+===============
+
+- `latexencode`: added character definitions for U+01E7 (latin small letter g
+  with caron, :pr:`65`) and for the superscript and subscript characters
+  U+2070 to U+209C.
+
+- `latex2text`: ``\ensuremath{...}`` is now replaced by its contents.
+
 pylatexenc 2.10
 ===============
 
