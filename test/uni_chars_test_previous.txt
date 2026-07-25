@@ -730,6 +730,47 @@
 0x205F [MEDIUM MATHEMATICAL SPACE]                           |{\hspace{0.22em}}|
 0x2060 [WORD JOINER]                                         |{\nolinebreak}|
 0x2061 [FUNCTION APPLICATION]                                ||
+0x2070 [SUPERSCRIPT ZERO]                                    |{\ensuremath{^0}}|
+0x2071 [SUPERSCRIPT LATIN SMALL LETTER I]                    |{\ensuremath{^i}}|
+0x2074 [SUPERSCRIPT FOUR]                                    |{\ensuremath{^4}}|
+0x2075 [SUPERSCRIPT FIVE]                                    |{\ensuremath{^5}}|
+0x2076 [SUPERSCRIPT SIX]                                     |{\ensuremath{^6}}|
+0x2077 [SUPERSCRIPT SEVEN]                                   |{\ensuremath{^7}}|
+0x2078 [SUPERSCRIPT EIGHT]                                   |{\ensuremath{^8}}|
+0x2079 [SUPERSCRIPT NINE]                                    |{\ensuremath{^9}}|
+0x207A [SUPERSCRIPT PLUS SIGN]                               |{\ensuremath{^+}}|
+0x207B [SUPERSCRIPT MINUS]                                   |{\ensuremath{^-}}|
+0x207C [SUPERSCRIPT EQUALS SIGN]                             |{\ensuremath{^=}}|
+0x207D [SUPERSCRIPT LEFT PARENTHESIS]                        |{\ensuremath{^(}}|
+0x207E [SUPERSCRIPT RIGHT PARENTHESIS]                       |{\ensuremath{^)}}|
+0x207F [SUPERSCRIPT LATIN SMALL LETTER N]                    |{\ensuremath{^n}}|
+0x2080 [SUBSCRIPT ZERO]                                      |{\ensuremath{_0}}|
+0x2081 [SUBSCRIPT ONE]                                       |{\ensuremath{_1}}|
+0x2082 [SUBSCRIPT TWO]                                       |{\ensuremath{_2}}|
+0x2083 [SUBSCRIPT THREE]                                     |{\ensuremath{_3}}|
+0x2084 [SUBSCRIPT FOUR]                                      |{\ensuremath{_4}}|
+0x2085 [SUBSCRIPT FIVE]                                      |{\ensuremath{_5}}|
+0x2086 [SUBSCRIPT SIX]                                       |{\ensuremath{_6}}|
+0x2087 [SUBSCRIPT SEVEN]                                     |{\ensuremath{_7}}|
+0x2088 [SUBSCRIPT EIGHT]                                     |{\ensuremath{_8}}|
+0x2089 [SUBSCRIPT NINE]                                      |{\ensuremath{_9}}|
+0x208A [SUBSCRIPT PLUS SIGN]                                 |{\ensuremath{_+}}|
+0x208B [SUBSCRIPT MINUS]                                     |{\ensuremath{_-}}|
+0x208C [SUBSCRIPT EQUALS SIGN]                               |{\ensuremath{_=}}|
+0x208D [SUBSCRIPT LEFT PARENTHESIS]                          |{\ensuremath{_(}}|
+0x208E [SUBSCRIPT RIGHT PARENTHESIS]                         |{\ensuremath{_)}}|
+0x2090 [LATIN SUBSCRIPT SMALL LETTER A]                      |{\ensuremath{_a}}|
+0x2091 [LATIN SUBSCRIPT SMALL LETTER E]                      |{\ensuremath{_e}}|
+0x2092 [LATIN SUBSCRIPT SMALL LETTER O]                      |{\ensuremath{_o}}|
+0x2093 [LATIN SUBSCRIPT SMALL LETTER X]                      |{\ensuremath{_x}}|
+0x2095 [LATIN SUBSCRIPT SMALL LETTER H]                      |{\ensuremath{_h}}|
+0x2096 [LATIN SUBSCRIPT SMALL LETTER K]                      |{\ensuremath{_k}}|
+0x2097 [LATIN SUBSCRIPT SMALL LETTER L]                      |{\ensuremath{_l}}|
+0x2098 [LATIN SUBSCRIPT SMALL LETTER M]                      |{\ensuremath{_m}}|
+0x2099 [LATIN SUBSCRIPT SMALL LETTER N]                      |{\ensuremath{_n}}|
+0x209A [LATIN SUBSCRIPT SMALL LETTER P]                      |{\ensuremath{_p}}|
+0x209B [LATIN SUBSCRIPT SMALL LETTER S]                      |{\ensuremath{_s}}|
+0x209C [LATIN SUBSCRIPT SMALL LETTER T]                      |{\ensuremath{_t}}|
 0x20A1 [COLON SIGN]                                          |{\textcolonmonetary}|
 0x20A4 [LIRA SIGN]                                           |{\textlira}|
 0x20A6 [NAIRA SIGN]                                          |{\textnaira}|
