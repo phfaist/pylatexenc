@@ -203,10 +203,12 @@ specs = [
 
             MacroSpec('mbox', arguments_spec_list=[ _arg_textmode('{') ]),
 
-            # \title, \author, \date
-            MacroSpec('title', '{'),
-            MacroSpec('author', '{'),
-            MacroSpec('date', '{'),
+            # \title, \author, \date; each accepts an optional "short" form
+            # argument (e.g. \title[short title]{full title}) as provided by
+            # beamer and by the standard classes' \and-aware variants.
+            MacroSpec('title', '[{'),
+            MacroSpec('author', '[{'),
+            MacroSpec('date', '[{'),
 
             # (Note: single backslash) end of line with optional no-break ('*') and
             # additional vertical spacing, e.g. \\*[2mm]

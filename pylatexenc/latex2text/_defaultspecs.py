@@ -222,11 +222,11 @@ _latex_specs_approximations = {
     ] + [ MacroTextSpec(x, simplify_repl=y) for x, y in (
 
         ('title', lambda n, l2tobj: \
-         setattr(l2tobj, '_doc_title', l2tobj.nodelist_to_text(n.nodeargd.argnlist[0:1]))),
+         setattr(l2tobj, '_doc_title', l2tobj.nodelist_to_text(n.nodeargd.argnlist[1:2]))),
         ('author', lambda n, l2tobj: \
-         setattr(l2tobj, '_doc_author', l2tobj.nodelist_to_text(n.nodeargd.argnlist[0:1]))),
+         setattr(l2tobj, '_doc_author', l2tobj.nodelist_to_text(n.nodeargd.argnlist[1:2]))),
         ('date', lambda n, l2tobj: \
-         setattr(l2tobj, '_doc_date', l2tobj.nodelist_to_text(n.nodeargd.argnlist[0:1]))),
+         setattr(l2tobj, '_doc_date', l2tobj.nodelist_to_text(n.nodeargd.argnlist[1:2]))),
         ('maketitle', lambda n, l2tobj: \
          _format_maketitle(getattr(l2tobj, '_doc_title', r'[NO \title GIVEN]'),
                            getattr(l2tobj, '_doc_author', r'[NO \author GIVEN]'),

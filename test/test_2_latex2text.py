@@ -933,6 +933,29 @@ The Title
 """ % { 'today': today, 'eqhrule': eqhrule }
         )
 
+    def test_repl_doc_title_optional_short_arg(self):
+
+        # \title[short]{full}, \author[short]{full} and \date[short]{full}:
+        # the optional "short" argument must be consumed as an argument and the
+        # mandatory argument used for the rendered title block.
+
+        self.assertEqualUpToWhitespace(
+                LatexNodes2Text().latex_to_text(
+                    r"""
+\title[Short Title]{The Title}
+\author[T. A.]{The Author(s)}
+\date[2020]{July 4, 2020}
+\maketitle
+"""
+                ),
+            r"""
+The Title
+    The Author(s)
+    July 4, 2020
+=================
+"""
+        )
+
 
     @unittest.skipIf( sys.maxunicode < 0x10FFFF,
                       "no math alphabets on narrow python builds")
