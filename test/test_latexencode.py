@@ -172,6 +172,21 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
         self.assertEqual(u.unicode_to_latex(input),
                          "''{{\\`{A}}} notre sant\\'e!'' s'exprima le ma{\\^i}tre de maison {\\ldots} \\`a 100{\\textpercent}.")
 
+    def test_rules_callable_must_consume_at_least_one_char(self):
+
+        def acallable(s, pos):
+            # a buggy rule: it reports that it consumed no characters at all
+            return (0, r"\ldots")
+
+        u = UnicodeToLatexEncoder(conversion_rules=[
+            latexencode.UnicodeToLatexConversionRule(latexencode.RULE_CALLABLE,
+                                                     acallable),
+        ])
+        # such a rule would be applied to the same position over and over
+        # again; make sure we complain instead of looping forever
+        with self.assertRaises(ValueError):
+            u.unicode_to_latex("sant\N{LATIN SMALL LETTER E WITH ACUTE}")
+
     def test_rules_00b(self):
         
         def acallable(s, pos):

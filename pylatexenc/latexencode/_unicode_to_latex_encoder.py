@@ -478,6 +478,17 @@ class UnicodeToLatexEncoder(object):
         if res is None:
             return None
         (consumed, repl) = res
+        if consumed <= 0:
+            # a rule that consumes nothing would leave the position pointer
+            # where it is, so that the very same rule would be applied again to
+            # the very same position, forever
+            raise ValueError(
+                "A RULE_CALLABLE reported that it consumed {} characters at "
+                "position {} (near ‘{}’); it must consume at least one "
+                "character.  Return None instead to indicate that the rule "
+                "does not apply here."
+                .format(consumed, p.pos, s[p.pos:p.pos+16])
+            )
         self._apply_replacement(p, repl, consumed, rule)
         return True
 
