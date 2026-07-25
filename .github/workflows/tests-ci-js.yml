@@ -18,8 +18,6 @@ jobs:
       matrix:
         python-version:
           - "3.11"
-        poetry-version:
-          - "1.4"
         node-version:
           - "14"
           - "19"
@@ -29,30 +27,29 @@ jobs:
     runs-on: '${{ matrix.os }}'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Install NodeJS
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: '${{ matrix.node-version }}'
 
       - name: 'Setting up some node packages'
         run: 'npm i debug'
 
-      # Poetry & Python are needed to transpile Python library
-      - uses: actions/setup-python@v4
+      # uv & Python are needed to transpile the Python library
+      - name: 'Set up uv'
+        uses: astral-sh/setup-uv@v7
         with:
+          enable-cache: true
           python-version: '${{ matrix.python-version }}'
 
-      - name: 'Set up poetry - Run image'
-        uses: abatilo/actions-poetry@v2
-
-      - name: 'Poetry Install (with buildjslib)'
-        run: 'poetry install --with buildjslib'
+      - name: 'uv sync (with the buildjslib group)'
+        run: 'uv sync --frozen --group buildjslib'
 
       - name: 'Generate pylatexenc JS library'
         working-directory: 'js-transcrypt'
-        run: 'poetry run python ./generate_pylatexenc_js.py --compile-tests'
+        run: 'uv run --frozen python ./generate_pylatexenc_js.py --compile-tests'
 
       - name: 'Run JS tests'
         working-directory: 'js-transcrypt'

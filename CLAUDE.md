@@ -44,23 +44,34 @@ Ignore them; never edit a `*~` file.
 
 ## Commands
 
-This project uses poetry (`pyproject.toml`); migration to uv is planned.
-The version string appears in **both** `pyproject.toml` and
-`pylatexenc/version.py` — keep them in sync.
+This project uses uv (`pyproject.toml`, PEP 621 metadata, hatchling build
+backend).  `uv.lock` is committed; keep it in sync with `uv lock`.
+The version string lives **only** in `pylatexenc/version.py` — hatchling reads
+it from there (see `[tool.hatch.version]`), so bump it in that one place.
 
 Python tests:
 
-    poetry run pytest
+    uv run pytest
 
 JavaScript build and tests (needs the `buildjslib` dependency group):
 
+    uv sync --group buildjslib
     cd js-transcrypt
-    poetry run python ./generate_pylatexenc_js.py --delete-target-dir --compile-tests
+    uv run python ./generate_pylatexenc_js.py --delete-target-dir --compile-tests
     node test-pylatexenc-js/runtests.js
 
-(We have a `setup.py` that enables installs for old versions of python; pinning
-a very old python in `pyproject.toml` would render dependency resolution nearly
-impossible.  Dropping support for particularly old versions of pylatexenc is planned.)
+Building and publishing:
+
+    uv build
+    uv publish
+
+Dependency groups (PEP 735, in `[dependency-groups]`): `dev` (pytest) is
+installed by a plain `uv sync`; `builddoc` (Sphinx) and `buildjslib`
+(Transcrypt, PyYAML) are opt-in via `--group`.
+
+The supported python range is declared once, by `requires-python` in
+`pyproject.toml` (currently `>=3.8`); the `tests-ci` workflow matrix should span
+it.
 
 
 ## Constraints when editing

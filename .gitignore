@@ -7,6 +7,8 @@
 *.py[cdo]
 pylatexenc.egg-info
 
+.venv
+
 doc/_build
 
 dist

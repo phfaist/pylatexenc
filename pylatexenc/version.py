@@ -24,37 +24,36 @@
 
 
 #
-# Self-note: Checklist --- NOTE THESE ARE OLD INSTRUCTIONS DATING FROM 2.X VERSIONS
+# Self-note: Checklist
 #
 #   1) First some checks:
 #
 #       - Set below in this file ' version_str = "X.Xb" ' (beta version for next
 #         release) for the following tests.
 #
-#       - tests pass: https://travis-ci.org/github/phfaist/pylatexenc
+#       - tests pass: CI/actions on https://github.com/phfaist/pylatexenc
 #
-#       - LGTM looks good: https://lgtm.com/projects/g/phfaist/pylatexenc/
-#
-#       - python package creation works: (python setup.py sdist, pip install
+#       - python package creation works: (uv build, pip install
 #         dist/pylatexenc-xxx.tar.gz)
 #
 #   2) update change log (doc/changes.rst)
 #
 #   3) bump version number here
 #
-#   4) git commit any remaining changes
+#   4) git commit any remaining changes - check that all is fine
 #
-#   5) " git tag vX.X -am '<message>' "
+#   5) " git push "
 #
-#   6) " git push && git push --tags "
+#   6) github.com -> Actions -> Run "deploy to PyPI"
 #
-#   7) on github.com, fill in release details with a summary of changes etc.
+#   7) " git tag vX.X -am '<message>' "
 #
-#   8) create the source package for PyPI (" python3 setup.py sdist ")
-#   
-#   8) upload package to PyPI (twine upload dist/pylatexenc-X.X.tar.gz -r realpypi)
+#   8) " git push && git push --tags "
+#
+#   9) on github.com, fill in release details with a summary of changes etc.
 #
 
 
-# ALSO BUMP IN pyproject.toml !
+# This is the single source of truth for the package version; pyproject.toml
+# picks it up from here (see [tool.hatch.version] there).
 version_str = "3.0alpha000033"

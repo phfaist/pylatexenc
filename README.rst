@@ -9,10 +9,8 @@ Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion
 .. image:: https://img.shields.io/pypi/v/pylatexenc.svg?style=flat
    :target: https://pypi.org/project/pylatexenc/
 
-Python: ≥ 3.4 or ≥ 2.7. The library is designed to be as backwards-compatible as
-reasonably possible and is able to run on old python verisons should it be
-necessary. (Use the setup.py script directly if you have python<3.7, poetry
-doesn't seem to work with old python versions.)
+Python: ≥ 3.8.  The library has no runtime dependencies and is designed to be as
+backwards-compatible as reasonably possible.
 
 **NEW (4/2023)**: *PYLATEXENC 3.0alpha* is in pre-release on PyPI.  See `new features
 and major changes <https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-3/>`_.
@@ -65,9 +63,9 @@ Full documentation is available at https://pylatexenc.readthedocs.io/.
 
 To build the documentation manually, run::
 
-  > poetry install --with=builddoc
+  > uv sync --group builddoc
   > cd doc/
-  doc> poetry run make html
+  doc> uv run make html
 
 
 License

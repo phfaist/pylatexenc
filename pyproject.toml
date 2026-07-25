@@ -1,45 +1,87 @@
-[tool.poetry]
+[project]
 name = "pylatexenc"
-version = "3.0alpha000033" # ALSO BUMP IN pylatexenc/version.py
 description = "Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion"
-authors = ["Philippe Faist <philippe.faist@bluewin.ch>"]
+authors = [
+    { name = "Philippe Faist", email = "philippe.faist@bluewin.ch" },
+]
 license = "MIT"
+license-files = ["LICENSE.txt"]
 readme = "README.rst"
+requires-python = ">=3.6"
+keywords = ["latex", "text", "unicode", "encode", "parse", "expression"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Text Processing :: General",
+    "Topic :: Text Processing :: Markup :: LaTeX",
+]
+dependencies = []
 
-[tool.poetry.scripts]
+# The version string is single-sourced from pylatexenc/version.py; see
+# [tool.hatch.version] below.
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/phfaist/pylatexenc"
+Documentation = "https://pylatexenc.readthedocs.io/"
+Repository = "https://github.com/phfaist/pylatexenc"
+Issues = "https://github.com/phfaist/pylatexenc/issues"
+
+[project.scripts]
 latexwalker = 'pylatexenc.latexwalker.__main__:main'
 latex2text = 'pylatexenc.latex2text.__main__:main'
 latexencode = 'pylatexenc.latexencode.__main__:main'
 
 
-[tool.poetry.dependencies]
-#python = "^2.7 || ^3.4" # This simply creates a dependency resolution mess that doesn't work.
-#python = "^3.7" # hmm seems like it severly constrains other package versions
-python = "^3.9"
+# Development dependency groups (PEP 735).  Install with e.g.
+#
+#     uv sync                        # the "dev" group, installed by default
+#     uv sync --group builddoc       # additionally, the doc build requirements
+#
+[dependency-groups]
+dev = [
+    "pytest>=7.0",
+]
+builddoc = [
+    "Sphinx>=5.0.0",
+    "sphinx-issues>=3.0.0",
+]
+buildjslib = [
+    "Transcrypt==3.9.3",
+    "PyYAML>=5.0",
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = ">=7.0"
-toml = "^0.10.2"
-
-[tool.poetry.group.builddoc]
-optional = true
-
-[tool.poetry.group.builddoc.dependencies]
-Sphinx = ">=5.0.0"
-sphinx-issues = ">=3.0.0"
-
-[tool.poetry.group.buildjslib]
-optional = true
-
-[tool.poetry.group.buildjslib.dependencies]
-Transcrypt = "==3.9.3"
-PyYAML = ">=5.0"
+[tool.uv]
+# Only "dev" is installed by a plain `uv sync`; "builddoc" and "buildjslib" are
+# opt-in via `--group`.
+default-groups = ["dev"]
 
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
 
+[tool.hatch.version]
+path = "pylatexenc/version.py"
+# anchored at the start of a line, so that the example version string appearing
+# in the release-checklist comment of version.py is not picked up by mistake
+pattern = '''^version_str\s*=\s*["'](?P<version>[^"']+)["']'''
+
+[tool.hatch.build.targets.wheel]
+packages = ["pylatexenc"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/pylatexenc",
+    "/README.rst",
+]
 
 
 [tool.pytest.ini_options]

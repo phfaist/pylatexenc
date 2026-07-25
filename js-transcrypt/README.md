@@ -7,10 +7,10 @@ simple LaTeX code.
 
 This procedure is very much still in alpha stage.  Don't rely too much on it!
 
-To use commands listed here, make sure you installed the optional poetry
+To use commands listed here, make sure you installed the optional
 dependency group "buildjslib":
 
-    > poetry install --with=buildjslib
+    > uv sync --group buildjslib
 
 
 ## The build script
@@ -18,7 +18,7 @@ dependency group "buildjslib":
 To generate the JS python sources simply run in this folder:
 
     # generates pylatexenc-js/
-    > poetry run ./generate_pylatexenc_js.py
+    > uv run ./generate_pylatexenc_js.py
     
 (Make sure you've removed the `pylatexenc-js` folder from any previous run, or
 pass the `--delete-target-dir` option to the generator script.)
@@ -26,7 +26,7 @@ pass the `--delete-target-dir` option to the generator script.)
 To compile the tests along with the library, in its own folder:
 
     # generates both pylatexenc-js/ and test-pylatexenc-js/
-    > poetry run ./generate_pylatexenc_js.py --compile-tests
+    > uv run ./generate_pylatexenc_js.py --compile-tests
 
 To run the tests using `node`, do:
 
@@ -44,7 +44,7 @@ for use with transcrypt.  You can also do this manually with
 
     > export PYLATEXENC_SRC_DIR=/path/to/root/folder/of/pylatexenc/
     > export PREPROCESS_LIB_OUTPUT_DIR=pp-tmp/ # or some other temporary folder
-    > poetry run python ../tools/preprocess_lib.py  preprocesslib-pylatexenc.config.yaml
+    > uv run python ../tools/preprocess_lib.py  preprocesslib-pylatexenc.config.yaml
     
 ### Run Transcrypt to generate the Javascript sources
 
@@ -55,7 +55,7 @@ Transcrypt is called with the `import_pylatexenc_modules.py` module as entry
 point.  This python module simply imports the subset of the `pylatexenc` library
 that we'll be compiling to JavaScript.  The command to run is essentially:
 
-    > poetry run transcrypt import_pylatexenc_modules.py --dassert --dext --ecom --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -u .auto -xp 'pp-tmp$libpatches' -od pylatexenc-js
+    > uv run transcrypt import_pylatexenc_modules.py --dassert --dext --ecom --gen --tconv --sform --kwargs --keycheck --opov --xreex --nomin --build --anno --parent .none -u .auto -xp 'pp-tmp$libpatches' -od pylatexenc-js
     
 The JavaScript files are output in the `pylatexenc-js` folder.
 
