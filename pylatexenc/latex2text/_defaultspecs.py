@@ -326,6 +326,8 @@ _latex_specs_base = {
 
         # math stuff
 
+        ("ensuremath", "%s"),
+
         ("hbar", u"\N{LATIN SMALL LETTER H WITH STROKE}"),
         ("ell", u"\N{SCRIPT SMALL L}"),
 
