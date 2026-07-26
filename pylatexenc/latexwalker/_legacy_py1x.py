@@ -112,6 +112,12 @@ def get_token(s, pos, brackets_are_chars=True, environments=True, **parse_flags)
     .. deprecated:: 1.0
        Please use :py:meth:`LatexWalker.get_token()` instead.
     """
+
+    _util.pylatexenc_deprecated_ver(
+        "1.0",
+        "The module-level function `pylatexenc.latexwalker.get_token()` is deprecated. "
+        "Please use the `LatexWalker.get_token()` method instead."
+    )
     return LatexWalker(s, **parse_flags).get_token(pos=pos,
                                                    brackets_are_chars=brackets_are_chars,
                                                    environments=environments)
@@ -129,6 +135,12 @@ def get_latex_expression(s, pos, **parse_flags):
        Please use :py:meth:`LatexWalker.get_latex_expression()` instead.
     """
 
+    _util.pylatexenc_deprecated_ver(
+        "1.0",
+        "The module-level function `pylatexenc.latexwalker.get_latex_expression()` is deprecated. "
+        "Please use the `LatexWalker.get_latex_expression()` method instead."
+    )
+
     return LatexWalker(s, **parse_flags).get_latex_expression(pos=pos)
 
 
@@ -140,6 +152,12 @@ def get_latex_maybe_optional_arg(s, pos, **parse_flags):
     .. deprecated:: 1.0
        Please use :py:meth:`LatexWalker.get_latex_maybe_optional_arg()` instead.
     """
+
+    _util.pylatexenc_deprecated_ver(
+        "1.0",
+        "The module-level function `pylatexenc.latexwalker.get_latex_maybe_optional_arg()` is deprecated. "
+        "Please use the `LatexWalker.get_latex_maybe_optional_arg()` method instead."
+    )
 
     return LatexWalker(s, **parse_flags).get_latex_maybe_optional_arg(pos=pos)
 
@@ -157,6 +175,12 @@ def get_latex_braced_group(s, pos, brace_type='{', **parse_flags):
        Please use :py:meth:`LatexWalker.get_latex_braced_group()` instead.
     """
 
+    _util.pylatexenc_deprecated_ver(
+        "1.0",
+        "The module-level function `pylatexenc.latexwalker.get_latex_braced_group()` is deprecated. "
+        "Please use the `LatexWalker.get_latex_braced_group()` method instead."
+    )
+
     return LatexWalker(s, **parse_flags).get_latex_braced_group(pos=pos, brace_type=brace_type)
 
 
@@ -170,6 +194,12 @@ def get_latex_environment(s, pos, environmentname=None, **parse_flags):
     .. deprecated:: 1.0
        Please use :py:meth:`LatexWalker.get_latex_environment()` instead.
     """
+
+    _util.pylatexenc_deprecated_ver(
+        "1.0",
+        "The module-level function `pylatexenc.latexwalker.get_latex_environment()` is deprecated. "
+        "Please use the `LatexWalker.get_latex_environment()` method instead."
+    )
 
     return LatexWalker(s, **parse_flags).get_latex_environment(pos=pos,
                                                                environmentname=environmentname)
@@ -187,6 +217,12 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
     .. deprecated:: 1.0
        Please use :py:meth:`LatexWalker.get_latex_nodes()` instead.
     """
+
+    _util.pylatexenc_deprecated_ver(
+        "1.0",
+        "The module-level function `pylatexenc.latexwalker.get_latex_nodes()` is deprecated. "
+        "Please use the `LatexWalker.get_latex_nodes()` method instead."
+    )
 
     return LatexWalker(s, **parse_flags).get_latex_nodes(
         pos=pos,

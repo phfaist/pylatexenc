@@ -140,6 +140,17 @@ class LatexArgumentsParser(LatexParserBase):
             for arg in arguments_spec_list
         ]
 
+        # Resolve any argument type given as a string right away, so that an
+        # invalid argument specification is reported here, where the macro (or
+        # environment, or specials) is being declared, rather than much later
+        # when some document happens to use it.  This mirrors what pylatexenc 2
+        # did in MacroStandardArgsParser's constructor.
+        for arg in self.arguments_spec_list:
+            if isinstance(arg.parser, str):
+                std_parser = get_standard_argument_parser(arg.parser)
+                # raises ValueError if the argument type is not recognized
+                std_parser.get_arg_parser_instance(std_parser.arg_spec)
+
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
     @property
     def argspec(self):

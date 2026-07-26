@@ -314,7 +314,19 @@ class LatexStandardArgumentParser(LatexParserBase):
         """
 
         if self._arg_parser is None:
-            self._arg_parser = self.get_arg_parser_instance(self.arg_spec)
+            try:
+                self._arg_parser = self.get_arg_parser_instance(self.arg_spec)
+            except ValueError as e:
+                # An invalid argument type normally shows up much earlier, when
+                # the arguments parser is constructed (see
+                # LatexArgumentsParser).  If we do get here anyway, report it as
+                # a parse error rather than as a plain ValueError, so that
+                # tolerant parsing mode can recover from it instead of letting
+                # an unrelated exception type escape the latex walker.
+                raise LatexWalkerParseError(
+                    msg=str(e),
+                    pos=token_reader.cur_pos(),
+                )
 
         arg_parser = self._arg_parser
 
