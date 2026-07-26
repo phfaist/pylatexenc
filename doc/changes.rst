@@ -3,13 +3,16 @@ Changes
 ============
 
 
-pylatexenc 3.0alpha
-===================
+pylatexenc 3.0
+==============
 
 .. toctree::
    :maxdepth: 1
 
    new-in-pylatexenc-3
+
+- Currently in beta.  Stable 3.0 release is planned soon (for real this time, I
+  hope, thanks to AI under my tight supervision!)
 
 - see in particular the :ref:`list of changes that might affect existing code
   <new-in-pylatexenc-3-possible-pitfall-changes>` if you're using some more

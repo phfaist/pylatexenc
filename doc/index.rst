@@ -6,7 +6,7 @@
 Welcome to pylatexenc's documentation!
 ======================================
 
-[pylatexenc version: |version|]
+[pylatexenc version: |version|]  (:doc:`What's new? <changes>`)
 
 A simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion.
 
