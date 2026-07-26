@@ -6,8 +6,6 @@ Changes
 pylatexenc 3.0alpha
 ===================
 
-(Still in development.)
-
 .. toctree::
    :maxdepth: 1
 
@@ -19,6 +17,11 @@ pylatexenc 3.0alpha
 
 
 
+pylatexenc 2.11
+===============
+
+- This release pulls in some tiny fixes. The main reason to provide this release
+  is to distribute a wheel for pip installs of the 2.x version series.
 
 pylatexenc 2.10
 ===============
