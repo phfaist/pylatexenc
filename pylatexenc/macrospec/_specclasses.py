@@ -351,26 +351,6 @@ class CallableSpec(CallableSpecBase):
         return None
 
 
-    def needs_arguments(self):
-        r"""
-        Return `True` if at least one of the arguments in `arguments_spec_list` is
-        a required argument, and `False` otherwise (in particular, if this
-        callable does not accept any arguments at all).
-
-        .. note::
-
-           Each argument is queried with ``arg.spec.is_required()``.  The
-           standard :py:class:`~pylatexenc.latexnodes.LatexArgumentSpec` class
-           provides neither a `spec` attribute nor an `is_required()` method, so
-           this method only works with argument specification objects that do
-           provide them.
-        """
-        for arg in self.arguments_spec_list:
-            if arg.spec.is_required():
-                return True
-        return False
-
-
     def make_body_parser(self, token, nodeargd, arg_parsing_state_delta):
         r"""
         Return the parser instance that should be used to parse the body contents
