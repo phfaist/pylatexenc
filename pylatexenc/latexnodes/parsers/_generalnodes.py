@@ -27,8 +27,6 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -37,15 +35,6 @@ from .. import nodes
 
 
 from ._base import LatexParserBase
-
-# for Py3
-_basestring = str
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major == 2:
-    _basestring = basestring
-### END_PYTHON2_SUPPORT_CODE
 
 
 

@@ -84,20 +84,10 @@ be escaped even inside raw strings.
    employ the new API.
 """
 
-from __future__ import print_function, absolute_import, unicode_literals
-
 import unicodedata
 import logging
-import sys
 import functools
 import itertools
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-if sys.version_info.major > 2:
-    unicode = str # need to support unicode() w/ no arguments
-    basestring = str
-
-### END_PYTHON2_SUPPORT_CODE
 
 
 logger = logging.getLogger(__name__)
@@ -289,7 +279,7 @@ def utf8tolatex(s, non_ascii_only=False, brackets=True, substitute_bad_chars=Fal
         Added `fail_bad_chars` switch
     """
 
-    s = unicode(s) # make sure s is unicode
+    s = str(s) # make sure s is a string
     s = unicodedata.normalize('NFC', s)
 
     if not s:

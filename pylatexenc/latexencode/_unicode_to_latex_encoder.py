@@ -23,8 +23,6 @@
 # THE SOFTWARE.
 #
 
-from __future__ import print_function, absolute_import, unicode_literals
-
 import logging
 import functools
 import itertools
@@ -32,26 +30,16 @@ import itertools
 import unicodedata
 
 
-# "defaults" e.g. for Transcrypt:
+# "default" e.g. for Transcrypt; must support being called with no arguments:
 def unicode_str(s=None):
     if s is None:
         return ''
     return str(s)
-basestring_cls = str
 
 #__pragma__('ecom')
 
 #__pragma__('skip')
-import sys
-if sys.version_info.major > 2:
-    unicode_str = str # need to support unicode() w/ no arguments
-    basestring_cls = str
-    # use MappingProxyType for keeping
-    from types import MappingProxyType as _MappingProxyType
-else:
-    unicode_str = unicode
-    basestring_cls = basestring
-    _MappingProxyType = dict
+unicode_str = str
 #__pragma__('noskip')
 
 
@@ -59,11 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 ### BEGINPATCH_LATEXENCODE_CALLABLE_ACCEPTS_U2LOBJ_ARG
-import sys
-if sys.version_info.major > 2:
-    from inspect import getfullargspec
-else:
-    from inspect import getargspec as getfullargspec
+from inspect import getfullargspec
 
 def _callable_accepts_u2lobj_arg(fn):
     return ('u2lobj' in getfullargspec(fn)[0])
@@ -256,7 +240,7 @@ class UnicodeToLatexEncoder(object):
     .. py:attribute:: latex_string_class
 
        The return type of :py:meth:`unicode_to_latex()`.  Normally this is a
-       simple unicode string (`str` on `Python 3` or `unicode` on `Python 2`).
+       simple unicode string (`str`).
 
        But you can specify your custom string type via the `latex_string_class`
        argument.  The `latex_string_class` will be invoked with no arguments to
@@ -311,16 +295,16 @@ class UnicodeToLatexEncoder(object):
         # build generator that expands built-in conversion rules
         expanded_conversion_rules = []
         # = itertools.chain.from_iterable([
-        #     (get_builtin_conversion_rules(r) if isinstance(r, basestring_cls) else [ r ])
+        #     (get_builtin_conversion_rules(r) if isinstance(r, str) else [ r ])
         #     for r in self.conversion_rules
         # ])
         for r in self.conversion_rules:
 ### BEGIN_PYLATEXENC_GET_DEFAULT_SPECS_FN
-            if isinstance(r, basestring_cls):
+            if isinstance(r, str):
                 expanded_conversion_rules.extend( get_builtin_conversion_rules(r) )
                 continue
 ### END_PYLATEXENC_GET_DEFAULT_SPECS_FN
-            if isinstance(r, basestring_cls):
+            if isinstance(r, str):
                 logger.warning(
                     "The pylatexenc.latexencode module was preprocessed and/or transpiled "
                     "without support for implicit/string-specified default rules.  Please "
@@ -359,7 +343,7 @@ class UnicodeToLatexEncoder(object):
                 raise TypeError("Invalid rule type: {}".format(rule.rule_type))
         
         # bad char policy:
-        if isinstance(self.unknown_char_policy, basestring_cls):
+        if isinstance(self.unknown_char_policy, str):
             self._do_unknown_char = self._get_method_fn(
                 'do_unknown_char',
                 self.unknown_char_policy,

@@ -27,19 +27,7 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
 #from ._parsedargs import ParsedArguments
-
-
-# for Py3
-_unicode_from_str = lambda x: x
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major == 2:
-    _unicode_from_str = lambda x: x.decode('utf-8')
-### END_PYTHON2_SUPPORT_CODE
 
 
 
@@ -181,9 +169,6 @@ class LatexToken(object):
         if self.pos is None or self.pos_end is None:
             return None
         return self.pos_end - self.pos
-
-    def __unicode__(self):
-        return _unicode_from_str(self.__str__())
 
     def __repr__(self):
         return (

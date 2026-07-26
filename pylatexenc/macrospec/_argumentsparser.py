@@ -26,8 +26,6 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -38,17 +36,6 @@ from ..latexnodes import (
     ParsedArguments,
     get_updated_parsing_state_from_delta,
 )
-
-
-# for Py3
-_basestring = str
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major == 2:
-    # Py2
-    _basestring = basestring
-### END_PYTHON2_SUPPORT_CODE
 
 
 
@@ -154,7 +141,7 @@ class LatexArgumentsParser(LatexParserBase):
 
             peeked_token = token_reader.peek_token_or_none(parsing_state=parsing_state)
 
-            if isinstance(arg_node_parser, _basestring):
+            if isinstance(arg_node_parser, str):
                 arg_node_parser = get_standard_argument_parser(arg_node_parser)
 
             arg_parsing_state = get_updated_parsing_state_from_delta(

@@ -1,16 +1,8 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function, absolute_import, unicode_literals
 
 import unittest
 import re
 import logging
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major > 2:
-    def unicode(string): return string
-    basestring = str
-### END_PYTHON2_SUPPORT_CODE
 
 
 from pylatexenc.latexencode import UnicodeToLatexEncoder
@@ -25,7 +17,8 @@ class _DummyContextMgr(object):
         pass
 
 class ProvideAssertCmds(object):
-    # provides assertLogs() in python 2
+    # provides a dummy assertLogs() where it isn't available (e.g., in the
+    # JavaScript build's unittest replacement)
     def assertLogs(self, *args, **kwargs):
         logging.getLogger(__name__).warning(
             "Can't check if logger generates correct warnings, skipping this check.")

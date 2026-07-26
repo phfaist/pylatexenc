@@ -27,8 +27,6 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -41,17 +39,6 @@ from .._parsingstatedelta import (
 
 from ._base import LatexParserBase
 from ._generalnodes import LatexGeneralNodesParser
-
-
-
-# for Py3
-_basestring = str
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major == 2:
-    _basestring = basestring
-### END_PYTHON2_SUPPORT_CODE
 
 
 
@@ -396,7 +383,7 @@ class LatexDelimitedExpressionParserInfo(object):
         if delimiters is None:
             return True
 
-        if isinstance(delimiters, _basestring):
+        if isinstance(delimiters, str):
             open_delim = delimiters
         else:
             open_delim = delimiters[0]
@@ -539,7 +526,7 @@ class LatexDelimitedExpressionParserInfo(object):
         if delimiters is None:
             delimiters = first_token.arg
 
-        if isinstance(delimiters, _basestring):
+        if isinstance(delimiters, str):
             opening_delimiter = delimiters
             closing_delimiter = self.get_matching_delimiter(opening_delimiter)
             return (opening_delimiter, closing_delimiter)
@@ -851,7 +838,7 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
         if delimiters is None:
             return parsing_state
 
-        if isinstance(delimiters, _basestring):
+        if isinstance(delimiters, str):
             if delimiters not in parsing_state._latex_group_delimchars_by_open:
                 raise ValueError(
                     "Delimiter ‘{}’ not a valid latex group delimiter ({!r})"
@@ -884,7 +871,7 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
         Only to be used for error messages.
         """
         if delimiters is not None:
-            if isinstance(delimiters, _basestring):
+            if isinstance(delimiters, str):
                 return [delimiters]
             else:
                 return [delimiters[0]]

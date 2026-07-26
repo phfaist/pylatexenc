@@ -2,11 +2,6 @@
 # mini-script to generate the pylatexenc.latexencode._uni2latexmap_xml dict mapping
 #
 import re
-import sys
-
-if sys.version_info.major > 2:
-    # python 3
-    unichr = chr
 
 from xml.etree import ElementTree as ET
 
@@ -25,7 +20,7 @@ for chxml in e.find('charlist').iter('character'):
     if latexxml is None:
         continue
     latexval = latexxml.text
-    if latexval == unichr(charord):
+    if latexval == chr(charord):
         # "latex" representation is the same char directly
         continue
     if charord == 0x20:
@@ -78,5 +73,5 @@ if missing_keys:
         else:
             therepr = repr(d[k])
         thedef = "0x%04X: %s,"%(k, therepr)
-        print("%-50s# %s [%s]"%(thedef, dnames[k], unichr(k)))
+        print("%-50s# %s [%s]"%(thedef, dnames[k], chr(k)))
     

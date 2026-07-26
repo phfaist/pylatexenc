@@ -1,13 +1,8 @@
 import unittest
-import sys
 import logging
 import warnings
 
 import pytest
-
-if sys.version_info.major > 2:
-    def unicode(string): return string
-    basestring = str
 
 from pylatexenc.macrospec import (
     ParsedMacroArgs, MacroStandardArgsParser,

@@ -27,19 +27,7 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
 from ._specclasses import MacroSpec, EnvironmentSpec, SpecialsSpec
-
-
-# for Py3
-_basestring = str
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major == 2:
-    _basestring = basestring
-### END_PYTHON2_SUPPORT_CODE
 
 
 
@@ -123,7 +111,7 @@ def std_macro(macname, *args, **kwargs):
             "Wrong number of arguments for std_macro, macname={!r}, args={!r}".format(
                 macname, args
             ))
-    elif not args[0] and isinstance(args[1], _basestring):
+    elif not args[0] and isinstance(args[1], str):
         # argspec given in numargs
         argspec = args[1]
     else:

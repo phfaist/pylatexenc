@@ -1,11 +1,8 @@
 
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals, print_function
-
 import unittest
 
-import sys
 import re
 import os
 import os.path
@@ -934,8 +931,6 @@ The Title
         )
 
 
-    @unittest.skipIf( sys.maxunicode < 0x10FFFF,
-                      "no math alphabets on narrow python builds")
     def test_math_alphabets(self):
 
         def gen_latex(macroname):
@@ -980,7 +975,6 @@ The Title
 
     def test_upgreek_letters(self):
 
-        # on Py 2.7, r"\u..." still tries to interpolate unicode escapes \uXXXX !
         upgreek_letters = (
             ("\\upmu", "μ"),
             ("\\upalpha", "α"),

@@ -27,19 +27,6 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
-
-# for Py3
-_basestring = str
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major == 2:
-    # Py2
-    _basestring = basestring
-### END_PYTHON2_SUPPORT_CODE
-
 
 
 import logging
@@ -228,7 +215,7 @@ class ParsedArgumentsInfo(object):
             )
 
         arg_i = arg
-        if isinstance(arg_i, _basestring):
+        if isinstance(arg_i, str):
             # find index by looking up the argument name
             argname = arg_i
             for j, arg_spec in enumerate(self.parsed_arguments.arguments_spec_list):
@@ -361,7 +348,7 @@ class ParsedArgumentsInfo(object):
                     raise ValueError(
                         "Missing argument {}"
                         .format( ( '‘'+arg_x+'’'
-                                   if isinstance(arg_x, _basestring)
+                                   if isinstance(arg_x, str)
                                    else str(arg_x) ) )
                     )
                 

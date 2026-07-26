@@ -27,8 +27,6 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
 
 import logging
 logger = logging.getLogger(__name__)
@@ -38,11 +36,6 @@ logger = logging.getLogger(__name__)
 
 
 _unisafe_arrow_s = '→'
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major == 2:
-    _unisafe_arrow_s = '->'
-### END_PYTHON2_SUPPORT_CODE
 
 
 

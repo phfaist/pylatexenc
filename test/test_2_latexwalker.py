@@ -1,16 +1,10 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function # no unicode_literals, test with native strings on py2
 
 import unittest
-import sys
 import logging
 import warnings
 
 import pytest
-
-if sys.version_info.major > 2:
-    def unicode(string): return string
-    basestring = str
 
 from pylatexenc.latexwalker import (
     LatexWalker, LatexToken, LatexCharsNode, LatexGroupNode, LatexCommentNode,
@@ -1075,8 +1069,8 @@ Also: {\itshape some italic text}.
             lwOk.get_latex_nodes()
         except LatexWalkerParseError as e:
             # should not raise this.
-            self.fail(unicode("get_latex_nodes() raised LatexWalkerParseError, but it shouldn't have in "
-                              "tolerant parsing mode!\n")+unicode(e))
+            self.fail("get_latex_nodes() raised LatexWalkerParseError, but it shouldn't have in "
+                      "tolerant parsing mode!\n"+str(e))
             
     
 

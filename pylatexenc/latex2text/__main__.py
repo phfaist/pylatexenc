@@ -23,8 +23,6 @@
 # THE SOFTWARE.
 #
 
-from __future__ import print_function, unicode_literals
-
 import sys
 import fileinput
 import argparse

@@ -10,6 +10,9 @@ run without any chagnes.  You might get some deprecation warnings which you can
 silence using python's warnings filter management (e.g., ``python -W
 'ignore::DeprecationWarnings'`` or using :py:func:`warnings.simplefilter`)
 
+Compatibility with python 2 was finally dropped.  We'll try to remain compatible
+with Python ≥ 3.6 moving forward.
+
 The parser-related modules have seen a number of changes, including:
 
 - New parsing mechanism in a new `latexnodes` module — everything gets delegated

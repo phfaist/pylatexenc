@@ -28,16 +28,11 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
 
-
+# "default" e.g. for Transcrypt, which has no types.MappingProxyType:
 _MappingProxyType = dict
 #__pragma__('skip')
-import sys
-if sys.version_info.major > 2:
-    from types import MappingProxyType as _MappingProxyType
-else:
-    _MappingProxyType = dict
+from types import MappingProxyType as _MappingProxyType
 #__pragma__('noskip')
 
 

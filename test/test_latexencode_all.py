@@ -1,26 +1,11 @@
 
-from __future__ import unicode_literals, print_function
-
 import unittest
 
-import sys
 import codecs
 import difflib
 import unicodedata
 import logging
 import os.path
-
-if sys.version_info.major >= 3:
-    PY3 = True
-else:
-    PY3 = False
-
-if PY3:
-    def unicode(string): return string
-    basestring = str
-    unichr = chr
-else:
-    range = xrange
 
 
 from pylatexenc.latexencode import UnicodeToLatexEncoder
@@ -32,11 +17,6 @@ class TestLatexEncodeAll(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super(TestLatexEncodeAll, self).__init__(*args, **kwargs)
-
-    # def test_pythonunicoderange(self):
-    #     self.assertGreater(sys.maxunicode, 0xFFFF+1,
-    #                        "Your python build only supports unicode characters up to U+FFFF."
-    #                        " Tests of unicode coverage will fail.")
 
     def test_all(self):
 
@@ -54,11 +34,11 @@ class TestLatexEncodeAll(unittest.TestCase):
             for i in range(0x10FFFF):
                 # iter over all valid unicode characters
                 try:
-                    chrname = unicodedata.name(unichr(i)) # test if valid, i.e., it has a UNICODE NAME
+                    chrname = unicodedata.name(chr(i)) # test if valid, i.e., it has a UNICODE NAME
                 except ValueError:
                     continue
 
-                line = "0x%04X %-50s    |%s|\n"%(i, '['+chrname+']', unichr(i))
+                line = "0x%04X %-50s    |%s|\n"%(i, '['+chrname+']', chr(i))
 
                 # try to encode it using our unicode_to_latex routines
                 try:
@@ -73,16 +53,7 @@ class TestLatexEncodeAll(unittest.TestCase):
             b = testf.readlines()
             
         logging.getLogger().setLevel(loglevel)
-        logger = logging.getLogger(__name__)
 
-        # only check up to the supported unicode range
-        if sys.maxunicode < 0x10FFFF:
-            logger.warning("Only checking up to unicode U+%X, your python build doesn't support higher",
-                           sys.maxunicode)
-            afiltered = [ aline for aline in a
-                          if int(aline[:aline.find(' ')], 0) < sys.maxunicode ]
-            a = afiltered
-            
         s = difflib.unified_diff(a, b,
                                  fromfile='uni_chars_test_previous.txt',
                                  tofile='_tmp_uni_chars_test.temp.txt')

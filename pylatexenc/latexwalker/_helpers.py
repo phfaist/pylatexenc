@@ -26,21 +26,6 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
-
-# for Py3
-_basestring = str
-_unicode_from_str = lambda x: x
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major == 2:
-    # Py2
-    _basestring = basestring
-    _unicode_from_str = lambda x: x.decode('utf-8')
-### END_PYTHON2_SUPPORT_CODE
-
 
 #from .. import macrospec
 
@@ -205,7 +190,7 @@ def disp_node(n, indent=0, context='* ', skip_group=False):
     print(' '*indent + context + title + '  '+comment)
 
     for context, nodelist, skip in iterchildren:
-        if isinstance(nodelist, _basestring):
+        if isinstance(nodelist, str):
             print(' '*(indent+4) + context + nodelist)
             continue
         for nn in nodelist:

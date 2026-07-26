@@ -1,6 +1,3 @@
-from __future__ import print_function, unicode_literals
-
-
 from ...latexnodes import (
     LatexWalkerError,
 )
@@ -8,17 +5,6 @@ from ...latexnodes import ParsedArguments as ParsedMacroArgs
 from ...latexnodes.nodes import (
     LatexCharsNode,
 )
-
-
-# for Py3
-_basestring = str
-
-## Begin Py2 support code
-import sys
-if sys.version_info.major == 2:
-    # Py2
-    _basestring = basestring
-## End Py2 support code
 
 
 
@@ -103,7 +89,7 @@ class MacroStandardArgsParser(object):
         self.optional_arg_no_space = optional_arg_no_space
         self.args_math_mode = args_math_mode
         # catch bugs, make sure that argspec is a string with only accepted chars
-        if not isinstance(self.argspec, _basestring) or \
+        if not isinstance(self.argspec, str) or \
            not all(x in '*[{' for x in self.argspec):
             raise TypeError(
                 "argspec must be a string containing chars '*', '[', '{{' only: {!r}"

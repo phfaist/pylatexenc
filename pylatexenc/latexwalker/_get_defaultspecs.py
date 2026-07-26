@@ -27,8 +27,6 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
 
 # don't define this function in the `_defaultspecs.py` source file because we
 # would like to be able to define this function without having to actually load

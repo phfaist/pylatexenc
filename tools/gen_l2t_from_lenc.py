@@ -3,10 +3,6 @@
 # latex2text, too
 #
 
-# Py3 only script
-import sys
-assert sys.version_info > (3,0)
-
 import unicodedata
 
 import logging

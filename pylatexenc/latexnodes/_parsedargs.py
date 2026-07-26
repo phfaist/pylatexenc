@@ -27,19 +27,6 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
-
-# for Py3
-_basestring = str
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major == 2:
-    # Py2
-    _basestring = basestring
-### END_PYTHON2_SUPPORT_CODE
-
 
 
 #from ._exctypes import LatexWalkerParseError
@@ -288,11 +275,11 @@ class ParsedArguments(object):
 def _argspec_from_arguments_spec_list(arguments_spec_list):
 
     def _argspec_char_for_arg(arg):
-        if isinstance(arg, _basestring):
+        if isinstance(arg, str):
             return arg
         parser = getattr(arg, 'parser', None)
         if parser is not None:
-            if isinstance(parser, _basestring):
+            if isinstance(parser, str):
                 return parser
             return getattr(parser, 'arg_spec', '?')
         return '?'

@@ -27,8 +27,6 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -43,17 +41,6 @@ from ._delimited import (
     LatexDelimitedExpressionParserInfo,
     LatexDelimitedExpressionParser,
 )
-
-
-
-# for Py3
-_basestring = str
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major == 2:
-    _basestring = basestring
-### END_PYTHON2_SUPPORT_CODE
 
 
 
@@ -86,7 +73,7 @@ class LatexMathParserInfo(LatexDelimitedExpressionParserInfo):
                                            delimited_expression_parser, latex_walker,
                                            **kwargs):
         if delimiters is not None:
-            if isinstance(delimiters, _basestring):
+            if isinstance(delimiters, str):
                 return [delimiters]
             else:
                 return [delimiters[0]]

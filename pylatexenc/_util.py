@@ -126,13 +126,7 @@ class PushPropOverride(object):
 # ------------------------------------------------------------------------------
 
 
-try:
-    from collections import ChainMap
-except ImportError:
-    pass
-### BEGIN_PYTHON2_SUPPORT_CODE
-    from chainmap import ChainMap
-### END_PYTHON2_SUPPORT_CODE
+from collections import ChainMap
 
 
 

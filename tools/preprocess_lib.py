@@ -425,13 +425,6 @@ class Preprocess:
             def _comment_out():
                 return _comment_out_text_full_lines(group)
 
-            if pkg_where == '__future__':
-                # special '__future__' import, leave it out unless feature is set
-                if self.enabled_features.get('keep_future_statements', True):
-                    return m.group()
-                else:
-                    return _comment_out()
-
             for skip_prefix in self.skip_relative_import_prefixes:
                 if pkg_where == skip_prefix or pkg_where.startswith(skip_prefix + '.'):
                     logger.debug(

@@ -27,8 +27,6 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -43,16 +41,6 @@ from ._macrocallparser import (
     LatexMacroCallParser, LatexEnvironmentCallParser, LatexSpecialsCallParser
 )
 from ._environmentbodyparser import LatexEnvironmentBodyContentsParser
-
-
-# for Py3
-_basestring = str
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major == 2:
-    _basestring = basestring
-### END_PYTHON2_SUPPORT_CODE
 
 
 _legacy_pyltxenc2_do = lambda *args: None
@@ -108,7 +96,7 @@ class CallableSpec(CallableSpecBase):
         self.arguments_spec_list = arguments_spec_list
 
         self.spec_node_parser_type = spec_node_parser_type
-        if isinstance(spec_node_parser_type, _basestring):
+        if isinstance(spec_node_parser_type, str):
             self.spec_node_parser_type = _spec_node_parser_types[spec_node_parser_type]
 
         if macroname is not _NotSpecified:
@@ -514,7 +502,7 @@ def _legacy_pyltxenc2_CallableSpec_init_from_args_parser(spec, arguments_spec_li
     if spec.arguments_spec_list is not None:
         raise ValueError("You cannot specify both arguments_spec_list= and args_parser=")
 
-    if isinstance(args_parser, _basestring):
+    if isinstance(args_parser, str):
         spec.arguments_spec_list = args_parser
         spec.arguments_parser = LatexArgumentsParser(args_parser)
     else:

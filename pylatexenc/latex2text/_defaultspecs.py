@@ -24,20 +24,10 @@
 #
 
 
-from __future__ import print_function, unicode_literals #, absolute_import
-
 # Internal module. May change without notice.
 
 import unicodedata
 import datetime
-import sys
-
-if sys.version_info.major >= 3:
-    def unicode(string): return string
-    basestring = str
-else:
-    pass
-
 
 
 from ..latex2text import (
@@ -1630,14 +1620,14 @@ def make_accented_char(node, combining, l2tobj):
         c = ' '
 
     def getaccented(ch, combining):
-        ch = unicode(ch)
-        combining = unicode(combining)
+        ch = str(ch)
+        combining = str(combining)
         if (ch == u"\N{LATIN SMALL LETTER DOTLESS I}"):
             ch = u"i"
         if (ch == u"\N{LATIN SMALL LETTER DOTLESS J}"):
             ch = u"j"
         #print u"Accenting %s with %s"%(ch, combining) # this causes UnicdeDecodeError!!!
-        return unicodedata.normalize('NFC', unicode(ch)+combining)
+        return unicodedata.normalize('NFC', str(ch)+combining)
 
     return u"".join([getaccented(ch, combining) for ch in c])
 

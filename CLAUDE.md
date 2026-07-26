@@ -70,8 +70,8 @@ installed by a plain `uv sync`; `builddoc` (Sphinx) and `buildjslib`
 (Transcrypt, PyYAML) are opt-in via `--group`.
 
 The supported python range is declared once, by `requires-python` in
-`pyproject.toml` (currently `>=3.8`); the `tests-ci` workflow matrix should span
-it.
+`pyproject.toml` (currently `>=3.6`); the `tests-ci` workflow matrix should span
+it.  Python 2 is not supported; do not reintroduce compatibility shims for it.
 
 
 ## Constraints when editing
@@ -90,7 +90,7 @@ transcribed and is less constrained.)
     ...
     ### END_<GUARD_NAME>
 
-Guards in use: `PYTHON2_SUPPORT_CODE`, `PYLATEXENC1_LEGACY_SUPPORT_CODE`,
+Guards in use: `PYLATEXENC1_LEGACY_SUPPORT_CODE`,
 `PYLATEXENC2_LEGACY_SUPPORT_CODE`, `PYLATEXENC_GET_DEFAULT_SPECS_FN`,
 `LATEXWALKER_HELPERS`, and `DEBUG_SET_EQ_ATTRIBUTE` (test sources);
 `### BEGINPATCH_…` /

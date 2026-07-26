@@ -27,26 +27,8 @@
 # Internal module. Internal API may move, disappear or otherwise change at any
 # time and without notice.
 
-from __future__ import print_function, unicode_literals
-
 import logging
 logger = logging.getLogger(__name__)
-
-
-# for Py3
-_basestring = str
-_unicode_from_str = lambda x: x
-to_str = str
-
-### BEGIN_PYTHON2_SUPPORT_CODE
-import sys
-if sys.version_info.major == 2:
-    # Py2
-    _basestring = basestring
-    _unicode_from_str = lambda x: x.decode('utf-8')
-    to_str = unicode
-### END_PYTHON2_SUPPORT_CODE
-
 
 
 # we'll be using "from _types import *" for convenience, so to avoid polluting
@@ -248,7 +230,7 @@ class LatexWalkerLocatedErrorFormatter(object):
     def to_display_string(self):
         exc = self.exc
 
-        msg = to_str(exc.msg)
+        msg = str(exc.msg)
         msg += self.format_full_traceback()
 
         return msg
@@ -258,10 +240,10 @@ def format_pos(pos, lineno, colno):
     if lineno is not None:
         if colno is not None:
             return '@ (line {}, col {})'.format(lineno, colno)
-        if isinstance(lineno, _basestring):
+        if isinstance(lineno, str):
             return '@ '+lineno
         return '@ line {}'.format(lineno)
-    if isinstance(pos, _basestring):
+    if isinstance(pos, str):
         return '@ '+pos
     if pos is not None:
         return '@ char pos {}'.format(pos)
