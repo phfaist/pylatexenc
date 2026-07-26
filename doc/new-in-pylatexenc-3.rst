@@ -106,6 +106,27 @@ The `latex2text` module was improved:
   of delimiters like ``('<','>')`` gives ``x_<abc>``, and `None` gives plain
   ``x_abc`` as `pylatexenc 2` did.  It also applies to ``\frac`` and friends.
 
+- There is a new way of rendering formulas,
+  ``math_mode='fancy-text-engine'``, which tries to make the plain text look
+  like the formula LaTeX would typeset.  It ignores the whitespace of the
+  source the way LaTeX does and puts spaces back only where they help a
+  reader, so that ``$4 \pi c$`` gives ``4π𝑐`` with the implicit multiplication
+  kept tight while ``$x+y$`` gives ``𝑥 + 𝑦``; it writes the letters with the
+  unicode mathematical alphanumeric characters, so that a variable is visibly
+  not the name of a function (``$\sin x$`` gives ``sin 𝑥``); it adds
+  delimiters around a sub-expression only where a separating space would leave
+  its extent unclear; and it leaves the fragments of ordinary text such as
+  ``\text{...}`` alone, spaces and all.  The four math modes that existed
+  before are untouched by it.
+
+  The unicode characters this uses live in a high unicode plane that many
+  terminal fonts do not cover.  The companion option
+  ``math_fontstyle=None`` leaves the letters upright and in plain ASCII for
+  output that has to be read in such a place.
+
+  The command-line tool exposes both, as ``latex2text
+  --math-mode=fancy-text-engine`` and ``--math-fontstyle=none``.
+
 The `latexencode` module has barely changed.
 
 

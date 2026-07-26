@@ -345,6 +345,14 @@ def fmt_matrix_environment_node(node, l2tobj):
     .. versionadded:: 2.8
 
        This function was introduced in `pylatexenc 2.8`.
+
+    .. versionchanged:: 3.0
+
+       In math mode with ``math_mode='fancy-text-engine'``, this function
+       returns a *math piece* (see
+       :py:meth:`LatexNodes2Text.make_math_piece()`) instead of a string, so
+       that the formula joiner treats the whole object as a single item and
+       does not look inside it.  The rendering itself is unchanged.
     """
 
     class StateType:
@@ -358,8 +366,11 @@ def fmt_matrix_environment_node(node, l2tobj):
 
         def new_column(self):
             if self.buffer_nodes:
+                # str() because the contents of a cell are a formula of their
+                # own, and in the 'fancy-text-engine' math mode rendering a
+                # formula gives a math piece rather than a string
                 self.buffer_this_column.append(
-                    l2tobj.nodelist_to_text(self.buffer_nodes) .strip()
+                    str(l2tobj.nodelist_to_text(self.buffer_nodes)) .strip()
                 )
             self.buffer_nodes = []
 
@@ -385,17 +396,17 @@ def fmt_matrix_environment_node(node, l2tobj):
     state.new_row() # finish the last row
 
     # now format the contents as array --
-    all_char_widths = [ len(x)  for row in state.matrix_rows  for x in row ]
-    # an empty matrix or array is valid LaTeX, and max() has no default here
-    max_char_width = max(all_char_widths) if all_char_widths else 0
-    matrix_contents = "; ".join( (
-        " ".join( (
-            x.rjust(max_char_width, ' ')
-            for x in row
-        ) )
-        for row in state.matrix_rows
-    ) )
-    return "[ " + matrix_contents + " ]"
+    block = _MathBlockPiece(rows=state.matrix_rows, delimiters=('[', ']',))
+
+    if l2tobj.math_mode == 'fancy-text-engine' and l2tobj.state.in_math_mode:
+        # The 'fancy-text-engine' math mode hands the whole object to the joiner
+        # as a single item, so that the joiner treats it as opaque and never
+        # looks inside it; the brackets are what shows where it begins and where
+        # it ends, so both of its edges are of the 'block' class, which the
+        # joiner treats as delimiters.  The rendering is the same either way.
+        return block
+
+    return block.to_text()
 
 #
 # List environments (itemize, enumerate, description, ...).
@@ -590,7 +601,10 @@ def fmt_list_environment(node, l2tobj, environmentname):
 
     with l2tobj.push_state(list_stack=list_stack + [level]):
         preamble_nodes, items = _split_nodelist_at_items(node.nodelist)
-        preamble = l2tobj.nodelist_to_text(preamble_nodes).strip()
+        # str() because a list environment can, however oddly, be met in math
+        # mode, where the 'fancy-text-engine' math mode renders a node list to a
+        # math piece rather than to a string
+        preamble = str(l2tobj.nodelist_to_text(preamble_nodes)).strip()
         item_texts = [
             fmt_list_item(itemnode, itembody, l2tobj, level)
             for (itemnode, itembody) in items
@@ -631,7 +645,8 @@ def fmt_list_item(itemnode, itembody, l2tobj, level):
     else:
         marker = level.next_marker()
 
-    contents = l2tobj.nodelist_to_text(itembody).strip()
+    # str() for the same reason as in fmt_list_environment()
+    contents = str(l2tobj.nodelist_to_text(itembody)).strip()
 
     prefix = (marker + ' ') if marker else ''
     return _fmt_hanging_indent(prefix, contents)
@@ -756,6 +771,30 @@ def fmt_math_text_style(text, style):
     """
     return "".join( (_fmt_math_style_char(c, style=style) for c in text) )
 
+
+
+def _make_fmt_math_style_plain_chars():
+    # The inverse of the mapping that _fmt_math_style_char() applies: it takes a
+    # letter of the unicode math alphanumeric symbols back to the plain ascii
+    # letter it was made from.  It is built from the same two tables, so that it
+    # cannot fall out of step with them.
+    d = {}
+    for offsets in _fmt_math_style_offsets.values():
+        offset_up, offset_lo = offsets
+        for k in range(26):
+            d[chr(offset_up + k)] = chr(_oA + k)
+            d[chr(offset_lo + k)] = chr(_oa + k)
+    # The exceptions have to come last: they occupy code points that lie outside
+    # of the blocks above, but the holes that they leave behind in those blocks
+    # were given an entry in the loop above, which we now know to be spurious.
+    # (Those code points are unassigned, so nothing is lost by leaving them in;
+    # what matters is that the exception characters themselves are mapped.)
+    for exceptions in _fmt_math_style_exceptions.values():
+        for oc, c in exceptions.items():
+            d[c] = chr(oc)
+    return d
+
+_fmt_math_style_plain_chars = _make_fmt_math_style_plain_chars()
 
 
 
@@ -899,7 +938,7 @@ _fmt_subsuperscript_charmaps = {
 }
 
 
-def fmt_subsuperscript_text(text, which):
+def fmt_subsuperscript_text(text, which, normalize_math_style_chars=False):
     r"""
     Return `text` typeset with unicode superscript characters
     (`which='superscript'`) or with unicode subscript characters
@@ -909,6 +948,17 @@ def fmt_subsuperscript_text(text, which):
     characters.  If any character in `text` does not have a corresponding
     superscript/subscript character, then `None` is returned.  It is then up to
     the caller to represent the superscript or subscript in some other way.
+
+    If `normalize_math_style_chars` is set, then a letter of the unicode math
+    alphanumeric symbols (see :py:func:`fmt_math_text_style()`) is taken back to
+    the plain ascii letter it was made from before it is looked up, because
+    unicode offers no styled superscript or subscript characters; the style of
+    such a letter is then lost, but the superscript or subscript can still be
+    typeset.  This is what the ``math_mode='fancy-text-engine'`` rendering of
+    :py:class:`LatexNodes2Text` needs, because it italicizes variable names
+    where they are typeset, so that the argument of a superscript reaches this
+    function already styled.  By default the option is off, and a styled letter
+    simply has no superscript or subscript version.
 
     The default text replacement specs fall back onto writing out the '^' or
     '_' character followed by the superscript or subscript rendered as ordinary
@@ -923,6 +973,13 @@ def fmt_subsuperscript_text(text, which):
     charmap = _fmt_subsuperscript_charmaps[which]
     result = []
     for c in text:
+        if normalize_math_style_chars:
+            # A letter that was typeset with the unicode math alphanumeric
+            # symbols, say because it is a variable name in a math mode that
+            # italicizes those, has to be taken back to the plain ascii letter
+            # first: the tables above are keyed by the ascii character, and
+            # unicode has no italic superscripts to offer anyway.
+            c = _fmt_math_style_plain_chars.get(c, c)
         cc = charmap.get(c, None)
         if cc is None:
             # this character has no superscript/subscript version; the text
@@ -1002,6 +1059,902 @@ def fmt_math_expression_in_delimiters(text, math_expression_in):
     if delimiters is None or len(text) <= 1:
         return text
     return delimiters[0] + text + delimiters[1]
+
+
+
+
+# ------------------------------------------------------------------------------
+#
+# Math pieces.
+#
+# A mathematical expression is rendered item by item, and the resulting bits of
+# text then have to be assembled into a single string.  Assembling them is not
+# simply a matter of concatenating them: some neighbors have to be kept tight
+# together ("4\pi c" reads best as "4πc"), while others need a space between
+# them or the result becomes unreadable ("4\pi c x^q p" must not come out as
+# "4πcx^qp").
+#
+# The information needed to make that decision cannot be recovered from the
+# rendered strings alone, so each item that knows something useful about itself
+# returns a small object, a "math piece", that carries both the rendered text
+# and a short description of how the item wants to be joined to its neighbors.
+# The description is a pair of "atom classes", one for the left edge of the item
+# and one for its right edge (the two edges really can differ: the rendering
+# "√x" is closed off by the root sign on the left but is wide open on the
+# right).  An item that knows nothing about all this simply returns an ordinary
+# string, which is then classified by inspecting its characters; that is less
+# precise but it always works.
+#
+# This machinery serves the 'fancy-text-engine' math mode of LatexNodes2Text.
+#
+# Introduced in pylatexenc 3.0.
+#
+
+
+#
+# The atom classes.  These are the seven classes that TeX itself uses to decide
+# how much space to put between two neighboring items of a formula, plus four
+# of our own for situations that TeX handles by other means.
+#
+# The values are strings so that they can be used directly, and readably, as
+# argument values of the public method that creates math pieces.
+#
+
+# ordinary: variables, digits, ordinary symbols
+_ORD = 'ord'
+# named functions and large operators ("sin", "∑")
+_OP = 'op'
+# binary operators ("+", "×")
+_BIN = 'bin'
+# relations ("=", "∈", "→")
+_REL = 'rel'
+# opening and closing delimiters
+_OPEN = 'open'
+_CLOSE = 'close'
+# the punctuation marks "," and ";"
+_PUNCT = 'punct'
+# a rendering that has no visible extent on that side, such as "x^q", "a/b" or
+# "√x"; whatever comes next would look as if it were part of it
+_OPENEND = 'openend'
+# a fragment of ordinary text, which the joiner treats as opaque
+_TEXT = 'text'
+# a superscript or a subscript, which binds to the piece on its left
+_SCRIPT = 'script'
+# a large object such as a matrix, which brings its own delimiters
+_BLOCK = 'block'
+
+_math_atom_classes = (
+    _ORD, _OP, _BIN, _REL, _OPEN, _CLOSE, _PUNCT, _OPENEND, _TEXT, _SCRIPT,
+    _BLOCK,
+)
+
+# a binary operator whose left neighbor presents one of these classes (or which
+# has no left neighbor at all) is in fact a unary operator, and it binds tightly
+# to what follows it: "x = −y", not "x = − y"
+_math_unary_left_classes = (_BIN, _REL, _OPEN, _PUNCT,)
+
+# a piece whose right edge presents one of these classes already shows where it
+# ends, so a superscript or subscript that attaches to it does not need a space
+# in front of the piece to make its extent clear
+_math_self_delimited_classes = (_CLOSE, _BLOCK,)
+
+
+def _parse_math_cls(cls):
+    # Normalize an atom class specification into a pair (left edge class, right
+    # edge class).  A single class stands for both edges.
+    if cls is None:
+        return (_ORD, _ORD,)
+    if isinstance(cls, str):
+        if cls not in _math_atom_classes:
+            raise ValueError("Invalid math atom class: {!r}".format(cls))
+        return (cls, cls,)
+    cls_pair = tuple(cls)
+    if len(cls_pair) != 2:
+        raise ValueError(
+            "Invalid math atom class specification: {!r} (expected a class, or a "
+            "pair of classes for the left and the right edge)".format(cls)
+        )
+    for c in cls_pair:
+        if c not in _math_atom_classes:
+            raise ValueError("Invalid math atom class: {!r}".format(c))
+    return cls_pair
+
+
+
+class _MathPiece(object):
+    r"""
+    A bit of rendered math along with a description of how it wants to be joined
+    to its neighbors.
+
+    This is deliberately a plain object and not a subclass of :py:class:`str`,
+    because the rendered text must be allowed to be generated only when it is
+    needed: a matrix renders differently inline and in display math, and a
+    sub-expression can only decide whether it needs delimiters around itself
+    once it knows what its neighbors are.
+
+    Arguments and attributes:
+
+    - `text` is the rendered text.  Subclasses that generate their text lazily
+      leave it at `None` and reimplement :py:meth:`to_text()` instead.
+
+    - `cls` is the atom class of this piece: either a single class, which then
+      applies to both edges, or a pair with the class of the left edge and the
+      class of the right edge.  It is stored in the attributes `cls_left` and
+      `cls_right`.
+
+    - `script_kind` is 'superscript' or 'subscript' if this piece is a
+      superscript or a subscript, and `None` otherwise.  The joiner uses it to
+      swap a superscript and a subscript that follow one another, so that the
+      subscript attaches to the base first.
+
+    - `script_latex_notation` says whether a superscript or subscript piece had
+      to fall back onto LaTeX's own '^' and '_' notation instead of the unicode
+      superscript and subscript characters.  In that case the joiner also puts a
+      space in front of the base that the script attaches to, so that one can
+      see where the base begins.
+    """
+
+    def __init__(self, text=None, cls=None, script_kind=None,
+                 script_latex_notation=False):
+        super(_MathPiece, self).__init__()
+        self.text = text
+        cls_left, cls_right = _parse_math_cls(cls)
+        self.cls_left = cls_left
+        self.cls_right = cls_right
+        self.script_kind = script_kind
+        self.script_latex_notation = script_latex_notation
+
+    def to_text(self, display=False):
+        r"""
+        Return the text rendering of this piece.  The `display` flag says whether
+        we are in display math (an equation set on its own lines) rather than in
+        inline math.
+
+        Subclasses reimplement this method to generate their text only when it
+        is actually needed.
+        """
+        if self.text is None:
+            return ''
+        return self.text
+
+    def realize(self, cls_left_neighbor=None, cls_right_neighbor=None,
+                display=False):
+        r"""
+        Return the triple `(text, cls_left, cls_right)` that this piece
+        contributes, given the atom classes that its neighbors present to it
+        (`None` where there is no neighbor).
+
+        Pieces that adapt themselves to their surroundings reimplement this
+        method; the base implementation simply ignores the neighbors.
+        """
+        return (self.to_text(display=display), self.cls_left, self.cls_right,)
+
+    def __str__(self):
+        return self.to_text()
+
+    def __repr__(self):
+        return "{}(text={!r}, cls=({!r}, {!r}))".format(
+            self.__class__.__name__, self.to_text(), self.cls_left, self.cls_right
+        )
+
+
+
+class _MathWrappablePiece(_MathPiece):
+    r"""
+    A math piece that decides only when it is joined to its neighbors whether to
+    enclose its contents in delimiters.
+
+    There are two quite different reasons for putting delimiters around a
+    sub-expression.  The first is internal: the numerator of a fraction has to
+    be parenthesized in "(a+b)/c", and the fraction knows that all by itself.
+    The second is external: the subscript in "x_{abc}" needs no delimiters when
+    nothing follows it, but it does need them in "x_{abc}^2", where a space
+    would not be enough to show where the subscript ends.  Only the second
+    reason requires knowing the neighbors, and that is what this class is for.
+
+    The rule is deliberately short: wrap only when a separating space would
+    still leave the extent of the contents ambiguous, that is, when another
+    script attaches to the same base, when the contents themselves contain a
+    space, or when the contents are themselves open-ended.  Everything else gets
+    a space from the joiner, or nothing at all when the neighbor is separated
+    anyway.
+
+    Arguments and attributes, in addition to those of :py:class:`_MathPiece`:
+
+    - `inner_text` is the rendered contents that may or may not end up enclosed
+      in delimiters.
+
+    - `prefix` is text that always precedes the contents and always stays
+      outside the delimiters, such as the '^' or '_' of a script.
+
+    - `math_expression_in` is the delimiters to use, in the form accepted by the
+      `math_expression_in=` option of :py:class:`LatexNodes2Text`.  A value of
+      `None` means that this piece never wraps its contents.  The delimiters are
+      applied with :py:func:`fmt_math_expression_in_delimiters()`, which also
+      leaves contents of a single character alone.
+
+    - `inner_cls` is the atom class of the contents themselves, used to find out
+      whether the contents are open-ended.  It defaults to the classification of
+      `inner_text` by :py:func:`_classify_plain_str()`.
+
+    - `cls` is the atom class of this piece when the contents are *not* wrapped,
+      and `cls_wrapped` is its atom class when they are.  The latter defaults to
+      the left edge class of `cls` along with a right edge class of `_CLOSE`,
+      since a closing delimiter is then the last thing in the rendering.
+    """
+
+    def __init__(self, inner_text='', prefix='', math_expression_in=None,
+                 cls=None, cls_wrapped=None, inner_cls=None,
+                 script_kind=None, script_latex_notation=False):
+        super(_MathWrappablePiece, self).__init__(
+            text=None,
+            cls=cls,
+            script_kind=script_kind,
+            script_latex_notation=script_latex_notation,
+        )
+        self.inner_text = inner_text
+        self.prefix = prefix
+        self.math_expression_in = math_expression_in
+        if cls_wrapped is None:
+            cls_wrapped = (self.cls_left, _CLOSE,)
+        cls_wrapped_left, cls_wrapped_right = _parse_math_cls(cls_wrapped)
+        self.cls_wrapped_left = cls_wrapped_left
+        self.cls_wrapped_right = cls_wrapped_right
+        if inner_cls is None:
+            inner_cls = _classify_plain_str(inner_text)
+        inner_cls_left, inner_cls_right = _parse_math_cls(inner_cls)
+        self.inner_cls_left = inner_cls_left
+        self.inner_cls_right = inner_cls_right
+
+    def to_text(self, display=False):
+        # outside of a join we have no neighbors to worry about, so we show the
+        # contents without delimiters
+        return self.prefix + self.inner_text
+
+    def needs_wrapping(self, cls_right_neighbor=None):
+        r"""
+        Return whether the contents have to be enclosed in delimiters, given the
+        atom class that the neighbor on the right presents to this piece.
+        """
+        if cls_right_neighbor == _SCRIPT:
+            # another script attaches to the same base; a space would not tell
+            # the two of them apart
+            return True
+        if ' ' in self.inner_text:
+            return True
+        if self.inner_cls_right == _OPENEND:
+            return True
+        return False
+
+    def realize(self, cls_left_neighbor=None, cls_right_neighbor=None,
+                display=False):
+        wrapped_inner = fmt_math_expression_in_delimiters(self.inner_text,
+                                                          self.math_expression_in)
+        if wrapped_inner != self.inner_text \
+           and self.needs_wrapping(cls_right_neighbor=cls_right_neighbor):
+            return (self.prefix + wrapped_inner,
+                    self.cls_wrapped_left, self.cls_wrapped_right,)
+        return (self.prefix + self.inner_text, self.cls_left, self.cls_right,)
+
+
+
+class _MathBlockPiece(_MathPiece):
+    r"""
+    A large object made of rows and columns, such as a matrix, together with the
+    pair of delimiters that surrounds it as a whole.
+
+    The rendering is the inline one, ``[ 1 2; 3 4 ]``, with the columns padded
+    to a common width; the rows are separated by a semicolon and the columns by
+    a space.
+
+    This is a math piece, rather than simply the string that the rendering
+    amounts to, for one reason above all: a piece is opaque, so the joiner never
+    looks inside it.  The contents of a matrix are a formula of their own, and
+    the '+' or the ',' that sits in the middle of a cell has nothing to say
+    about how the matrix as a whole is to be joined to its neighbors.  The
+    delimiters are what does that, which is why both edges are of the class
+    `_BLOCK`, which the joiner treats as an opening delimiter on the left and as
+    a closing delimiter on the right.
+
+    Arguments and attributes, in addition to those of :py:class:`_MathPiece`:
+
+    - `rows` is the contents, as a list of rows, each of which is a list holding
+      the rendered text of each of its columns.
+
+    - `delimiters` is the pair of delimiters that goes around the whole object,
+      an opening one and a closing one.  It defaults to square brackets.
+    """
+
+    def __init__(self, rows=None, delimiters=None, cls=None):
+        if cls is None:
+            cls = _BLOCK
+        super(_MathBlockPiece, self).__init__(text=None, cls=cls)
+        if rows is None:
+            rows = []
+        self.rows = rows
+        if delimiters is None:
+            delimiters = ('[', ']',)
+        self.delimiters = delimiters
+
+    def to_text(self, display=False):
+        # TODO: in display math, where the formula is set on lines of its own
+        # anyway, a block could be laid out over several lines instead, one row
+        # per line, with the columns aligned on the padding widths that
+        # column_width() already computes (a layout like that would probably
+        # want one width per column rather than a single width for all of
+        # them), and the joiner would then have to place the whole thing on
+        # lines of its own.  This is left for later: it is separable from
+        # everything else here, and it is the first thing in this engine that
+        # starts to look like drawing a picture rather than like typesetting.
+        # The `display` flag and this method being overridable are the seam it
+        # would be built on.
+        return self.to_text_inline()
+
+    def column_width(self):
+        r"""
+        Return the width to which every column is padded, namely the width of the
+        widest cell of the whole object.
+        """
+        all_char_widths = [ len(x)  for row in self.rows  for x in row ]
+        # an empty matrix or array is valid LaTeX, and max() has no default here
+        return max(all_char_widths) if all_char_widths else 0
+
+    def to_text_inline(self):
+        r"""
+        Return the inline rendering, in the form ``[ a11 a12; a21 a22 ]``.
+        """
+        max_char_width = self.column_width()
+        contents = "; ".join( (
+            " ".join( (
+                x.rjust(max_char_width, ' ')
+                for x in row
+            ) )
+            for row in self.rows
+        ) )
+        return self.delimiters[0] + " " + contents + " " + self.delimiters[1]
+
+
+
+#
+# The classification of ordinary strings, for all the items that render to a
+# plain string without saying anything about themselves.  Many of these are
+# single characters coming from the symbol tables in _defaultspecs.py, such as
+# ('leq', '≤'), but a string can just as well hold a whole run of characters:
+# LaTeX's "x+y" reaches us as a single characters node, and a string-valued
+# `simplify_repl` or the fallback for an unknown macro can produce anything at
+# all.  Such a string is therefore split into the atoms it is made of, so that
+# the joiner sees the '+' in the middle of it (see _segment_plain_str()).
+#
+# Only ordinary strings are split up this way.  A math piece is always opaque,
+# which is the whole reason the piece type exists: the joiner must never look
+# inside the rendering of, say, a fragment of ordinary text.
+#
+# We spell the character sets out explicitly instead of asking the unicodedata
+# module for the unicode category of a character, because unicodedata is not
+# available under Transcrypt and we would rather keep the door open to compiling
+# this module to JavaScript one day.
+#
+# Any character that is not listed here is classified as ORD, which is the
+# conservative outcome: ORD means "join tightly", and a missing space is a
+# smaller error than a space in the wrong place.  This is why, for instance, the
+# vertical bar '|' is absent — it is the rendering of \mid, a relation, but also
+# the rendering of the absolute value delimiters, and there is no way to tell
+# the two apart here.  For the same reason the slash '/' is absent, exactly as
+# in TeX, where it is an ordinary atom so that "a/b" stays tight.
+#
+
+_math_bin_chars = (
+    u'+'
+    u'-'
+    u'*'
+    u'\N{MINUS SIGN}'                                   # −
+    u'\N{PLUS-MINUS SIGN}'                              # ±
+    u'\N{MINUS-OR-PLUS SIGN}'                           # ∓
+    u'\N{MULTIPLICATION SIGN}'                          # ×
+    u'\N{DIVISION SIGN}'                                # ÷
+    u'\N{MIDDLE DOT}'                                   # ·
+    u'\N{DOT OPERATOR}'                                 # ⋅
+    u'\N{ASTERISK OPERATOR}'                            # ∗
+    u'\N{STAR OPERATOR}'                                # ⋆
+    u'\N{RING OPERATOR}'                                # ∘
+    u'\N{BULLET OPERATOR}'                              # ∙
+    u'\N{CIRCLED PLUS}'                                 # ⊕
+    u'\N{CIRCLED MINUS}'                                # ⊖
+    u'\N{CIRCLED TIMES}'                                # ⊗
+    u'\N{CIRCLED DIVISION SLASH}'                       # ⊘
+    u'\N{CIRCLED DOT OPERATOR}'                         # ⊙
+    u'\N{UNION}'                                        # ∪
+    u'\N{INTERSECTION}'                                 # ∩
+    u'\N{MULTISET UNION}'                               # ⊎
+    u'\N{SQUARE CUP}'                                   # ⊔
+    u'\N{SQUARE CAP}'                                   # ⊓
+    u'\N{LOGICAL AND}'                                  # ∧
+    u'\N{LOGICAL OR}'                                   # ∨
+    u'\N{SET MINUS}'                                    # ∖
+    u'\N{WREATH PRODUCT}'                               # ≀
+    u'\N{DAGGER}'                                       # †
+    u'\N{DOUBLE DAGGER}'                                # ‡
+)
+
+_math_rel_chars = (
+    u'='
+    u'<'
+    u'>'
+    u':'
+    u'\N{NOT EQUAL TO}'                                 # ≠
+    u'\N{LESS-THAN OR EQUAL TO}'                        # ≤
+    u'\N{GREATER-THAN OR EQUAL TO}'                     # ≥
+    u'\N{MUCH LESS-THAN}'                               # ≪
+    u'\N{MUCH GREATER-THAN}'                            # ≫
+    u'\N{IDENTICAL TO}'                                 # ≡
+    u'\N{ALMOST EQUAL TO}'                              # ≈
+    u'\N{ASYMPTOTICALLY EQUAL TO}'                      # ≃
+    u'\N{APPROXIMATELY EQUAL TO}'                       # ≅
+    u'\N{TILDE OPERATOR}'                               # ∼
+    u'\N{EQUIVALENT TO}'                                # ≍
+    u'\N{APPROACHES THE LIMIT}'                         # ≐
+    u'\N{DELTA EQUAL TO}'                               # ≜
+    u'\N{PROPORTIONAL TO}'                              # ∝
+    u'\N{ELEMENT OF}'                                   # ∈
+    u'\N{NOT AN ELEMENT OF}'                            # ∉
+    u'\N{CONTAINS AS MEMBER}'                           # ∋
+    u'\N{SUBSET OF}'                                    # ⊂
+    u'\N{SUPERSET OF}'                                  # ⊃
+    u'\N{SUBSET OF OR EQUAL TO}'                        # ⊆
+    u'\N{SUPERSET OF OR EQUAL TO}'                      # ⊇
+    u'\N{SQUARE IMAGE OF}'                              # ⊏
+    u'\N{SQUARE ORIGINAL OF}'                           # ⊐
+    u'\N{SQUARE IMAGE OF OR EQUAL TO}'                  # ⊑
+    u'\N{SQUARE ORIGINAL OF OR EQUAL TO}'               # ⊒
+    u'\N{PRECEDES}'                                     # ≺
+    u'\N{SUCCEEDS}'                                     # ≻
+    u'\N{PRECEDES OR EQUAL TO}'                         # ≼
+    u'\N{SUCCEEDS OR EQUAL TO}'                         # ≽
+    u'\N{RIGHT TACK}'                                   # ⊢
+    u'\N{LEFT TACK}'                                    # ⊣
+    u'\N{UP TACK}'                                      # ⊥
+    u'\N{TRUE}'                                         # ⊨
+    u'\N{DIVIDES}'                                      # ∣
+    u'\N{PARALLEL TO}'                                  # ∥
+    u'\N{RIGHTWARDS ARROW}'                             # →
+    u'\N{LEFTWARDS ARROW}'                              # ←
+    u'\N{LEFT RIGHT ARROW}'                             # ↔
+    u'\N{RIGHTWARDS DOUBLE ARROW}'                      # ⇒
+    u'\N{LEFTWARDS DOUBLE ARROW}'                       # ⇐
+    u'\N{LEFT RIGHT DOUBLE ARROW}'                      # ⇔
+    u'\N{RIGHTWARDS ARROW FROM BAR}'                    # ↦
+    u'\N{LONG RIGHTWARDS ARROW}'                        # ⟶
+    u'\N{LONG LEFTWARDS ARROW}'                         # ⟵
+    u'\N{LONG LEFT RIGHT ARROW}'                        # ⟷
+    u'\N{LONG RIGHTWARDS DOUBLE ARROW}'                 # ⟹
+    u'\N{LONG LEFTWARDS DOUBLE ARROW}'                  # ⟸
+    u'\N{LONG LEFT RIGHT DOUBLE ARROW}'                 # ⟺
+    u'\N{LONG RIGHTWARDS ARROW FROM BAR}'               # ⟼
+)
+
+_math_open_chars = (
+    u'('
+    u'['
+    u'{'
+    u'\N{MATHEMATICAL LEFT ANGLE BRACKET}'              # ⟨
+    u'\N{LEFT ANGLE BRACKET}'                           # 〈
+    u'\N{LEFT CEILING}'                                 # ⌈
+    u'\N{LEFT FLOOR}'                                   # ⌊
+    u'\N{MATHEMATICAL LEFT WHITE SQUARE BRACKET}'       # ⟦
+    u'\N{MATHEMATICAL LEFT FLATTENED PARENTHESIS}'      # ⟮
+)
+
+_math_close_chars = (
+    u')'
+    u']'
+    u'}'
+    u'!'
+    u'\N{MATHEMATICAL RIGHT ANGLE BRACKET}'             # ⟩
+    u'\N{RIGHT ANGLE BRACKET}'                          # 〉
+    u'\N{RIGHT CEILING}'                                # ⌉
+    u'\N{RIGHT FLOOR}'                                  # ⌋
+    u'\N{MATHEMATICAL RIGHT WHITE SQUARE BRACKET}'      # ⟧
+    u'\N{MATHEMATICAL RIGHT FLATTENED PARENTHESIS}'     # ⟯
+)
+
+_math_punct_chars = (
+    u','
+    u';'
+)
+
+_math_op_chars = (
+    u'\N{N-ARY SUMMATION}'                              # ∑
+    u'\N{N-ARY PRODUCT}'                                # ∏
+    u'\N{N-ARY COPRODUCT}'                              # ∐
+    u'\N{INTEGRAL}'                                     # ∫
+    u'\N{DOUBLE INTEGRAL}'                              # ∬
+    u'\N{TRIPLE INTEGRAL}'                              # ∭
+    u'\N{CONTOUR INTEGRAL}'                             # ∮
+    u'\N{N-ARY UNION}'                                  # ⋃
+    u'\N{N-ARY INTERSECTION}'                           # ⋂
+    u'\N{N-ARY LOGICAL AND}'                            # ⋀
+    u'\N{N-ARY LOGICAL OR}'                             # ⋁
+    u'\N{N-ARY CIRCLED PLUS OPERATOR}'                  # ⨁
+    u'\N{N-ARY CIRCLED TIMES OPERATOR}'                 # ⨂
+    u'\N{N-ARY CIRCLED DOT OPERATOR}'                   # ⨀
+    u'\N{N-ARY SQUARE UNION OPERATOR}'                  # ⨆
+    u'\N{N-ARY UNION OPERATOR WITH PLUS}'               # ⨄
+)
+
+def _make_math_char_classes():
+    # Collect the character sets above into a single lookup table.
+    d = {}
+    for chars, cls in ( (_math_bin_chars, _BIN,),
+                        (_math_rel_chars, _REL,),
+                        (_math_open_chars, _OPEN,),
+                        (_math_close_chars, _CLOSE,),
+                        (_math_punct_chars, _PUNCT,),
+                        (_math_op_chars, _OP,), ):
+        for c in chars:
+            d[c] = cls
+    return d
+
+_math_char_classes = _make_math_char_classes()
+
+
+def _is_ascii_digit(c):
+    # deliberately not str.isdigit(), which also accepts the digits of other
+    # scripts as well as characters such as the superscript two
+    return (c >= '0' and c <= '9')
+
+
+def _is_upright_latin_letter(c):
+    # The math italic letters of the unicode math alphanumeric symbols block are
+    # not in the ranges tested here, which is exactly the point: an upright run
+    # of letters in math mode can only be the name of a function, because the
+    # variables have been italicized.
+    return ((c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z'))
+
+
+def _segment_plain_str(s, upright_letters_are_op=True):
+    r"""
+    Split an ordinary string, one that carries no information about itself, into
+    the atoms that make it up.  Return a list of pairs `(text, cls)` giving the
+    text of each atom along with its atom class.
+
+    The rules are:
+
+    - a run of two or more upright latin letters is the name of a function such
+      as 'sin' or 'log', and becomes a single large operator atom.  This holds
+      only because the variables are italicized, which is what makes an upright
+      run stand out as something other than a variable; where they are not (the
+      ``math_fontstyle=None`` option of :py:class:`LatexNodes2Text`), the caller
+      says so with `upright_letters_are_op=False` and the run is taken for a
+      row of ordinary variables instead.  The function names then still come
+      out right, because the specifications of '\sin' and friends say what they
+      are;
+
+    - a run of digits, taking in a decimal point that has digits on both sides
+      so that '3.14' stays in one piece, becomes a single ordinary atom;
+
+    - a character that is a binary operator, a relation, an opening or closing
+      delimiter or a punctuation mark becomes an atom of its own;
+
+    - anything else becomes an ordinary atom of its own, one per character.
+      This is the conservative outcome, since ordinary atoms are joined tightly
+      and a missing space is a smaller error than a space in the wrong place.
+      Single upright letters end up here too, because in math mode a lone
+      letter is a variable and not the name of a function.
+
+      Such characters are deliberately *not* grouped with one another.  The
+      spacing is the same either way, ordinary atoms being joined tightly, but
+      the joiner puts a space in front of the atom that a superscript or a
+      subscript attaches to, and that atom has to be the single character the
+      script really applies to: '4πc x^q', not '4π cx^q'.
+    """
+    atoms = []
+    i = 0
+    num = len(s)
+
+    while i < num:
+        c = s[i]
+
+        if _is_upright_latin_letter(c):
+            if upright_letters_are_op:
+                j = i
+                while j < num and _is_upright_latin_letter(s[j]):
+                    j = j + 1
+                if j - i >= 2:
+                    atoms.append( (s[i:j], _OP,) )
+                    i = j
+                    continue
+            atoms.append( (c, _ORD,) )
+            i = i + 1
+            continue
+
+        if _is_ascii_digit(c):
+            j = i
+            while j < num:
+                if _is_ascii_digit(s[j]):
+                    j = j + 1
+                    continue
+                if s[j] == '.' and j + 1 < num and _is_ascii_digit(s[j+1]):
+                    j = j + 1
+                    continue
+                break
+            atoms.append( (s[i:j], _ORD,) )
+            i = j
+            continue
+
+        cls = _math_char_classes.get(c, _ORD)
+        atoms.append( (c, cls,) )
+        i = i + 1
+
+    return atoms
+
+
+def _classify_plain_str(s, upright_letters_are_op=True):
+    r"""
+    Return the pair `(cls_left, cls_right)` with the atom classes of the left
+    and of the right edge of an ordinary string, taken from the classes of the
+    first and of the last atom that the string is made of (see
+    :py:func:`_segment_plain_str()`).
+    """
+    atoms = _segment_plain_str(s, upright_letters_are_op=upright_letters_are_op)
+    if not atoms:
+        return (_ORD, _ORD,)
+    return (atoms[0][1], atoms[-1][1],)
+
+
+
+def _math_needs_space(cls_left, cls_right, text_left, text_right):
+    # Whether the right edge of one piece, presenting the class `cls_left`, and
+    # the left edge of the next piece, presenting the class `cls_right`, have to
+    # be separated by a space.  This is TeX's own table of the spacing between
+    # neighboring atoms, collapsed from four widths down to two, which is why it
+    # is this short and why it gives conventional-looking results.
+    #
+    # Unary binary operators have already been dealt with by the caller, which
+    # turns them into ordinary atoms.
+
+    # A large object such as a matrix carries its own delimiters, and it really
+    # does delimit itself on both sides, so its left edge behaves exactly like
+    # an opening delimiter and its right edge exactly like a closing one:
+    # 'sin[ 1 2 ]' hugs the way 'sin(x)' does, and '2[ 1 2 ]' stays tight.
+    #
+    # The class is kept distinct from _OPEN and _CLOSE all the same, rather than
+    # having a block simply declare itself to be a pair of delimiters: a block
+    # is a different kind of thing, it is recognizable as such wherever its
+    # class travels (a join hands the class of its outermost constituents on to
+    # the piece it returns), and a rule that wants to tell the two apart can.
+    # As things stand no rule does -- _math_self_delimited_classes holds both --
+    # so the two descriptions happen to give the same output today.
+    if cls_left == _BLOCK:
+        cls_left = _CLOSE
+    if cls_right == _BLOCK:
+        cls_right = _OPEN
+
+    # 1. either side is a binary operator or a relation
+    if cls_left == _BIN or cls_left == _REL or cls_right == _BIN or cls_right == _REL:
+        return True
+    # 2. either side has no visible extent
+    if cls_left == _OPENEND or cls_right == _OPENEND:
+        return True
+    # 3. the left side is a large operator or a text fragment, unless a
+    #    delimiter follows.  A delimiter hugs what it encloses, on both sides:
+    #    'sin(x)' of course, but also '[xyz]' where the 'xyz' looks like the
+    #    name of a function.  A function name immediately followed by a closing
+    #    delimiter essentially never happens in real mathematics, and where it
+    #    does, no space is the better rendering anyway.
+    if (cls_left == _OP or cls_left == _TEXT) \
+       and cls_right != _OPEN and cls_right != _CLOSE:
+        return True
+    # 4. the right side is a large operator or a text fragment, unless an
+    #    opening delimiter precedes
+    if (cls_right == _OP or cls_right == _TEXT) and cls_left != _OPEN:
+        return True
+    # 5. the left side is punctuation (never merely because the right side is)
+    if cls_left == _PUNCT:
+        return True
+    # 6. the two adjacent characters are both digits, which would otherwise run
+    #    together into a single number
+    if text_left and text_right \
+       and _is_ascii_digit(text_left[-1]) and _is_ascii_digit(text_right[0]):
+        return True
+    # 7. otherwise, no space
+    return False
+
+
+def _math_separator(cls_left, cls_right, text_left, text_right):
+    # The separator to place between two neighboring pieces.  A space that is
+    # already there, at the end of the left rendering or at the beginning of the
+    # right one, counts: this is what keeps '\text{if } x > 0' from ending up
+    # with two spaces after the 'if'.
+    if text_left and text_left[-1] == ' ':
+        return ''
+    if text_right and text_right[0] == ' ':
+        return ''
+    if _math_needs_space(cls_left, cls_right, text_left, text_right):
+        return ' '
+    return ''
+
+
+def _math_pieces_prepare(pieces, upright_letters_are_op=True):
+    # Turn the given list, which may mix math pieces with ordinary strings, into
+    # a list of math pieces, and reorder the scripts in it.
+    #
+    # A math piece is taken as it is, because it is opaque.  An ordinary string,
+    # on the other hand, is split into the atoms that make it up, so that the
+    # joiner also sees the operators and the delimiters that sit in the middle
+    # of it; without this, '$x+y$', which reaches us as a single characters
+    # node, would come out as 'x+y' with nothing set apart.
+    items = []
+    for piece in pieces:
+        if piece is None:
+            continue
+        if isinstance(piece, _MathPiece):
+            items.append(piece)
+            continue
+        if not isinstance(piece, str):
+            piece = str(piece)
+        if not piece:
+            continue
+        for atom in _segment_plain_str(
+                piece, upright_letters_are_op=upright_letters_are_op):
+            items.append( _MathPiece(text=atom[0], cls=atom[1]) )
+
+    # A superscript immediately followed by a subscript reads much better the
+    # other way around, because the subscript then attaches to the base first:
+    # 'x^a_b' comes out as 'xᵦᵃ' instead of running the two scripts together.
+    # (The trick is taken from the flatlatex package.)
+    for i in range(len(items) - 1):
+        if items[i].script_kind == 'superscript' \
+           and items[i+1].script_kind == 'subscript':
+            item = items[i]
+            items[i] = items[i+1]
+            items[i+1] = item
+
+    return items
+
+
+def _join_math_pieces(pieces, display=False, upright_letters_are_op=True):
+    r"""
+    Join the given math pieces into a single :py:class:`_MathPiece`, inserting
+    spaces where they help the reader.
+
+    The `pieces` may mix :py:class:`_MathPiece` objects with ordinary strings.
+    A math piece is opaque and is used as it is; an ordinary string is first
+    split into the atoms that make it up (see :py:func:`_segment_plain_str()`).
+    The `display` flag says whether we are in display math rather than in inline
+    math; it is handed on to the pieces when they render themselves.  The
+    `upright_letters_are_op` flag says whether a run of upright latin letters in
+    such a string is to be taken for the name of a function; it belongs to the
+    caller, which knows whether the variables are being italicized.
+
+    The result is itself a math piece, presenting the left edge class of its
+    first constituent and the right edge class of its last one, so that a group
+    can be joined to its own neighbors in turn.
+
+    The joining happens in two passes, because whether a piece encloses itself
+    in delimiters depends on its neighbors while its edge classes depend on
+    whether it did.  The first pass has each piece render itself against the
+    classes that its neighbors *declare*, that is, the classes they present when
+    they do not wrap; that is the conservative direction, and it always
+    terminates.  The second pass computes the separators from the classes that
+    the pieces actually ended up presenting.
+    """
+
+    items = _math_pieces_prepare(
+        pieces, upright_letters_are_op=upright_letters_are_op)
+
+    #
+    # First pass: have each piece render itself, given what its neighbors
+    # declare themselves to be.  Pieces that render to nothing at all are
+    # dropped, so that they cannot cause a spurious separator.
+    #
+    r_items = []
+    r_texts = []
+    r_cls_left = []
+    r_cls_right = []
+    for i in range(len(items)):
+        cls_left_neighbor = items[i-1].cls_right if i > 0 else None
+        cls_right_neighbor = items[i+1].cls_left if i+1 < len(items) else None
+        text, cls_left, cls_right = items[i].realize(
+            cls_left_neighbor=cls_left_neighbor,
+            cls_right_neighbor=cls_right_neighbor,
+            display=display,
+        )
+        if not text:
+            continue
+        r_items.append(items[i])
+        r_texts.append(text)
+        r_cls_left.append(cls_left)
+        r_cls_right.append(cls_right)
+
+    num = len(r_texts)
+    if num == 0:
+        return _MathPiece(text='', cls=_ORD)
+
+    #
+    # A binary operator that has nothing suitable on its left is really a unary
+    # operator, and it behaves like an ordinary atom: it binds tightly to what
+    # follows it, and it does not push the preceding opening delimiter away.
+    # All of them are identified before any of them is rewritten, so that the
+    # outcome does not depend on the order in which we go through the list.
+    #
+    is_unary = []
+    for i in range(num):
+        is_unary.append(
+            r_cls_left[i] == _BIN
+            and (i == 0 or r_cls_right[i-1] in _math_unary_left_classes)
+        )
+    for i in range(num):
+        if is_unary[i]:
+            r_cls_left[i] = _ORD
+            if r_cls_right[i] == _BIN:
+                r_cls_right[i] = _ORD
+
+    #
+    # A script and the base it attaches to make up a single atom, and what that
+    # atom presents to whatever comes after it is the class of the base, not the
+    # class of the script: '\sum_i y' has to come out as '∑ᵢ y', with the space
+    # that the large operator calls for, and not as '∑ᵢy'.  The one exception is
+    # a script that has no visible extent of its own, such as 'x^q', which stays
+    # open-ended whatever its base was.  Scripts chain, so we go through them
+    # from left to right and let the class travel along the chain.
+    #
+    for i in range(1, num):
+        if r_cls_left[i] == _SCRIPT and r_cls_right[i] != _OPENEND:
+            r_cls_right[i] = r_cls_right[i-1]
+
+    #
+    # Second pass: the separators.
+    #
+    seps = []
+    for i in range(num - 1):
+        seps.append( _math_separator(r_cls_right[i], r_cls_left[i+1],
+                                     r_texts[i], r_texts[i+1]) )
+
+    #
+    # In the node tree a superscript or a subscript is a node of its own,
+    # separate from the base it applies to, so it simply arrives here as the
+    # piece that follows its base.  It has to be attached to that base with
+    # nothing in between.  And when the script had to fall back onto LaTeX's own
+    # '^' or '_' notation, a space goes in front of the base as well, so that
+    # one can see where the base begins: this is what turns '4πcx^qp' into
+    # '4πc x^q p'.
+    #
+    # That space is pointless, or downright misleading, in a couple of cases:
+    # when the base is itself a script, because scripts chain onto the same
+    # base; when the base already shows where it ends, as a closing delimiter or
+    # a matrix does; and of course when there is a space there already.
+    #
+    for i in range(1, num):
+        if r_cls_left[i] != _SCRIPT:
+            continue
+        seps[i-1] = ''
+        if not r_items[i].script_latex_notation:
+            continue
+        if i < 2:
+            continue
+        if r_cls_left[i-1] == _SCRIPT:
+            continue
+        if r_cls_right[i-1] in _math_self_delimited_classes:
+            continue
+        if seps[i-2] != '':
+            continue
+        if r_texts[i-2].endswith(' ') or r_texts[i-1].startswith(' '):
+            continue
+        seps[i-2] = ' '
+
+    result = [ r_texts[0] ]
+    for i in range(num - 1):
+        result.append(seps[i])
+        result.append(r_texts[i+1])
+
+    return _MathPiece(
+        text="".join(result),
+        cls=(r_cls_left[0], r_cls_right[num-1],),
+    )
+
+
+
+# ------------------------------------------------------------------------------
 
 
 
@@ -1268,21 +2221,50 @@ class TextConversionState(object):
        Because it is part of the state, it can be changed for one part of the
        document only, see :py:meth:`LatexNodes2Text.push_state()`.
 
+    .. py:attribute:: text_fontstyle
+
+       The font style that applies to the characters that are typeset here in
+       text mode, as one of the style names accepted by
+       :py:func:`fmt_math_text_style()`, or `None` for the upright style.  It
+       is what ``\textbf{}``, ``\textsf{}``, ``\emph{}`` and friends install for
+       the duration of their contents.
+
+    .. py:attribute:: math_fontstyle
+
+       The font style that applies to the characters that are typeset here in
+       math mode, as one of the style names accepted by
+       :py:func:`fmt_math_text_style()`, or `None` for the upright style.  It
+       is what ``\mathbf{}``, ``\mathcal{}`` and friends install for the
+       duration of their contents; its initial value comes from the
+       `math_fontstyle=` option of :py:class:`LatexNodes2Text`.
+
+       Math mode italicizes the variable names, so this field starts out as
+       'italic' where `text_fontstyle` starts out upright.
+
+       The two font styles are kept apart because they are stacked
+       independently: crossing into math mode and back out of it, as in
+       ``\textit{... $\mathbf{a+\text{[b]}}$}``, has to restore the text style
+       that was in force outside, which the excursion into math mode never
+       disturbed.
+
     .. versionadded:: 3.0
 
        This class was introduced in `pylatexenc 3.0`.
     """
 
     _fields = ('strict_latex_spaces', 'in_math_mode', 'list_stack',
-               'math_expression_in',)
+               'math_expression_in', 'text_fontstyle', 'math_fontstyle',)
 
     def __init__(self, strict_latex_spaces=None, in_math_mode=False,
-                 list_stack=None, math_expression_in=default_math_expression_in):
+                 list_stack=None, math_expression_in=default_math_expression_in,
+                 text_fontstyle=None, math_fontstyle='italic'):
         super(TextConversionState, self).__init__()
         self.strict_latex_spaces = strict_latex_spaces
         self.in_math_mode = in_math_mode
         self.list_stack = list_stack if list_stack is not None else []
         self.math_expression_in = math_expression_in
+        self.text_fontstyle = text_fontstyle
+        self.math_fontstyle = math_fontstyle
 
     def sub_state(self, **kwargs):
         r"""
@@ -1341,14 +2323,57 @@ class LatexNodes2Text(object):
 
     Additional keyword arguments are flags which may influence the behavior:
 
-    - `math_mode='text'|'with-delimiters'|'verbatim'|'remove'`: Specify how to
-      treat chunks of LaTeX code that correspond to math modes.  If 'text' (the
-      default), then the math mode contents is incorporated as normal text.  If
-      'with-delimiters', the content is incorporated as normal text but it is
-      still included in the original math-mode delimiters, such as '$...$'.  If
-      'verbatim', then the math mode chunk is kept verbatim, including the
-      delimiters.  The value 'remove' means to remove the math mode sections
-      entirely and not to produce any replacement text.
+    - `math_mode='text'|'with-delimiters'|'verbatim'|'remove'
+      |'fancy-text-engine'`: Specify how to treat chunks of LaTeX code that
+      correspond to math modes.  If 'text' (the default), then the math mode
+      contents is incorporated as normal text.  If 'with-delimiters', the
+      content is incorporated as normal text but it is still included in the
+      original math-mode delimiters, such as '$...$'.  If 'verbatim', then the
+      math mode chunk is kept verbatim, including the delimiters.  The value
+      'remove' means to remove the math mode sections entirely and not to
+      produce any replacement text.
+
+      The value 'fancy-text-engine' selects a rendering of the formula that
+      aims to look, as far as plain text allows, like the formula that LaTeX
+      itself would typeset.  Use it when the text is meant to be read by a
+      person — in a terminal, in an e-mail, in a search result — rather than
+      processed further.  It differs from 'text' in four ways.
+
+        * The whitespace of the source is ignored, exactly as LaTeX ignores
+          it, and spaces are put back only where they help the reader.  So
+          ``$4 \pi c$`` and ``$4\pi c$`` both give ``4π𝑐``, keeping the
+          implicit multiplication tight, whereas ``$x+y$`` gives ``𝑥 + 𝑦``,
+          setting the binary operator apart.  What decides this is LaTeX's own
+          table of the spacing between neighboring atoms, reduced from four
+          widths of space to two.
+
+        * The letters of the formula are written with the unicode mathematical
+          alphanumeric characters, so that a variable name is visibly not the
+          name of a function: ``$\sin x$`` gives ``sin 𝑥``.  Which style is
+          used is the `math_fontstyle=` option below, and macros such as
+          ``\mathbf{}`` change it for their contents.
+
+        * A sub-expression is put in delimiters only where its extent would
+          otherwise be unclear, and where a separating space is enough, a space
+          is used instead.  So ``$x_{abc}$`` gives ``𝑥_𝑎𝑏𝑐`` and
+          ``$x_{abc} p$`` gives ``𝑥_𝑎𝑏𝑐 𝑝``, while ``$x_{abc}^2$``, where a
+          second script attaches to the same base, does need the delimiters and
+          gives ``𝑥_(𝑎𝑏𝑐)²``.
+
+        * A text-mode fragment such as ``\text{...}`` is left alone.  The
+          spaces it brings along survive, and no space of ours is added right
+          next to one of them, so that ``$\text{if } x > 0$`` gives
+          ``if 𝑥 > 0`` with exactly one space after the "if".
+
+      The rendering stays one-dimensional: there is no two-dimensional layout
+      and nothing is drawn out of characters.  A matrix, for instance, is
+      rendered inline as ``[ 1 2; 3 4 ]``, in math mode and in display math
+      alike.
+
+      .. versionadded:: 3.0
+
+         The `math_mode='fancy-text-engine'` value was introduced in
+         `pylatexenc 3.0`.
 
     - `math_expression_in='braces'|'parens'|(left, right)|None`: Specify which
       delimiters to place around a mathematical sub-expression that we were not
@@ -1378,6 +2403,42 @@ class LatexNodes2Text(object):
       .. versionadded:: 3.0
 
          The `math_expression_in=` option was introduced in `pylatexenc 3.0`.
+
+    - `math_fontstyle='italic'|None|<style name>`: The font style in which the
+      letters of a formula are typeset, using the unicode math alphanumeric
+      symbols (see :py:func:`fmt_math_text_style()`, whose style names are the
+      accepted values here).  The default 'italic' follows the convention of
+      mathematical typesetting, where a variable name is set in italics; the
+      value `None` leaves the letters upright.
+
+      The reason the option exists is that those characters live in a high
+      unicode plane which a good many terminal fonts do not cover, and which
+      they will therefore display as a row of empty boxes.  Give
+      `math_fontstyle=None` if the output might be read in such a place; the
+      letters then stay plain ASCII.
+
+      There is a small price for switching the styling off.  A run of two or
+      more upright latin letters is what the renderer takes for the name of a
+      function, which is how ``\sin`` and ``\log`` are told apart from a
+      product of variables without every such macro having to be annotated;
+      that guess is only sound as long as the variables are being italicized.
+      With `math_fontstyle=None`, ``$2xy$`` still comes out as ``2xy`` and
+      ``$2\sin x$`` still as ``2 sin x``, but a construct that relies on the
+      guess, such as ``$\mathrm{max} x$``, loses the space that separates the
+      function name from its argument.
+
+      This is the initial value of the `math_fontstyle` field of the conversion
+      state; macros such as ``\mathbf{}`` change it for their contents, and it
+      can also be changed for one part of the document only, see
+      :py:class:`TextConversionState` and :py:meth:`push_state()`.
+
+      The option is only in effect with ``math_mode='fancy-text-engine'``,
+      which is the math mode that renders formulas with the unicode math
+      characters; the other math modes ignore it.
+
+      .. versionadded:: 3.0
+
+         The `math_fontstyle=` option was introduced in `pylatexenc 3.0`.
 
     - `keep_comments=True|False`: If set to `True`, then LaTeX comments are kept
       (including the percent-sign); otherwise they are discarded.  (By default
@@ -1554,12 +2615,19 @@ class LatexNodes2Text(object):
         else:
             self.math_mode = flags.pop('math_mode', 'text')
 
-        if self.math_mode not in ('text', 'with-delimiters', 'verbatim', 'remove'):
+        if self.math_mode not in ('text', 'with-delimiters', 'verbatim', 'remove',
+                                  'fancy-text-engine'):
             raise ValueError("math_mode= option must be one of 'text', 'with-delimiters', "
-                             "'verbatim', 'remove'")
+                             "'verbatim', 'remove', 'fancy-text-engine'")
 
         math_expression_in = flags.pop('math_expression_in', default_math_expression_in)
         self.math_expression_in = _parse_math_expression_in(math_expression_in)
+
+        # The initial value of the `math_fontstyle` field of the conversion
+        # state; when the option is not given we keep whatever value that state
+        # field starts out with (see TextConversionState).
+        if 'math_fontstyle' in flags:
+            self.state.math_fontstyle = flags.pop('math_fontstyle')
 
         self.keep_comments = flags.pop('keep_comments', False)
 
@@ -1710,7 +2778,12 @@ class LatexNodes2Text(object):
             logger.warning(u"Expected exactly one argument for '\\input' ! Got = %r",
                            n.nodeargs)
 
-        inputtex = self.read_input_file(self.nodelist_to_text([n.nodeargs[0]]).strip())
+        # str() because '\input' can, however oddly, be met in math mode, where
+        # the 'fancy-text-engine' math mode renders a node list to a math piece
+        # rather than to a string
+        inputtex = self.read_input_file(
+            str(self.nodelist_to_text([n.nodeargs[0]])).strip()
+        )
 
         if not inputtex:
             return ''
@@ -1761,9 +2834,17 @@ class LatexNodes2Text(object):
         what you want in the vast majority of cases; see
         :py:meth:`push_state()` to install a modified state.
 
+        In math mode with ``math_mode='fancy-text-engine'``, the return value is
+        a *math piece* (see :py:meth:`make_math_piece()`) rather than a string,
+        because the result of rendering a formula still has something to say
+        about how it wants to be joined to whatever surrounds it.  Use `str()`
+        on the result if you need the text itself; every other case returns an
+        ordinary string as it always did.
+
         .. versionadded:: 3.0
 
-           The `state` argument was introduced in `pylatexenc 3.0`.
+           The `state` argument was introduced in `pylatexenc 3.0`, as was the
+           math piece return value of ``math_mode='fancy-text-engine'``.
         """
 
         if nodelist is None:
@@ -1771,13 +2852,24 @@ class LatexNodes2Text(object):
 
         with _util.PushPropOverride(self, 'state', state):
 
-            s = ''
+            # In math mode the 'fancy-text-engine' math mode assembles the
+            # rendered items with the formula joiner instead of simply
+            # concatenating them.  The items are therefore collected in a list
+            # and handed to the joiner as they are: an item that is a math piece
+            # says how it wants to be joined to its neighbors, and that
+            # information would be lost if we turned it into a string here.
+            fancy_math = ( self.math_mode == 'fancy-text-engine'
+                           and self.state.in_math_mode )
+
+            parts = [] # the rendered items, for the formula joiner
+            s = '' # the text rendered so far, for the text filling
             prev_node = None
             for node in nodelist:
                 if self._is_bare_macro_node(prev_node) and \
                    node.isNodeType(latexwalker.LatexCharsNode):
 
-                    if not self.strict_latex_spaces['between-macro-and-chars']:
+                    if not fancy_math \
+                       and not self.strict_latex_spaces['between-macro-and-chars']:
                         # after a macro with absolutely no arguments, include
                         # post_space in output by default if there are other
                         # chars that follow.  This is for more breathing space
@@ -1786,17 +2878,45 @@ class LatexNodes2Text(object):
                         # NOT LaTeX' default behavior (see issue #11), so only do
                         # this if the corresponding `strict_latex_spaces=` flag
                         # is set.
+                        #
+                        # Never in the fancy engine's math mode: that space is
+                        # whitespace of the source, which math mode ignores, and
+                        # putting it back here would defeat the joiner --
+                        # '$4 \pi c$' would come out as '4π 𝑐' instead of '4π𝑐'.
                         s += prev_node.macro_post_space
 
-                last_nl_pos = s.rfind('\n')
-                if last_nl_pos != -1:
-                    textcol = len(s)-last_nl_pos-1
+                if fancy_math:
+                    # the text filling never applies to a formula
+                    textcol = 0
                 else:
-                    textcol = len(s)
+                    last_nl_pos = s.rfind('\n')
+                    if last_nl_pos != -1:
+                        textcol = len(s)-last_nl_pos-1
+                    else:
+                        textcol = len(s)
 
-                s += self.node_to_text(node, textcol=textcol)
+                r = self.node_to_text(node, textcol=textcol)
+
+                if fancy_math:
+                    parts.append(r)
+                else:
+                    # No str() here on purpose: outside of the fancy engine's
+                    # math mode the items really are meant to be strings, and a
+                    # simplify_repl that returns something else should keep
+                    # raising a TypeError here rather than have its str()
+                    # silently rendered.
+                    s += r
 
                 prev_node = node
+
+            if fancy_math:
+                # whether a run of upright latin letters is to be taken for the
+                # name of a function is only a sound guess as long as the
+                # variables are being italicized; see _segment_plain_str()
+                return _join_math_pieces(
+                    parts,
+                    upright_letters_are_op=(self.state.math_fontstyle is not None),
+                )
 
             return s
 
@@ -1854,18 +2974,37 @@ class LatexNodes2Text(object):
         Return the textual representation of the given `node` representing a block
         of simple latex text with no special characters or macros.  The `node`
         is :py:class:`~pylatexenc.latexwalker.LatexCharsNode`.
+
+        The font style of the current conversion state, if there is one, is
+        applied here, at the leaves of the node tree, so that it also reaches
+        the characters that are nested inside groups and inside the arguments of
+        macros.  See the `text_fontstyle` and `math_fontstyle` fields of
+        :py:class:`TextConversionState`.
         """
+        content = node.chars
+
+        if self.math_mode == 'fancy-text-engine' and self.state.in_math_mode:
+            # In math mode LaTeX ignores the whitespace of the source, and so do
+            # we; the spaces that make the result readable are put back where
+            # they belong when the pieces of the formula are assembled.
+            content = re.sub(r'\s+', '', content)
+            if self.state.math_fontstyle is not None:
+                content = fmt_math_text_style(content, self.state.math_fontstyle)
+            return content
+
         # Unless in strict latex spaces mode, ignore nodes consisting only
         # of empty chars, as this tends to produce too much space...  These
         # have been inserted by LatexWalker() in some occasions to keep
         # track of all relevant pre_space of tokens, such as between two
         # braced groups ("{one} {two}") or other such situations.
-        content = node.chars
         if self.fill_text: # None or column width
             content = self.do_fill_text(content, textcol=textcol)
         if not self.strict_latex_spaces['between-latex-constructs'] \
            and len(content.strip()) == 0:
             return ""
+        if self.math_mode == 'fancy-text-engine' \
+           and self.state.text_fontstyle is not None:
+            content = fmt_math_text_style(content, self.state.text_fontstyle)
         return content
 
     def comment_node_to_text(self, node):
@@ -2018,6 +3157,35 @@ class LatexNodes2Text(object):
             else:
                 return delims[0] + content + delims[1]
 
+        elif self.math_mode == 'fancy-text-engine':
+            # display math is set on lines of its own, and the pieces of the
+            # formula are told so when they render themselves.
+            #
+            # NOTE: today the flag only reaches the outermost piece, whose text
+            # the join has already fixed, so nothing observable depends on it.
+            # Handing it down to the pieces nested inside the formula would
+            # mean carrying it through nodelist_to_text(), which is where the
+            # inner joins happen; that is worth doing if and when a piece ever
+            # renders differently in display math (see the TODO in
+            # _MathBlockPiece.to_text(), the deferred multi-line layout of a
+            # matrix), and not before.
+            is_display = ( node.isNodeType(latexwalker.LatexEnvironmentNode)
+                           or node.displaytype == 'display' )
+            with _PushEquationState(self):
+                # in this math mode rendering a formula gives a math piece, not
+                # a string; here, at the outer edge of the formula, there is
+                # nothing left to join it to, so we ask it for its text
+                rendered = self.nodelist_to_text(node.nodelist)
+            if isinstance(rendered, _MathPiece):
+                content = rendered.to_text(display=is_display)
+            else:
+                content = str(rendered)
+            content = content.strip()
+            if is_display:
+                return self._fmt_indented_block(content)
+            else:
+                return content
+
         elif self.math_mode == 'text':
             with _PushEquationState(self):
                 content = self.nodelist_to_text(node.nodelist).strip()
@@ -2029,6 +3197,115 @@ class LatexNodes2Text(object):
 
         else:
             raise RuntimeError("unknown math_mode={} !".format(self.math_mode))
+
+
+    def make_math_piece(self, *, text=None, cls=None, inner_text=None,
+                        prefix='', cls_wrapped=None, inner_cls=None,
+                        script_kind=None, script_latex_notation=False):
+        r"""
+        Create a *math piece*, the object that a `simplify_repl` callable returns
+        instead of an ordinary string when it wants to say something about how
+        its rendering should be joined to its neighbors in a formula.
+
+        This is only meaningful with ``math_mode='fancy-text-engine'``, and only
+        for a node that sits in math mode; anywhere else a `simplify_repl`
+        callable must keep returning an ordinary string.
+
+        A math piece carries the rendered text along with a pair of *atom
+        classes*, one describing its left edge and one describing its right
+        edge.  The atom classes are the ones that TeX itself uses to decide how
+        much space to leave between two neighboring items of a formula, plus a
+        few of ours:
+
+          - `'ord'`: ordinary — a variable, a digit, an ordinary symbol.  This
+            is the default, and it means "join me tightly to my neighbor".
+          - `'op'`: the name of a function or a large operator, such as 'sin'
+            or '∑'.
+          - `'bin'`: a binary operator, such as '+'.
+          - `'rel'`: a relation, such as '=' or '→'.
+          - `'open'` and `'close'`: an opening or a closing delimiter.
+          - `'punct'`: the punctuation marks ',' and ';'.
+          - `'openend'`: a rendering that has no visible extent on that side,
+            such as 'x^q' or 'a/b'; whatever comes next would look as if it were
+            part of it.
+          - `'text'`: a fragment of ordinary text, which is treated as opaque.
+          - `'script'`: a superscript or a subscript, which binds to the piece
+            on its left.
+          - `'block'`: a large object such as a matrix, which brings its own
+            delimiters.
+
+        The arguments are keyword-only:
+
+        - `text` is the rendered text of the piece.
+
+        - `cls` is its atom class: either one of the names above, which then
+          applies to both edges, or a pair of names for the left and the right
+          edge.  The default, `None`, means ordinary on both edges.
+
+        - `inner_text`, if it is given instead of `text`, asks for a piece that
+          decides only once it knows its neighbors whether to enclose its
+          contents in delimiters.  This is what the superscript 'x_{abc}' needs:
+          it can be written bare when nothing follows it, but it has to become
+          'x_(abc)' in 'x_{abc}^2', where a space would not be enough to show
+          where the subscript ends.  The delimiters are the ones given by the
+          `math_expression_in=` option, taken from the current conversion state.
+
+        - `prefix` is text that always precedes the contents of such a piece and
+          always stays outside the delimiters, such as the '^' or '_' of a
+          script.
+
+        - `cls_wrapped` is the atom class that such a piece presents when its
+          contents did end up enclosed in delimiters.  It defaults to the left
+          edge class of `cls` along with a right edge class of `'close'`, since
+          a closing delimiter is then the last thing in the rendering.
+
+        - `inner_cls` is the atom class of the contents themselves, used to find
+          out whether the contents are open-ended.  It defaults to a
+          classification of `inner_text` by inspecting its characters.
+
+        - `script_kind` is `'superscript'` or `'subscript'` if this piece is a
+          superscript or a subscript, and `None` otherwise.  A superscript that
+          is immediately followed by a subscript is swapped with it, so that the
+          subscript attaches to the base first.
+
+        - `script_latex_notation` says that a superscript or subscript piece had
+          to fall back onto LaTeX's own '^' and '_' notation instead of the
+          unicode superscript and subscript characters.  A space is then also
+          placed in front of the base that the script attaches to, so that one
+          can see where the base begins.
+
+        .. versionadded:: 3.0
+
+           This method was introduced in `pylatexenc 3.0`.
+        """
+        if inner_text is not None:
+            if text is not None:
+                raise ValueError(
+                    "make_math_piece(): give either text= or inner_text=, not both"
+                )
+            return _MathWrappablePiece(
+                inner_text=inner_text,
+                prefix=prefix,
+                math_expression_in=self.state.math_expression_in,
+                cls=cls,
+                cls_wrapped=cls_wrapped,
+                inner_cls=inner_cls,
+                script_kind=script_kind,
+                script_latex_notation=script_latex_notation,
+            )
+
+        if prefix or cls_wrapped is not None or inner_cls is not None:
+            raise ValueError(
+                "make_math_piece(): prefix=, cls_wrapped= and inner_cls= only make "
+                "sense for a piece created with inner_text="
+            )
+
+        return _MathPiece(
+            text=text,
+            cls=cls,
+            script_kind=script_kind,
+            script_latex_notation=script_latex_notation,
+        )
 
 
     def do_fill_text(self, text, textcol=0):
@@ -2172,13 +3449,19 @@ class LatexNodes2Text(object):
                 len(node.nodeargs) == 0)
 
     def _groupnodecontents_to_text(self, groupnode):
+        # The str() calls here are the boundary at which the math pieces of the
+        # 'fancy-text-engine' math mode stop.  This method, and
+        # node_arg_to_text() with it, is what a `simplify_repl` callable sees,
+        # and such code has every right to expect an ordinary string that it can
+        # join, strip, slice or match.  Math pieces travel only between
+        # nodelist_to_text(), node_to_text() and the joiner.
         if groupnode is None:
             return ''
         if isinstance(groupnode, latexnodes_nodes.LatexNodeList):
-            return self.nodelist_to_text(groupnode)
+            return str(self.nodelist_to_text(groupnode))
         if not groupnode.isNodeType(latexwalker.LatexGroupNode):
-            return self.node_to_text(groupnode)
-        return self.nodelist_to_text(groupnode.nodelist)
+            return str(self.node_to_text(groupnode))
+        return str(self.nodelist_to_text(groupnode.nodelist))
 
     def node_arg_to_text(self, node, k):
         r"""

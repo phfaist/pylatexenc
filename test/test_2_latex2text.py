@@ -28,6 +28,83 @@ from pylatexenc.latex2text import LatexNodes2Text
 pytestmark = pytest.mark.filterwarnings("ignore:Deprecated \\(pylatexenc")
 
 
+#
+# Helpers for the math_mode='fancy-text-engine' tests further down.
+#
+# That math mode writes the letters of a formula with the unicode
+# "mathematical alphanumeric symbols", which in most editors look exactly like
+# the ordinary latin letters.  Spelling the expected values out as literal
+# characters would therefore make the tests unreadable, so we build them here
+# out of plain ASCII instead.  The characters are looked up by their unicode
+# name rather than computed from a table of code points, so that the
+# expectations do not lean on the very table that is being tested.
+#
+
+_math_alphabet_unicode_name_prefix = {
+    'bold': 'MATHEMATICAL BOLD',
+    'italic': 'MATHEMATICAL ITALIC',
+    'bold-italic': 'MATHEMATICAL BOLD ITALIC',
+    'script': 'MATHEMATICAL SCRIPT',
+    'fraktur': 'MATHEMATICAL FRAKTUR',
+    'doublestruck': 'MATHEMATICAL DOUBLE-STRUCK',
+    'sans': 'MATHEMATICAL SANS-SERIF',
+    'sans-italic': 'MATHEMATICAL SANS-SERIF ITALIC',
+    'monospace': 'MATHEMATICAL MONOSPACE',
+}
+
+# The letters for which there is no such "MATHEMATICAL ..." character, because
+# unicode had already given that symbol a code point of its own somewhere else.
+_math_alphabet_unicode_holes = {
+    ('italic', 'h'): u'\N{PLANCK CONSTANT}',
+    ('script', 'B'): u'\N{SCRIPT CAPITAL B}',
+    ('script', 'E'): u'\N{SCRIPT CAPITAL E}',
+    ('script', 'F'): u'\N{SCRIPT CAPITAL F}',
+    ('script', 'H'): u'\N{SCRIPT CAPITAL H}',
+    ('script', 'I'): u'\N{SCRIPT CAPITAL I}',
+    ('script', 'L'): u'\N{SCRIPT CAPITAL L}',
+    ('script', 'M'): u'\N{SCRIPT CAPITAL M}',
+    ('script', 'R'): u'\N{SCRIPT CAPITAL R}',
+    ('script', 'e'): u'\N{SCRIPT SMALL E}',
+    ('script', 'g'): u'\N{SCRIPT SMALL G}',
+    ('script', 'o'): u'\N{SCRIPT SMALL O}',
+    ('fraktur', 'C'): u'\N{BLACK-LETTER CAPITAL C}',
+    ('fraktur', 'H'): u'\N{BLACK-LETTER CAPITAL H}',
+    ('fraktur', 'I'): u'\N{BLACK-LETTER CAPITAL I}',
+    ('fraktur', 'R'): u'\N{BLACK-LETTER CAPITAL R}',
+    ('fraktur', 'Z'): u'\N{BLACK-LETTER CAPITAL Z}',
+    ('doublestruck', 'C'): u'\N{DOUBLE-STRUCK CAPITAL C}',
+    ('doublestruck', 'H'): u'\N{DOUBLE-STRUCK CAPITAL H}',
+    ('doublestruck', 'N'): u'\N{DOUBLE-STRUCK CAPITAL N}',
+    ('doublestruck', 'P'): u'\N{DOUBLE-STRUCK CAPITAL P}',
+    ('doublestruck', 'Q'): u'\N{DOUBLE-STRUCK CAPITAL Q}',
+    ('doublestruck', 'R'): u'\N{DOUBLE-STRUCK CAPITAL R}',
+    ('doublestruck', 'Z'): u'\N{DOUBLE-STRUCK CAPITAL Z}',
+}
+
+def math_alphabet(style, s):
+    r"""Return the plain-ASCII string `s` rewritten with the unicode
+    mathematical alphanumeric characters of the given `style`.  Characters that
+    are not latin letters are left alone."""
+    result = ''
+    for c in s:
+        if not (('a' <= c <= 'z') or ('A' <= c <= 'Z')):
+            result += c
+        elif (style, c) in _math_alphabet_unicode_holes:
+            result += _math_alphabet_unicode_holes[(style, c)]
+        else:
+            result += unicodedata.lookup(
+                _math_alphabet_unicode_name_prefix[style]
+                + (' SMALL ' if c.islower() else ' CAPITAL ')
+                + c.upper()
+            )
+    return result
+
+def mvar(s):
+    r"""The way the fancy text engine renders the variable name `s`, i.e. in
+    math italics, which is its default `math_fontstyle=`."""
+    return math_alphabet('italic', s)
+
+
 class TestLatexNodes2Text(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
@@ -462,6 +539,535 @@ $$ \alpha = \frac1{\beta}\ .$$
             l2t.latex_to_text(latex),
             latex # math stays verbatim
         )
+
+
+    #
+    # test math_mode='fancy-text-engine'
+    #
+    # This math mode ignores the whitespace of the source, the way LaTeX itself
+    # does, and puts spaces back where they help a reader.  The expected values
+    # below are built with the mvar()/math_alphabet() helpers defined at the top
+    # of this file, because the characters involved are visually
+    # indistinguishable from plain ASCII letters in most editors.
+    #
+
+    def fancy(self, latex, **flags):
+        r"""Convert `latex` with the fancy math text engine.  Any additional
+        keyword arguments are passed on to the `LatexNodes2Text` constructor."""
+        kwargs = dict(math_mode='fancy-text-engine')
+        kwargs.update(flags)
+        return LatexNodes2Text(**kwargs).latex_to_text(latex)
+
+    # --- the spacing rule, one test per rule ---
+
+    def test_mathmodes_fancy_spacing_binary_or_relation(self):
+        # rule 1: either side is a binary operator or a relation
+        self.assertEqual(self.fancy(r'$x+y$'), mvar('x') + ' + ' + mvar('y'))
+        self.assertEqual(self.fancy(r'$a=b$'), mvar('a') + ' = ' + mvar('b'))
+        self.assertEqual(self.fancy(r'$a\le b$'),
+                         mvar('a') + u' \N{LESS-THAN OR EQUAL TO} ' + mvar('b'))
+
+    def test_mathmodes_fancy_spacing_open_ended(self):
+        # rule 2: either side is a rendering with no visible extent on that
+        # edge, such as the 'q' of 'x^q' or either operand of 'a/b'
+        self.assertEqual(self.fancy(r'$x^q p$'),
+                         mvar('x') + '^' + mvar('q') + ' ' + mvar('p'))
+        self.assertEqual(self.fancy(r'$\frac{a}{b}c$'),
+                         mvar('a') + '/' + mvar('b') + ' ' + mvar('c'))
+        self.assertEqual(self.fancy(r'$c\frac{a}{b}$'),
+                         mvar('c') + ' ' + mvar('a') + '/' + mvar('b'))
+        # the root sign delimits the left edge, so only the right edge is open
+        self.assertEqual(self.fancy(r'$\sqrt{x}2$'),
+                         u'\N{SQUARE ROOT}' + mvar('x') + ' 2')
+        self.assertEqual(self.fancy(r'$2\sqrt{x}$'),
+                         '2' + u'\N{SQUARE ROOT}' + mvar('x'))
+
+    def test_mathmodes_fancy_spacing_operator_or_text_on_the_left(self):
+        # rule 3: the left side is a large operator or a text fragment, unless
+        # a delimiter follows (a delimiter hugs what it encloses)
+        self.assertEqual(self.fancy(r'$\sin x$'), 'sin ' + mvar('x'))
+        self.assertEqual(self.fancy(r'$\sin(x)$'), 'sin(' + mvar('x') + ')')
+        self.assertEqual(self.fancy(r'$a+\text{[xyz]}$'),
+                         mvar('a') + ' + [xyz]')
+
+    def test_mathmodes_fancy_spacing_operator_or_text_on_the_right(self):
+        # rule 4: the right side is a large operator or a text fragment, unless
+        # an opening delimiter precedes
+        self.assertEqual(self.fancy(r'$2\sin x$'), '2 sin ' + mvar('x'))
+        self.assertEqual(self.fancy(r'$(\sin x)$'), '(sin ' + mvar('x') + ')')
+        self.assertEqual(self.fancy(r'$2\text{kg}$'), '2 kg')
+
+    def test_mathmodes_fancy_spacing_punctuation(self):
+        # rule 5: the left side is punctuation (never merely because the right
+        # side is)
+        self.assertEqual(self.fancy(r'$a, b; c$'),
+                         mvar('a') + ', ' + mvar('b') + '; ' + mvar('c'))
+        self.assertEqual(self.fancy(r'$f(x, y)$'),
+                         mvar('f') + '(' + mvar('x') + ', ' + mvar('y') + ')')
+
+    def test_mathmodes_fancy_spacing_adjacent_digits(self):
+        # rule 6: two adjacent digits, which would otherwise run together into
+        # a single number.  The braces are what makes the two digits separate
+        # items in the first place; '$12$' is one number and stays one.
+        self.assertEqual(self.fancy(r'${1}2$'), '1 2')
+        self.assertEqual(self.fancy(r'${12}{34}$'), '12 34')
+        self.assertEqual(self.fancy(r'$12$'), '12')
+        # ... and only for digits: a letter next to a digit stays tight
+        self.assertEqual(self.fancy(r'${a}2$'), mvar('a') + '2')
+
+    def test_mathmodes_fancy_spacing_otherwise_tight(self):
+        # rule 7: everything else is joined tightly
+        self.assertEqual(self.fancy(r'$4\pi c$'),
+                         '4' + u'\N{GREEK SMALL LETTER PI}' + mvar('c'))
+        self.assertEqual(self.fancy(r'$f(x)$'),
+                         mvar('f') + '(' + mvar('x') + ')')
+
+    def test_mathmodes_fancy_unary_minus(self):
+        # a binary operator whose left neighbour is a binary operator, a
+        # relation, an opening delimiter, punctuation or nothing at all is
+        # really a unary one, and binds tightly rightwards
+        self.assertEqual(self.fancy(r'$-x$'), '-' + mvar('x'))
+        self.assertEqual(self.fancy(r'$x = -y$'), mvar('x') + ' = -' + mvar('y'))
+        self.assertEqual(self.fancy(r'$-x + (-y)$'),
+                         '-' + mvar('x') + ' + (-' + mvar('y') + ')')
+        self.assertEqual(self.fancy(r'$(-a, -b)$'),
+                         '(-' + mvar('a') + ', -' + mvar('b') + ')')
+        # ... but a genuine binary minus still gets its spaces
+        self.assertEqual(self.fancy(r'$a - b$'), mvar('a') + ' - ' + mvar('b'))
+
+    # --- implicit multiplication and the whitespace of the source ---
+
+    def test_mathmodes_fancy_implicit_multiplication_stays_tight(self):
+        self.assertEqual(self.fancy(r'$4\pi c$'),
+                         '4' + u'\N{GREEK SMALL LETTER PI}' + mvar('c'))
+        self.assertEqual(self.fancy(r'$2xy$'), '2' + mvar('xy'))
+
+    def test_mathmodes_fancy_source_whitespace_is_ignored(self):
+        # math mode ignores the whitespace of the source, the way LaTeX does
+        self.assertEqual(self.fancy(r'$4 \pi c$'), self.fancy(r'$4\pi c$'))
+        self.assertEqual(self.fancy('$  4  \\pi  c  $'), self.fancy(r'$4\pi c$'))
+        self.assertEqual(self.fancy(r'$2 x y$'), self.fancy(r'$2xy$'))
+        self.assertEqual(self.fancy(r'$x+y$'), self.fancy(r'$x + y$'))
+
+    # --- superscripts and subscripts ---
+
+    def test_mathmodes_fancy_scripts_unicode(self):
+        # where unicode has the superscript or subscript character, use it
+        self.assertEqual(self.fancy(r'$x^2$'),
+                         mvar('x') + u'\N{SUPERSCRIPT TWO}')
+        self.assertEqual(self.fancy(r'$a_i$'),
+                         mvar('a') + u'\N{LATIN SUBSCRIPT SMALL LETTER I}')
+        self.assertEqual(self.fancy(r'$x_h$'),
+                         mvar('x') + u'\N{LATIN SUBSCRIPT SMALL LETTER H}')
+
+    def test_mathmodes_fancy_scripts_fallback_notation(self):
+        # unicode has no superscript 'q', so we fall back on LaTeX's own
+        # notation
+        self.assertEqual(self.fancy(r'$x^q$'), mvar('x') + '^' + mvar('q'))
+
+    def test_mathmodes_fancy_scripts_padding(self):
+        # a script written with the '^' notation has no visible extent on the
+        # right, so it is set apart from its neighbours -- and a space is
+        # inserted in front of its base as well, retroactively
+        self.assertEqual(self.fancy(r'$4\pi c x^q p$'),
+                         '4' + u'\N{GREEK SMALL LETTER PI}' + mvar('c') + ' '
+                         + mvar('x') + '^' + mvar('q') + ' ' + mvar('p'))
+        # ... whereas a script written with the unicode characters shows where
+        # it ends, and needs no padding at all
+        self.assertEqual(self.fancy(r'$4\pi c x^2 p$'),
+                         '4' + u'\N{GREEK SMALL LETTER PI}' + mvar('c')
+                         + mvar('x') + u'\N{SUPERSCRIPT TWO}' + mvar('p'))
+
+    def test_mathmodes_fancy_scripts_reordering(self):
+        # 'x^a_b' is reordered into 'x_b^a', so that the subscript attaches to
+        # the base first and the two scripts do not run together
+        self.assertEqual(self.fancy(r'$x^a_b$'),
+                         mvar('x') + '_' + mvar('b')
+                         + u'\N{MODIFIER LETTER SMALL A}')
+
+    def test_mathmodes_fancy_scripts_compact(self):
+        # the spaces the joiner puts inside the argument of a script are taken
+        # back out if that makes the unicode characters usable
+        self.assertEqual(self.fancy(r'$\sum_{i=1}^n$'),
+                         u'\N{N-ARY SUMMATION}'
+                         + u'\N{LATIN SUBSCRIPT SMALL LETTER I}'
+                         + u'\N{SUBSCRIPT EQUALS SIGN}'
+                         + u'\N{SUBSCRIPT ONE}'
+                         + u'\N{SUPERSCRIPT LATIN SMALL LETTER N}')
+        self.assertEqual(self.fancy(r'$x^{a+b}$'),
+                         mvar('x') + u'\N{MODIFIER LETTER SMALL A}'
+                         + u'\N{SUPERSCRIPT PLUS SIGN}'
+                         + u'\N{MODIFIER LETTER SMALL B}')
+        self.assertEqual(self.fancy(r'$x^{abc}$'),
+                         mvar('x') + u'\N{MODIFIER LETTER SMALL A}'
+                         + u'\N{MODIFIER LETTER SMALL B}'
+                         + u'\N{MODIFIER LETTER SMALL C}')
+
+    def test_mathmodes_fancy_lazy_delimiters(self):
+        # The four cases of the design, each pinned on its own rather than left
+        # to the rule.  Delimiters go around a subscript only where a
+        # separating space would still leave its extent unclear.
+        #
+        # nothing follows, so the subscript needs nothing:
+        self.assertEqual(self.fancy(r'$x_{abc}$'),
+                         mvar('x') + '_' + mvar('abc'))
+        # something follows, but a space is enough to show where it ends:
+        self.assertEqual(self.fancy(r'$x_{abc} p$'),
+                         mvar('x') + '_' + mvar('abc') + ' ' + mvar('p'))
+        # the relation already separates the two, so again nothing is needed:
+        self.assertEqual(self.fancy(r'$x_{abc} = 1$'),
+                         mvar('x') + '_' + mvar('abc') + ' = 1')
+        # a second script attaches to the same base, and a space would not be
+        # enough to tell 'x_(abc)^2' from 'x_(ab)(c^2)', so we do wrap:
+        self.assertEqual(self.fancy(r'$x_{abc}^2$'),
+                         mvar('x') + '_(' + mvar('abc') + ')'
+                         + u'\N{SUPERSCRIPT TWO}')
+
+    # --- text mode inside math mode ---
+
+    def test_mathmodes_fancy_text_is_opaque(self):
+        # the joiner never looks inside a text fragment
+        self.assertEqual(self.fancy(r'$\text{a+b}$'), 'a+b')
+        # a space that the fragment brings along is kept, and the joiner does
+        # not add one of its own next to it
+        self.assertEqual(self.fancy(r'$\text{if } x > 0$'),
+                         'if ' + mvar('x') + ' > 0')
+        self.assertEqual(self.fancy(r'$x \text{ if } y$'),
+                         mvar('x') + ' if ' + mvar('y'))
+
+    def test_mathmodes_fancy_nested_font_example(self):
+        # '\text{}' restores the surrounding *text* font, which the excursion
+        # into math mode never disturbed, so '[something]' comes back out
+        # italic while the 'a' stays bold
+        self.assertEqual(
+            self.fancy(
+                r'\textit{Italic text with math: $\mathbf{a+\text{[something]}}$}'
+            ),
+            mvar('Italic text with math: ')
+            + math_alphabet('bold', 'a') + ' + [' + mvar('something') + ']'
+        )
+
+    # --- the font macro families ---
+
+    def test_mathmodes_fancy_math_font_macros(self):
+        self.assertEqual(self.fancy(r'$\mathrm{d}x$'), 'd' + mvar('x'))
+        self.assertEqual(self.fancy(r'$\mathbf{x}$'), math_alphabet('bold', 'x'))
+        self.assertEqual(self.fancy(r'$\mathit{x}$'), mvar('x'))
+        self.assertEqual(self.fancy(r'$\mathsf{x}$'), math_alphabet('sans', 'x'))
+        self.assertEqual(self.fancy(r'$\mathtt{x}$'),
+                         math_alphabet('monospace', 'x'))
+        self.assertEqual(self.fancy(r'$\mathbb{R}$'),
+                         math_alphabet('doublestruck', 'R'))
+        self.assertEqual(self.fancy(r'$\mathcal{B}$'),
+                         math_alphabet('script', 'B'))
+        self.assertEqual(self.fancy(r'$\mathscr{H}$'),
+                         math_alphabet('script', 'H'))
+        self.assertEqual(self.fancy(r'$\mathfrak{Z}$'),
+                         math_alphabet('fraktur', 'Z'))
+        # the style is pushed before the argument is rendered, so it really
+        # reaches the individual letters
+        self.assertEqual(self.fancy(r'$\mathbf{a+b}$'),
+                         math_alphabet('bold', 'a') + ' + '
+                         + math_alphabet('bold', 'b'))
+        self.assertEqual(self.fancy(r'$\mathbf{a\mathrm{b}c}$'),
+                         math_alphabet('bold', 'a') + 'b'
+                         + math_alphabet('bold', 'c'))
+
+    def test_mathmodes_fancy_text_font_macros(self):
+        # in math mode each of these switches back to text mode, and all but
+        # '\text' and '\mbox' also select a font style
+        self.assertEqual(self.fancy(r'$\text{xy}$'), 'xy')
+        self.assertEqual(self.fancy(r'$\mbox{xy}$'), 'xy')
+        self.assertEqual(self.fancy(r'$\textrm{xy}$'), 'xy')
+        self.assertEqual(self.fancy(r'$\textup{xy}$'), 'xy')
+        self.assertEqual(self.fancy(r'$\textbf{xy}$'), math_alphabet('bold', 'xy'))
+        self.assertEqual(self.fancy(r'$\textit{xy}$'), mvar('xy'))
+        self.assertEqual(self.fancy(r'$\textsl{xy}$'), mvar('xy'))
+        self.assertEqual(self.fancy(r'$\textsf{xy}$'), math_alphabet('sans', 'xy'))
+        self.assertEqual(self.fancy(r'$\texttt{xy}$'),
+                         math_alphabet('monospace', 'xy'))
+        # ... and they work in ordinary text as well
+        self.assertEqual(self.fancy(r'A\text{xy}B'), 'AxyB')
+        self.assertEqual(self.fancy(r'A\mbox{xy}B'), 'AxyB')
+        self.assertEqual(self.fancy(r'A\textrm{xy}B'), 'AxyB')
+        self.assertEqual(self.fancy(r'A\textup{xy}B'), 'AxyB')
+        self.assertEqual(self.fancy(r'A\textbf{xy}B'),
+                         'A' + math_alphabet('bold', 'xy') + 'B')
+        self.assertEqual(self.fancy(r'A\textit{xy}B'), 'A' + mvar('xy') + 'B')
+        self.assertEqual(self.fancy(r'A\textsl{xy}B'), 'A' + mvar('xy') + 'B')
+        self.assertEqual(self.fancy(r'A\textsf{xy}B'),
+                         'A' + math_alphabet('sans', 'xy') + 'B')
+        self.assertEqual(self.fancy(r'A\texttt{xy}B'),
+                         'A' + math_alphabet('monospace', 'xy') + 'B')
+
+    def test_mathmodes_fancy_emph_toggles(self):
+        # '\emph' toggles italics on and off, and composes with an outer bold
+        # or sans-serif
+        self.assertEqual(self.fancy(r'\emph{xy}'), mvar('xy'))
+        self.assertEqual(self.fancy(r'\emph{\emph{xy}}'), 'xy')
+        self.assertEqual(self.fancy(r'\textit{a\emph{b}c}'),
+                         mvar('a') + 'b' + mvar('c'))
+        self.assertEqual(self.fancy(r'\textbf{a\emph{b}c}'),
+                         math_alphabet('bold', 'a')
+                         + math_alphabet('bold-italic', 'b')
+                         + math_alphabet('bold', 'c'))
+        self.assertEqual(self.fancy(r'\textbf{a\emph{\emph{b}}c}'),
+                         math_alphabet('bold', 'abc'))
+        self.assertEqual(self.fancy(r'\textsf{a\emph{b}c}'),
+                         math_alphabet('sans', 'a')
+                         + math_alphabet('sans-italic', 'b')
+                         + math_alphabet('sans', 'c'))
+
+    # --- large objects ---
+
+    def test_mathmodes_fancy_matrix(self):
+        self.assertEqual(
+            self.fancy(r'$A = \begin{pmatrix}1&2\\3&4\end{pmatrix}$'),
+            mvar('A') + ' = [ 1 2; 3 4 ]'
+        )
+        # a matrix carries its own delimiters, so it hugs its neighbours
+        self.assertEqual(self.fancy(r'$x\begin{pmatrix}1&2\end{pmatrix}y$'),
+                         mvar('x') + '[ 1 2 ]' + mvar('y'))
+        self.assertEqual(self.fancy(r'$\sin\begin{pmatrix}1&2\end{pmatrix}$'),
+                         'sin[ 1 2 ]')
+        self.assertEqual(self.fancy(r'$2\begin{pmatrix}1&2\end{pmatrix}^{qr}$'),
+                         '2[ 1 2 ]^' + mvar('qr'))
+
+    # --- the math_fontstyle= option ---
+
+    def test_mathmodes_fancy_math_fontstyle_none(self):
+        # the unicode math alphanumeric characters live in a high unicode plane
+        # that many terminal fonts do not cover; math_fontstyle=None leaves the
+        # letters upright and in plain ASCII
+        self.assertEqual(self.fancy(r'$2 x y$', math_fontstyle=None), '2xy')
+        self.assertEqual(self.fancy(r'$2 \sin x$', math_fontstyle=None),
+                         '2 sin x')
+        self.assertEqual(self.fancy(r'$x + y$', math_fontstyle=None), 'x + y')
+        # for comparison, the same with the default italics
+        self.assertEqual(self.fancy(r'$2 x y$'), '2' + mvar('xy'))
+        self.assertEqual(self.fancy(r'$2 \sin x$'), '2 sin ' + mvar('x'))
+
+    # --- display math ---
+
+    def test_mathmodes_fancy_display_math(self):
+        self.assertEqual(self.fancy(r'\[ x = \frac{a+b}{c} \]'),
+                         '\n    ' + mvar('x') + ' = (' + mvar('a') + ' + '
+                         + mvar('b') + ')/' + mvar('c') + '\n')
+        self.assertEqual(self.fancy(r'$$ E = mc^2 $$'),
+                         '\n    ' + mvar('E') + ' = ' + mvar('mc')
+                         + u'\N{SUPERSCRIPT TWO}' + '\n')
+        self.assertEqual(
+            self.fancy(r'\begin{equation} a^2 + b^2 = c^2 \end{equation}'),
+            '\n    ' + mvar('a') + u'\N{SUPERSCRIPT TWO}' + ' + ' + mvar('b')
+            + u'\N{SUPERSCRIPT TWO}' + ' = ' + mvar('c')
+            + u'\N{SUPERSCRIPT TWO}' + '\n'
+        )
+        self.assertEqual(self.fancy(r'Before \[ x = 1 \] after.'),
+                         'Before \n    ' + mvar('x') + ' = 1\n after.')
+
+    # --- accents; these used to raise an AttributeError ---
+
+    def test_mathmodes_fancy_accents(self):
+        # make_accented_char() and friends render a node list and then treat
+        # the result as a string, which in this math mode is a math piece and
+        # not a string; a regression test for the str() coercions that fixed it
+        self.assertEqual(self.fancy(r'$\vec{x}$'),
+                         mvar('x') + u'\N{COMBINING RIGHT ARROW ABOVE}')
+        self.assertEqual(self.fancy(r'$\hat a$'),
+                         mvar('a') + u'\N{COMBINING CIRCUMFLEX ACCENT}')
+        self.assertEqual(self.fancy(r'$\vec{x} \cdot \hat{y} = 1$'),
+                         mvar('x') + u'\N{COMBINING RIGHT ARROW ABOVE}'
+                         + u' \N{MIDDLE DOT} '
+                         + mvar('y') + u'\N{COMBINING CIRCUMFLEX ACCENT}'
+                         + ' = 1')
+        self.assertEqual(self.fancy(r'$1 \not= 2$'),
+                         u'1 \N{NOT EQUAL TO} 2')
+
+    #
+    # The four math modes that existed before the fancy text engine was added
+    # must be completely unaffected by it.  The table below was produced by
+    # rendering each snippet with each mode, and checked against a checkout of
+    # the revision that preceded the work.  A snippet is included for each part
+    # of the conversion machinery that the new engine touched.
+    #
+
+    def test_mathmodes_old_modes_unaffected(self):
+
+        old_math_modes_corpus = [
+            (
+                '$\\alpha=1$',
+                {
+                    'text': 'α=1',
+                    'with-delimiters': '$α=1$',
+                    'verbatim': '$\\alpha=1$',
+                    'remove': '',
+                },
+            ),
+            (
+                '$4 \\pi c$',
+                {
+                    'text': '4 π c',
+                    'with-delimiters': '$4 π c$',
+                    'verbatim': '$4 \\pi c$',
+                    'remove': '',
+                },
+            ),
+            (
+                '$x^2 + y_i$',
+                {
+                    'text': 'x² + yᵢ',
+                    'with-delimiters': '$x² + yᵢ$',
+                    'verbatim': '$x^2 + y_i$',
+                    'remove': '',
+                },
+            ),
+            (
+                '$x^{\\mathbf{a}}$',
+                {
+                    'text': 'x^𝐚',
+                    'with-delimiters': '$x^𝐚$',
+                    'verbatim': '$x^{\\mathbf{a}}$',
+                    'remove': '',
+                },
+            ),
+            (
+                '$x_{abc}$',
+                {
+                    'text': 'x_(abc)',
+                    'with-delimiters': '$x_(abc)$',
+                    'verbatim': '$x_{abc}$',
+                    'remove': '',
+                },
+            ),
+            (
+                '$\\frac{a+b}{c}$',
+                {
+                    'text': '(a+b)/c',
+                    'with-delimiters': '$(a+b)/c$',
+                    'verbatim': '$\\frac{a+b}{c}$',
+                    'remove': '',
+                },
+            ),
+            (
+                '$\\sqrt{x} + \\sqrt{a+b}$',
+                {
+                    'text': '√(x) + √(a+b)',
+                    'with-delimiters': '$√(x) + √(a+b)$',
+                    'verbatim': '$\\sqrt{x} + \\sqrt{a+b}$',
+                    'remove': '',
+                },
+            ),
+            (
+                '$\\sin x + \\cos y$',
+                {
+                    'text': 'sin x + cos y',
+                    'with-delimiters': '$sin x + cos y$',
+                    'verbatim': '$\\sin x + \\cos y$',
+                    'remove': '',
+                },
+            ),
+            (
+                '$\\lim_{n} a_n$',
+                {
+                    'text': 'limₙ aₙ',
+                    'with-delimiters': '$limₙ aₙ$',
+                    'verbatim': '$\\lim_{n} a_n$',
+                    'remove': '',
+                },
+            ),
+            (
+                '$\\vec{x} \\cdot \\hat{y}$',
+                {
+                    'text': 'x⃗·ŷ',
+                    'with-delimiters': '$x⃗·ŷ$',
+                    'verbatim': '$\\vec{x} \\cdot \\hat{y}$',
+                    'remove': '',
+                },
+            ),
+            (
+                '$\\text{if } x > 0$',
+                {
+                    'text': 'if  x > 0',
+                    'with-delimiters': '$if  x > 0$',
+                    'verbatim': '$\\text{if } x > 0$',
+                    'remove': '',
+                },
+            ),
+            (
+                '\\textbf{bold} \\emph{emph} \\textit{it}',
+                {
+                    'text': 'bold emph it',
+                    'with-delimiters': 'bold emph it',
+                    'verbatim': 'bold emph it',
+                    'remove': 'bold emph it',
+                },
+            ),
+            (
+                # \mbox, \textsf, \texttt and \textup have no text
+                # specification of their own in these modes, so they are
+                # treated as unknown macros and their argument is discarded
+                'A\\mbox{m}\\textsf{s}\\texttt{t}\\textup{u}B',
+                {
+                    'text': 'AB',
+                    'with-delimiters': 'AB',
+                    'verbatim': 'AB',
+                    'remove': 'AB',
+                },
+            ),
+            (
+                '$\\mathbf{a} \\mathrm{b} \\mathcal{C}$',
+                {
+                    'text': '𝐚b𝒞',
+                    'with-delimiters': '$𝐚b𝒞$',
+                    'verbatim': '$\\mathbf{a} \\mathrm{b} \\mathcal{C}$',
+                    'remove': '',
+                },
+            ),
+            (
+                '$A = \\begin{pmatrix}1&2\\\\3&4\\end{pmatrix}$',
+                {
+                    'text': 'A = [ 1 2; 3 4 ]',
+                    'with-delimiters': '$A = [ 1 2; 3 4 ]$',
+                    'verbatim': '$A = \\begin{pmatrix}1&2\\\\3&4\\end{pmatrix}$',
+                    'remove': '',
+                },
+            ),
+            (
+                '\\[ \\beta = 2\\alpha \\]',
+                {
+                    'text': '\n    β = 2α\n',
+                    'with-delimiters': '\\[\nβ = 2α\n\\]',
+                    'verbatim': '\n\\[ \\beta = 2\\alpha \\]\n',
+                    'remove': '',
+                },
+            ),
+            (
+                '\\begin{equation} a^2+b^2=c^2 \\end{equation}',
+                {
+                    'text': '\n    a²+b²=c²\n',
+                    'with-delimiters': '\\begin{equation}\na²+b²=c²\n\\end{equation}',
+                    'verbatim': '\n\\begin{equation} a^2+b^2=c^2 \\end{equation}\n',
+                    'remove': '',
+                },
+            ),
+            (
+                'Hello $x+y$ and \\(a \\le b\\).',
+                {
+                    'text': 'Hello x+y and a ≤ b.',
+                    'with-delimiters': 'Hello $x+y$ and \\(a ≤ b\\).',
+                    'verbatim': 'Hello $x+y$ and \\(a \\le b\\).',
+                    'remove': 'Hello  and .',
+                },
+            ),
+        ]
+
+        for latex, expected_per_mode in old_math_modes_corpus:
+            for math_mode, expected in expected_per_mode.items():
+                self.assertEqual(
+                    LatexNodes2Text(math_mode=math_mode).latex_to_text(latex),
+                    expected,
+                    msg="math_mode={!r}, latex={!r}".format(math_mode, latex)
+                )
 
 
     #

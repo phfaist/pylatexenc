@@ -31,7 +31,9 @@ import logging
 
 from .. import latexwalker
 from ..latexnodes import parsers as latexnodes_parsers
-from ..latex2text import LatexNodes2Text, _strict_latex_spaces_predef
+from ..latex2text import (
+    LatexNodes2Text, _strict_latex_spaces_predef, _fmt_math_style_offsets
+)
 from ..version import version_str
 
 
@@ -97,12 +99,28 @@ def main(argv=None):
                        help=argparse.SUPPRESS)
 
     group.add_argument('--math-mode', action='store', dest='math_mode',
-                       choices=['text', 'with-delimiters', 'verbatim', 'remove'],
+                       choices=['text', 'with-delimiters', 'verbatim', 'remove',
+                                'fancy-text-engine'],
                        default='text',
                        help="How to handle chunks of math mode LaTeX code. 'text' = convert "
                        "to text like the rest; 'with-delimiters' = same as 'text' but retain "
                        "the original math mode delimiters; 'verbatim' = keep verbatim LaTeX code; "
-                       "'remove' = remove from input entirely")
+                       "'remove' = remove from input entirely; 'fancy-text-engine' = render the "
+                       "formula so that it looks as much as plain text allows like the "
+                       "typeset formula, ignoring the whitespace of the source and putting "
+                       "spaces back where they help the reader")
+
+    # The value 'none' stands for the option value None; argparse choices are
+    # strings, so the two are mapped onto each other where the object is built.
+    math_fontstyle_choices = ['none'] + list(_fmt_math_style_offsets.keys())
+    group.add_argument('--math-fontstyle', action='store', dest='math_fontstyle',
+                       choices=math_fontstyle_choices, default='italic',
+                       help="In which font style to typeset the letters of a formula, using "
+                       "the unicode math alphanumeric characters.  Only has an effect with "
+                       "--math-mode=fancy-text-engine.  Those characters live in a high "
+                       "unicode plane which many terminal fonts do not cover; use "
+                       "--math-fontstyle=none to leave the letters upright and in plain "
+                       "ASCII.")
 
     group.add_argument('--fill-text', dest='fill_text', action='store', nargs='?',
                        default=-1,
@@ -198,7 +216,13 @@ def main(argv=None):
 
     #(nodelist, pos, len_) = lw.get_latex_nodes()
 
+    if args.math_fontstyle == 'none':
+        math_fontstyle = None
+    else:
+        math_fontstyle = args.math_fontstyle
+
     ln2t = LatexNodes2Text(math_mode=args.math_mode,
+                           math_fontstyle=math_fontstyle,
                            keep_comments=args.keep_comments,
                            strict_latex_spaces=args.strict_latex_spaces,
                            keep_braced_groups=args.keep_braced_groups,
