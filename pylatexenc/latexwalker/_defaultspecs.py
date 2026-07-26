@@ -197,6 +197,9 @@ specs = [
             std_macro('provideenvironment', "*{[[{{"),
 
             std_macro('DeclareMathOperator', '*{{'),
+            # \operatorname{tr} and \operatorname*{ess\,sup}, for a function
+            # name that has no macro of its own
+            std_macro('operatorname', '*{'),
 
             std_macro('hspace', '*{'),
             std_macro('vspace', '*{'),
@@ -324,6 +327,11 @@ specs = [
             std_macro('textfrac', False, 2),
 
             std_macro('sqrt', True, 1),
+
+            # the modulo constructs that take the modulus as an argument;
+            # '\bmod' is the infix operator and takes none
+            MacroSpec('pmod', '{'),
+            MacroSpec('mod', '{'),
 
             MacroSpec('overline', '{'),
             MacroSpec('underline', '{'),

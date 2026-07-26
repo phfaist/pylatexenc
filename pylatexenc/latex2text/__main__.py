@@ -37,6 +37,18 @@ from ..latex2text import (
 from ..version import version_str
 
 
+def _parse_fontstyle_arg(value):
+    # The --math-fontstyle and --text-fontstyle options take a style name, or
+    # 'none' for the upright style, or 'off' for no unicode alphabets at all.
+    # Argparse choices are strings, so the latter two are mapped here onto the
+    # `None` and `False` that LatexNodes2Text expects.
+    if value == 'none':
+        return None
+    if value == 'off':
+        return False
+    return value
+
+
 def main(argv=None):
 
     if argv is None:
@@ -99,28 +111,38 @@ def main(argv=None):
                        help=argparse.SUPPRESS)
 
     group.add_argument('--math-mode', action='store', dest='math_mode',
-                       choices=['text', 'with-delimiters', 'verbatim', 'remove',
-                                'fancy-text-engine'],
-                       default='text',
-                       help="How to handle chunks of math mode LaTeX code. 'text' = convert "
-                       "to text like the rest; 'with-delimiters' = same as 'text' but retain "
-                       "the original math mode delimiters; 'verbatim' = keep verbatim LaTeX code; "
-                       "'remove' = remove from input entirely; 'fancy-text-engine' = render the "
-                       "formula so that it looks as much as plain text allows like the "
-                       "typeset formula, ignoring the whitespace of the source and putting "
-                       "spaces back where they help the reader")
+                       choices=['fancy', 'text', 'with-delimiters', 'verbatim',
+                                'remove'],
+                       default='fancy',
+                       help="How to handle chunks of math mode LaTeX code. 'fancy' (the "
+                       "default) = render the formula so that it looks as much as plain "
+                       "text allows like the typeset formula, ignoring the whitespace of "
+                       "the source and putting spaces back where they help the reader; "
+                       "'text' = convert to text like the rest; 'with-delimiters' = same "
+                       "as 'text' but retain the original math mode delimiters; 'verbatim' "
+                       "= keep verbatim LaTeX code; 'remove' = remove from input entirely")
 
-    # The value 'none' stands for the option value None; argparse choices are
-    # strings, so the two are mapped onto each other where the object is built.
-    math_fontstyle_choices = ['none'] + list(_fmt_math_style_offsets.keys())
+    # The values 'none' and 'off' stand for the option values None and False;
+    # argparse choices are strings, so they are mapped onto each other where the
+    # object is built.
+    fontstyle_choices = ['none', 'off'] + list(_fmt_math_style_offsets.keys())
     group.add_argument('--math-fontstyle', action='store', dest='math_fontstyle',
-                       choices=math_fontstyle_choices, default='italic',
+                       choices=fontstyle_choices, default='italic',
                        help="In which font style to typeset the letters of a formula, using "
                        "the unicode math alphanumeric characters.  Only has an effect with "
-                       "--math-mode=fancy-text-engine.  Those characters live in a high "
+                       "--math-mode=fancy, the default.  Those characters live in a high "
                        "unicode plane which many terminal fonts do not cover; use "
                        "--math-fontstyle=none to leave the letters upright and in plain "
-                       "ASCII.")
+                       "ASCII, or --math-fontstyle=off to also keep '\\mathbf{}' and "
+                       "friends from using those characters.")
+
+    group.add_argument('--text-fontstyle', action='store', dest='text_fontstyle',
+                       choices=fontstyle_choices, default='none',
+                       help="The same for the text outside of the formulas, whose default "
+                       "style is 'none', i.e. upright.  Use --text-fontstyle=off to keep "
+                       "'\\textbf{}', '\\emph{}' and friends from using the unicode "
+                       "alphabets, so that together with --math-fontstyle=off the output "
+                       "stays plain ASCII.")
 
     group.add_argument('--fill-text', dest='fill_text', action='store', nargs='?',
                        default=-1,
@@ -216,13 +238,9 @@ def main(argv=None):
 
     #(nodelist, pos, len_) = lw.get_latex_nodes()
 
-    if args.math_fontstyle == 'none':
-        math_fontstyle = None
-    else:
-        math_fontstyle = args.math_fontstyle
-
     ln2t = LatexNodes2Text(math_mode=args.math_mode,
-                           math_fontstyle=math_fontstyle,
+                           math_fontstyle=_parse_fontstyle_arg(args.math_fontstyle),
+                           text_fontstyle=_parse_fontstyle_arg(args.text_fontstyle),
                            keep_comments=args.keep_comments,
                            strict_latex_spaces=args.strict_latex_spaces,
                            keep_braced_groups=args.keep_braced_groups,

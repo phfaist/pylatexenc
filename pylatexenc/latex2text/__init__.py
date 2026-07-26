@@ -38,7 +38,11 @@ The main class is :py:class:`LatexNodes2Text`.  For a quick start, try::
 You may also use the command-line version of `latex2text`::
 
     $ echo '\textit{italic} \`acc\^ented text' | latex2text
-    italic àccênted text
+    𝑖𝑡𝑎𝑙𝑖𝑐 àccênted text
+
+The italics come from the `math_mode='fancy'` rendering, which is the default;
+see :py:class:`LatexNodes2Text`.  Use `math_mode='text'` (``latex2text
+--math-mode=text``) for the plainer rendering that `pylatexenc 2` produced.
 
 """
 
@@ -348,9 +352,9 @@ def fmt_matrix_environment_node(node, l2tobj):
 
     .. versionchanged:: 3.0
 
-       In math mode with ``math_mode='fancy-text-engine'``, this function
-       returns a *math piece* (see
-       :py:meth:`LatexNodes2Text.make_math_piece()`) instead of a string, so
+       In math mode with ``math_mode='fancy'``, this function returns a
+       *math piece* (see :py:meth:`LatexNodes2Text.make_math_piece()`)
+       instead of a string, so
        that the formula joiner treats the whole object as a single item and
        does not look inside it.  The rendering itself is unchanged.
     """
@@ -367,8 +371,8 @@ def fmt_matrix_environment_node(node, l2tobj):
         def new_column(self):
             if self.buffer_nodes:
                 # str() because the contents of a cell are a formula of their
-                # own, and in the 'fancy-text-engine' math mode rendering a
-                # formula gives a math piece rather than a string
+                # own, and in the 'fancy' math mode rendering a formula
+                # gives a math piece rather than a string
                 self.buffer_this_column.append(
                     str(l2tobj.nodelist_to_text(self.buffer_nodes)) .strip()
                 )
@@ -398,9 +402,9 @@ def fmt_matrix_environment_node(node, l2tobj):
     # now format the contents as array --
     block = _MathBlockPiece(rows=state.matrix_rows, delimiters=('[', ']',))
 
-    if l2tobj.math_mode == 'fancy-text-engine' and l2tobj.state.in_math_mode:
-        # The 'fancy-text-engine' math mode hands the whole object to the joiner
-        # as a single item, so that the joiner treats it as opaque and never
+    if l2tobj.math_mode == 'fancy' and l2tobj.state.in_math_mode:
+        # The 'fancy' math mode hands the whole object to the joiner as a
+        # single item, so that the joiner treats it as opaque and never
         # looks inside it; the brackets are what shows where it begins and where
         # it ends, so both of its edges are of the 'block' class, which the
         # joiner treats as delimiters.  The rendering is the same either way.
@@ -602,8 +606,8 @@ def fmt_list_environment(node, l2tobj, environmentname):
     with l2tobj.push_state(list_stack=list_stack + [level]):
         preamble_nodes, items = _split_nodelist_at_items(node.nodelist)
         # str() because a list environment can, however oddly, be met in math
-        # mode, where the 'fancy-text-engine' math mode renders a node list to a
-        # math piece rather than to a string
+        # mode, where the 'fancy' math mode renders a node list to a math
+        # piece rather than to a string
         preamble = str(l2tobj.nodelist_to_text(preamble_nodes)).strip()
         item_texts = [
             fmt_list_item(itemnode, itembody, l2tobj, level)
@@ -954,8 +958,9 @@ def fmt_subsuperscript_text(text, which, normalize_math_style_chars=False):
     the plain ascii letter it was made from before it is looked up, because
     unicode offers no styled superscript or subscript characters; the style of
     such a letter is then lost, but the superscript or subscript can still be
-    typeset.  This is what the ``math_mode='fancy-text-engine'`` rendering of
-    :py:class:`LatexNodes2Text` needs, because it italicizes variable names
+    typeset.  This is what the ``math_mode='fancy'`` rendering of
+    :py:class:`LatexNodes2Text` needs, because that mode italicizes variable
+    names
     where they are typeset, so that the argument of a superscript reaches this
     function already styled.  By default the option is off, and a styled letter
     simply has no superscript or subscript version.
@@ -1085,7 +1090,7 @@ def fmt_math_expression_in_delimiters(text, math_expression_in):
 # string, which is then classified by inspecting its characters; that is less
 # precise but it always works.
 #
-# This machinery serves the 'fancy-text-engine' math mode of LatexNodes2Text.
+# This machinery serves the 'fancy' math mode of LatexNodes2Text.
 #
 # Introduced in pylatexenc 3.0.
 #
@@ -2227,7 +2232,14 @@ class TextConversionState(object):
        text mode, as one of the style names accepted by
        :py:func:`fmt_math_text_style()`, or `None` for the upright style.  It
        is what ``\textbf{}``, ``\textsf{}``, ``\emph{}`` and friends install for
-       the duration of their contents.
+       the duration of their contents; its initial value comes from the
+       `text_fontstyle=` option of :py:class:`LatexNodes2Text`.
+
+       The value `False` is special: it says that the characters typeset here
+       are to be left as they are, with no unicode alphabet applied to them at
+       all.  The font style macros do not replace it — they leave a `False`
+       where they find one — so it holds for the entire document, which is what
+       the `text_fontstyle=False` option is for.
 
     .. py:attribute:: math_fontstyle
 
@@ -2240,6 +2252,10 @@ class TextConversionState(object):
 
        Math mode italicizes the variable names, so this field starts out as
        'italic' where `text_fontstyle` starts out upright.
+
+       As for `text_fontstyle`, the value `False` says that no unicode alphabet
+       is to be applied to these characters at all, and the font style macros
+       leave it alone where they find it.
 
        The two font styles are kept apart because they are stacked
        independently: crossing into math mode and back out of it, as in
@@ -2323,21 +2339,23 @@ class LatexNodes2Text(object):
 
     Additional keyword arguments are flags which may influence the behavior:
 
-    - `math_mode='text'|'with-delimiters'|'verbatim'|'remove'
-      |'fancy-text-engine'`: Specify how to treat chunks of LaTeX code that
-      correspond to math modes.  If 'text' (the default), then the math mode
-      contents is incorporated as normal text.  If 'with-delimiters', the
-      content is incorporated as normal text but it is still included in the
-      original math-mode delimiters, such as '$...$'.  If 'verbatim', then the
-      math mode chunk is kept verbatim, including the delimiters.  The value
-      'remove' means to remove the math mode sections entirely and not to
-      produce any replacement text.
+    - `math_mode='fancy'|'text'|'with-delimiters'|'verbatim'|'remove'`: Specify
+      how to treat chunks of LaTeX code that correspond to math modes.  If
+      'fancy' (the default), the formula is rendered as described just below.
+      If 'text', then the math mode contents is incorporated as normal text.
+      If 'with-delimiters', the content is incorporated as normal text but it
+      is still included in the original math-mode delimiters, such as '$...$'.
+      If 'verbatim', then the math mode chunk is kept verbatim, including the
+      delimiters.  The value 'remove' means to remove the math mode sections
+      entirely and not to produce any replacement text.
 
-      The value 'fancy-text-engine' selects a rendering of the formula that
-      aims to look, as far as plain text allows, like the formula that LaTeX
-      itself would typeset.  Use it when the text is meant to be read by a
-      person — in a terminal, in an e-mail, in a search result — rather than
-      processed further.  It differs from 'text' in four ways.
+      The default value 'fancy' selects a rendering of the formula that aims to
+      look, as far as plain text allows, like the formula that LaTeX itself
+      would typeset.  It is meant for text that a person is going to read — in
+      a terminal, in an e-mail, in a search result; where the output is
+      processed further by a program that expects plain ASCII, use 'text', or
+      keep the letters upright with the `math_fontstyle=None` option below.  It
+      differs from 'text' in four ways.
 
         * The whitespace of the source is ignored, exactly as LaTeX ignores
           it, and spaces are put back only where they help the reader.  So
@@ -2370,10 +2388,12 @@ class LatexNodes2Text(object):
       rendered inline as ``[ 1 2; 3 4 ]``, in math mode and in display math
       alike.
 
-      .. versionadded:: 3.0
+      .. versionchanged:: 3.0
 
-         The `math_mode='fancy-text-engine'` value was introduced in
-         `pylatexenc 3.0`.
+         The `math_mode='fancy'` value was introduced in `pylatexenc 3.0`, and
+         is the default there.  In `pylatexenc 2` the math mode contents were
+         always incorporated as normal text, which is what `math_mode='text'`
+         does now.
 
     - `math_expression_in='braces'|'parens'|(left, right)|None`: Specify which
       delimiters to place around a mathematical sub-expression that we were not
@@ -2404,12 +2424,13 @@ class LatexNodes2Text(object):
 
          The `math_expression_in=` option was introduced in `pylatexenc 3.0`.
 
-    - `math_fontstyle='italic'|None|<style name>`: The font style in which the
-      letters of a formula are typeset, using the unicode math alphanumeric
+    - `math_fontstyle='italic'|None|False|<style name>`: The font style in which
+      the letters of a formula are typeset, using the unicode math alphanumeric
       symbols (see :py:func:`fmt_math_text_style()`, whose style names are the
       accepted values here).  The default 'italic' follows the convention of
       mathematical typesetting, where a variable name is set in italics; the
-      value `None` leaves the letters upright.
+      value `None` leaves the letters upright, and the value `False` switches
+      the unicode alphabets off altogether (see below).
 
       The reason the option exists is that those characters live in a high
       unicode plane which a good many terminal fonts do not cover, and which
@@ -2417,28 +2438,71 @@ class LatexNodes2Text(object):
       `math_fontstyle=None` if the output might be read in such a place; the
       letters then stay plain ASCII.
 
+      Note that `None` sets the style that the letters of a formula start out
+      in, and that ``\mathbf{}`` and friends still install their own style for
+      the duration of their contents, so ``$x + \mathbf{a}$`` still gives
+      ``x + 𝐚``.  The value `False` is the stronger one: it says that no
+      unicode alphabet is to be used in math mode at all, and the font style
+      macros then leave the letters alone, so the same formula gives
+      ``x + a``.  Use it together with `text_fontstyle=False` for output that
+      is plain ASCII throughout.
+
       There is a small price for switching the styling off.  A run of two or
       more upright latin letters is what the renderer takes for the name of a
       function, which is how ``\sin`` and ``\log`` are told apart from a
       product of variables without every such macro having to be annotated;
       that guess is only sound as long as the variables are being italicized.
-      With `math_fontstyle=None`, ``$2xy$`` still comes out as ``2xy`` and
-      ``$2\sin x$`` still as ``2 sin x``, but a construct that relies on the
-      guess, such as ``$\mathrm{max} x$``, loses the space that separates the
-      function name from its argument.
+      With `math_fontstyle=None` or `False`, ``$2xy$`` still comes out as
+      ``2xy`` and ``$2\sin x$`` still as ``2 sin x``, but a construct that
+      relies on the guess, such as ``$\mathrm{max} x$``, loses the space that
+      separates the function name from its argument.
 
       This is the initial value of the `math_fontstyle` field of the conversion
       state; macros such as ``\mathbf{}`` change it for their contents, and it
       can also be changed for one part of the document only, see
       :py:class:`TextConversionState` and :py:meth:`push_state()`.
 
-      The option is only in effect with ``math_mode='fancy-text-engine'``,
-      which is the math mode that renders formulas with the unicode math
-      characters; the other math modes ignore it.
+      The option is only in effect with ``math_mode='fancy'``, which is the
+      math mode that renders formulas with the unicode math characters; the
+      other math modes ignore it.
 
       .. versionadded:: 3.0
 
          The `math_fontstyle=` option was introduced in `pylatexenc 3.0`.
+
+    - `text_fontstyle=None|False|<style name>`: The same thing for the text
+      outside of the formulas.  It is the font style that ordinary text starts
+      out in, given as one of the style names of
+      :py:func:`fmt_math_text_style()`, or `None` — the default — for the
+      upright style that ordinary text is normally set in.
+
+      As above, `None` only sets the style that text starts out in, and
+      ``\textbf{}``, ``\textsf{}``, ``\emph{}`` and friends still install their
+      own for the duration of their contents, so ``\textbf{bold}`` gives
+      ``𝐛𝐨𝐥𝐝``.  The value `False` switches the unicode alphabets off for text
+      mode altogether: the font style macros then leave the letters alone and
+      ``\textbf{bold}`` gives ``bold``.  This is what to give, along with
+      `math_fontstyle=False`, when the output has to be plain ASCII — because
+      it is going to be indexed, compared against stored strings, or read
+      somewhere that has no font for the unicode math alphabets.
+
+      Note that a style name here applies to the text that is *not* inside one
+      of the font style macros: those macros select a whole font and not one of
+      the axes (family, weight, shape) that LaTeX varies independently, so with
+      `text_fontstyle='sans'` the argument of ``\textbf{}`` still comes out in
+      the serif bold alphabet.
+
+      This is the initial value of the `text_fontstyle` field of the conversion
+      state, and as with `math_fontstyle=` it can be changed for one part of
+      the document only, see :py:class:`TextConversionState` and
+      :py:meth:`push_state()`.
+
+      The option is only in effect with ``math_mode='fancy'``; the other math
+      modes never apply a font style to the text.
+
+      .. versionadded:: 3.0
+
+         The `text_fontstyle=` option was introduced in `pylatexenc 3.0`.
 
     - `keep_comments=True|False`: If set to `True`, then LaTeX comments are kept
       (including the percent-sign); otherwise they are discarded.  (By default
@@ -2611,21 +2675,25 @@ class LatexNodes2Text(object):
                 "The keep_inline_math=... option in LatexNodes2Text() has been replaced by "
                 "the math_mode=... option."
             )
+            # the pylatexenc 1 and 2 option, which knew nothing of the 'fancy'
+            # rendering, so it keeps selecting the mode it always selected
             self.math_mode = 'verbatim' if flags.pop('keep_inline_math') else 'text'
         else:
-            self.math_mode = flags.pop('math_mode', 'text')
+            self.math_mode = flags.pop('math_mode', 'fancy')
 
-        if self.math_mode not in ('text', 'with-delimiters', 'verbatim', 'remove',
-                                  'fancy-text-engine'):
-            raise ValueError("math_mode= option must be one of 'text', 'with-delimiters', "
-                             "'verbatim', 'remove', 'fancy-text-engine'")
+        if self.math_mode not in ('fancy', 'text', 'with-delimiters', 'verbatim',
+                                  'remove'):
+            raise ValueError("math_mode= option must be one of 'fancy', 'text', "
+                             "'with-delimiters', 'verbatim', 'remove'")
 
         math_expression_in = flags.pop('math_expression_in', default_math_expression_in)
         self.math_expression_in = _parse_math_expression_in(math_expression_in)
 
-        # The initial value of the `math_fontstyle` field of the conversion
-        # state; when the option is not given we keep whatever value that state
-        # field starts out with (see TextConversionState).
+        # The initial values of the `text_fontstyle` and `math_fontstyle` fields
+        # of the conversion state; when an option is not given we keep whatever
+        # value that state field starts out with (see TextConversionState).
+        if 'text_fontstyle' in flags:
+            self.state.text_fontstyle = flags.pop('text_fontstyle')
         if 'math_fontstyle' in flags:
             self.state.math_fontstyle = flags.pop('math_fontstyle')
 
@@ -2779,8 +2847,8 @@ class LatexNodes2Text(object):
                            n.nodeargs)
 
         # str() because '\input' can, however oddly, be met in math mode, where
-        # the 'fancy-text-engine' math mode renders a node list to a math piece
-        # rather than to a string
+        # the 'fancy' math mode renders a node list to a math piece rather
+        # than to a string
         inputtex = self.read_input_file(
             str(self.nodelist_to_text([n.nodeargs[0]])).strip()
         )
@@ -2834,8 +2902,8 @@ class LatexNodes2Text(object):
         what you want in the vast majority of cases; see
         :py:meth:`push_state()` to install a modified state.
 
-        In math mode with ``math_mode='fancy-text-engine'``, the return value is
-        a *math piece* (see :py:meth:`make_math_piece()`) rather than a string,
+        In math mode with ``math_mode='fancy'``, the return value is a *math
+        piece* (see :py:meth:`make_math_piece()`) rather than a string,
         because the result of rendering a formula still has something to say
         about how it wants to be joined to whatever surrounds it.  Use `str()`
         on the result if you need the text itself; every other case returns an
@@ -2844,7 +2912,7 @@ class LatexNodes2Text(object):
         .. versionadded:: 3.0
 
            The `state` argument was introduced in `pylatexenc 3.0`, as was the
-           math piece return value of ``math_mode='fancy-text-engine'``.
+           math piece return value of ``math_mode='fancy'``.
         """
 
         if nodelist is None:
@@ -2852,14 +2920,13 @@ class LatexNodes2Text(object):
 
         with _util.PushPropOverride(self, 'state', state):
 
-            # In math mode the 'fancy-text-engine' math mode assembles the
-            # rendered items with the formula joiner instead of simply
+            # In math mode the 'fancy' math mode assembles the rendered
+            # items with the formula joiner instead of simply
             # concatenating them.  The items are therefore collected in a list
             # and handed to the joiner as they are: an item that is a math piece
             # says how it wants to be joined to its neighbors, and that
             # information would be lost if we turned it into a string here.
-            fancy_math = ( self.math_mode == 'fancy-text-engine'
-                           and self.state.in_math_mode )
+            fancy_math = ( self.math_mode == 'fancy' and self.state.in_math_mode )
 
             parts = [] # the rendered items, for the formula joiner
             s = '' # the text rendered so far, for the text filling
@@ -2915,7 +2982,7 @@ class LatexNodes2Text(object):
                 # variables are being italicized; see _segment_plain_str()
                 return _join_math_pieces(
                     parts,
-                    upright_letters_are_op=(self.state.math_fontstyle is not None),
+                    upright_letters_are_op=bool(self.state.math_fontstyle),
                 )
 
             return s
@@ -2983,12 +3050,14 @@ class LatexNodes2Text(object):
         """
         content = node.chars
 
-        if self.math_mode == 'fancy-text-engine' and self.state.in_math_mode:
+        if self.math_mode == 'fancy' and self.state.in_math_mode:
             # In math mode LaTeX ignores the whitespace of the source, and so do
             # we; the spaces that make the result readable are put back where
             # they belong when the pieces of the formula are assembled.
             content = re.sub(r'\s+', '', content)
-            if self.state.math_fontstyle is not None:
+            # a style name applies; `None` (upright) and `False` (no unicode
+            # alphabet at all) both leave the characters as they are
+            if self.state.math_fontstyle:
                 content = fmt_math_text_style(content, self.state.math_fontstyle)
             return content
 
@@ -3002,8 +3071,7 @@ class LatexNodes2Text(object):
         if not self.strict_latex_spaces['between-latex-constructs'] \
            and len(content.strip()) == 0:
             return ""
-        if self.math_mode == 'fancy-text-engine' \
-           and self.state.text_fontstyle is not None:
+        if self.math_mode == 'fancy' and self.state.text_fontstyle:
             content = fmt_math_text_style(content, self.state.text_fontstyle)
         return content
 
@@ -3157,7 +3225,7 @@ class LatexNodes2Text(object):
             else:
                 return delims[0] + content + delims[1]
 
-        elif self.math_mode == 'fancy-text-engine':
+        elif self.math_mode == 'fancy':
             # display math is set on lines of its own, and the pieces of the
             # formula are told so when they render themselves.
             #
@@ -3207,9 +3275,9 @@ class LatexNodes2Text(object):
         instead of an ordinary string when it wants to say something about how
         its rendering should be joined to its neighbors in a formula.
 
-        This is only meaningful with ``math_mode='fancy-text-engine'``, and only
-        for a node that sits in math mode; anywhere else a `simplify_repl`
-        callable must keep returning an ordinary string.
+        This is only meaningful with ``math_mode='fancy'``, and only for a
+        node that sits in math mode; anywhere else a `simplify_repl` callable
+        must keep returning an ordinary string.
 
         A math piece carries the rendered text along with a pair of *atom
         classes*, one describing its left edge and one describing its right
@@ -3450,8 +3518,8 @@ class LatexNodes2Text(object):
 
     def _groupnodecontents_to_text(self, groupnode):
         # The str() calls here are the boundary at which the math pieces of the
-        # 'fancy-text-engine' math mode stop.  This method, and
-        # node_arg_to_text() with it, is what a `simplify_repl` callable sees,
+        # 'fancy' math mode stop.  This method, and node_arg_to_text() with
+        # it, is what a `simplify_repl` callable sees,
         # and such code has every right to expect an ordinary string that it can
         # join, strip, slice or match.  Math pieces travel only between
         # nodelist_to_text(), node_to_text() and the joiner.

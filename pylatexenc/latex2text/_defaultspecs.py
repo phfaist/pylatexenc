@@ -41,7 +41,7 @@ from ..latex2text import (
 
 
 def _format_uebung(n, l2tobj):
-    # str() because in math mode the 'fancy-text-engine' math mode renders a
+    # str() because in math mode the 'fancy' math mode renders a
     # node list to a math piece rather than to a string
     s = '\n' + str(l2tobj.nodelist_to_text([n.nodeargs[0]])) + '\n'
     optarg = n.nodeargs[1]
@@ -114,12 +114,18 @@ def _latex_today():
 # which the excursion into math mode never disturbed.  See the `text_fontstyle`
 # and `math_fontstyle` fields of `TextConversionState`.
 #
-# All of these only do anything of the sort with math_mode='fancy-text-engine';
+# All of these only do anything of the sort with math_mode='fancy';
 # in every other math mode they behave exactly as they always have.
+#
+# A font style field of the conversion state that holds `False` says that no
+# unicode alphabet is to be used in that mode at all, which is what the
+# `text_fontstyle=False` and `math_fontstyle=False` options install.  These
+# macros leave such a value where they find it instead of replacing it with a
+# style of their own, so that the option holds for the whole document.
 #
 
 def _is_fancy_math(l2tobj):
-    return (l2tobj.math_mode == 'fancy-text-engine')
+    return (l2tobj.math_mode == 'fancy')
 
 
 def _mathxx_formatter(style):
@@ -138,6 +144,9 @@ def _mathxx_formatter(style):
                 return arg_text
             return fmt_math_text_style(arg_text, style)
 
+        if l2tobj.state.math_fontstyle is False:
+            return l2tobj.node_arg_to_text(node, 0)
+
         with l2tobj.push_state(math_fontstyle=style):
             return l2tobj.node_arg_to_text(node, 0)
 
@@ -149,9 +158,17 @@ def _mathxx_formatter(style):
 # '\text{}' and '\mbox{}' are absent on purpose: they only change the mode, and
 # leave the text font style exactly as they found it.  That is what makes
 # '\textit{... $\mathbf{a+\text{[b]}}$}' typeset the '[b]' in italics again.
+#
+# Each of these entries stands for the whole font, because a style name here
+# describes a font and not one of the three axes (family, weight, shape) that
+# LaTeX varies independently.  So '\textmd{}', which in LaTeX only takes the
+# weight back to medium, is treated like '\textrm{}' and '\textup{}' and takes
+# everything back to the plain upright font.  Unicode has no medium-weight
+# alphabet of its own, so there is nothing else it could select anyway.
 _textxx_fontstyles = {
     'textrm': None,
     'textup': None,
+    'textmd': None,
     'textbf': 'bold',
     'textit': 'italic',
     # LaTeX's slanted shape is a distinct shape from italic, but unicode has no
@@ -162,7 +179,7 @@ _textxx_fontstyles = {
 }
 
 
-def _textxx_formatter(macroname, discard_outside_fancy=False):
+def _textxx_formatter(macroname):
     # '\text{}', '\textbf{}' and friends.  Outside of math mode there is nothing
     # to join, so we hand back an ordinary string; inside a formula we hand back
     # a piece of the 'text' class, which the joiner treats as opaque and sets
@@ -172,21 +189,16 @@ def _textxx_formatter(macroname, discard_outside_fancy=False):
     set_fontstyle = (macroname in _textxx_fontstyles)
     style = _textxx_fontstyles.get(macroname, None)
 
-    def formatter(node, l2tobj, set_fontstyle=set_fontstyle, style=style,
-                  discard_outside_fancy=discard_outside_fancy):
+    def formatter(node, l2tobj, set_fontstyle=set_fontstyle, style=style):
         if not _is_fancy_math(l2tobj):
-            # exactly what these macros did before the fancy engine existed:
-            # either render the argument as ordinary text, or discard it for the
-            # ones that had no text spec at all and were therefore treated as
-            # unknown macros
-            if discard_outside_fancy:
-                return ''
+            # outside of the fancy engine there are no font styles to apply, so
+            # the argument is simply rendered as ordinary text
             return l2tobj.node_arg_to_text(node, 0)
 
         in_math_mode = l2tobj.state.in_math_mode
 
         state_changes = {'in_math_mode': False}
-        if set_fontstyle:
+        if set_fontstyle and l2tobj.state.text_fontstyle is not False:
             state_changes['text_fontstyle'] = style
 
         with l2tobj.push_state(**state_changes):
@@ -220,7 +232,11 @@ def _emph_formatter(node, l2tobj):
         return l2tobj.node_arg_to_text(node, 0)
 
     in_math_mode = l2tobj.state.in_math_mode
-    style = _emph_toggle_fontstyles.get(l2tobj.state.text_fontstyle, 'italic')
+
+    if l2tobj.state.text_fontstyle is False:
+        style = False
+    else:
+        style = _emph_toggle_fontstyles.get(l2tobj.state.text_fontstyle, 'italic')
 
     with l2tobj.push_state(in_math_mode=False, text_fontstyle=style):
         arg_text = l2tobj.node_arg_to_text(node, 0)
@@ -247,17 +263,22 @@ _math_operator_names = (
     ('cos', 'cos'),
     ('sin', 'sin'),
     ('tan', 'tan'),
+    ('sec', 'sec'),
+    ('csc', 'csc'),
+    ('cot', 'cot'),
     ('arccos', 'arccos'),
     ('arcsin', 'arcsin'),
     ('arctan', 'arctan'),
     ('cosh', 'cosh'),
     ('sinh', 'sinh'),
     ('tanh', 'tanh'),
+    ('coth', 'coth'),
     ('arccosh', 'arccosh'),
     ('arcsinh', 'arcsinh'),
     ('arctanh', 'arctanh'),
 
     ('ln', 'ln'),
+    ('lg', 'lg'),
     ('log', 'log'),
     ('exp', 'exp'),
 
@@ -268,6 +289,26 @@ _math_operator_names = (
     ('lim', 'lim'),
     ('limsup', 'lim sup'),
     ('liminf', 'lim inf'),
+
+    # amsmath's limit operators.  The '\var...' ones are alternative
+    # typesettings of the same operators -- a bar or an arrow drawn over or
+    # under the 'lim' instead of the words spelled out next to it -- which plain
+    # text cannot show, so each of them renders as the operator it stands for.
+    ('injlim', 'inj lim'),
+    ('projlim', 'proj lim'),
+    ('varlimsup', 'lim sup'),
+    ('varliminf', 'lim inf'),
+    ('varinjlim', 'inj lim'),
+    ('varprojlim', 'proj lim'),
+
+    ('arg', 'arg'),
+    ('deg', 'deg'),
+    ('det', 'det'),
+    ('dim', 'dim'),
+    ('gcd', 'gcd'),
+    ('hom', 'hom'),
+    ('ker', 'ker'),
+    ('Pr', 'Pr'),
 )
 
 
@@ -276,6 +317,49 @@ def _math_operator_formatter(text):
         if not _is_fancy_math(l2tobj) or not l2tobj.state.in_math_mode:
             return text
         return l2tobj.make_math_piece(text=text, cls='op')
+
+    return formatter
+
+
+def _operatorname_formatter(node, l2tobj):
+    # '\operatorname{tr}' names a function that has no macro of its own.  Its
+    # argument is typeset upright, as '\mathrm{}' does, and the result is a
+    # function name like any of those in `_math_operator_names`.  (Argument 0 is
+    # the optional star of '\operatorname*{}', which only says where the limits
+    # of the operator go and therefore doesn't concern us.)
+    if not _is_fancy_math(l2tobj) or not l2tobj.state.in_math_mode:
+        return l2tobj.node_arg_to_text(node, 1)
+
+    with l2tobj.push_state(math_fontstyle=None):
+        arg_text = l2tobj.node_arg_to_text(node, 1)
+
+    return l2tobj.make_math_piece(text=arg_text, cls='op')
+
+
+#
+# The modulo constructs.  '\bmod' is the infix operator, 'a \bmod b'; the other
+# two take the modulus as an argument and follow the expression they qualify,
+# 'a \equiv b \pmod{n}'.
+#
+
+def _bmod_formatter(node, l2tobj):
+    # a binary operator and not the name of a function, hence 'bin' and not
+    # 'op': it wants a space on each side, 'a mod b' and not 'a mod b' with the
+    # 'b' hugging it the way the argument of a function would.
+    if not _is_fancy_math(l2tobj) or not l2tobj.state.in_math_mode:
+        return 'mod'
+    return l2tobj.make_math_piece(text='mod', cls='bin')
+
+
+def _mod_formatter(prefix, suffix, cls_right):
+    def formatter(node, l2tobj, prefix=prefix, suffix=suffix, cls_right=cls_right):
+        text = prefix + l2tobj.node_arg_to_text(node, 0) + suffix
+        if not _is_fancy_math(l2tobj) or not l2tobj.state.in_math_mode:
+            return text
+        # the left edge asks to be set apart from what precedes it, exactly as a
+        # function name does; the right edge is the closing parenthesis for
+        # '\pmod{n}' and the modulus itself for '\mod{n}'
+        return l2tobj.make_math_piece(text=text, cls=('op', cls_right,))
 
     return formatter
 
@@ -483,28 +567,17 @@ _latex_specs_approximations = {
         MacroTextSpec('textsc', discard=False),
         MacroTextSpec('textsl', simplify_repl=_textxx_formatter('textsl')),
         MacroTextSpec('text', simplify_repl=_textxx_formatter('text')),
-        # These four had no text spec at all until now, so that they were
-        # treated as unknown macros and their argument was discarded.  The
-        # formatter keeps doing exactly that outside of the fancy engine; only
-        # there does it render the argument and apply the font style.
-        MacroTextSpec('textsf',
-                      simplify_repl=_textxx_formatter('textsf',
-                                                      discard_outside_fancy=True)),
-        MacroTextSpec('texttt',
-                      simplify_repl=_textxx_formatter('texttt',
-                                                      discard_outside_fancy=True)),
-        MacroTextSpec('textup',
-                      simplify_repl=_textxx_formatter('textup',
-                                                      discard_outside_fancy=True)),
-        MacroTextSpec('mbox',
-                      simplify_repl=_textxx_formatter('mbox',
-                                                      discard_outside_fancy=True)),
+        MacroTextSpec('textmd', simplify_repl=_textxx_formatter('textmd')),
+        MacroTextSpec('textsf', simplify_repl=_textxx_formatter('textsf')),
+        MacroTextSpec('texttt', simplify_repl=_textxx_formatter('texttt')),
+        MacroTextSpec('textup', simplify_repl=_textxx_formatter('textup')),
+        MacroTextSpec('mbox', simplify_repl=_textxx_formatter('mbox')),
 
     ] + [ MacroTextSpec(x, simplify_repl=y) for x, y in (
 
         # the str() calls: these titles are kept aside and pasted together much
         # later, by '\maketitle', so what is stored has to be a string; in math
-        # mode the 'fancy-text-engine' math mode renders a node list to a math
+        # mode the 'fancy' math mode renders a node list to a math
         # piece rather than to a string
         ('title', lambda n, l2tobj: \
          setattr(l2tobj, '_doc_title', str(l2tobj.nodelist_to_text(n.nodeargd.argnlist[0:1])))),
@@ -617,6 +690,12 @@ _latex_specs_base = {
         MacroTextSpec('mathscr', simplify_repl=_mathxx_formatter('script')),
         MacroTextSpec('mathfrak', simplify_repl=_mathxx_formatter('fraktur')),
 
+        MacroTextSpec('operatorname', simplify_repl=_operatorname_formatter),
+
+        MacroTextSpec('bmod', simplify_repl=_bmod_formatter),
+        MacroTextSpec('pmod', simplify_repl=_mod_formatter('(mod ', ')', 'close')),
+        MacroTextSpec('mod', simplify_repl=_mod_formatter('mod ', '', 'ord')),
+
         MacroTextSpec('input', simplify_repl=fmt_input_macro),
         MacroTextSpec('include', simplify_repl=fmt_input_macro),
 
@@ -715,6 +794,7 @@ _latex_specs_base = {
         ('simeq', u'\N{ASYMPTOTICALLY EQUAL TO}'),
         ('approx', u'\N{ALMOST EQUAL TO}'),
         ('neq', u'\N{NOT EQUAL TO}'),
+        ('ne', u'\N{NOT EQUAL TO}'),
         ('equiv', u'\N{IDENTICAL TO}'),
         ('le', u'\N{LESS-THAN OR EQUAL TO}'),
         ('ge', u'\N{GREATER-THAN OR EQUAL TO}'),
@@ -1893,7 +1973,7 @@ def make_accented_char(node, combining, l2tobj):
     if node.nodeargs and len(node.nodeargs):
         nodearg = node.nodeargs[0]
         # str() because an accent is common in math mode, where the
-        # 'fancy-text-engine' math mode renders a node list to a math piece
+        # 'fancy' math mode renders a node list to a math piece
         # rather than to a string
         c = str(l2tobj.nodelist_to_text([nodearg])).strip()
     else:

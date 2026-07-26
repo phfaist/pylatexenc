@@ -106,26 +106,42 @@ The `latex2text` module was improved:
   of delimiters like ``('<','>')`` gives ``x_<abc>``, and `None` gives plain
   ``x_abc`` as `pylatexenc 2` did.  It also applies to ``\frac`` and friends.
 
-- There is a new way of rendering formulas,
-  ``math_mode='fancy-text-engine'``, which tries to make the plain text look
-  like the formula LaTeX would typeset.  It ignores the whitespace of the
-  source the way LaTeX does and puts spaces back only where they help a
-  reader, so that ``$4 \pi c$`` gives ``4π𝑐`` with the implicit multiplication
-  kept tight while ``$x+y$`` gives ``𝑥 + 𝑦``; it writes the letters with the
-  unicode mathematical alphanumeric characters, so that a variable is visibly
-  not the name of a function (``$\sin x$`` gives ``sin 𝑥``); it adds
-  delimiters around a sub-expression only where a separating space would leave
-  its extent unclear; and it leaves the fragments of ordinary text such as
-  ``\text{...}`` alone, spaces and all.  The four math modes that existed
-  before are untouched by it.
+- There is a new way of rendering formulas, ``math_mode='fancy'``, **which is
+  now the default**, and which tries to make the plain text look like the
+  formula LaTeX would typeset.  It ignores the whitespace of the source the way
+  LaTeX does and puts spaces back only where they help a reader, so that ``$4
+  \pi c$`` gives ``4π𝑐`` with the implicit multiplication kept tight while
+  ``$x+y$`` gives ``𝑥 + 𝑦``; it writes the letters with the unicode
+  mathematical alphanumeric characters, so that a variable is visibly not the
+  name of a function (``$\sin x$`` gives ``sin 𝑥``); it adds delimiters around
+  a sub-expression only where a separating space would leave its extent
+  unclear; and it leaves the fragments of ordinary text such as ``\text{...}``
+  alone, spaces and all.  The font-selecting macros of ordinary text are
+  rendered with those same unicode alphabets, so ``\textbf{bold}`` gives
+  ``𝐛𝐨𝐥𝐝`` and ``\emph{word}`` gives ``𝑤𝑜𝑟𝑑``.
+
+  The four math modes that existed before are untouched by it, and
+  ``math_mode='text'`` is the one that renders a formula the way `pylatexenc 2`
+  did.  Reach for it if the output is going to be processed by a program rather
+  than read by a person.
 
   The unicode characters this uses live in a high unicode plane that many
-  terminal fonts do not cover.  The companion option
-  ``math_fontstyle=None`` leaves the letters upright and in plain ASCII for
-  output that has to be read in such a place.
+  terminal fonts do not cover.  Two companion options say which alphabet to
+  use: ``math_fontstyle=`` for the letters of a formula, whose default
+  ``'italic'`` is what italicizes the variables, and ``text_fontstyle=`` for
+  the text outside of the formulas, whose default `None` is the upright style.
+  Either of them accepts a style name, and either accepts `False`, which
+  switches the unicode alphabets off in that mode altogether — the font
+  selecting macros then leave the letters alone, so ``\textbf{bold}`` gives
+  ``bold`` and ``\mathbf{a}`` gives ``a``.  Give both as `False` for output
+  that has to be plain ASCII::
 
-  The command-line tool exposes both, as ``latex2text
-  --math-mode=fancy-text-engine`` and ``--math-fontstyle=none``.
+      LatexNodes2Text(text_fontstyle=False, math_fontstyle=False)
+
+  The command-line tool exposes all of it, as ``latex2text --math-mode=text``
+  (or any of the other modes), ``--math-fontstyle=`` and ``--text-fontstyle=``,
+  where the style is a style name, ``none`` for the upright style, or ``off``
+  for no unicode alphabets at all.
 
 The `latexencode` module has barely changed.
 
@@ -137,6 +153,19 @@ The `latexencode` module has barely changed.
 
 A couple things to look out for
 -------------------------------
+
+- :py:class:`~pylatexenc.latex2text.LatexNodes2Text` renders formulas with the
+  new ``math_mode='fancy'`` engine by default, so its output now contains the
+  unicode mathematical alphanumeric characters where `pylatexenc 2` produced
+  plain ASCII letters: ``$x+y$`` gives ``𝑥 + 𝑦``, and ``\textbf{bold}`` gives
+  ``𝐛𝐨𝐥𝐝``.  Those characters are outside the Basic Multilingual Plane, and a
+  font that does not cover them shows a placeholder box.  If you are indexing
+  the output, comparing it against stored strings, or feeding it to a program
+  that expects ASCII, pass ``math_mode='text'`` to get the `pylatexenc 2`
+  rendering back, or keep the new rendering and only drop the unicode
+  alphabets with ``text_fontstyle=False, math_fontstyle=False``.  The
+  command-line tool takes ``--math-mode=text``, or ``--text-fontstyle=off
+  --math-fontstyle=off``, for the same purposes.
 
 - Paragraph breaks (``\n\n``) as well as ``^`` and ``_`` are now reported as
   their own *specials* nodes.  This means that text which used to come back as
@@ -230,21 +259,15 @@ Some bug fixes in behavior
 - An unterminated ``lstlisting`` environment no longer loses its parsed
   arguments in tolerant parsing mode; ``nodeargd`` used to be `None` there.
 
-- ``\href{...}{...}`` and ``\url{...}`` no longer raise an `IndexError` in
-  :py:mod:`~pylatexenc.latex2text`; they render as ``link <http://example.com>``.
-
-- The contents of ``{verbatim}`` and ``{lstlisting}`` environments actually make
-  it into the :py:mod:`~pylatexenc.latex2text` output now; `pylatexenc 2`
-  produced an empty string.
+- Fixes for latex2text: ``\href{...}{...}`` and ``\url{...}``; ``{verbatim}``
+  and ``{lstlisting}``.
 
 - ``{enumerate}`` items are numbered, and ``\frac{a}`` (with a missing second
   argument) no longer emits the literal replacement string ``'%s/%s'``.
 
-- In tolerant parsing mode, a stray ``}``, ``\end{...}`` or ``\]`` no longer
-  aborts the parse: the offending token is skipped and the rest of the document
-  is still parsed, as in `pylatexenc 2`.  In strict parsing mode it still
-  raises, as before.
+- More extensive support for math operators and symbols in latex2text.
 
+- Several bug fixes, especially in tolerant parsing mode.
 
 - You might notice other fixes that we forgot to include here.
 
