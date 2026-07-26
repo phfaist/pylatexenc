@@ -243,10 +243,20 @@ class LatexContextDb(object):
 
     def set_unknown_specials_spec(self, specialsspec):
         r"""
-        Set the latex specials spec to use when encountering a LaTeX environment
-        that is not in the database.
-        
-        ### FIXME: When is an "unknown specials" encountered ??
+        Set the latex specials spec to use when encountering a LaTeX specials
+        character sequence that is not in the database.
+
+        This spec is returned by :py:meth:`get_specials_spec()` when the
+        requested character sequence has no specification in this database.  It
+        plays no role while a chunk of LaTeX code is being tokenized:
+        :py:meth:`test_for_specials()`, which is what detects specials in the
+        source, reports `None` when no registered specials match, so unknown
+        specials are simply read as ordinary characters.
+
+        In other words, this is only relevant if some code looks up a specials
+        specification by character sequence and would rather receive a fallback
+        spec than have the lookup fail.  If it is never set, the fallback is
+        `None`.
         """
         if self.frozen:
             raise RuntimeError("You attempted to modify a frozen LatexContextDb object.")

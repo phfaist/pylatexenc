@@ -37,7 +37,40 @@ def get_default_latex_context_db():
     Return a :py:class:`pylatexenc.macrospec.LatexContextDb` instance
     initialized with a collection of known macros and environments.
 
-    TODO: document categories.
+    The definitions are grouped into the following categories, which you can
+    select or discard individually with
+    :py:meth:`pylatexenc.macrospec.LatexContextDb.filter_context()`:
+
+      - ``'latex-paragraph'`` — the paragraph break (a blank line) as a
+        "specials" definition.
+
+      - ``'latex-base'`` — the bulk of the standard LaTeX macros, environments
+        and specials, i.e., what you can expect to be available in a plain LaTeX
+        document.
+
+      - ``'nonascii-specials'`` — character sequences that LaTeX gives a special
+        meaning: the non-breaking space ``~``, the quote and dash "fake
+        ligatures" (a pair of backticks, ``''``, ``--`` and ``---``), and the
+        inverted punctuation marks (an exclamation mark or a question mark
+        followed by a backtick).
+
+      - ``'verbatim'`` — the ``\verb`` macro and the ``{verbatim}``
+        environment.
+
+      - ``'lstlisting'`` — the ``{lstlisting}`` environment of the `listings`
+        package, whose body is also read verbatim.
+
+      - ``'theorems'`` — theorem-like environments (``{theorem}``, ``{lemma}``,
+        ``{proof}``, etc., along with common short forms).
+
+      - ``'enumitem'`` — the ``{enumerate}``, ``{itemize}`` and ``{description}``
+        environments with the optional argument that the `enumitem` package
+        gives them.
+
+      - ``'natbib'`` — the citation macros of the `natbib` package (``\citet``,
+        ``\citep``, etc.).
+
+      - ``'latex-ethuebung'`` — macros of the `ethuebung` LaTeX package.
 
     If you want to add your own definitions, you should use the
     :py:meth:`pylatexenc.macrospec.LatexContextDb.add_context_category()`

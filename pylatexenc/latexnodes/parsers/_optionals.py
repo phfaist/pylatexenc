@@ -66,7 +66,48 @@ class LatexOptionalSquareBracketsParser(LatexDelimitedGroupParser):
 
 class LatexOptionalCharsMarkerParser(LatexParserBase):
     r"""
-    Doc. .................
+    Parse an optional marker consisting of one or more specific characters, such
+    as the star in ``\section*``, optionally along with an argument that follows
+    the marker.
+
+    The parser looks for a marker repeatedly, so that several markers can be
+    picked up one after the other.  It stops as soon as the next tokens don't
+    match any of the markers, or once `max_num_args` markers have been read.  If
+    no marker at all was found, the parser reports that the optional argument
+    was not provided (see `return_none_instead_of_empty`).
+
+    Constructor arguments:
+
+      - `chars_list` is the list of markers to look for.  Each entry is a string
+        of one or more characters.  Whitespace within an entry is normalized,
+        and matches any run of whitespace in the source.  If a single string is
+        given instead of a list, it is interpreted as the list of its individual
+        characters.  A "specials" token counts as its characters here, so that a
+        marker can be made of characters that are declared as specials.
+
+      - `following_arg_parser`, if non-`None`, is the parser that is used to
+        read an argument that follows the marker.  It is obtained via
+        :py:meth:`get_following_arg_parser()`, so that subclasses can pick a
+        different parser depending on which marker was matched.
+
+      - `include_chars_node_before_following_arg` determines whether or not the
+        marker itself is reported as a chars node before the nodes of the
+        following argument.
+
+      - `return_none_instead_of_empty` determines what is returned if no marker
+        was found: `None` (the default), or an empty node list.
+
+      - `allow_pre_space` determines whether whitespace is allowed before the
+        marker.  If it is `False` and whitespace is encountered, the marker
+        counts as not provided.
+
+      - `collect_chars_with_following_arg_as_delimited_group` wraps the marker
+        and the following argument into a single
+        :py:class:`~pylatexenc.latexnodes.nodes.LatexGroupNode` whose delimiters
+        are the marker and an empty string.  This requires
+        `return_full_node_list=True`.
+
+      - `max_num_args`, if non-`None`, is the maximum number of markers to read.
 
     .. py::attribute: return_full_node_list
 
@@ -126,13 +167,38 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
 
 
     def contents_can_be_empty(self):
+        r"""
+        Return `True`; the marker that this parser reads is always optional.
+
+        Reimplemented from :py:meth:`LatexParserBase.contents_can_be_empty()`.
+        """
         return True
 
     def get_following_arg_parser(self, chars):
+        r"""
+        Return the parser to use to read the argument that follows the marker
+        `chars` that was just matched, or `None` if this marker does not take an
+        argument.
+
+        The default implementation returns the `following_arg_parser` that was
+        specified to the constructor, regardless of `chars`.  Reimplement this
+        method if different markers should take different arguments.
+        """
         return self.following_arg_parser
 
     def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
-        
+        r"""
+        Read the optional marker(s) and any argument that follows them.  See class
+        doc.
+
+        Returns a tuple `(nodes, None)`.  The `nodes` is `None` if no marker was
+        found and `return_none_instead_of_empty` is set; otherwise it is a
+        :py:class:`~pylatexenc.latexnodes.LatexNodeList`, or a single node if
+        `return_full_node_list` is `False`.
+
+        Reimplemented from :py:meth:`LatexParserBase.parse()`.
+        """
+
         num_args = 0
 
         full_nodelist = []
@@ -313,9 +379,23 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
 
 class LatexOptionalEmbellishmentArgsParser(LatexOptionalCharsMarkerParser):
     r"""
-    Doc...............
+    Parse a sequence of optional "embellishments", i.e., single characters that
+    each introduce an argument, such as the ``^`` and ``_`` in ``x^i_j``.
 
-    inspired by xparse's ``e{tokens}`` argument type.....
+    This parser is inspired by `xparse`'s ``e{tokens}`` argument type.
+
+    The `embellishment_chars` argument lists the characters that can introduce
+    an embellishment; it is used as the `chars_list` of the base class
+    :py:class:`LatexOptionalCharsMarkerParser`, so a plain string is interpreted
+    as the list of its individual characters.  Each embellishment character that
+    is encountered is followed by a single expression, which is read with a
+    :py:class:`LatexExpressionParser`.
+
+    Each embellishment is reported as a
+    :py:class:`~pylatexenc.latexnodes.nodes.LatexGroupNode` whose opening
+    delimiter is the embellishment character and whose closing delimiter is an
+    empty string; all of them are collected into a single node list.  If no
+    embellishment at all is present, the parser reports `None`.
     """
     def __init__(self, embellishment_chars, allow_pre_space=True, **kwargs):
         super(LatexOptionalEmbellishmentArgsParser, self).__init__(

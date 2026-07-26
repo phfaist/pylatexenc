@@ -94,6 +94,16 @@ class ParsingStateDeltaReplaceParsingState(ParsingStateDelta):
         self.set_parsing_state = set_parsing_state
 
     def get_updated_parsing_state(self, parsing_state, latex_walker):
+        r"""
+        Return the parsing state object given as `set_parsing_state` to the
+        constructor, ignoring the given `parsing_state` entirely.
+
+        If `set_parsing_state` is `None`, then `parsing_state` is returned
+        unchanged.
+
+        Reimplemented from
+        :py:meth:`ParsingStateDelta.get_updated_parsing_state()`.
+        """
         if self.set_parsing_state is not None:
             return self.set_parsing_state
         return parsing_state
@@ -113,6 +123,15 @@ class ParsingStateDeltaChained(ParsingStateDelta):
         self.parsing_state_deltas = parsing_state_deltas
 
     def get_updated_parsing_state(self, parsing_state, latex_walker):
+        r"""
+        Apply each of the deltas in the `parsing_state_deltas` list to
+        `parsing_state`, in the order in which they appear in the list, and
+        return the resulting parsing state.  Any `None` entries in the list are
+        skipped.
+
+        Reimplemented from
+        :py:meth:`ParsingStateDelta.get_updated_parsing_state()`.
+        """
         ps = parsing_state
         for delta in self.parsing_state_deltas:
             if delta is not None:
@@ -133,7 +152,24 @@ class ParsingStateDeltaWalkerEvent(ParsingStateDelta):
     mode), for which the actual parsing state changes should be requested to the
     latex walker instance.
 
-    DOC......................
+    Instead of describing the parsing state changes directly, this delta
+    describes an event by name; it is the latex walker that decides what the
+    event means in terms of actual parsing state changes.  This way, the same
+    event (say, entering math mode) can have different consequences depending on
+    which latex walker is in use.
+
+    Arguments:
+
+      - `walker_event_name` is the name of the event.  It must be the name of a
+        method of the latex walker's parsing state event handler (see
+        :py:meth:`LatexWalkerBase.parsing_state_event_handler()` and
+        :py:class:`LatexWalkerParsingStateEventHandler`), e.g.
+        ``'enter_math_mode'``.
+
+      - `walker_event_kwargs` is a dictionary of keyword arguments to call that
+        method with, e.g. ``dict(math_mode_delimiter='$', trigger_token=tok)``.
+
+    Both arguments are stored as attributes of the same name.
     """
     def __init__(self, walker_event_name, walker_event_kwargs):
         super(ParsingStateDeltaWalkerEvent, self).__init__(
@@ -143,6 +179,19 @@ class ParsingStateDeltaWalkerEvent(ParsingStateDelta):
         self.walker_event_kwargs = walker_event_kwargs
     
     def get_updated_parsing_state(self, parsing_state, latex_walker):
+        r"""
+        Query the `latex_walker` for the parsing state changes that this event
+        entails, and apply them to `parsing_state`.
+
+        The event handler is obtained with
+        `latex_walker.parsing_state_event_handler()`; the method named
+        `walker_event_name` is called on that handler with the keyword arguments
+        `walker_event_kwargs`, and the parsing state delta it returns is applied
+        to `parsing_state`.
+
+        Reimplemented from
+        :py:meth:`ParsingStateDelta.get_updated_parsing_state()`.
+        """
         handler = latex_walker.parsing_state_event_handler()
         handler_fn = getattr(handler, self.walker_event_name)
         parsing_state_delta = handler_fn(**self.walker_event_kwargs)
@@ -192,6 +241,16 @@ class ParsingStateDeltaLeaveMathMode(ParsingStateDeltaWalkerEvent):
 # ------------------------------------------------------------------------------
 
 def get_updated_parsing_state_from_delta(parsing_state, parsing_state_delta, latex_walker):
+    r"""
+    Apply the parsing state delta `parsing_state_delta` to `parsing_state` and
+    return the resulting parsing state.
+
+    This is a convenience function that simply calls
+    `parsing_state_delta.get_updated_parsing_state(parsing_state,
+    latex_walker)`, while also accepting `parsing_state_delta=None` (in which
+    case `parsing_state` is returned unchanged).  Parsers routinely have to deal
+    with a parsing state delta that might be `None`, meaning "no change".
+    """
     if parsing_state_delta is None:
         return parsing_state
     return parsing_state_delta.get_updated_parsing_state(parsing_state, latex_walker)

@@ -62,7 +62,42 @@ class CallableSpec(CallableSpecBase):
     Base class for :py:class:`MacroSpec`, :py:class:`EnvironmentSpec` and
     :py:class:`SpecialsSpec` classes regrouping common functionality.
 
-    Doc. ................
+    Constructor arguments:
+
+      - `arguments_spec_list` is the list of arguments that this callable
+        accepts.  Each item is either a
+        :py:class:`~pylatexenc.latexnodes.LatexArgumentSpec` instance, or a
+        string representing a standard argument type (see
+        :py:class:`~pylatexenc.latexnodes.parsers.LatexStandardArgumentParser`)
+        which is converted into such an instance.  Specify `None` or an empty
+        list if the callable does not accept any arguments.
+
+      - `spec_node_parser_type` determines the parser class that
+        :py:meth:`get_node_parser()` instantiates in order to parse an
+        invocation of this callable.  You can specify the class itself, or one
+        of the strings ``'macro'``, ``'environment'`` or ``'specials'``, which
+        select :py:class:`LatexMacroCallParser`,
+        :py:class:`LatexEnvironmentCallParser`, and
+        :py:class:`LatexSpecialsCallParser`, respectively.
+
+      - `macroname`, `environmentname` and `specials_chars` identify the
+        callable.  Exactly one of them is relevant for a given callable type,
+        and only those that are explicitly specified are set as attributes on
+        this object.  (The subclasses :py:class:`MacroSpec`,
+        :py:class:`EnvironmentSpec` and :py:class:`SpecialsSpec` each set the
+        relevant one.)
+
+      - `make_arguments_parsing_state_delta`, `make_body_parsing_state_delta`,
+        `make_after_parsing_state_delta`, `make_body_parser` and
+        `finalize_node` are optional callables.  If one of them is specified,
+        then the method of the same name on this object will invoke it instead
+        of applying its default behavior.  See the documentation of each of
+        those methods for the arguments that the callable receives.
+
+      - `body_parsing_state_delta` (keyword argument, for environments) is the
+        parsing state delta to use for the environment body contents.  It is
+        stored as the attribute of the same name and is what
+        :py:meth:`make_body_parsing_state_delta()` returns by default.
 
     One of the main reasons for bringing all the default functionality of the
     :py:class:`MacroSpec`, :py:class:`EnvironmentSpec`, and
@@ -180,9 +215,15 @@ class CallableSpec(CallableSpecBase):
 
     def finalize_node(self, node):
         r"""
-        Doc ................
+        Called once the node representing this callable's invocation has been fully
+        parsed, giving you a chance to inspect it, to attach further information
+        to it, or to replace it by another node instance altogether.
 
         MUST RETURN the new node instance.
+
+        The default implementation invokes the `finalize_node=` callable that
+        was specified to the constructor, if any, and returns `node` unchanged
+        otherwise.
 
         This is called from the LatexMacroCallParser instance, i.e., this
         function won't be called by default if you override get_node_parser()
@@ -199,7 +240,27 @@ class CallableSpec(CallableSpecBase):
 
     def make_arguments_parsing_state_delta(self, token, latex_walker):
         r"""
-        Doc ................
+        If applicable, return a
+        :py:class:`~pylatexenc.latexnodes.ParsingStateDelta` object describing
+        how the parsing state should be changed in order to parse the arguments
+        of this callable.  Return `None` to parse the arguments with the current
+        parsing state.
+
+        The `token` is the token instance that introduced this callable (e.g.
+        the ``\mymacro`` macro token), and `latex_walker` is the latex walker
+        instance that is parsing the code.
+
+        The default implementation invokes the
+        `make_arguments_parsing_state_delta=` callable that was specified to the
+        constructor, if any, and returns `None` otherwise.
+
+        Note that individual arguments can also request their own parsing state
+        changes, see
+        :py:attr:`~pylatexenc.latexnodes.LatexArgumentSpec.parsing_state_delta`.
+
+        This method is called from the :py:class:`LatexMacroCallParser`
+        instance, i.e., this function won't be called by default if you override
+        :py:meth:`get_node_parser()` and return a different parser instance.
         """
         # Transcrypt doesn't seem to like getattr(obj, attrname, default) with
         # default arg, so use hasattr() test
@@ -219,7 +280,24 @@ class CallableSpec(CallableSpecBase):
                                       arg_parsing_state_delta,
                                       latex_walker):
         r"""
-        Doc ................
+        If applicable, return a
+        :py:class:`~pylatexenc.latexnodes.ParsingStateDelta` object describing
+        how the parsing state should be changed in order to parse the body
+        contents of this environment.  Return `None` to parse the body with the
+        current parsing state.
+
+        The `token` is the token instance that introduced this callable (e.g.
+        the ``\begin{myenvironment}`` token), `nodeargd` is the
+        :py:class:`~pylatexenc.latexnodes.ParsedArguments` instance with the
+        arguments that were parsed for this callable, `arg_parsing_state_delta`
+        is any parsing state delta that resulted from parsing those arguments,
+        and `latex_walker` is the latex walker instance that is parsing the
+        code.
+
+        The default implementation invokes the
+        `make_body_parsing_state_delta=` callable that was specified to the
+        constructor, if any, and returns the `body_parsing_state_delta`
+        attribute otherwise.
 
         This method only makes sense for LaTeX environments.  It's defined in
         the base class :py:class:`CallableSpec` for consistency with the other
@@ -275,7 +353,17 @@ class CallableSpec(CallableSpecBase):
 
     def needs_arguments(self):
         r"""
-        Doc ................
+        Return `True` if at least one of the arguments in `arguments_spec_list` is
+        a required argument, and `False` otherwise (in particular, if this
+        callable does not accept any arguments at all).
+
+        .. note::
+
+           Each argument is queried with ``arg.spec.is_required()``.  The
+           standard :py:class:`~pylatexenc.latexnodes.LatexArgumentSpec` class
+           provides neither a `spec` attribute nor an `is_required()` method, so
+           this method only works with argument specification objects that do
+           provide them.
         """
         for arg in self.arguments_spec_list:
             if arg.spec.is_required():
@@ -285,9 +373,24 @@ class CallableSpec(CallableSpecBase):
 
     def make_body_parser(self, token, nodeargd, arg_parsing_state_delta):
         r"""
-        Doc. ................
+        Return the parser instance that should be used to parse the body contents
+        of this environment.
 
-        For environment specs only. ........
+        The `token` is the ``\begin{environmentname}`` token instance that
+        introduced the environment, `nodeargd` is the
+        :py:class:`~pylatexenc.latexnodes.ParsedArguments` instance with the
+        arguments that were parsed for this environment, and
+        `arg_parsing_state_delta` is any parsing state delta that resulted from
+        parsing those arguments.
+
+        The default implementation invokes the `make_body_parser=` callable that
+        was specified to the constructor, if any, and otherwise returns a
+        :py:class:`LatexEnvironmentBodyContentsParser` instance for the
+        environment name given by the token's argument.
+
+        For environment specs only.  It's defined in the base class
+        :py:class:`CallableSpec` alongside the other methods that customize how
+        a callable's invocation is parsed.
         """
         if hasattr(self, '_fn_make_body_parser'): # and self._fn_make_body_parser is not None:
             return self._fn_make_body_parser(token, nodeargd, arg_parsing_state_delta)
