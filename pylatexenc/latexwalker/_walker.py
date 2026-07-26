@@ -134,12 +134,25 @@ class LatexWalker(latexnodes.LatexWalkerBase):
     string `s`.  These methods typically accept a `pos` parameter, which must be
     an integer, which defines the position in the string `s` to start parsing.
 
-    .......... These methods, unless otherwise documented, return a tuple `(node, pos,
-    len)`, where node is a :py:class:`LatexNode` describing the parsed content,
-    `pos` is the position at which the LaTeX element of iterest was encountered,
-    and `len` is the length of the string that is considered to be part of the
-    `node`.  That is, the position in the string that is immediately after the
-    node is `pos+len`. .......... changed in pylatexenc 3.......
+    These are the ``get_***()`` methods inherited from `pylatexenc 2`
+    (:py:meth:`get_latex_nodes()`, :py:meth:`get_latex_expression()`,
+    :py:meth:`get_latex_braced_group()`, :py:meth:`get_latex_environment()`,
+    :py:meth:`get_latex_maybe_optional_arg()`).  Unless otherwise documented,
+    they return a tuple `(node, pos, len)`, where node is a
+    :py:class:`LatexNode` describing the parsed content, `pos` is the position
+    at which the LaTeX element of interest was encountered, and `len` is the
+    length of the string that is considered to be part of the `node`.  That is,
+    the position in the string that is immediately after the node is `pos+len`.
+
+    .. deprecated:: 3.0
+
+       These ``get_***()`` methods are deprecated as of `pylatexenc 3`.  Use
+       :py:meth:`parse_content()` together with a parser object from
+       :py:mod:`pylatexenc.latexnodes.parsers` instead.  That method returns a
+       tuple `(nodes, parsing_state_delta)`, and the position information is
+       carried by the nodes themselves in their `pos` and `pos_end` attributes.
+       The documentation of each of the ``get_***()`` methods shows the
+       recommended replacement.
 
     The following obsolete flag is accepted by the constructor for backwards
     compatibility with `pylatexenc 1.x`:
@@ -551,6 +564,16 @@ class LatexWalker(latexnodes.LatexWalkerBase):
                              token_reader,
                              parsing_state,
                              **kwargs):
+        r"""
+        Create and return a
+        :py:class:`pylatexenc.latexnodes.LatexNodesCollector` instance that
+        reads tokens from `token_reader` with the given `parsing_state`.  Any
+        further keyword arguments are supplied directly to the nodes collector's
+        constructor.
+
+        Reimplemented from
+        :py:meth:`pylatexenc.latexnodes.LatexWalkerBase.make_nodes_collector()`.
+        """
         return latexnodes.LatexNodesCollector(
             self,
             token_reader,
@@ -603,10 +626,19 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
     def make_nodelist(self, nodelist, **kwargs):
         r"""
-        Doc .............................
+        Create and return a :py:class:`LatexNodeList` instance that holds the nodes
+        given in the list `nodelist`.
+
+        Keyword arguments are supplied directly to the constructor of
+        :py:class:`LatexNodeList`.  The `parsing_state` keyword argument is
+        mandatory.
+
+        All node lists produced while parsing use this method, so you can
+        reimplement it in a subclass to customize the node list objects that are
+        created.  See also :py:meth:`make_node()`.
 
         .. versionadded:: 3.0
-        
+
            This method was introduced in `pylatexenc 3.0`.
 
         """
@@ -623,6 +655,17 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
 
     def format_pos(self, pos):
+        r"""
+        Return a short human-readable string describing the position `pos` in the
+        parsed string, for use in error and warning messages.
+
+        The position is reported as a line and column number, e.g. ``'@ (line
+        3, col 12)'``.  If `pos` is `None`, then ``'(location unknown)'`` is
+        returned.
+
+        This method is used by
+        :py:meth:`pylatexenc.latexnodes.nodes.LatexNode.format_pos()`.
+        """
         if pos is None:
             return '(location unknown)'
         lineno, colno = self.pos_to_lineno_colno(pos)

@@ -161,7 +161,17 @@ class LatexNodesCollector(object):
 
     def get_parser_parsing_state_delta(self):
         r"""
-        Doc. ............
+        Returns the parsing state delta that a parser should report after collecting
+        these nodes, i.e., the changes in the parsing state that the collected
+        content caused and that should carry over to whatever is parsed next.
+
+        If the parsing state never changed while the tokens were processed (say,
+        because no ``\newcommand`` was encountered), then `None` is returned.
+        Otherwise, the return value is a
+        :py:class:`ParsingStateDeltaReplaceParsingState` instance that installs
+        the parsing state as it stood at the end of the collected content.
+
+        This method can only be called after :py:meth:`finalize()`.
         """
         if not self._finalized:
             raise RuntimeError("Call to get_parser_parsing_state_delta() before finalize()")

@@ -126,39 +126,126 @@ class ParsingState(object):
 
     .. py:attribute:: latex_group_delimiters
 
-       Doc ............
+       The delimiters that open and close a LaTeX group, specified as a list of
+       2-item tuples `(open_delimiter, close_delimiter)`.  The default value is
+       ``[ ('{', '}') ]``.
+
+       Both the opening and the closing delimiter must be single characters.
+       The token reader reports an opening delimiter as a 'brace_open' token
+       and a closing delimiter as a 'brace_close' token (see
+       :py:class:`LatexToken`).  Group delimiters are only recognized if
+       `enable_groups` is `True`.
 
     .. py:attribute:: latex_inline_math_delimiters
 
-       Doc ............
+       The delimiters that open and close an inline math mode block, specified
+       as a list of 2-item tuples `(open_delimiter, close_delimiter)`.  The
+       default value is ``[ ('$', '$'), (r'\(', r'\)') ]``.
+
+       In contrast to `latex_group_delimiters`, these delimiters may be several
+       characters long.  The token reader reports them as 'mathmode_inline'
+       tokens.  Math mode delimiters are only recognized if `enable_math` is
+       `True`.
 
     .. py:attribute:: latex_display_math_delimiters
 
-       Doc ............
+       The delimiters that open and close a display math mode block, in the
+       same format as `latex_inline_math_delimiters`.  The default value is
+       ``[ ('$$', '$$'), (r'\[', r'\]') ]``.  The token reader reports them as
+       'mathmode_display' tokens.
+
+       When we are not already looking for a specific closing delimiter (see
+       `math_mode_delimiter`), and when more than one inline or display
+       delimiter matches at the current position, the longest one is picked.
+       This is how ``$$`` is preferred over ``$`` when opening math mode.
 
     .. py:attribute:: enable_double_newline_paragraphs
 
-       Doc ............
+       Whether or not a blank line (i.e., whitespace containing two or more
+       newline characters) marks a paragraph break.  The default is `True`.
+
+       When enabled, the token reader reports such whitespace as a token of its
+       own rather than as leading whitespace of the following token: if the
+       `latex_context` provides a specials specification for the characters
+       ``'\n\n'``, then a 'specials' token with that specification is reported;
+       otherwise, a 'char' token is reported whose argument is the paragraph
+       whitespace itself.
+
+       When disabled, blank lines are skipped like any other whitespace.
+
+    .. py:attribute:: enable_macros
+
+       Whether or not macro calls (the `macro_escape_char` followed by a macro
+       name) are recognized.  The default is `True`.  If disabled, the escape
+       character is reported as an ordinary character token.
 
     .. py:attribute:: enable_environments
 
-       .Doc ...........
+       Whether or not the constructs ``\begin{environmentname}`` and
+       ``\end{environmentname}`` are recognized as environment tokens.  The
+       default is `True`.
+
+       Environments are detected before macro calls and independently of the
+       `enable_macros` setting.  If `enable_environments` is disabled, then
+       ``\begin`` and ``\end`` are read as ordinary macro calls (provided
+       `enable_macros` is set).
 
     .. py:attribute:: enable_comments
 
-       Doc ............
+       Whether or not the `comment_start` string introduces a comment.  The
+       default is `True`.  If disabled, those characters carry no special
+       meaning and are reported as ordinary characters (or as specials, if the
+       `latex_context` happens to define a specials specification for them).
+
+    .. py:attribute:: enable_groups
+
+       Whether or not the `latex_group_delimiters` are recognized as group
+       delimiters.  The default is `True`.  If disabled, the delimiter
+       characters are reported as ordinary character tokens.
+
+    .. py:attribute:: enable_specials
+
+       Whether or not specials (see
+       :py:class:`pylatexenc.macrospec.SpecialsSpec`) are recognized.  The
+       default is `True`.  Specials are looked up in the `latex_context`, so no
+       specials are recognized if the latex context is `None`.
+
+    .. py:attribute:: enable_math
+
+       Whether or not the inline and display math mode delimiters are
+       recognized.  The default is `True`.  If disabled, the delimiter
+       characters are reported as ordinary character tokens.
 
     .. py:attribute:: macro_alpha_chars
 
-       Doc ............
+       The characters that can make up a multi-character macro name, given as a
+       string (or as any object that supports the syntax ``if (c in
+       macro_alpha_chars): ...``).  The default is the ASCII letters ``a``–``z``
+       and ``A``–``Z``.
+
+       A macro name is either a single character that is not in
+       `macro_alpha_chars`, or the longest run of characters that all are in
+       `macro_alpha_chars`.  Whitespace that immediately follows a
+       multi-character macro name is absorbed into the token's `post_space`
+       field.
 
     .. py:attribute:: macro_escape_char
 
-       Doc ................
+       The character that introduces a macro call, e.g. the backslash in
+       ``\textbf``.  The default is ``'\\'``.  This must be a single character.
 
     .. py:attribute:: comment_start
 
-       Doc .............
+       The string that starts a comment; the comment then extends to the end of
+       the line.  The default is ``'%'``.
+
+       The comment token also covers the whitespace that follows the end of the
+       line, unless that whitespace forms a paragraph break, in which case the
+       comment token stops at the end of the line and the whitespace is left
+       for the paragraph break token.
+
+       .. note:: The tokenizer assumes in places that the comment start is a
+                 single character.
 
     .. py:attribute:: forbidden_characters
 
@@ -190,9 +277,10 @@ class ParsingState(object):
 
        The attributes `latex_group_delimiters`, `latex_inline_math_delimiters`,
        `latex_display_math_delimiters`, `enable_double_newline_paragraphs`,
-       `enable_environments`, `enable_comments`, `macro_alpha_chars`,
-       `macro_escape_char`, and `forbidden_characters` were introduced in
-       version 3.
+       `enable_macros`, `enable_environments`, `enable_comments`,
+       `enable_groups`, `enable_specials`, `enable_math`, `macro_alpha_chars`,
+       `macro_escape_char`, `comment_start`, and `forbidden_characters` were
+       introduced in version 3.
 
     .. versionadded:: 3.0
 
@@ -255,6 +343,21 @@ class ParsingState(object):
                    comment_start='%',
                    forbidden_characters='',
                    ):
+        r"""
+        Set all the fields of this parsing state object to the given values, using
+        the documented default value for any field that is not specified.
+
+        This method is called by the constructor.  It only assigns the fields
+        themselves; the internal information that is cached from those fields is
+        computed by :py:meth:`finalize_state()`, which the constructor calls
+        immediately afterwards.  If you call `set_fields()` on an existing
+        parsing state object, you must call `finalize_state()` yourself for the
+        object to remain consistent.
+
+        Reimplement this method in a subclass if you'd like to add your own
+        fields to the parsing state (also add their names to the class attribute
+        `_fields`).
+        """
 
         self.s = s
 
@@ -384,6 +487,19 @@ class ParsingState(object):
         
 
     def finalize_state(self):
+        r"""
+        Compute the internal information that this object caches from its fields,
+        e.g. the set of characters at which a math mode delimiter might start.
+
+        This method is called by the constructor after the fields have been set
+        by :py:meth:`set_fields()`.  Where possible, the cached information is
+        simply taken over from the parsing state object that this object was
+        derived from with :py:meth:`sub_context()`, so that deriving a new
+        parsing state remains cheap.
+
+        Reimplement this method in a subclass if you cache further information
+        that is derived from your own additional fields.
+        """
 
         parent, kwargs = self._parent_parsing_state_info
 
@@ -466,6 +582,18 @@ class ParsingState(object):
 
 
     def to_json_object(self):
+        r"""
+        Return a representation of this parsing state as an object that can be
+        serialized to JSON.
+
+        The result is the dictionary of fields returned by
+        :py:meth:`get_fields()`, minus the `latex_context` and `s` fields (the
+        former is a specifications database and the latter can be a very long
+        string; neither is meaningful in a JSON dump of a node tree).
+
+        This method is used by the JSON encoder returned by
+        :py:func:`pylatexenc.latexwalker.make_json_encoder()`.
+        """
         return { k: v
                  for k, v in self.get_fields().items()
                  if k not in ('latex_context','s',) }

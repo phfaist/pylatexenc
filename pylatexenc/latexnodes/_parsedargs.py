@@ -152,12 +152,25 @@ class ParsedArguments(object):
         a first optional argument was included in `nodeoptarg` or `nodeargs`
         depended on how the macro specification was given.
 
+      - `arguments_spec_list` is the list of argument specifications, one per
+        entry of `argnlist` and in the same order, describing what each of those
+        arguments is.  Entries are normally
+        :py:class:`LatexArgumentSpec` instances; the parser that produced the
+        arguments provides them (see
+        :py:class:`pylatexenc.macrospec.LatexArgumentsParser`).
+
       - `argspec` is a string or a list that describes how each corresponding
         argument in `argnlist` represents.  If the macro arguments are too
         complicated to store in a list, leave this as `None`.  For standard
         macros and parsed arguments this is a string with characters '*', '[',
         '{' describing an optional star argument, an optional
         square-bracket-delimited argument, and a mandatory argument.
+
+        .. deprecated:: 3.0
+
+           Specify `arguments_spec_list` instead.  If `argspec` is given and
+           `arguments_spec_list` is not, then `argspec` is stored as the
+           `arguments_spec_list` attribute.
 
     Attributes:
 
@@ -167,7 +180,14 @@ class ParsedArguments(object):
 
     .. py:attribute:: arguments_spec_list
 
-       Argument types, etc. ................
+       The argument specifications that were provided to the constructor, in the
+       same order as the corresponding nodes in `argnlist`.  They record what
+       each argument is — its type, whether it is optional, how it is delimited,
+       and possibly a name to refer to it by; see
+       :py:class:`LatexArgumentSpec`.
+
+       See :py:class:`ParsedArgumentsInfo` for a convenient interface to look up
+       argument values on a node instance using this information.
 
     .. py:attribute:: argspec
 

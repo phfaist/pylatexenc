@@ -103,8 +103,65 @@ class LatexStandardArgumentParser(LatexParserBase):
     mandatory argument in braces, an optional argument in square braces, an
     optional star, as well as more advanced macro argument constructs.
 
-    Doc .................
+    Which argument type to parse is selected by the `arg_spec` string, whose
+    syntax is inspired by that of the LaTeX `xparse` package.  The recognized
+    values are:
 
+      - ``'m'`` or ``'{'`` — a mandatory argument, given either as a single
+        token or as a braced group.  See :py:class:`LatexExpressionParser`.
+
+      - ``'o'`` or ``'['`` — an optional argument delimited by square brackets,
+        as in ``\mymacro[optional]``.
+
+      - ``'s'`` or ``'*'`` — an optional star, as in ``\section*``.
+
+      - ``'t<char>'`` — an optional single-character marker `<char>`; like
+        ``'s'``, but for a character other than the star.
+
+      - ``'r<char1><char2>'`` — a mandatory argument delimited by the two given
+        characters.
+
+      - ``'d<char1><char2>'`` — an optional argument delimited by the two given
+        characters.
+
+      - ``'e{<chars>}'`` — a sequence of optional embellishments, each
+        introduced by one of the given characters, as the ``^`` and ``_`` in
+        ``x^i_j``.  See :py:class:`LatexOptionalEmbellishmentArgsParser`.
+
+      - ``'v'`` — a verbatim argument whose delimiters are whichever characters
+        follow the macro (the behavior of ``\verb``); or
+        ``'v<char1><char2>'`` — a verbatim argument delimited by the two given
+        characters.  See :py:class:`LatexDelimitedVerbatimParser`.
+
+      - ``'AnyDelimited'`` — a mandatory argument delimited by any of the
+        standard delimiter pairs ``{}``, ``[]``, ``()`` and ``<>``; or
+        ``'AnyDelimitedOptional'`` for the same thing as an optional argument.
+        See :py:class:`LatexDelimitedMultiDelimGroupParser`.
+
+    Any other value of `arg_spec` causes a :py:exc:`ValueError` to be raised.
+    The relevant parser instance is created lazily, the first time
+    :py:meth:`parse()` is called, and is then reused for subsequent calls.
+
+    Further constructor arguments:
+
+      - `return_full_node_list` is relayed to the parsers used for the ``'m'``
+        and ``'s'``/``'*'`` argument types.  It determines whether all the nodes
+        that were read are reported (including preceding whitespace and comment
+        nodes), or only the single node that carries the argument itself.
+
+      - `expression_single_token_requiring_arg_is_error` is relayed as
+        `single_token_requiring_arg_is_error` to the
+        :py:class:`LatexExpressionParser` used for the ``'m'`` argument type.
+        It determines whether it is an error if the single token picked up as
+        the argument is a macro that itself requires arguments.
+
+      - `allow_pre_space` determines whether whitespace is allowed between the
+        callable and its argument.  It is relayed to all the argument parsers
+        above except the verbatim ones.
+
+    .. py:attribute:: arg_spec
+
+       The argument type specification that was given to the constructor.
     """
 
     def __init__(self,
@@ -129,6 +186,17 @@ class LatexStandardArgumentParser(LatexParserBase):
 
 
     def get_arg_parser_instance(self, arg_spec):
+        r"""
+        Create and return the parser instance that reads an argument of the type
+        given by the `arg_spec` string.  See class doc for the recognized
+        values.
+
+        Raises :py:exc:`ValueError` if `arg_spec` is not a recognized argument
+        type specification.
+
+        Reimplement this method in a subclass if you'd like to support further
+        argument types of your own.
+        """
 
         if arg_spec in ('m', '{'):
 
@@ -247,6 +315,15 @@ class LatexStandardArgumentParser(LatexParserBase):
 
 
     def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
+        r"""
+        Read the argument by handing over to the parser that corresponds to this
+        object's `arg_spec`, and return that parser's result unchanged.
+
+        The relevant parser instance is created on the first call to this method
+        (see :py:meth:`get_arg_parser_instance()`) and reused afterwards.
+
+        Reimplemented from :py:meth:`LatexParserBase.parse()`.
+        """
 
         if self._arg_parser is None:
             self._arg_parser = self.get_arg_parser_instance(self.arg_spec)
@@ -274,7 +351,21 @@ class LatexStandardArgumentParser(LatexParserBase):
 
 class LatexCharsGroupParser(LatexDelimitedGroupParser):
     r"""
-    Doc ....................
+    Parse a delimited group whose contents are read as plain characters, i.e., a
+    group in which macros, environments, specials, and math mode are all
+    disabled.
+
+    This is what you want for an argument that is a piece of text rather than
+    LaTeX code, such as a label name or a file name.  Comments and nested groups
+    can be enabled or disabled with the `enable_comments` and `enable_groups`
+    constructor arguments (both are enabled by default); everything else is
+    reported as ordinary characters.
+
+    The `delimiters` constructor argument is as for
+    :py:class:`LatexDelimitedGroupParser` and defaults to ``('{','}')``.  The
+    parsing state changes described above apply to the group contents only, not
+    to any children of nested groups: those are parsed with the parsing state
+    that surrounds this group.
 
     Very similar to a verbatim parser, but works with tokens instead of chars.
     You can use comments and recursive groups, too.
@@ -331,7 +422,26 @@ class LatexCharsGroupParser(LatexDelimitedGroupParser):
 
 class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
     r"""
-    Doc..........
+    Parse a delimited group that contains a list of items separated by a given
+    character, e.g. ``{one,two,three}``.
+
+    As for :py:class:`LatexCharsGroupParser`, the contents are read as plain
+    characters: macros, environments, specials, and math mode are disabled,
+    while comments and nested groups can be enabled or disabled with the
+    `enable_comments` and `enable_groups` constructor arguments (both are
+    enabled by default).  The separator is the `comma_char` constructor
+    argument, which defaults to ``','``, and the group delimiters are given by
+    `delimiters`, which defaults to ``('{','}')``.
+
+    The result is a :py:class:`~pylatexenc.latexnodes.nodes.LatexGroupNode` for
+    the group as a whole, whose node list has one
+    :py:class:`~pylatexenc.latexnodes.nodes.LatexGroupNode` per item.  Each item
+    node has an empty opening delimiter, and its closing delimiter is the
+    separator character that terminated it (an empty string for the last item).
+
+    Empty items are skipped unless `keep_empty_parts` is set to `True`.  An
+    entirely empty group (``{}``) never produces any item node, even when
+    `keep_empty_parts` is set.
 
     NOTE: It might be better to use a standard argument, and parse the argument
     as a comma-separated list using

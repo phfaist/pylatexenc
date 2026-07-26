@@ -953,7 +953,39 @@ def get_default_latex_context_db():
     initialized with a collection of text replacements for known macros and
     environments.
 
-    TODO: clean up and document categories.
+    The text replacements are grouped into the following categories, which you
+    can select or discard individually with
+    :py:meth:`pylatexenc.macrospec.LatexContextDb.filter_context()`:
+
+      - ``'latex-base'`` — the bulk of the standard LaTeX constructs, including
+        sectioning commands, font commands, accents, Greek letters, and the
+        common math symbols, each mapped to a unicode text rendering.
+
+      - ``'latex-approximations'`` — constructs for which the text rendering can
+        only be an approximation of the typeset result, such as the alignment
+        environments, the list environments, and matrix environments.
+
+      - ``'latex-placeholders'`` — constructs that are replaced by a placeholder
+        rather than by their contents, such as ``\includegraphics``, the
+        cross-referencing macros (rendered as ``<ref>``) and the citation macros
+        (rendered as ``<cit.>``).
+
+      - ``'nonascii-specials'`` — the character sequences that LaTeX gives a
+        special meaning, mapped to the corresponding unicode character (``~`` to
+        a no-break space, ``---`` to an em dash, and so on).
+
+      - ``'advanced-symbols'`` — the symbol macros that correspond to the
+        built-in rules of :py:mod:`pylatexenc.latexencode`, i.e., the reverse
+        direction of the unicode-to-LaTeX conversion.
+
+      - ``'latex-ethuebung'`` — macros of the `ethuebung` LaTeX package.
+
+      - ``'nonstandard-qit'`` — a couple of non-standard macros used in quantum
+        information theory (``\id`` and ``\Ident`` for the identity operator).
+
+      The last two categories are not standard LaTeX; expect them to be removed
+      in a future version, in which case you would include the relevant
+      definitions in your own application instead.
 
     If you want to add your own definitions, you should use the
     :py:meth:`pylatexenc.macrospec.LatexContextDb.add_context_category()`

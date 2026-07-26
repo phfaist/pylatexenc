@@ -255,6 +255,16 @@ class LatexWalkerLocatedErrorFormatter(object):
 
 
 def format_pos(pos, lineno, colno):
+    r"""
+    Return a short human-readable string that describes a location in the LaTeX
+    code, for use in error and warning messages.
+
+    If a line number `lineno` is available, it is preferred over the raw
+    character position `pos`, and the column number `colno` is included if it is
+    available, too.  Both `pos` and `lineno` can also be given as strings, in
+    which case they are reported as they are.  If no location information at all
+    is available, ``'@ <unknown>'`` is returned.
+    """
     if lineno is not None:
         if colno is not None:
             return '@ (line {}, col {})'.format(lineno, colno)

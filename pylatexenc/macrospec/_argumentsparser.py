@@ -95,7 +95,28 @@ class LatexArgumentsParser(LatexParserBase):
     A parser class that handles the arguments of a callable (a macro, an
     environment, or specials).
 
-    Doc ........................
+    The arguments are parsed one after the other, in the order in which they
+    appear in `arguments_spec_list`.  For each of them:
+
+      - The parser to use is the argument specification's `parser` attribute.
+        If it is a string, then the corresponding standard argument parser is
+        obtained with
+        :py:func:`~pylatexenc.latexnodes.parsers.get_standard_argument_parser()`.
+
+      - The parsing state is obtained by applying the argument specification's
+        `parsing_state_delta` to the current parsing state.  This makes it
+        possible for a single argument to be parsed in, say, math mode.
+
+      - The argument is parsed by handing that parser and that parsing state to
+        the latex walker's `parse_content()` method, with an open context named
+        ``"Argument <number>"`` so that error messages can report which argument
+        was being parsed.
+
+    The node (or node list) that each argument parser returns is collected into
+    the `argnlist` field of the resulting
+    :py:class:`~pylatexenc.latexnodes.ParsedArguments` object, in the same order.
+    An argument parser can return `None`, e.g. for an optional argument that was
+    not provided.
 
     The parser's main function (:py:meth:`parse()`) produces a
     :py:class:`~pylatexenc.latexnodes.ParsedArguments` instance.

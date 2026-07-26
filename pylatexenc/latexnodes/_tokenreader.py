@@ -567,7 +567,11 @@ class LatexTokenReader(LatexTokenReaderBase):
         We use the regular expression stored as the class attribute
         `rx_environment_name`.  To override it, you can simply set this
         attribute to your token reader object instance, e.g.,
-        ``my_token_reader.rx_environment_name = .....``
+        ``my_token_reader.rx_environment_name =
+        re.compile(r'\s*\{(?P<environmentname>[a-zA-Z*]+)\}')``.  The regular
+        expression is matched against the string that starts immediately after
+        the ``\begin`` or ``\end``, and it must define a group named
+        ``environmentname``.
 
         Return a tuple `(environmentname, environment_match_end_pos)`.  If the
         environment name could not be read because of a parse error, then return

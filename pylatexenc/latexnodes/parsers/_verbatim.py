@@ -37,14 +37,40 @@ from ._base import LatexParserBase
 
 class LatexVerbatimBaseParser(LatexParserBase):
     r"""
+    Base class for parsers that read verbatim content, i.e., content that is
+    taken literally rather than parsed as LaTeX code.
+
+    Instead of reading tokens, these parsers read the input one character at a
+    time and hand each character to
+    :py:meth:`new_char_check_stop_condition()`, which decides when the verbatim
+    content ends.  Subclasses reimplement that method (and possibly
+    :py:meth:`finalize_verbatim_string()`) to implement a specific verbatim
+    construct; see :py:class:`LatexDelimitedVerbatimParser` and
+    :py:class:`LatexVerbatimEnvironmentContentsParser`.
+
+    This base class implementation stops after a single character.
+
     Note: this parser requires the token reader to provide character-level
     access to the input string.
     """
-    
+
     def __init__(self, **kwargs):
         super(LatexVerbatimBaseParser, self).__init__(**kwargs)
 
     class VerbatimInfo(object):
+        r"""
+        A simple object on which the verbatim parser stores the state associated
+        with a single :py:meth:`parse()` call, so that the parser object itself
+        can be reused.
+
+        The fields are set by the parser as it goes along and include
+        `parsed_delimiters` (the opening and closing delimiters of this verbatim
+        construct, if applicable), `original_pos` (the position at which parsing
+        started), `content_pos_start` (the position at which the verbatim
+        content itself starts), and `pos_start`/`pos_end` (the span of the
+        resulting chars node, set by
+        :py:meth:`~LatexVerbatimBaseParser.finalize_verbatim_string()`).
+        """
         def __init__(self):
             super(LatexVerbatimBaseParser.VerbatimInfo, self).__init__()
             self.parsed_delimiters = (None, None)
@@ -52,6 +78,18 @@ class LatexVerbatimBaseParser(LatexParserBase):
     def new_char_check_stop_condition(self, char, verbatim_string, verbatim_info,
                                       parsing_state):
         r"""
+        Called for each character that is read, to decide whether the verbatim
+        content ends here.  The `char` is the character that was just read (or
+        `None` if the end of the stream was reached), and `verbatim_string` is
+        the verbatim content that was accumulated so far, *not* including
+        `char`.
+
+        Return a false value to continue reading; `char` is then appended to the
+        verbatim content.  Return `True` to stop, in which case `char` is
+        consumed and dropped, or return a dictionary
+        ``{'put_back_char': True}`` to stop and have `char` put back onto the
+        input so that it is read again by whatever parses the following content.
+
         The default implementation in this base class is to read a single verbatim
         char.  Reimplement this method in a subclass for more advanced behavior.
         """
@@ -60,6 +98,17 @@ class LatexVerbatimBaseParser(LatexParserBase):
         return False
 
     def error_end_of_stream(self, pos, recovery_nodes, latex_walker, verbatim_info):
+        r"""
+        Called when the end of the stream was reached before the stop condition
+        fired.  Raises a
+        :py:exc:`~pylatexenc.latexnodes.LatexWalkerNodesParseError` with
+        `recovery_nodes` set to the verbatim content that was read so far, so
+        that parsing can continue in tolerant parsing mode.
+
+        Subclasses reimplement this method in order to wrap `recovery_nodes`
+        into the same node structure that a successful parse would have
+        produced.
+        """
         raise LatexWalkerNodesParseError(
             msg="End of stream reached while reading verbatim content",
             pos=pos,
@@ -84,6 +133,12 @@ class LatexVerbatimBaseParser(LatexParserBase):
 
 
     def parse(self, latex_walker, token_reader, parsing_state, **kwargs):
+        r"""
+        Read the verbatim content at the current position and return it as a chars
+        node, with no surrounding delimiters.
+
+        Reimplemented from :py:meth:`LatexParserBase.parse()`.
+        """
 
         verbatim_info = LatexVerbatimBaseParser.VerbatimInfo()
         verbatim_info.original_pos = token_reader.cur_pos()
@@ -95,8 +150,22 @@ class LatexVerbatimBaseParser(LatexParserBase):
     def read_verbatim_content(self, latex_walker, token_reader, parsing_state,
                               verbatim_info, **kwargs):
         r"""
-        Doc ...........
-        
+        Read the verbatim content itself, character by character, until
+        :py:meth:`new_char_check_stop_condition()` says to stop.
+
+        The accumulated string is then handed to
+        :py:meth:`finalize_verbatim_string()`, and the result is returned as a
+        single :py:class:`~pylatexenc.latexnodes.nodes.LatexCharsNode`.  That
+        node's parsing state has macros, environments, specials, comments,
+        groups, math mode and paragraph breaks all disabled, reflecting the fact
+        that its contents are not LaTeX code.
+
+        If the end of the stream is reached before the stop condition fires,
+        :py:meth:`error_end_of_stream()` is called with the chars node offered as
+        recovery nodes.
+
+        Return a tuple `(chars_node, None)`.
+
         The `token_reader` is left *after* the character that caused the
         processing to stop.
         """
@@ -168,7 +237,28 @@ class LatexDelimitedVerbatimParser(LatexVerbatimBaseParser):
     Parse verbatim content specified between token delimiters (e.g.,
     ``\verb|...|``).
 
-    Doc..................
+    Any whitespace before the opening delimiter is skipped.  How the delimiters
+    are determined depends on the `delimiters` constructor argument:
+
+      - If `delimiters` is `None` (the default), the delimiters are detected
+        automatically, as ``\verb`` does: the first character that follows is
+        the opening delimiter, and the closing delimiter is looked up in the
+        `auto_delimiters` dictionary, falling back to the opening delimiter
+        itself.  The default `auto_delimiters` maps ``{``, ``[``, ``<`` and
+        ``(`` to their respective closing counterparts.
+
+      - If `delimiters` is a pair `(open_delimiter, close_delimiter)`, then
+        exactly that pair is expected; a
+        :py:exc:`~pylatexenc.latexnodes.LatexWalkerParseError` is raised if the
+        opening delimiter is not there.
+
+    If the opening and closing delimiters are different characters, then nested
+    occurrences of the delimiter pair are tracked, so that ``\verb{a{b}c}``
+    yields the verbatim content ``a{b}c``.
+
+    The result is a :py:class:`~pylatexenc.latexnodes.nodes.LatexGroupNode` with
+    the parsed delimiters, containing a single chars node with the verbatim
+    content.
     """
 
     def __init__(self,
@@ -304,7 +394,21 @@ class LatexVerbatimEnvironmentContentsParser(LatexVerbatimBaseParser):
     r"""
     Parse verbatim content given as an environment body contents.
 
-    Doc.......................
+    The content is read literally until the string ``\end{environment_name}``
+    is encountered (using the parsing state's macro escape character in place of
+    the backslash).  That terminator is not part of the verbatim content, but it
+    is consumed: the token reader is left immediately after it, so that the
+    enclosing environment node spans the closing ``\end{...}`` as usual.
+
+    A single newline character immediately following ``\begin{environment_name}``
+    is dropped, as LaTeX does.
+
+    The `environment_name` constructor argument gives the name of the
+    environment to look for and defaults to ``'verbatim'``.
+
+    The result is a :py:class:`~pylatexenc.latexnodes.LatexNodeList` containing
+    a single chars node with the verbatim content, which is the shape expected
+    for an environment body.
     """
     def __init__(self, environment_name='verbatim', **kwargs):
         super(LatexVerbatimEnvironmentContentsParser, self).__init__(**kwargs)

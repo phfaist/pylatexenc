@@ -251,12 +251,45 @@ class LatexNode(object):
             )
 
     def display_str(self):
+        r"""
+        Return a short, human-readable description of this node, suitable for
+        inclusion in a message to the user (e.g. ``chars ‘Hello…’``).  The
+        description is kept short; long contents are abbreviated.
+
+        Each node subclass reimplements this method for its own node type.  This
+        base class implementation reports an unknown node type along with the
+        node's `repr()`.
+        """
         return r'<UNKNOWN NODE TYPE>: ' + repr(self)
 
     def accept_node_visitor(self, visitor):
+        r"""
+        Hand this node over to the given `visitor`, a
+        :py:class:`LatexNodesVisitor` instance, and return whatever the visitor
+        returns.
+
+        Each node subclass reimplements this method to call the
+        ``node_standard_process_***()`` method of `visitor` that corresponds to
+        its own node type.  See :py:class:`LatexNodesVisitor` for how to use
+        visitors; you normally call `visitor.start(node)` rather than this
+        method directly.
+        """
         return visitor.node_standard_process_unknown(self)
 
     def to_json_object_with_latexwalker(self, latexwalker):
+        r"""
+        Return a representation of this node as an object that can be serialized to
+        JSON.
+
+        The result is a dictionary with a 'nodetype' key holding this node
+        class's name, along with one key per field of this node type.  The
+        `latex_walker` field is skipped, and the `spec` field, if any, is
+        reported as its `repr()`.  The `latexwalker` argument is used to add the
+        line and column number of the node's position.
+
+        This method is used by the JSON encoder returned by
+        :py:func:`pylatexenc.latexwalker.make_json_encoder()`.
+        """
         # Prepare a dictionary with the correct keys and values.
         d = {
             'nodetype': self.__class__.__name__,
@@ -275,6 +308,15 @@ class LatexNode(object):
         return d
 
     def format_pos(self):
+        r"""
+        Return a short human-readable string describing where this node is located
+        in the LaTeX code, for use in error and warning messages.
+
+        If this node has a latex walker, the description is obtained from
+        :py:meth:`pylatexenc.latexwalker.LatexWalker.format_pos()`, and normally
+        reports a line and column number.  Otherwise, the raw character position
+        is reported.
+        """
         if self.latex_walker is not None:
             return self.latex_walker.format_pos(self.pos)
         return '[@ pos {}]'.format(repr(self.pos))
@@ -872,11 +914,40 @@ class LatexNodeList(object):
         return "list of nodes (" + str(list_len) + ")" + list_preview
 
     def accept_node_visitor(self, visitor):
+        r"""
+        Hand this node list over to the given `visitor`, a
+        :py:class:`LatexNodesVisitor` instance, and return whatever the visitor
+        returns.
+
+        See also :py:meth:`LatexNode.accept_node_visitor()`.
+        """
         return visitor.node_standard_process_list(self)
 
 
     def filter(self, node_predicate_fn=None,
                skip_none=True, skip_comments=False, skip_whitespace_char_nodes=False):
+        r"""
+        Return a new :py:class:`LatexNodeList` that contains only the nodes of this
+        node list that satisfy the given criteria.
+
+        A node is kept if all of the following hold:
+
+          - it is not `None`, or `skip_none` is set to `False` (by default,
+            `None` entries are dropped);
+
+          - it is not a comment node, or `skip_comments` is `False` (the
+            default);
+
+          - it is not a chars node consisting only of whitespace, or
+            `skip_whitespace_char_nodes` is `False` (the default);
+
+          - `node_predicate_fn` is `None`, or `node_predicate_fn(node)` returns
+            a true value.
+
+        If no node satisfies the criteria, the returned node list has both its
+        `pos` and `pos_end` set to this node list's `pos_end`, so that it still
+        reports a meaningful location.
+        """
 
         if self.latex_walker is not None:
             make_nodelist = self.latex_walker.make_nodelist
@@ -913,6 +984,39 @@ class LatexNodeList(object):
 
     def split_at_node(self, node_predicate_fn, skip_none=True, keep_separators=False,
                       max_split=None, call_make_nodelist=True):
+        r"""
+        Split this node list into several node lists, starting a new one at every
+        node for which `node_predicate_fn(node)` returns a true value.
+
+        Returns the list of the resulting :py:class:`LatexNodeList` instances;
+        there is always at least one of them, even if this node list is empty.
+
+        Arguments:
+
+          - `skip_none` (default `True`) drops any `None` entries instead of
+            handing them to `node_predicate_fn`.
+
+          - `keep_separators` (default `False`) determines what happens to the
+            separator nodes themselves: they are dropped by default, or kept as
+            the first node of the node list that follows them.
+
+          - `max_split`, if non-`None`, limits how much splitting is done: after
+            each split, if at least `max_split` node lists have been produced,
+            then no further splitting happens and all the remaining nodes are
+            collected into the last node list.  Note that `max_split=0` disables
+            splitting altogether, and that `max_split=1` still performs one
+            split.
+
+          - `call_make_nodelist` (default `True`) determines whether the
+            resulting node lists are created via this node list's latex walker
+            (see
+            :py:meth:`~pylatexenc.latexnodes.LatexWalkerBase.make_nodelist()`)
+            or as plain :py:class:`LatexNodeList` instances.  The latex walker
+            is only used if there is one.
+
+        See also :py:meth:`split_at_chars()` to split at a separator that occurs
+        inside character nodes, e.g. a comma.
+        """
 
         nodelists_list = [ [] ]
 
@@ -1263,6 +1367,12 @@ class LatexNodeList(object):
 
 
     def to_json_object(self):
+        r"""
+        Return a representation of this node list as an object that can be
+        serialized to JSON, namely the plain list of the nodes it contains.  The
+        nodes themselves are serialized by the JSON encoder returned by
+        :py:func:`pylatexenc.latexwalker.make_json_encoder()`.
+        """
         return self.nodelist
 
     def __repr__(self):

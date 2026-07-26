@@ -924,7 +924,13 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
 
     def get_matching_delimiter(self, opening_delimiter):
         r"""
-        Doc..............
+        Return the closing delimiter that matches the given `opening_delimiter`, by
+        looking it up in the group parsing state's list of latex group
+        delimiters (see
+        :py:attr:`~pylatexenc.latexnodes.ParsingState.latex_group_delimiters`).
+
+        Reimplemented from
+        :py:meth:`LatexDelimitedExpressionParserInfo.get_matching_delimiter()`.
 
         This method assumes that the delimiters are latex group type (e.g., curly
         brace chars).  If not, then you need to reimplement this function in a
@@ -950,7 +956,22 @@ class LatexDelimitedGroupParserInfo(LatexDelimitedExpressionParserInfo):
 
 class LatexDelimitedGroupParser(LatexDelimitedExpressionParser):
     r"""
-    Doc.........................
+    Parse a LaTeX group, i.e., contents enclosed in a pair of LaTeX group
+    delimiters such as ``{ ... }``.
+
+    This is the parser that a latex walker uses whenever the tokenizer reports a
+    group opening token; see
+    :py:meth:`~pylatexenc.latexnodes.LatexWalkerBase.make_latex_group_parser()`.
+    The result of :py:meth:`parse()` is a
+    :py:class:`~pylatexenc.latexnodes.nodes.LatexGroupNode` instance.
+
+    The `delimiters` constructor argument, inherited from
+    :py:class:`LatexDelimitedExpressionParser`, restricts which delimiters are
+    accepted: specify `None` to accept any of the group delimiters that are
+    declared in the parsing state, a single character to require that specific
+    opening delimiter, or a pair of characters to require that specific pair of
+    opening and closing delimiters.  All other constructor arguments of
+    :py:class:`LatexDelimitedExpressionParser` are also accepted.
 
     In all cases, the first token read (after possible whitespace) must be a
     'brace_open' type.  If `delimiters` is a pair of characters, the parsing
@@ -958,13 +979,13 @@ class LatexDelimitedGroupParser(LatexDelimitedExpressionParser):
     group delimiters, and will add them if necessary for parsing the group
     contents (but not its parsed children).
 
-          If the delimiters are not defined as LaTeX group delimiters in the
-          parsing state, then a new parsing state is created that includes these
-          delimiters.  The new parsing state is used to parse the group contents
-          but not any child nodes.  This behavior ensures that expressions of
-          the type ``\macro[A[B]]`` and ``\macro[{[}]`` are parsed correctly
-          respectively as an optional argument ``A[B]`` to ``\macro`` and as a
-          single opening bracket as an optional argument to ``\macro``.
+    If the delimiters are not defined as LaTeX group delimiters in the parsing
+    state, then a new parsing state is created that includes these delimiters.
+    The new parsing state is used to parse the group contents but not any child
+    nodes.  This behavior ensures that expressions of the type ``\macro[A[B]]``
+    and ``\macro[{[}]`` are parsed correctly respectively as an optional
+    argument ``A[B]`` to ``\macro`` and as a single opening bracket as an
+    optional argument to ``\macro``.
     """
 
     def __init__(self,
@@ -992,13 +1013,28 @@ _default_delimiter_multi_delim_list = (
 
 
 class LatexDelimitedMultiDelimGroupParserInfo(LatexDelimitedGroupParserInfo):
-    
+    r"""
+    Reimplementation of the :py:class:`LatexDelimitedGroupParserInfo` class for
+    groups that can be delimited by any pair out of a list of candidate
+    delimiter pairs, for :py:class:`LatexDelimitedMultiDelimGroupParser`.
+    """
 
     @classmethod
     def get_group_parsing_state(cls, parsing_state, delimiters, delimited_expression_parser,
                                 latex_walker, **kwargs):
+        r"""
+        Return a parsing state in which the group delimiters are exactly the
+        candidate delimiter pairs listed in the parser's `delimiters_list`
+        attribute, so that any of them can open this group.
+
+        The `delimiters` argument must be `None` here, because which delimiters
+        are acceptable is specified through the parser's `delimiters_list`.
+
+        Reimplemented from
+        :py:meth:`LatexDelimitedGroupParserInfo.get_group_parsing_state()`.
+        """
         assert delimiters is None
- 
+
         delimiters_list = delimited_expression_parser.delimiters_list
 
         return parsing_state.sub_context(
@@ -1006,6 +1042,22 @@ class LatexDelimitedMultiDelimGroupParserInfo(LatexDelimitedGroupParserInfo):
         )
 
     def initialize(self):
+        r"""
+        Set up the parsing state for the group contents.
+
+        After the base class implementation has determined which delimiter pair
+        actually opened this group, the candidate delimiters are no longer all
+        recognized as group delimiters for the contents.  The contents parsing
+        state keeps the group delimiters of the surrounding parsing state, plus
+        the pair that was actually parsed for this group.
+
+        This way, the code ``<a {b} c>`` parses the inner ``{b}`` as a group,
+        while ``<a [b c>`` doesn't see the ``[`` as opening a group, even though
+        ``[``–``]`` is one of the candidate delimiter pairs for the outer group.
+
+        Reimplemented from
+        :py:meth:`LatexDelimitedExpressionParserInfo.initialize()`.
+        """
         super(LatexDelimitedMultiDelimGroupParserInfo, self).initialize()
 
         # don't keep all options for open/close delimiters when parsing
@@ -1032,7 +1084,26 @@ class LatexDelimitedMultiDelimGroupParserInfo(LatexDelimitedGroupParserInfo):
 
 class LatexDelimitedMultiDelimGroupParser(LatexDelimitedExpressionParser):
     r"""
-    Doc.........................
+    Parse a group that can be delimited by any pair out of a list of candidate
+    delimiter pairs.
+
+    Whereas :py:class:`LatexDelimitedGroupParser` accepts the group delimiters
+    that the parsing state declares, this parser accepts the pairs listed in the
+    `delimiters_list` constructor argument regardless of the parsing state.  The
+    default list is ``[ ('{','}'), ('[',']'), ('(',')'), ('<','>') ]``.  This
+    parser is what the standard argument types ``'AnyDelimited'`` and
+    ``'AnyDelimitedOptional'`` use, see
+    :py:class:`~pylatexenc.latexnodes.parsers.LatexStandardArgumentParser`.
+
+    Whichever pair actually opened the group must also close it; the remaining
+    candidate pairs are not treated as group delimiters while parsing the group
+    contents (see
+    :py:meth:`LatexDelimitedMultiDelimGroupParserInfo.initialize()`).
+
+    The `delimiters` argument of :py:class:`LatexDelimitedExpressionParser` is
+    not available here (it is always set to `None`); use `delimiters_list`
+    instead.  The other constructor arguments of
+    :py:class:`LatexDelimitedExpressionParser` are accepted.
     """
 
     def __init__(self,
