@@ -165,6 +165,9 @@ class SingleParsedArgumentInfo(object):
         )
 
     def __eq__(self, other):
+        if other is None or not isinstance(other, SingleParsedArgumentInfo):
+            # not an argument information object, can't be equal to this one
+            return False
         return (
             (self.argument_node_object is None and other.argument_node_object is None)
             or self.argument_node_object == other.argument_node_object
@@ -185,10 +188,10 @@ class ParsedArgumentsInfo(object):
         self.node = node
         if self.node is not None:
             self.node_pos = self.node.pos
+            # only pick up the node's arguments if we weren't given any
+            # arguments explicitly
             if self.parsed_arguments is None and hasattr(self.node, 'nodeargd'):
                 self.parsed_arguments = self.node.nodeargd
-            else:
-                self.parsed_arguments = None
         else:
             self.node_pos = None
 

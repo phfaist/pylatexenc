@@ -134,9 +134,11 @@ from collections import ChainMap
 
 
 
-pylatexenc_deprecated_ver = lambda *args: None  #lgtm [py/multiple-definition]
-pylatexenc_deprecated_2 = lambda *args: None  #lgtm [py/multiple-definition]
-pylatexenc_deprecated_3 = lambda *args: None  #lgtm [py/multiple-definition]
+# these stubs also need to accept the `stacklevel=` keyword argument that the
+# real helpers in _util_support.py accept
+pylatexenc_deprecated_ver = lambda *args, **kwargs: None  #lgtm [py/multiple-definition]
+pylatexenc_deprecated_2 = lambda *args, **kwargs: None  #lgtm [py/multiple-definition]
+pylatexenc_deprecated_3 = lambda *args, **kwargs: None  #lgtm [py/multiple-definition]
 LazyDict = None  #lgtm [py/multiple-definition]
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE

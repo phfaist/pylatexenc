@@ -160,6 +160,18 @@ class LatexGeneralNodesParser(LatexParserBase):
             if thenodelist.pos_end is None:
                 thenodelist.pos_end = pos_start
 
+            # keep any information the original error carried about where to
+            # resume parsing, so that recovery in tolerant parsing mode can
+            # reposition the token reader past the offending token
+            recovery_at_token = None
+            if hasattr(e, 'recovery_at_token'):
+                # remember, transcrypt doesn't like getattr(a, b, default) with
+                # default arg
+                recovery_at_token = e.recovery_at_token
+            recovery_past_token = None
+            if hasattr(e, 'recovery_past_token'):
+                recovery_past_token = e.recovery_past_token
+
             raise LatexWalkerNodesParseError(
                 msg=e.msg,
                 pos=e.pos,
@@ -167,6 +179,8 @@ class LatexGeneralNodesParser(LatexParserBase):
                 error_type_info=e.error_type_info,
                 recovery_nodes=thenodelist,
                 recovery_parsing_state_delta=collector.get_parser_parsing_state_delta(),
+                recovery_at_token=recovery_at_token,
+                recovery_past_token=recovery_past_token,
             )
 
         collected_nodelist = collector.get_final_nodelist()
@@ -186,15 +200,19 @@ class LatexGeneralNodesParser(LatexParserBase):
             met_a_required_stop_condition = True
         else:
             met_a_required_stop_condition = False
-            if self.stop_token_condition is not None:
-                if stop_token_condition_met:
-                    met_a_required_stop_condition = True
-            elif self.stop_nodelist_condition is not None:
-                if stop_nodelist_condition_met:
-                    met_a_required_stop_condition = True
-            else:
+            if self.stop_token_condition is None \
+               and self.stop_nodelist_condition is None:
                 # there were no stopping conditions set
                 met_a_required_stop_condition = True
+            else:
+                # any of the stopping conditions that was set and that was met
+                # satisfies the requirement
+                if self.stop_token_condition is not None:
+                    if stop_token_condition_met:
+                        met_a_required_stop_condition = True
+                if self.stop_nodelist_condition is not None:
+                    if stop_nodelist_condition_met:
+                        met_a_required_stop_condition = True
 
         logger.debug("finished parsing general nodes; "
                      "self.require_stop_condition_met=%r, "

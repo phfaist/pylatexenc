@@ -6,6 +6,8 @@ import unittest
 import re
 import os
 import os.path
+import shutil
+import tempfile
 import unicodedata
 import datetime
 import logging
@@ -14,6 +16,7 @@ import warnings
 import pytest
 
 from pylatexenc.latexwalker import LatexWalker
+from pylatexenc import latex2text
 from pylatexenc.latex2text import LatexNodes2Text
 
 
@@ -775,19 +778,21 @@ second line
     def test_repl_subsuperscript_no_unicode_version(self):
 
         # if the argument cannot be fully typeset with unicode
-        # superscript/subscript characters, we keep latex's own notation, with
-        # braces only if the argument is longer than a single character
+        # superscript/subscript characters, we keep latex's own notation, and
+        # we delimit the argument with the `math_expression_in=` delimiters if
+        # it is longer than a single character.  The default delimiters are
+        # parentheses, see `default_math_expression_in`.
         for latex, text in (
                 # there is no unicode superscript alpha
                 (r"$x^\alpha$", u"x^\N{GREEK SMALL LETTER ALPHA}"),
                 (r"$A^\dagger$", u"A^\N{DAGGER}"),
                 # 'C' has no superscript version, so the whole argument falls back
-                (r"$X^{ABC}$", u"X^{ABC}"),
-                (r"$e^{i\pi}$", u"e^{i\N{GREEK SMALL LETTER PI}}"),
+                (r"$X^{ABC}$", u"X^(ABC)"),
+                (r"$e^{i\pi}$", u"e^(i\N{GREEK SMALL LETTER PI})"),
                 # capital letters have no subscript version at all
                 (r"$x_N$", u"x_N"),
                 # a superscript within a superscript can't be typeset in unicode
-                (r"$x^{a^b}$", u"x^{a\N{MODIFIER LETTER SMALL B}}"),
+                (r"$x^{a^b}$", u"x^(a\N{MODIFIER LETTER SMALL B})"),
         ):
             self.assertEqual(LatexNodes2Text().latex_to_text(latex), text)
 
@@ -808,6 +813,117 @@ second line
             LatexNodes2Text().latex_to_text(r"$x^{}$"),
             "x"
         )
+
+    def test_math_expression_in_subsuperscript(self):
+
+        # the `math_expression_in=` option picks the delimiters that show where
+        # a superscript or a subscript that we could not render with unicode
+        # super/subscript characters begins and ends
+        for math_expression_in, text in (
+                ('braces', u"x_{abc}"),
+                ('parens', u"x_(abc)"),
+                (('[', ']',), u"x_[abc]"),
+                (None, u"x_abc"),
+        ):
+            self.assertEqual(
+                LatexNodes2Text(math_expression_in=math_expression_in)
+                .latex_to_text(r"$x_{abc}$"),
+                text
+            )
+
+        # the delimiters are what makes these two distinguishable
+        self.assertEqual(
+            LatexNodes2Text(math_expression_in='parens').latex_to_text(r"$x_{ab}c$"),
+            u"x_(ab)c"
+        )
+        self.assertEqual(
+            LatexNodes2Text(math_expression_in='parens').latex_to_text(r"$x_{abc}$"),
+            u"x_(abc)"
+        )
+
+    def test_math_expression_in_not_needed(self):
+
+        # no delimiters are added when the superscript or subscript can be
+        # rendered with unicode characters ...
+        self.assertEqual(
+            LatexNodes2Text(math_expression_in='parens').latex_to_text(r"$x^2$"),
+            u"x\N{SUPERSCRIPT TWO}"
+        )
+        # ... nor around a sub-expression of a single character, where they
+        # wouldn't carry any information
+        self.assertEqual(
+            LatexNodes2Text(math_expression_in='parens').latex_to_text(r"$x^\Gamma$"),
+            u"x^\N{GREEK CAPITAL LETTER GAMMA}"
+        )
+
+    def test_math_expression_in_frac(self):
+
+        # the numerator and the denominator of a fraction are also
+        # sub-expressions that would be ambiguous without delimiters
+        for math_expression_in, text in (
+                ('braces', u"{a+b}/c"),
+                ('parens', u"(a+b)/c"),
+                (None, u"a+b/c"),
+        ):
+            self.assertEqual(
+                LatexNodes2Text(math_expression_in=math_expression_in)
+                .latex_to_text(r"$\frac{a+b}{c}$"),
+                text
+            )
+        self.assertEqual(
+            LatexNodes2Text(math_expression_in='parens').latex_to_text(r"$\frac{a}{b+c}$"),
+            u"a/(b+c)"
+        )
+        # single-character numerators and denominators need no delimiters
+        self.assertEqual(
+            LatexNodes2Text(math_expression_in='parens').latex_to_text(r"$\frac12$"),
+            u"1/2"
+        )
+
+    def test_math_expression_in_invalid_value(self):
+
+        self.assertRaises(
+            ValueError,
+            lambda: LatexNodes2Text(math_expression_in='not-a-preset-name')
+        )
+        self.assertRaises(
+            ValueError,
+            lambda: LatexNodes2Text(math_expression_in=('<', '|', '>',))
+        )
+
+    def test_math_expression_in_default(self):
+
+        # the default is given by a single module-level constant, so that it
+        # can be changed in one place
+        for latex in (r"$x_{abc}$", r"$\frac{a+b}{c}$",):
+            self.assertEqual(
+                LatexNodes2Text().latex_to_text(latex),
+                LatexNodes2Text(
+                    math_expression_in=latex2text.default_math_expression_in
+                ).latex_to_text(latex)
+            )
+
+    def test_math_expression_in_state(self):
+
+        # the option lives on the conversion state, so it can be changed for
+        # part of the document only
+        l2t = LatexNodes2Text(math_expression_in='braces')
+        with l2t.push_state(math_expression_in='parens'):
+            self.assertEqual(l2t.latex_to_text(r"$x_{abc}$"), u"x_(abc)")
+        self.assertEqual(l2t.latex_to_text(r"$x_{abc}$"), u"x_{abc}")
+
+    def test_deprecated_latex2text_warns_only_about_the_callers_line(self):
+
+        # the module-level latex2text() function is deprecated, but the
+        # deprecation warning must point at the code that called it and it must
+        # not be accompanied by warnings about pylatexenc's own internals
+        with warnings.catch_warnings(record=True) as wlist:
+            warnings.simplefilter("always")
+            text = latex2text.latex2text(r"\textbf{Hello}")
+
+        self.assertEqual(text, "Hello")
+        self.assertEqual(len(wlist), 1)
+        self.assertEqual(os.path.basename(wlist[0].filename), os.path.basename(__file__))
 
     def test_repl_escape_char_at_end_of_line(self):
 
@@ -1069,6 +1185,64 @@ The Title
         self.assertEqual(nodelist[0].nodelist[0].chars, 'raw $ text\n')
         self.assertEqual(nodelist[0].nodeargd.verbatim_text, 'raw $ text\n')
         self.assertIsNone(nodelist[0].nodeargd.verbatim_delimiters)
+
+
+    def test_item_macro_with_explicit_label(self):
+        # an explicit ``\item[Label]`` label is already separated from the item
+        # contents in the source; we must not add another space after it
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r'\item[Label] text'),
+            '\n  Label text'
+        )
+        # ... whereas the marker that we generate for a bare ``\item`` does need
+        # a space to separate it from the contents
+        text = LatexNodes2Text().latex_to_text(r'\item text')
+        self.assertTrue(text.endswith(' text'))
+        self.assertFalse(text.endswith('  text'))
+
+
+    def test_textfrac(self):
+        # \textfrac needs to be declared with its two arguments in the
+        # latexwalker specs, otherwise the substitution in the latex2text specs
+        # fails and the format string itself shows up in the output
+        self.assertEqual(
+            LatexNodes2Text().latex_to_text(r'\textfrac{1}{2}'),
+            '1/2'
+        )
+
+
+    def test_input_strict_input_sibling_directory(self):
+        # with strict_input=True, a sibling directory whose name merely starts
+        # with the name of the mandated directory must not become readable
+        tempdir = tempfile.mkdtemp()
+        try:
+            okdir = os.path.join(tempdir, 'dir')
+            evildir = os.path.join(tempdir, 'dir-evil')
+            os.mkdir(okdir)
+            os.mkdir(evildir)
+            with open(os.path.join(okdir, 'ok.tex'), 'w') as f:
+                f.write('legit content')
+            with open(os.path.join(evildir, 'secret.tex'), 'w') as f:
+                f.write('secret content')
+
+            l2t = LatexNodes2Text()
+            l2t.set_tex_input_directory(okdir, strict_input=True)
+
+            self.assertEqualUpToWhitespace(
+                l2t.nodelist_to_text(
+                    LatexWalker(r'\input{../dir-evil/secret}').get_latex_nodes()[0]
+                ),
+                ''
+            )
+            # a file that really is in the mandated directory is still read
+            self.assertEqualUpToWhitespace(
+                l2t.nodelist_to_text(
+                    LatexWalker(r'\input{ok}').get_latex_nodes()[0]
+                ),
+                'legit content'
+            )
+        finally:
+            shutil.rmtree(tempdir)
 
 
 

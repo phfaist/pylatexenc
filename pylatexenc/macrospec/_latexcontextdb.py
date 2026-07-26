@@ -109,6 +109,12 @@ class LatexContextDb(object):
             'environments': _util.ChainMap({}),
             'specials': _util.ChainMap({}),
         }
+        # A freshly constructed ChainMap always holds one (empty) map.  Drop it,
+        # so that the list of maps really does mirror category_list item for
+        # item; otherwise the insertion positions that add_context_category()
+        # computes on category_list don't apply to the list of maps.
+        for which in ('macros', 'environments', 'specials',):
+            self.lookup_chain_maps[which].maps = []
 
         self.unknown_macro_spec = None
         self.unknown_environment_spec = None
@@ -581,7 +587,7 @@ class LatexContextDb(object):
             'specials': dict( (s.specials_chars, s) for s in specials ),
         }
 
-        new_context.category_list = self.category_list
+        new_context.category_list = list(self.category_list)
 
         # actual changes in macros/environments/specials, not only
         # unknown_macro_spec=...
@@ -634,7 +640,7 @@ class LatexContextDb(object):
             logger.debug(
                 "Latex Context DB %r ---> extended with %r [extend auto-cat %s] ---> %r",
                 self,
-                {k: list(v.keys()) for k, v in new_category_dicts.items()},
+                new_category_dicts,
                 cat,
                 new_context
             )
@@ -675,7 +681,7 @@ class LatexContextDb(object):
         logger.debug(
             "Latex Context DB %r ---> extended with %r [new cat %s] ---> %r",
             self,
-            {k: list(v.keys()) for k, v in new_category_dicts.items()},
+            new_category_dicts,
             category,
             new_context
         )

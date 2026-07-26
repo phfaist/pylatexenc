@@ -591,9 +591,16 @@ class LatexEnvironmentNode(LatexNode):
     def __init__(self, environmentname, nodelist, **kwargs):
         nodeargd = kwargs.pop('nodeargd', ParsedArguments())
         spec = kwargs.pop('spec', None)
-        # # legacy:
-        # optargs = kwargs.pop('optargs', [])
-        # args = kwargs.pop('args', [])
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+        # legacy: accept the obsolete `optargs=` and `args=` keyword arguments.
+        # If given, they are stored and reported by the properties of the same
+        # name defined below; if not given, those properties compute a value
+        # from `nodeargd`.
+        if 'optargs' in kwargs:
+            self._optargs = kwargs.pop('optargs')
+        if 'args' in kwargs:
+            self._args = kwargs.pop('args')
+### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
         super(LatexEnvironmentNode, self).__init__(
             _fields = ('environmentname','spec','nodelist','nodeargd',),
@@ -604,10 +611,7 @@ class LatexEnvironmentNode(LatexNode):
         self.spec = spec
         self.nodelist = nodelist
         self.nodeargd = nodeargd
-        # legacy:
-        #self.envname = environmentname
-        #self.optargs = optargs
-        #self.args = args
+        # legacy: see the envname, optargs and args properties below
 
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
@@ -615,6 +619,24 @@ class LatexEnvironmentNode(LatexNode):
     def envname(self):
         # Obsolete, don't use.
         return self.environmentname
+
+    @property
+    def optargs(self):
+        # Obsolete, don't use.
+        if not hasattr(self, '_optargs'):
+            legacy_optarg_args = \
+                getattr(self.nodeargd, 'legacy_nodeoptarg_nodeargs', (None, []))
+            self._optargs = [ legacy_optarg_args[0] ]
+        return self._optargs
+
+    @property
+    def args(self):
+        # Obsolete, don't use.
+        if not hasattr(self, '_args'):
+            legacy_optarg_args = \
+                getattr(self.nodeargd, 'legacy_nodeoptarg_nodeargs', (None, []))
+            self._args = legacy_optarg_args[1]
+        return self._args
 
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
@@ -789,12 +811,26 @@ class LatexNodeList(object):
     def __init__(self, nodelist, **kwargs):
 
         if isinstance(nodelist, LatexNodeList):
+            # copy the given node list object; any keyword argument that is
+            # given (and not None) overrides the corresponding attribute of the
+            # object we are copying
             obj = nodelist
+            copy_parsing_state = kwargs.pop('parsing_state', None)
+            copy_latex_walker = kwargs.pop('latex_walker', None)
+            copy_pos = kwargs.pop('pos', None)
+            copy_pos_end = kwargs.pop('pos_end', None)
+
+            if len(kwargs): # len() for Transcrypt
+                raise ValueError("Unexpected keyword arguments to LatexNodeList: "
+                                 + repr(kwargs))
+
             self.nodelist = obj.nodelist
-            self.parsing_state = obj.parsing_state
-            self.latex_walker = obj.latex_walker
-            self.pos = obj.pos
-            self.pos_end = obj.pos_end
+            self.parsing_state = (copy_parsing_state if copy_parsing_state is not None
+                                  else obj.parsing_state)
+            self.latex_walker = (copy_latex_walker if copy_latex_walker is not None
+                                 else obj.latex_walker)
+            self.pos = copy_pos if copy_pos is not None else obj.pos
+            self.pos_end = copy_pos_end if copy_pos_end is not None else obj.pos_end
             return
 
         self.nodelist = nodelist
@@ -1074,7 +1110,13 @@ class LatexNodeList(object):
         # untested code !
 
         split_node_lists = []
-        
+
+        # How many splits we have performed so far.  This is not the same as the
+        # number of node lists collected in `split_node_lists`, because empty
+        # chunks are only collected if `keep_empty` is set.  Stored in a list so
+        # that the helper functions defined below can update the counter.
+        num_splits = [ 0 ]
+
         def get_split_match_start_end(m, offset=0):
             if m is None:
                 return (-1, None)
@@ -1092,7 +1134,7 @@ class LatexNodeList(object):
 
         def get_next_split(chars, pos):
 
-            if max_split is not None and len(split_node_lists) >= max_split:
+            if max_split is not None and num_splits[0] >= max_split:
                 return (-1, len(chars))
 
             if hasattr(sep_chars, 'search'):
@@ -1156,6 +1198,7 @@ class LatexNodeList(object):
                     next_sep_idx, next_sep_end = get_next_split(n.chars, prev_sep_end)
 
                     if next_sep_idx != -1:
+                        num_splits[0] += 1
                         p = n.chars[prev_sep_end:next_sep_idx]
                         if prev_sep_end == 0:
                             # This is the first match in the string. We might
@@ -1246,7 +1289,9 @@ class LatexNodeList(object):
           callable will be called with the signature `callable(key, prev_value,
           new_value, result_keyvals=result_keyvals)` whenever a key is
           encountered for which we already have the value; the callable should
-          return the aggregated value to store.
+          return the aggregated value to store.  Both `prev_value` and
+          `new_value` are node lists, as are the values stored in the returned
+          dictionary.
 
         - `default_value_nodelist` specifies the value to set to keys that
           aren't given an explicit value.  Will be wrapped in a `LatexNodeList` if
@@ -1304,13 +1349,15 @@ class LatexNodeList(object):
                 elif repeated_key_aggregate_action == 'error':
                     raise ValueError("Repeated Key: ‘{}’".format(key_s))
                 elif repeated_key_aggregate_action == 'first':
-                    value_nl = result_keyvals[key_s].nodelist
+                    # keep the value we already stored (a node list, like all
+                    # the values we store)
+                    value_nl = result_keyvals[key_s]
                 elif repeated_key_aggregate_action == 'last':
                     pass # keep value_nl
                 else:
                     value_nl = repeated_key_aggregate_action(
                         key_s,
-                        result_keyvals[key_s].nodelist,
+                        result_keyvals[key_s],
                         value_nl,
                         result_keyvals=result_keyvals
                     )
@@ -1342,6 +1389,9 @@ class LatexNodeList(object):
     def __eq__(self, other):
         if isinstance(other, list):
             return self.nodelist == other
+        if other is None or not isinstance(other, LatexNodeList):
+            # not a node list, can't be equal to this node list
+            return False
         return (
             self.nodelist == other.nodelist
             # the "pos is None and other.pos is None" checks are there for transcrypt ...

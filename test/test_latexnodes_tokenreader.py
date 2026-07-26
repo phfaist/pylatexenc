@@ -72,6 +72,57 @@ class TestLatexTokenReader(unittest.TestCase):
         tr.move_past_token(tok)
         self.assertEqual(tr.cur_pos(), len(latextext))
 
+    def test_peek_token_tolerant_does_not_move_position(self):
+        # in tolerant parsing mode a token parse error is reported as a recovery
+        # token; peek_token() must still leave the position pointer untouched,
+        # so that reading the same token again gives the same result and so that
+        # a peek followed by a read doesn't skip over a token
+        latextext = 'axb'
+
+        tr = LatexTokenReader(latextext, tolerant_parsing=True)
+        ps = ParsingState(s=latextext, forbidden_characters='x')
+
+        tr.move_to_pos_chars(1)
+
+        tok_x = LatexToken(tok='char', arg='x', pos=1, pos_end=2, pre_space='')
+
+        self.assertEqual(tr.peek_token(ps), tok_x)
+        self.assertEqual(tr.cur_pos(), 1)
+        # peeking again gives the same token
+        self.assertEqual(tr.peek_token(ps), tok_x)
+        self.assertEqual(tr.cur_pos(), 1)
+        # and only reading the token advances past it
+        self.assertEqual(tr.next_token(ps), tok_x)
+        self.assertEqual(tr.cur_pos(), 2)
+        self.assertEqual(tr.next_token(ps),
+                         LatexToken(tok='char', arg='b', pos=2, pos_end=3, pre_space=''))
+
+    def test_peek_token_tolerant_does_not_move_position_bad_environment(self):
+        # same as test_peek_token_tolerant_does_not_move_position(), for the
+        # recovery token that is generated when an environment name can't be
+        # read
+        latextext = r'\begin+more'
+
+        tr = LatexTokenReader(latextext, tolerant_parsing=True)
+        ps = ParsingState(s=latextext)
+
+        tok_beginenv = LatexToken(tok='char', arg='\\begin', pos=0,
+                                  pos_end=len('\\begin'), pre_space='')
+
+        self.assertEqual(tr.peek_token(ps), tok_beginenv)
+        self.assertEqual(tr.cur_pos(), 0)
+        self.assertEqual(tr.peek_token(ps), tok_beginenv)
+        self.assertEqual(tr.cur_pos(), 0)
+        self.assertEqual(tr.next_token(ps), tok_beginenv)
+        self.assertEqual(tr.cur_pos(), len('\\begin'))
+
+    def test_final_pos(self):
+        latextext = "hello world"
+
+        tr = LatexTokenReader(latextext)
+
+        self.assertEqual(tr.final_pos(), len(latextext))
+
     def test_macro_lone_escape_char_at_end_not_tolerant(self):
         latextext = "hello\\"
 
@@ -671,8 +722,28 @@ Some sneaky stuff can happen with consecutive math modes like here: $\zeta$$\gam
             tr.peek_token(parsing_state=ps_mm('$$')),
             LatexToken(tok='mathmode_display', arg='$$', pos=p, pos_end=p+2, pre_space='')
         )
-        
-    
+
+    def test_math_delimiters_changed_in_sub_context(self):
+        # The parsing state caches which closing math mode delimiter we are
+        # expecting.  That information depends on the lists of math mode
+        # delimiters, so it must be recomputed when a sub-context changes those
+        # lists; otherwise the sub-context tokenizes math mode delimiters
+        # differently from a parsing state that was constructed with the same
+        # field values.
+        latextext = '$$x'
+
+        ps = ParsingState(s=latextext, in_math_mode=True, math_mode_delimiter='$$')
+        ps_sub = ps.sub_context(latex_display_math_delimiters=[])
+        ps_direct = ParsingState(s=latextext, in_math_mode=True,
+                                 math_mode_delimiter='$$',
+                                 latex_display_math_delimiters=[])
+
+        tok = LatexToken(tok='mathmode_inline', arg='$', pos=0, pos_end=1, pre_space='')
+
+        self.assertEqual(LatexTokenReader(latextext).peek_token(ps_direct), tok)
+        self.assertEqual(LatexTokenReader(latextext).peek_token(ps_sub), tok)
+
+
         # -----
 
         # test char-level access

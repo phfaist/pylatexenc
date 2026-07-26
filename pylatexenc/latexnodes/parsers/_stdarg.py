@@ -237,6 +237,7 @@ class LatexStandardArgumentParser(LatexParserBase):
             return LatexOptionalCharsMarkerParser(
                 chars_list=[the_char],
                 allow_pre_space=self.allow_pre_space,
+                return_full_node_list=self.return_full_node_list,
             )
 
         elif arg_spec.startswith('r'):
@@ -457,6 +458,7 @@ class LatexCharsCommaSeparatedListParser(LatexDelimitedGroupParser):
     class CommaSepParserInfo(LatexDelimitedGroupParserInfo):
         def initialize(self):
             self.comma_char = self.delimited_expression_parser.comma_char
+            self.keep_empty_parts = self.delimited_expression_parser.keep_empty_parts
 
             self.contents_parsing_state = self.group_parsing_state.sub_context(
                 enable_macros=False,
@@ -591,7 +593,9 @@ class _CommaSepContentCustomParser(LatexParserBase):
         pos_end = self.last_element_pos_end
         if pos_end is None:
             logger.debug("_parse_one_commasep_arg(): STOP CONDITION DID NOT FIRE")
-            pos_end = token_reader.final_pos()
+            # the stopping condition didn't fire because the input ran out; the
+            # token reader is then positioned at the end of the input.
+            pos_end = token_reader.cur_pos()
             self.parse_more = False
 
         if self.last_delimiter_token is None:
@@ -747,6 +751,8 @@ class LatexTackOnInformationFieldMacrosParser(LatexParserBase):
                     raise exc
                 logger.warning("%s; ignoring the additional information field macros", message)
                 tolerant_parsing_skip_add_this_node = True
+
+            seen_macronames.add(macroname)
 
             macro_arg_parser = self.get_macro_arg_parser(macroname)
 

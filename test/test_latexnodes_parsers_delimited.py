@@ -17,6 +17,7 @@ from pylatexenc.latexnodes import (
     ParsingState,
     #ParsedArguments,
 )
+from pylatexenc.latexnodes.parsers._generalnodes import LatexGeneralNodesParser
 from pylatexenc.latexnodes.nodes import *
 
 
@@ -510,6 +511,118 @@ class TestDelimitedGroupParser(unittest.TestCase):
             nodes,
             None
         )
+
+
+    def test_optional_and_end_of_input(self):
+
+        latextext = r''''''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexDelimitedGroupParser(
+            delimiters=('{','}'),
+            optional=True,
+        )
+
+        # the end of the input is simply one more way in which the optional
+        # opening delimiter can fail to be there
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            nodes,
+            None
+        )
+
+
+    def test_mandatory_and_end_of_input(self):
+
+        latextext = r''''''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexDelimitedGroupParser(
+            delimiters=('{','}'),
+            optional=False,
+        )
+
+        exc = None
+        try:
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        except LatexWalkerParseError as e:
+            exc = e
+
+        self.assertTrue(exc is not None)
+        self.assertTrue('end of input' in exc.msg)
+        self.assertEqual(exc.pos, 0)
+        self.assertTrue(exc.recovery_at_token is None)
+        self.assertEqual(
+            exc.recovery_nodes,
+            LatexNodeList([], parsing_state=ps, pos=0, pos_end=0)
+        )
+
+
+    def test_opening_delimiter_not_found_without_any_tokens(self):
+
+        latextext = r'''{Hello there}'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        class NoTokensDEPInfo(LatexDelimitedExpressionParserInfo):
+            @classmethod
+            def parse_initial(cls, delimiters, allow_pre_space,
+                              latex_walker, token_reader, group_parsing_state,
+                              delimited_expression_parser):
+                # report that the opening delimiter was not found, without
+                # reporting any tokens that we might have read
+                raise LatexDelimitedExpressionParserOpeningDelimiterNotFound(
+                    msg="No opening delimiter here",
+                    first_tokens=[],
+                )
+
+        parser = LatexDelimitedGroupParser(
+            delimiters=('{','}'),
+            delimited_expression_parser_info_class=NoTokensDEPInfo,
+            optional=False,
+        )
+
+        exc = None
+        try:
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        except LatexWalkerParseError as e:
+            exc = e
+
+        self.assertTrue(exc is not None)
+        self.assertEqual(exc.msg, "No opening delimiter here")
+        self.assertEqual(exc.pos, 0)
+        self.assertTrue(exc.recovery_at_token is None)
+        self.assertEqual(
+            exc.recovery_nodes,
+            LatexNodeList([], parsing_state=ps, pos=0, pos_end=0)
+        )
+
+        # and if the delimited expression is optional, it is simply reported as
+        # not being there
+        tr2 = LatexTokenReader(latextext)
+        parser_optional = LatexDelimitedGroupParser(
+            delimiters=('{','}'),
+            delimited_expression_parser_info_class=NoTokensDEPInfo,
+            optional=True,
+        )
+        nodes, parsing_state_delta = lw.parse_content(parser_optional, token_reader=tr2,
+                                                      parsing_state=ps)
+        self.assertEqual(nodes, None)
+
+
+    # The end-to-end counterpart of the two tests above — a real document
+    # ending right after a macro with an optional argument — lives in
+    # test_2_latexwalker.py, because it needs the default latex context
+    # database, which the JavaScript build strips out.
 
 
     def test_automatic_detection_of_delimiters(self):

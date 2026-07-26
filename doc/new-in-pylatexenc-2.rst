@@ -218,19 +218,19 @@ the new API.
   your code to the API changes.  See documentation of
   :py:class:`~pylatexenc.latexwalker.LatexNode` and friends.
 
-  - :py:attr:`pylatexenc.latexwalker.LatexMacroNode.nodeoptarg` and
-    :py:attr:`pylatexenc.latexwalker.LatexMacroNode.nodeargs` are deprecated in
-    favor of :py:attr:`pylatexenc.latexwalker.LatexMacroNode.nodeargd` which is
+  - :py:attr:`pylatexenc.latexnodes.nodes.LatexMacroNode.nodeoptarg` and
+    :py:attr:`pylatexenc.latexnodes.nodes.LatexMacroNode.nodeargs` are deprecated in
+    favor of :py:attr:`pylatexenc.latexnodes.nodes.LatexMacroNode.nodeargd` which is
     now a :py:class:`pylatexenc.macrospec.ParsedMacroArgs` instance (or a
     subclass instance for custom nonstandard macro argument structures);
 
-  - :py:attr:`pylatexenc.latexwalker.LatexEnvironmentNode.envname` was
+  - :py:attr:`pylatexenc.latexnodes.nodes.LatexEnvironmentNode.envname` was
     deprecated in favor of
-    :py:attr:`pylatexenc.latexwalker.LatexEnvironmentNode.environmentname`;
+    :py:attr:`pylatexenc.latexnodes.nodes.LatexEnvironmentNode.environmentname`;
 
-  - :py:attr:`pylatexenc.latexwalker.LatexEnvironmentNode.optargs` and
-    :py:attr:`pylatexenc.latexwalker.LatexEnvironmentNode.args` are deprecated
-    in favor of :py:attr:`pylatexenc.latexwalker.LatexEnvironmentNode.nodeargd`,
+  - :py:attr:`pylatexenc.latexnodes.nodes.LatexEnvironmentNode.optargs` and
+    :py:attr:`pylatexenc.latexnodes.nodes.LatexEnvironmentNode.args` are deprecated
+    in favor of :py:attr:`pylatexenc.latexnodes.nodes.LatexEnvironmentNode.nodeargd`,
     which works like for macros;
 
   - the :py:class:`pylatexenc.latexwalker.LatexSpecialsNode` node type was
@@ -238,8 +238,8 @@ the new API.
 
   - new attributes were added, e.g., the `parsing_context`, `pos`, and `len` to
     all node types; also
-    :py:attr:`pylatexenc.latexwalker.LatexGroupNode.delimiters` and
-    :py:attr:`pylatexenc.latexwalker.LatexMathNode.delimiters`.
+    :py:attr:`pylatexenc.latexnodes.nodes.LatexGroupNode.delimiters` and
+    :py:attr:`pylatexenc.latexnodes.nodes.LatexMathNode.delimiters`.
 
 - Be wary of instantiating :py:class:`pylatexenc.latexwalker.LatexNode`\ 's and
   subclasses directly, because new fields might not be initialized properly.

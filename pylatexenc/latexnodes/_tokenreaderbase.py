@@ -248,7 +248,14 @@ class LatexTokenListTokenReader(LatexTokenReaderBase):
         self._idx = self._find_tok_idx(tok, 'move_past_token') + 1
 
     def cur_pos(self):
-        return self.peek_token(None).pos
+        if self._idx >= len(self.token_list):
+            # we're past the last token; report the end position instead of
+            # raising LatexWalkerEndOfStream (callers, e.g. error handlers, must
+            # be able to query the current position at any time)
+            if len(self.token_list) == 0:
+                return None
+            return self.final_pos()
+        return self.token_list[self._idx].pos
 
     def final_pos(self):
         return self.token_list[len(self.token_list)-1].pos_end

@@ -272,7 +272,8 @@ def fmt_input_macro(macronode, l2tobj):
     r"""
     This function can be used as callback in :py:class:`MacroTextSpec` for
     ``\input`` or ``\include`` macros.  The `macronode` must be a macro node
-    with a single argument.  If :py:meth:`set_tex_input_directory()` was called
+    with a single argument.  If
+    :py:meth:`~LatexNodes2Text.set_tex_input_directory()` was called
     with a nonempty input directory in the :py:class:`LatexNodes2Text` object,
     then this method reads the contents of the file name in the macro argument
     according to the provided settings.  Otherwise, returns an empty string.
@@ -654,7 +655,12 @@ def fmt_item_macro(node, l2tobj):
             label = list_stack[-1].next_marker()
         else:
             label = _itemize_markers[0]
-    return '\n  ' + label + ' '
+        # the marker we generated here needs a space to separate it from the
+        # item's contents; an explicit label given as ``\item[Label]`` is
+        # already followed by whatever separates it from the contents in the
+        # source, so don't add another space in that case.
+        label = label + ' '
+    return '\n  ' + label
 
 
 #
@@ -737,7 +743,7 @@ def fmt_math_text_style(text, style):
     r"""
     Return the text with letters replaced by unicode characters so that the
     style `style` is applied.  (We use the unicode math alphanumeric symbols,
-    see `https://unicode.org/charts/PDF/U1D400.pdf`_.)
+    see `the unicode chart <https://unicode.org/charts/PDF/U1D400.pdf>`_.)
 
     The `style` must be one of 'bold', 'italic', 'bold-italic', 'script',
     'bold-script', 'fraktur', 'doublestruck', 'bold-fraktur', 'sans',
@@ -902,8 +908,13 @@ def fmt_subsuperscript_text(text, which):
     Unicode only offers superscript and subscript versions of a limited set of
     characters.  If any character in `text` does not have a corresponding
     superscript/subscript character, then `None` is returned.  It is then up to
-    the caller to represent the superscript or subscript in some other way (for
-    instance, by keeping a latex-like ``^{...}`` or ``_{...}`` notation).
+    the caller to represent the superscript or subscript in some other way.
+
+    The default text replacement specs fall back onto writing out the '^' or
+    '_' character followed by the superscript or subscript rendered as ordinary
+    text; whether and how that text is enclosed in delimiters is decided by the
+    `math_expression_in=` option of :py:class:`LatexNodes2Text` (see
+    :py:func:`fmt_math_expression_in_delimiters()`).
 
     .. versionadded:: 3.0
 
@@ -919,6 +930,78 @@ def fmt_subsuperscript_text(text, which):
             return None
         result.append(cc)
     return "".join(result)
+
+
+
+#
+# Delimiters that show the extent of a mathematical sub-expression which we
+# could not render directly in plain text.  See the `math_expression_in=`
+# option of LatexNodes2Text.
+#
+
+_math_expression_in_presets = {
+    'braces': ('{', '}',),
+    'parens': ('(', ')',),
+}
+
+
+default_math_expression_in = 'parens'
+r"""
+The value that the `math_expression_in=` option of
+:py:class:`LatexNodes2Text` takes when it is not specified.  See the
+documentation of that option for the accepted values.
+
+Change this single constant if you would like all
+:py:class:`LatexNodes2Text` objects to use different delimiters by default.
+
+.. versionadded:: 3.0
+
+   This constant was introduced in `pylatexenc 3.0`.
+"""
+
+
+def _parse_math_expression_in(math_expression_in):
+    # Normalize the value of the `math_expression_in=` option into either a
+    # two-item tuple with the opening and the closing delimiter, or `None`.
+    if math_expression_in is None:
+        return None
+    if isinstance(math_expression_in, str):
+        if math_expression_in not in _math_expression_in_presets:
+            raise ValueError(
+                "invalid value for math_expression_in: {!r} (expected 'braces', "
+                "'parens', a pair of delimiters, or None)"
+                .format(math_expression_in)
+            )
+        return _math_expression_in_presets[math_expression_in]
+    delimiters = tuple(math_expression_in)
+    if len(delimiters) != 2:
+        raise ValueError(
+            "invalid value for math_expression_in: {!r} (a pair of delimiters must "
+            "have exactly two items)".format(math_expression_in)
+        )
+    return delimiters
+
+
+def fmt_math_expression_in_delimiters(text, math_expression_in):
+    r"""
+    Return the text representation `text` of a mathematical sub-expression,
+    enclosed in the delimiters given by `math_expression_in`.  The latter is
+    the value of the `math_expression_in=` option of
+    :py:class:`LatexNodes2Text`, i.e., one of the preset names 'braces' or
+    'parens', a pair of delimiter strings, or `None` for no delimiters at all.
+
+    The delimiters are only added where they are needed to see where the
+    sub-expression begins and ends, that is, if `text` is longer than a single
+    character.
+
+    .. versionadded:: 3.0
+
+       This function was introduced in `pylatexenc 3.0`.
+    """
+    delimiters = _parse_math_expression_in(math_expression_in)
+    if delimiters is None or len(text) <= 1:
+        return text
+    return delimiters[0] + text + delimiters[1]
 
 
 
@@ -1083,7 +1166,8 @@ def _parse_strict_latex_spaces_dict(strict_latex_spaces):
         return d
     elif strict_latex_spaces is False:
         # "False" == the actual default for non-strict latex spaces == "macros"
-        return _strict_latex_spaces_predef['macros']
+        # (return a copy so that instances don't share the same dictionary)
+        return dict(_strict_latex_spaces_predef['macros'])
     elif strict_latex_spaces is True:
         return dict([(k, True) for k in d.keys()])
     elif isinstance(strict_latex_spaces, dict):
@@ -1094,10 +1178,9 @@ def _parse_strict_latex_spaces_dict(strict_latex_spaces):
             return _parse_strict_latex_spaces_dict(True)
         if strict_latex_spaces == 'off':
             return _parse_strict_latex_spaces_dict(False)
-        if strict_latex_spaces not in _strict_latex_spaces_predef:
-            raise ValueError("invalid value for strict_latex_spaces preset: {}"
-                             .format(strict_latex_spaces))
-
+        # translate the deprecated 'default' value before checking the value
+        # against the known presets, because 'default' is deliberately not one
+        # of them
         if strict_latex_spaces == 'default': # deprecated -- report this
             # compatibility with pylatexenc 1.x, but it is no longer the default!!
             _util.pylatexenc_deprecated_2(
@@ -1105,11 +1188,19 @@ def _parse_strict_latex_spaces_dict(strict_latex_spaces):
                 "is deprecated. The actual default changed to 'macros', and for "
                 "backwards compatibility the obsolete value 'default' still refers to "
                 "the earlier default which is now called 'based-on-source'.",
-                stacklevel=4
+                # we are called from LatexNodes2Text.__init__(), which is
+                # itself called by the code that we want to point the warning
+                # at
+                stacklevel=3
             )
             strict_latex_spaces = 'based-on-source'
 
-        return _strict_latex_spaces_predef[strict_latex_spaces]
+        if strict_latex_spaces not in _strict_latex_spaces_predef:
+            raise ValueError("invalid value for strict_latex_spaces preset: {}"
+                             .format(strict_latex_spaces))
+
+        # return a copy so that instances don't share the same dictionary
+        return dict(_strict_latex_spaces_predef[strict_latex_spaces])
     else:
         raise ValueError("Invalid value for strict_latex_spaces: {!r}"
                          .format(strict_latex_spaces))
@@ -1163,19 +1254,35 @@ class TextConversionState(object):
        `environmentname`, `kind`, `depth` and `counter`.  The list is empty
        outside of any list environment.
 
+    .. py:attribute:: math_expression_in
+
+       The delimiters that are placed here around a mathematical
+       sub-expression which could not be rendered directly in plain text, for
+       instance the argument of a superscript for which there is no rendering
+       with unicode superscript characters.  This is a pair of strings with the
+       opening and the closing delimiter, or `None` if no delimiters are to be
+       added.
+
+       This field is set up from the `math_expression_in=` option of
+       :py:class:`LatexNodes2Text`, where the accepted values are documented.
+       Because it is part of the state, it can be changed for one part of the
+       document only, see :py:meth:`LatexNodes2Text.push_state()`.
+
     .. versionadded:: 3.0
 
        This class was introduced in `pylatexenc 3.0`.
     """
 
-    _fields = ('strict_latex_spaces', 'in_math_mode', 'list_stack',)
+    _fields = ('strict_latex_spaces', 'in_math_mode', 'list_stack',
+               'math_expression_in',)
 
     def __init__(self, strict_latex_spaces=None, in_math_mode=False,
-                 list_stack=None):
+                 list_stack=None, math_expression_in=default_math_expression_in):
         super(TextConversionState, self).__init__()
         self.strict_latex_spaces = strict_latex_spaces
         self.in_math_mode = in_math_mode
         self.list_stack = list_stack if list_stack is not None else []
+        self.math_expression_in = math_expression_in
 
     def sub_state(self, **kwargs):
         r"""
@@ -1217,7 +1324,8 @@ class LatexNodes2Text(object):
     and creates a text representation of the structure.
 
     It is capable of parsing ``\input`` directives safely, see
-    :py:meth:`set_tex_input_directory()` and :py:meth:`read_input_file()`.  By default,
+    :py:meth:`~LatexNodes2Text.set_tex_input_directory()` and
+    :py:meth:`~LatexNodes2Text.read_input_file()`.  By default,
     ``\input`` and ``\include`` directives are ignored.
 
     Arguments to the constructor:
@@ -1241,6 +1349,35 @@ class LatexNodes2Text(object):
       'verbatim', then the math mode chunk is kept verbatim, including the
       delimiters.  The value 'remove' means to remove the math mode sections
       entirely and not to produce any replacement text.
+
+    - `math_expression_in='braces'|'parens'|(left, right)|None`: Specify which
+      delimiters to place around a mathematical sub-expression that we were not
+      able to render directly in plain text.  Say we meet the superscript
+      ``x^{abc}``; there are no unicode superscript characters for all of 'a',
+      'b' and 'c', so the superscript is written out as ordinary text after a
+      '^' character.  The delimiters are what makes it possible to still see
+      where the superscript ends, i.e., to tell ``x^{ab}c`` from ``x^{abc}``.
+
+      The value 'braces' uses the characters '{' and '}', and 'parens' uses '('
+      and ')'.  You may also give a pair (a two-item tuple) with the opening
+      and the closing delimiter of your choice.  Finally, the value `None`
+      means that no delimiters are added at all, as was the case up to
+      `pylatexenc 2`.
+
+      Delimiters are only added where they are needed, that is, around
+      sub-expressions that are longer than a single character.  Apart from
+      superscripts and subscripts, the delimiters are used for the numerator
+      and the denominator of the fraction macros (``\frac`` and friends), which
+      are rendered as ``numerator/denominator``.
+
+      The default value is given by the module-level constant
+      :py:data:`default_math_expression_in`.  The setting can also be changed
+      for one part of the document only, see the `math_expression_in` field of
+      :py:class:`TextConversionState`.
+
+      .. versionadded:: 3.0
+
+         The `math_expression_in=` option was introduced in `pylatexenc 3.0`.
 
     - `keep_comments=True|False`: If set to `True`, then LaTeX comments are kept
       (including the percent-sign); otherwise they are discarded.  (By default
@@ -1421,6 +1558,9 @@ class LatexNodes2Text(object):
             raise ValueError("math_mode= option must be one of 'text', 'with-delimiters', "
                              "'verbatim', 'remove'")
 
+        math_expression_in = flags.pop('math_expression_in', default_math_expression_in)
+        self.math_expression_in = _parse_math_expression_in(math_expression_in)
+
         self.keep_comments = flags.pop('keep_comments', False)
 
         strict_latex_spaces = flags.pop('strict_latex_spaces', False)
@@ -1462,6 +1602,21 @@ class LatexNodes2Text(object):
     @strict_latex_spaces.setter
     def strict_latex_spaces(self, value):
         self.state.strict_latex_spaces = value
+
+
+    @property
+    def math_expression_in(self):
+        r"""
+        The delimiters that are placed around a mathematical sub-expression which
+        we could not render directly, where we currently are in the node tree.
+        This is a shorthand for the `math_expression_in` field of the current
+        :py:attr:`state`.
+        """
+        return self.state.math_expression_in
+
+    @math_expression_in.setter
+    def math_expression_in(self, value):
+        self.state.math_expression_in = value
 
 
     def push_state(self, **kwargs):
@@ -1520,7 +1675,8 @@ class LatexNodes2Text(object):
         encountering ``\\input`` or ``\\include`` directives.
 
         The default implementation looks for a file of the given name relative
-        to the directory set by :py:meth:`set_tex_input_directory()`.  If
+        to the directory set by
+        :py:meth:`~LatexNodes2Text.set_tex_input_directory()`.  If
         `strict_input=True` was set, we ensure strictly that the file resides in
         a subtree of the reference input directory (after canonicalizing the
         paths and resolving all symlinks).
@@ -2122,14 +2278,18 @@ def latex2text(content, tolerant_parsing=False, keep_inline_math=False,
         "in favor of the `pylatexenc.latex2text.LatexNodes2Text` class."
     )
 
-    (nodelist, tpos, tlen) = latexwalker.get_latex_nodes(
-        content,
-        keep_inline_math=keep_inline_math,
-        tolerant_parsing=tolerant_parsing)
+    # Parse the content with the current interface rather than with the
+    # deprecated `latexwalker.get_latex_nodes()`; the latter would emit further
+    # deprecation warnings that point at this file instead of at the code that
+    # called us.  (With no `stop_upon_*=` conditions, `get_latex_nodes()` does
+    # exactly what the two lines below do.  The `keep_inline_math=` flag has no
+    # effect at all when the latex code is parsed.)
+    lw = latexwalker.LatexWalker(content, tolerant_parsing=tolerant_parsing)
+    nodelist, _ = lw.parse_content(latexnodes_parsers.LatexGeneralNodesParser())
 
-    return latexnodes2text(nodelist,
-                           keep_inline_math=keep_inline_math,
-                           keep_comments=keep_comments)
+    return _latexnodes2text(nodelist,
+                            keep_inline_math=keep_inline_math,
+                            keep_comments=keep_comments)
 
 
 def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
@@ -2147,7 +2307,17 @@ def latexnodes2text(nodelist, keep_inline_math=False, keep_comments=False):
         "deprecated in favor of the `pylatexenc.latex2text.LatexNodes2Text` class."
     )
 
+    return _latexnodes2text(nodelist,
+                            keep_inline_math=keep_inline_math,
+                            keep_comments=keep_comments)
+
+
+def _latexnodes2text(nodelist, keep_inline_math, keep_comments):
+    # The implementation behind the deprecated `latexnodes2text()`.  It sets up
+    # the LatexNodes2Text object with the current `math_mode=` option instead of
+    # the deprecated `keep_inline_math=` one, so that the caller doesn't get a
+    # deprecation warning pointing at this file.
     return LatexNodes2Text(
-        keep_inline_math=keep_inline_math,
+        math_mode=('verbatim' if keep_inline_math else 'text'),
         keep_comments=keep_comments
     ).nodelist_to_text(nodelist)

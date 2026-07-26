@@ -96,6 +96,41 @@ class TestLatexNodesLatexRecomposer(unittest.TestCase):
         )
 
 
+    def test_recompose_custom_macro_escape_char(self):
+
+        ps = ParsingState(s=None, latex_context=DummyLatexContextDb(),
+                          macro_escape_char='@')
+
+        nodelist = LatexNodeList(
+            [
+                LatexMacroNode(
+                    parsing_state=ps,
+                    macroname='textbf',
+                    nodeargd=ParsedArguments(argspec='{', argnlist=[
+                        LatexGroupNode(
+                            parsing_state=ps,
+                            delimiters=('{', '}'),
+                            nodelist=LatexNodeList([
+                                LatexCharsNode(parsing_state=ps, chars='hi'),
+                            ]),
+                        ),
+                    ]),
+                ),
+                LatexEnvironmentNode(
+                    parsing_state=ps,
+                    environmentname='center',
+                    nodelist=LatexNodeList([
+                        LatexCharsNode(parsing_state=ps, chars='yo'),
+                    ]),
+                ),
+            ]
+        )
+
+        self.assertEqual(
+            LatexNodesLatexRecomposer().latex_recompose(nodelist),
+            '@textbf{hi}@begin{center}yo@end{center}'
+        )
+
     def test_ribufgfdsafds9eoihwuabjfdks(self):
  
         ps = ParsingState(s=None, latex_context=DummyLatexContextDb())

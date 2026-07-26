@@ -120,6 +120,9 @@ def std_macro(macname, *args, **kwargs):
             argspec = '['
         argspec += '{'*args[1]
 
+    if kwargs.get('_argspec_string_only', False):
+        return argspec
+
     if kwargs.get('make_environment_spec', False):
         return EnvironmentSpec(macname, argspec,
                                is_math_mode=kwargs.get('environment_is_math_mode', None))

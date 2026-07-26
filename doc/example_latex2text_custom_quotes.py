@@ -1,4 +1,5 @@
 from pylatexenc import latexwalker, latex2text, macrospec
+from pylatexenc.latexnodes.parsers import LatexGeneralNodesParser
 
 #
 # Define macros, environments, specials for the *parser*
@@ -36,7 +37,7 @@ def _get_optional_arg(node, default, l2tobj):
     return l2tobj.nodelist_to_text([node])
 
 def put_in_quotes_macro_repl(n, l2tobj):
-    """Get the text replacement for the macro
+    r"""Get the text replacement for the macro
     \putinquotes[open-quote][close-quote]{text}"""
     if not n.nodeargd:
         # n.nodeargd can be empty if e.g. \putinquotes was a single
@@ -88,7 +89,7 @@ def custom_latex_to_text( input_latex ):
     lw_obj = latexwalker.LatexWalker(input_latex,
                                      latex_context=lw_context_db)
     # parse to node list
-    nodelist, pos, length = lw_obj.get_latex_nodes()
+    nodelist, parsing_state_delta = lw_obj.parse_content(LatexGeneralNodesParser())
     # initialize the converter to text with custom latex_context
     l2t_obj = latex2text.LatexNodes2Text(latex_context=l2t_context_db)
     # convert to text

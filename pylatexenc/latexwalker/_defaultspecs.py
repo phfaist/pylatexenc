@@ -321,6 +321,7 @@ specs = [
 
             std_macro('frac', False, 2),
             std_macro('nicefrac', False, 2),
+            std_macro('textfrac', False, 2),
 
             std_macro('sqrt', True, 1),
 

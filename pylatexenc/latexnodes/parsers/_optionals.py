@@ -287,6 +287,7 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
         read_s = ''
         match_found = False
         matched_chars = None
+        matched_last_token = None
         first_token = None
         try:
             while True:
@@ -312,18 +313,25 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
                     read_s += " "
                 read_s += tok.arg
                 if read_s in remaining_chars_list:
+                    # remember this match; we might still find a longer marker
+                    # that also matches, and we want the longest match.
                     match_found = True
                     matched_chars = read_s
+                    matched_last_token = tok
                     pos_end = tok.pos_end
-                    break
                 if len([chars for chars in remaining_chars_list
-                        if chars.startswith(read_s)]) == 0:
-                    # mismatched all at this point, will not match
+                        if chars.startswith(read_s) and chars != read_s]) == 0:
+                    # no remaining marker has what we read so far as a strict
+                    # prefix, so no longer marker can match; we're done reading
                     break
 
         finally:
             if not match_found:
                 token_reader.move_to_token(orig_pos_tok)
+            else:
+                # we might have read further than the longest marker that
+                # matched; place the token reader right after that marker.
+                token_reader.move_past_token(matched_last_token)
 
         if not match_found:
             # chars marker is simply not present.
@@ -334,7 +342,9 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
 
         arg_pos = orig_pos_tok.pos
 
-        following_arg_parser = self.get_following_arg_parser(read_s)
+        # note: we might have read further than the marker that matched, so it
+        # is ‘matched_chars’ and not ‘read_s’ that identifies the marker here
+        following_arg_parser = self.get_following_arg_parser(matched_chars)
 
         parsing_state_delta = None
         following_nodes = None

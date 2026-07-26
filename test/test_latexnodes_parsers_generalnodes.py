@@ -11,6 +11,7 @@ from pylatexenc.latexnodes import (
     LatexTokenReader,
     ParsingState,
     ParsedArguments,
+    LatexWalkerNodesParseError,
 )
 from pylatexenc.latexnodes.nodes import *
 
@@ -242,6 +243,69 @@ class TestGeneralNodesParser(unittest.TestCase):
                 ),
             ], pos=0, pos_end=9)
         )
+
+    def test_required_stop_condition_met_by_nodelist_condition(self):
+
+        # When both a token stopping condition and a node list stopping
+        # condition are set, meeting either one of them satisfies
+        # `require_stop_condition_met=True`.  Here it is the node list condition
+        # that is met.
+
+        latextext = r'''\yourname\yourname}'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexGeneralNodesParser(
+            stop_token_condition=lambda t: t.tok == 'brace_close',
+            stop_nodelist_condition=lambda nl: len(nl) >= 1,
+            require_stop_condition_met=True,
+            stop_condition_message="expected ‘}’",
+        )
+
+        nodes, carryover_info = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            nodes,
+            LatexNodeList([
+                LatexMacroNode(
+                    parsing_state=ps,
+                    macroname='yourname',
+                    nodeargd=ParsedArguments(),
+                    macro_post_space='',
+                    spec=ps.latex_context.get_macro_spec('yourname'),
+                    pos=0,
+                    pos_end=9,
+                ),
+            ], pos=0, pos_end=9)
+        )
+
+    def test_parse_error_keeps_recovery_token_info(self):
+
+        # The parse error that we re-raise after the nodes collector failed must
+        # still carry the information about where parsing might be resumed, so
+        # that recovery in tolerant parsing mode can skip the offending token.
+
+        latextext = r'''a } b'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker() # non-tolerant
+
+        parser = LatexGeneralNodesParser()
+
+        exc = None
+        try:
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        except LatexWalkerNodesParseError as e:
+            exc = e
+
+        self.assertIsNotNone(exc)
+        self.assertIsNone(exc.recovery_at_token)
+        self.assertIsNotNone(exc.recovery_past_token)
+        self.assertEqual(exc.recovery_past_token.tok, 'brace_close')
+        self.assertEqual(exc.recovery_past_token.pos, 2)
 
 
 # ------------------------------------------------------------------------------

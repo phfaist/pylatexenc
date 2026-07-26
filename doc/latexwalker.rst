@@ -22,7 +22,7 @@ The main `LatexWalker` class
 Exception Classes
 ~~~~~~~~~~~~~~~~~
 
-.. py:class:: pylatexenc.latexwalker.LatexWalkerError
+.. py:class:: LatexWalkerError
 
    Moved to :py:class:`pylatexenc.latexnodes.LatexWalkerError`.
 
@@ -33,7 +33,7 @@ Exception Classes
       :py:class:`pylatexenc.latexnodes.LatexWalkerError`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
-.. py:class:: pylatexenc.latexwalker.LatexWalkerParseError
+.. py:class:: LatexWalkerParseError
 
    Moved to :py:class:`pylatexenc.latexnodes.LatexWalkerParseError`.
 
@@ -44,7 +44,7 @@ Exception Classes
       :py:class:`pylatexenc.latexnodes.LatexWalkerParseError`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
-.. py:class:: pylatexenc.latexwalker.LatexWalkerEndOfStream
+.. py:class:: LatexWalkerEndOfStream
 
    Moved to :py:class:`pylatexenc.latexnodes.LatexWalkerEndOfStream`.
 
@@ -59,7 +59,7 @@ Exception Classes
 Data Node Classes
 ~~~~~~~~~~~~~~~~~
 
-.. py:class:: pylatexenc.latexwalker.LatexNode
+.. py:class:: LatexNode
 
    Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexNode`.
 
@@ -70,7 +70,7 @@ Data Node Classes
       :py:class:`pylatexenc.latexnodes.nodes.LatexNode`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
-.. py:class:: pylatexenc.latexwalker.LatexCharsNode
+.. py:class:: LatexCharsNode
 
    Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexCharsNode`.
 
@@ -81,7 +81,7 @@ Data Node Classes
       :py:class:`pylatexenc.latexnodes.nodes.LatexCharsNode`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
-.. py:class:: pylatexenc.latexwalker.LatexGroupNode
+.. py:class:: LatexGroupNode
 
    Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexGroupNode`.
 
@@ -92,7 +92,7 @@ Data Node Classes
       :py:class:`pylatexenc.latexnodes.nodes.LatexGroupNode`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
-.. py:class:: pylatexenc.latexwalker.LatexCommentNode
+.. py:class:: LatexCommentNode
 
    Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexCommentNode`.
 
@@ -103,7 +103,7 @@ Data Node Classes
       :py:class:`pylatexenc.latexnodes.nodes.LatexCommentNode`.  It is aliased
       in `pylatexenc.latexwalker` for backwards compatibility.
 
-.. py:class:: pylatexenc.latexwalker.LatexMacroNode
+.. py:class:: LatexMacroNode
 
    Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexMacroNode`.
 
@@ -114,7 +114,7 @@ Data Node Classes
       :py:class:`pylatexenc.latexnodes.nodes.LatexMacroNode`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
-.. py:class:: pylatexenc.latexwalker.LatexEnvironmentNode
+.. py:class:: LatexEnvironmentNode
 
    Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexEnvironmentNode`.
 
@@ -125,7 +125,7 @@ Data Node Classes
       :py:class:`pylatexenc.latexnodes.nodes.LatexEnvironmentNode`.  It is
       aliased in `pylatexenc.latexwalker` for backwards compatibility.
 
-.. py:class:: pylatexenc.latexwalker.LatexSpecialsNode
+.. py:class:: LatexSpecialsNode
 
    Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexSpecialsNode`.
 
@@ -136,7 +136,7 @@ Data Node Classes
       :py:class:`pylatexenc.latexnodes.nodes.LatexSpecialsNode`.  It is aliased
       in `pylatexenc.latexwalker` for backwards compatibility.
 
-.. py:class:: pylatexenc.latexwalker.LatexMathNode
+.. py:class:: LatexMathNode
 
    Moved to :py:class:`pylatexenc.latexnodes.nodes.LatexMathNode`.
 
@@ -151,7 +151,7 @@ Data Node Classes
 Parsing helpers
 ~~~~~~~~~~~~~~~
 
-.. py:class:: pylatexenc.latexwalker.ParsingState
+.. py:class:: ParsingState
 
    .. deprecated:: 3.0
 
@@ -159,7 +159,7 @@ Parsing helpers
       :py:mod:`pylatexenc.latexnodes`.  It is aliased in
       `pylatexenc.latexwalker` for backwards compatibility.
 
-.. py:class:: pylatexenc.latexwalker.LatexToken
+.. py:class:: LatexToken
 
    .. deprecated:: 3.0
 
@@ -172,7 +172,7 @@ Parsing helpers
 Legacy Macro Definitions (for `pylatexenc 1.x`)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autodata:: pylatexenc.latexwalker.MacrosDef
+.. autofunction:: pylatexenc.latexwalker.MacrosDef
 
 .. autodata:: pylatexenc.latexwalker.default_macro_dict
    :annotation:

@@ -37,8 +37,9 @@ following definitions:
 
   - A new macro ``\putinquotes[`][']{text}`` that puts its mandatory argument
     into quotes defined by the two optional arguments.  Let's say that the
-    default quotes that are used are `````` and ``''``.  Another simpler macro
-    ``\putindblquotes{text}`` is also provided for the sake of the example.
+    default quotes that are used are the unicode double quotation marks ``“``
+    and ``”``.  Another simpler macro ``\putindblquotes{text}`` is also provided
+    for the sake of the example.
 
   - A new environment ``\begin{inquotes}[`]['] ... \end{inquotes}`` that does
     the same thing as its macro equivalent.  Another simpler environment
@@ -65,6 +66,18 @@ Latex to Text Converter Class
 .. autoclass:: pylatexenc.latex2text.LatexNodes2Text
    :members:
 
+   .. py:attribute:: state
+
+      The current conversion state, as a
+      :py:class:`~pylatexenc.latex2text.TextConversionState` object.  It keeps
+      track of the surroundings in which the node currently being converted
+      appears.  Use :py:meth:`push_state()` to temporarily override some of its
+      fields.
+
+      .. versionadded:: 3.0
+
+         This attribute was introduced in `pylatexenc 3.0`.
+
 
 .. autoclass:: pylatexenc.latex2text.TextConversionState
    :members:
@@ -85,6 +98,39 @@ Define replacement texts
 
 .. autoclass:: pylatexenc.latex2text.SpecialsTextSpec
    :members:
+
+
+Formatting helpers
+~~~~~~~~~~~~~~~~~~
+
+Most of the following functions are meant to be used directly as the
+`simplify_repl` callable of a :py:class:`~pylatexenc.latex2text.MacroTextSpec`,
+:py:class:`~pylatexenc.latex2text.EnvironmentTextSpec` or
+:py:class:`~pylatexenc.latex2text.SpecialsTextSpec`.  They implement the
+default rendering of the corresponding LaTeX constructs, and can be reused (or
+wrapped) when you define your own replacement rules.  The last two are plain
+string helpers that convert text to the corresponding unicode styled or
+superscript/subscript characters.
+
+.. autofunction:: pylatexenc.latex2text.fmt_equation_environment
+
+.. autofunction:: pylatexenc.latex2text.fmt_input_macro
+
+.. autofunction:: pylatexenc.latex2text.placeholder_node_formatter
+
+.. autofunction:: pylatexenc.latex2text.fmt_placeholder_node
+
+.. autofunction:: pylatexenc.latex2text.fmt_matrix_environment_node
+
+.. autofunction:: pylatexenc.latex2text.fmt_list_environment
+
+.. autofunction:: pylatexenc.latex2text.fmt_list_item
+
+.. autofunction:: pylatexenc.latex2text.fmt_item_macro
+
+.. autofunction:: pylatexenc.latex2text.fmt_math_text_style
+
+.. autofunction:: pylatexenc.latex2text.fmt_subsuperscript_text
 
 
 

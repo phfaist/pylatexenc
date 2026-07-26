@@ -23,6 +23,15 @@ from ._helpers_tests import (
 )
 
 
+class TolerantDummyWalker(DummyWalker):
+    r"""
+    A dummy walker that behaves as if tolerant parsing mode were enabled, i.e.,
+    it always requests that recovery from parse errors be attempted.
+    """
+    def check_tolerant_parsing_ignore_error(self, exc):
+        return None
+
+
 
 class TestLatexNodesCollector(unittest.TestCase):
 
@@ -946,6 +955,159 @@ class TestLatexNodesCollector(unittest.TestCase):
         self.assertEqual(nc.pos_start(), 0)
         self.assertEqual(nc.pos_end(), 11)
         self.assertTrue(nc.reached_end_of_stream())
+
+
+    # --- stray closing tokens (‘}’, ‘\end{...}’, ‘\]’) ---
+    #
+    # In tolerant parsing mode, the offending token is skipped and the rest of
+    # the content is still collected.  In strict parsing mode, a parse error is
+    # raised.
+
+    def test_tolerant_skips_stray_closing_brace(self):
+
+        latextext = r'''Hello } world'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = TolerantDummyWalker()
+
+        nc = LatexNodesCollector(latex_walker=lw,
+                                 token_reader=tr,
+                                 parsing_state=ps,
+                                 )
+
+        nc.process_tokens()
+
+        nodelist = nc.get_final_nodelist()
+
+        self.assertEqual(
+            nodelist,
+            LatexNodeList([
+                LatexCharsNode(
+                    parsing_state=ps,
+                    chars='Hello ',
+                    pos=0,
+                    pos_end=6,
+                ),
+                LatexCharsNode(
+                    parsing_state=ps,
+                    chars=' world',
+                    pos=7,
+                    pos_end=13,
+                ),
+            ])
+        )
+        self.assertTrue(nc.reached_end_of_stream())
+
+    def test_tolerant_skips_stray_end_environment(self):
+
+        latextext = r'''a \end{someenv} b'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = TolerantDummyWalker()
+
+        nc = LatexNodesCollector(latex_walker=lw,
+                                 token_reader=tr,
+                                 parsing_state=ps,
+                                 )
+
+        nc.process_tokens()
+
+        nodelist = nc.get_final_nodelist()
+
+        self.assertEqual(
+            nodelist,
+            LatexNodeList([
+                LatexCharsNode(
+                    parsing_state=ps,
+                    chars='a ',
+                    pos=0,
+                    pos_end=2,
+                ),
+                LatexCharsNode(
+                    parsing_state=ps,
+                    chars=' b',
+                    pos=15,
+                    pos_end=17,
+                ),
+            ])
+        )
+        self.assertTrue(nc.reached_end_of_stream())
+
+    def test_tolerant_skips_stray_closing_math_delimiter(self):
+
+        latextext = r'''a \] b'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = TolerantDummyWalker()
+
+        nc = LatexNodesCollector(latex_walker=lw,
+                                 token_reader=tr,
+                                 parsing_state=ps,
+                                 )
+
+        nc.process_tokens()
+
+        nodelist = nc.get_final_nodelist()
+
+        self.assertEqual(
+            nodelist,
+            LatexNodeList([
+                LatexCharsNode(
+                    parsing_state=ps,
+                    chars='a ',
+                    pos=0,
+                    pos_end=2,
+                ),
+                LatexCharsNode(
+                    parsing_state=ps,
+                    chars=' b',
+                    pos=4,
+                    pos_end=6,
+                ),
+            ])
+        )
+        self.assertTrue(nc.reached_end_of_stream())
+
+    def test_strict_raises_on_stray_closing_tokens(self):
+
+        for latextext in (r'''Hello } world''',
+                          r'''a \end{someenv} b''',
+                          r'''a \] b'''):
+
+            tr = LatexTokenReader(latextext)
+            ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+            lw = DummyWalker() # non-tolerant
+
+            nc = LatexNodesCollector(latex_walker=lw,
+                                     token_reader=tr,
+                                     parsing_state=ps,
+                                     )
+
+            self.assertRaises(LatexWalkerParseError, nc.process_tokens)
+
+
+    def test_environment_no_latex_context(self):
+
+        # with a parsing state that has no latex context at all, we should get a
+        # parse error reporting the unknown environment (and not, say, an
+        # AttributeError); cf. the same behavior for macros.
+
+        latextext = r'''\begin{someenv}y\end{someenv}'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=None)
+        lw = DummyWalker() # non-tolerant
+
+        nc = LatexNodesCollector(latex_walker=lw,
+                                 token_reader=tr,
+                                 parsing_state=ps,
+                                 )
+
+        self.assertRaises(LatexWalkerParseError, nc.process_tokens)
+
 
 # ---
 

@@ -35,7 +35,8 @@ from ..latex2text import (
     fmt_equation_environment, #fmt_placeholder_node,
     placeholder_node_formatter,
     fmt_matrix_environment_node, fmt_input_macro, fmt_math_text_style,
-    fmt_list_environment, fmt_item_macro, fmt_subsuperscript_text
+    fmt_list_environment, fmt_item_macro, fmt_subsuperscript_text,
+    fmt_math_expression_in_delimiters
 )
 
 
@@ -103,13 +104,30 @@ def _subsuperscript_formatter(which):
             return subsuper_text
 
         # otherwise, fall back onto latex's own notation, with the argument
-        # rendered as text.  Braces are only needed if the argument is longer
-        # than a single character.
-        if len(arg_text) == 1:
-            return specials_chars + arg_text
-        return specials_chars + '{' + arg_text + '}'
+        # rendered as text.  The delimiters that show where the superscript or
+        # subscript ends are chosen by the `math_expression_in` option (they
+        # are only needed if the argument is longer than a single character).
+        return specials_chars + fmt_math_expression_in_delimiters(
+            arg_text, l2tobj.state.math_expression_in
+        )
 
     return formatter
+
+
+def _format_frac(n, l2tobj):
+    # \frac{numerator}{denominator}.  A real fraction cannot be typeset in
+    # plain text, so we fall back onto the 'numerator/denominator' notation.
+    # Each of the two parts is a sub-expression whose extent would otherwise be
+    # lost, so we hand them to the `math_expression_in` option (compare
+    # '\frac{a+b}{c}' with '\frac{a}{b+c}').
+    math_expression_in = l2tobj.state.math_expression_in
+    numerator = fmt_math_expression_in_delimiters(
+        l2tobj.node_arg_to_text(n, 0), math_expression_in
+    )
+    denominator = fmt_math_expression_in_delimiters(
+        l2tobj.node_arg_to_text(n, 1), math_expression_in
+    )
+    return numerator + '/' + denominator
 
 
 
@@ -267,9 +285,9 @@ _latex_specs_approximations = {
         # reflowed)
         ("\\", '\n'),
 
-        ('frac', '%s/%s'),
-        ('nicefrac', '%s/%s'),
-        ('textfrac', '%s/%s'),
+        ('frac', _format_frac),
+        ('nicefrac', _format_frac),
+        ('textfrac', _format_frac),
 
         ('overline', '%s'),
         ('underline', '%s'),

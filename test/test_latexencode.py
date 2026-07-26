@@ -458,6 +458,24 @@ class TestPartialLatexEncode(unittest.TestCase, ProvideAssertCmds):
         )
 
 
+### BEGIN_TEST_PYLATEXENC_SKIP
+    def test_module_level_unicode_to_latex(self):
+        # the module-level unicode_to_latex() shorthand is part of the
+        # pylatexenc 2/3 public API -- it is not pylatexenc 1.x legacy code, and
+        # it must not be removed from builds that drop the legacy code
+        input = "\N{LATIN CAPITAL LETTER A WITH GRAVE} votre sant\N{LATIN SMALL LETTER E WITH ACUTE}! 100%"
+        self.assertEqual(
+            latexencode.unicode_to_latex(input),
+            "\\`A votre sant\\'e! 100\\%"
+        )
+        # a repeated call reuses the cached encoder instance
+        self.assertEqual(
+            latexencode.unicode_to_latex(input),
+            "\\`A votre sant\\'e! 100\\%"
+        )
+### END_TEST_PYLATEXENC_SKIP
+
+
 
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE

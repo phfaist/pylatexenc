@@ -24,6 +24,14 @@ from ._helpers_tests import (
 )
 
 
+class TolerantDummyWalker(DummyWalker):
+    r"""
+    A dummy walker that behaves as if tolerant parsing mode were enabled, i.e.,
+    it always requests that recovery from parse errors be attempted.
+    """
+    def check_tolerant_parsing_ignore_error(self, exc):
+        return None
+
 
 
 # --------------------------------------
@@ -168,6 +176,104 @@ class TestLatexExpression(unittest.TestCase):
             ),
         )
 
+
+    def test_disallowed_pre_space_does_not_eat_the_token(self):
+        # in tolerant parsing mode, only the whitespace is discarded; the token
+        # that follows it must still be picked up as the expression.
+        latextext = '  characters'
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = TolerantDummyWalker()
+
+        parser = LatexExpressionParser(allow_pre_space=False)
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            nodes,
+            LatexNodeList(
+                [
+                    LatexCharsNode(
+                        parsing_state=ps,
+                        chars='c',
+                        pos=2,
+                        pos_end=3,
+                    ),
+                ],
+            )
+        )
+        self.assertEqual(tr.cur_pos(), 3)
+
+    def test_disallowed_pre_space_is_an_error_also_for_a_macro(self):
+        # the check for leading whitespace must apply to all token types, not
+        # only to those that are inspected after the macro & specials cases
+        latextext = r'''  \somemacro'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexExpressionParser(allow_pre_space=False)
+
+        exc = None
+        try:
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        except LatexWalkerParseError as e:
+            exc = e
+
+        self.assertTrue(exc is not None)
+        self.assertTrue('whitespace' in exc.msg)
+
+    def test_disallowed_pre_space_before_macro_recovers_with_the_macro(self):
+        latextext = r'''  \somemacro'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = TolerantDummyWalker()
+
+        parser = LatexExpressionParser(allow_pre_space=False,
+                                       return_full_node_list=False,
+                                       single_token_requiring_arg_is_error=False)
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertTrue(nodes.isNodeType(LatexMacroNode))
+        self.assertEqual(nodes.macroname, 'somemacro')
+        self.assertEqual(nodes.pos, 2)
+
+    def test_end_environment_is_not_an_expression(self):
+        # ‘\end{someenv}’ must not be picked up as the expression, otherwise the
+        # environment never gets closed and its name leaks into the contents.
+        latextext = r'''\end{someenv} more text'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexExpressionParser()
+
+        exc = None
+        try:
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+        except LatexWalkerNodesParseError as e:
+            exc = e
+
+        self.assertTrue(exc is not None)
+        self.assertEqual(
+            exc.recovery_nodes,
+            LatexCharsNode(
+                parsing_state=ps,
+                chars='',
+                pos=0,
+                pos_end=0,
+            )
+        )
+        # the ‘\end’ is not consumed
+        self.assertEqual(tr.cur_pos(), 0)
+        self.assertEqual(exc.recovery_at_token.tok, 'macro')
+        self.assertEqual(exc.recovery_at_token.arg, 'end')
+        self.assertEqual(exc.error_type_info['unexpected'], 'beginend')
 
     def test_simple_first_char_wspaceandcomment(self):
         latextext = ' \n \t % comment\n  characters'

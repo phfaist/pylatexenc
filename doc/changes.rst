@@ -30,11 +30,11 @@ pylatexenc 2.10
   help to avoid double-escaping some existing LaTeX expressions in the string
   that we want to LaTeX-encode.
 
-- The :py:class:`pylatexenc.latexencode.UnicodeToTextConversionRule` now has a
-  :py:attr:`~pylatexenc.latexencode.UnicodeToTextConversionRule.replacement_text_protection`
-  field which can be used to override the default `replacement_text_protection`
-  set on a :py:class:`pylatexenc.latexencode.UnicodeToTextEncoder` object.  Also
-  the `replacement_text_protection` fields accept an arbitrary callable object.
+- The :py:class:`pylatexenc.latexencode.UnicodeToLatexConversionRule` now has a
+  :py:attr:`~pylatexenc.latexencode.UnicodeToLatexConversionRule.replacement_latex_protection`
+  field which can be used to override the default `replacement_latex_protection`
+  set on a :py:class:`pylatexenc.latexencode.UnicodeToLatexEncoder` object.  Also
+  the `replacement_latex_protection` fields accept an arbitrary callable object.
 
 - added some known macro definitions for :py:mod:`~pylatexenc.latexwalker` and
   :py:mod:`~pylatexenc.latex2text`, such as ``\definecolor`` and ``\textcolor``.

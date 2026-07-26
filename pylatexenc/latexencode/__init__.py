@@ -128,8 +128,6 @@ from ._partial_latex_encoder import (
 # ------------------------------------------------
 
 
-### BEGIN_PYLATEXENC1_LEGACY_SUPPORT_CODE
-
 _u2l_obj_cache = {}
 
 
@@ -175,6 +173,8 @@ def unicode_to_latex(s, non_ascii_only=False, replacement_latex_protection='brac
 
 
 # ------------------------------------------------------------------------------
+
+### BEGIN_PYLATEXENC1_LEGACY_SUPPORT_CODE
 
 # Don't change pylatexenc 1.x function:
 

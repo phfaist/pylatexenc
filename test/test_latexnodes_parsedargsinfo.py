@@ -220,12 +220,58 @@ class TestSingleParsedArgumentInfo(unittest.TestCase):
         self.assertEqual(kv['y'].get_content_as_chars(), 'two')
         self.assertEqual(kv['z'].get_content_as_chars(), 'three3')
 
+    def test_eq_returns_false_and_does_not_raise(self):
+        # comparing to None, or to an object of a different type, must simply
+        # report that the objects are not equal
+        arginfo = SingleParsedArgumentInfo(None)
+
+        self.assertFalse( arginfo == None )
+        self.assertFalse( arginfo == 'not an argument info object' )
+        self.assertTrue( arginfo == SingleParsedArgumentInfo(None) )
+
 
 
 
 class TestParsedArgumentsInfo(unittest.TestCase):
 
     maxDiff = None
+
+    def test_both_parsed_arguments_and_node_given(self):
+        # if both the arguments and the node are specified, the arguments that
+        # were explicitly specified are used (the node is only used to report
+        # the position in error messages)
+
+        parsed_args = ParsedArguments(
+            arguments_spec_list=[
+                LatexArgumentSpec('{', argname='content'),
+            ],
+            argnlist=[
+                LatexCharsNode(
+                    chars='Hello world',
+                    pos=13,
+                    pos_end=13+11, # 11 == len('Hello world')
+                ),
+            ],
+        )
+
+        node = LatexMacroNode(
+            macroname='mymacro',
+            nodeargd=None,
+            pos=5,
+            pos_end=13+11,
+        )
+
+        arguments_info = ParsedArgumentsInfo(parsed_arguments=parsed_args, node=node)
+
+        self.assertEqual(
+            arguments_info.get_argument_info(0).get_content_as_chars(),
+            'Hello world'
+        )
+        self.assertEqual(
+            arguments_info.get_argument_info('content').get_content_as_chars(),
+            'Hello world'
+        )
+        self.assertEqual(arguments_info.node_pos, 5)
 
     def test_get_all_arguments_info_noargs(self):
 

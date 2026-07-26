@@ -186,40 +186,79 @@ class LatexExpressionParser(LatexParserBase):
                 raise exc
             return []
 
+        # check for leading whitespace before we inspect the token itself, so
+        # that the check applies to all token types (including macros and
+        # specials).
+        if len(tok.pre_space):
+            if self.allow_pre_space:
+                # put the token back so that it can be found again on the next
+                # iteration, after we've skipped whitespace
+                token_reader.move_to_token(tok, rewind_pre_space=False)
+
+                wspos = tok.pos-len(tok.pre_space)
+
+                # create a dummy whitespace char as we did for comments
+                cnodes = [
+                    latex_walker.make_node(LatexCharsNode,
+                                           parsing_state=parsing_state,
+                                           chars=tok.pre_space,
+                                           pos=wspos,
+                                           pos_end=tok.pos)
+                ]
+                raise _TryAgainWithSkippedCommentOrWhitespaceNodes(cnodes, wspos)
+
+            # whitespace not allowed -> error
+            exc = latex_walker.check_tolerant_parsing_ignore_error(
+                LatexWalkerParseError(
+                    r"Expected expression w/o leading whitespace but found whitespace",
+                    pos=tok.pos - len(tok.pre_space),
+                    error_type_info={
+                        'what': 'expression_required_got_unexpected',
+                        'unexpected': 'whitespace',
+                        'whitespace': tok.pre_space,
+                    },
+                )
+            )
+            if exc is not None:
+                raise exc
+
+            # recover from error -> only the whitespace is discarded, the token
+            # itself is put back so that it is seen again on the next iteration.
+            token_reader.move_to_token(tok, rewind_pre_space=False)
+            raise _TryAgainWithSkippedCommentOrWhitespaceNodes([], tok.pos)
+
         if tok.tok == 'macro':
 
             macroname = tok.arg
 
             if self.single_token_requiring_arg_is_error \
                and macroname in ('begin', 'end',):
-                # error, we were expecting a single token
-                exc = latex_walker.check_tolerant_parsing_ignore_error(
-                    LatexWalkerParseError(
-                        r"Expected expression, got \{}".format(macroname),
-                        pos=tok.pos,
-                        error_type_info={
-                            'what': 'expression_required_got_unexpected',
-                            'unexpected': 'beginend',
-                            'beginend': macroname,
-                        },
-                    )
-                )
-                if exc is not None:
-                    raise exc
+                # error, we were expecting a single token.
 
-                # recover from error ->
-                return [
-                    latex_walker.make_node(
-                        LatexMacroNode,
-                        parsing_state=parsing_state,
-                        macroname=macroname,
-                        spec=None,
-                        nodeargd=None,
-                        macro_post_space=tok.post_space,
-                        pos=tok.pos,
-                        pos_end=tok.pos_end
-                    )
-                ]
+                # put the token back so that it can be processed by whichever
+                # parser actually needs it (e.g., the environment that is
+                # waiting for its ‘\end{...}’).  Reporting the ‘\begin’ or
+                # ‘\end’ as the expression would swallow the environment name
+                # that follows it.
+                token_reader.move_to_token(tok)
+
+                raise LatexWalkerNodesParseError(
+                    msg=r"Expected expression, got \{}".format(macroname),
+                    pos=tok.pos,
+                    recovery_nodes=latex_walker.make_node(LatexCharsNode,
+                                                          parsing_state=parsing_state,
+                                                          chars='',
+                                                          pos=tok.pos,
+                                                          pos_end=tok.pos), # not pos_end
+                    # don't consume the ‘\begin’/‘\end’ if we're trying to
+                    # recover from the parse error
+                    recovery_at_token=tok,
+                    error_type_info={
+                        'what': 'expression_required_got_unexpected',
+                        'unexpected': 'beginend',
+                        'beginend': macroname,
+                    },
+                )
 
             mspec = parsing_state.latex_context.get_macro_spec(macroname)
 
@@ -273,43 +312,6 @@ class LatexExpressionParser(LatexParserBase):
                     pos_end=tok.pos_end
                 )
             ]
-
-        if len(tok.pre_space):
-            if self.allow_pre_space:
-                # put the token back so that it can be found again on the next
-                # iteration, after we've skipped whitespace
-                token_reader.move_to_token(tok, rewind_pre_space=False)
-
-                wspos = tok.pos-len(tok.pre_space)
-
-                # create a dummy whitespace char as we did for comments
-                cnodes = [
-                    latex_walker.make_node(LatexCharsNode,
-                                           parsing_state=parsing_state,
-                                           chars=tok.pre_space,
-                                           pos=wspos,
-                                           pos_end=tok.pos)
-                ]
-                raise _TryAgainWithSkippedCommentOrWhitespaceNodes(cnodes, wspos)
-
-            # whitespace not allowed -> error
-            exc = latex_walker.check_tolerant_parsing_ignore_error(
-                LatexWalkerParseError(
-                    r"Expected expression w/o leading whitespace but found whitespace",
-                    pos=tok.pos - len(tok.pre_space),
-                    error_type_info={
-                        'what': 'expression_required_got_unexpected',
-                        'unexpected': 'whitespace',
-                        'whitespace': tok.pre_space,
-                    },
-                )
-            )
-            if exc is not None:
-                raise exc
-
-            # recover from error ->
-            raise _TryAgainWithSkippedCommentOrWhitespaceNodes([], tok.pos)
-
 
         if tok.tok == 'comment':
             if self.allow_pre_comments:

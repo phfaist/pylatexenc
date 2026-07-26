@@ -32,6 +32,8 @@
 
 from ..latexnodes._exctypes import *
 from ..latexnodes.nodes import *
+from ..latexnodes import ParsingStateDelta
+from ..latexnodes.parsers import LatexParserBase
 
 
 import json
@@ -221,6 +223,16 @@ def make_json_encoder(latexwalker, use_line_numbers=True):
 
             if hasattr(obj, 'to_json_object'):
                 return obj.to_json_object()
+
+            # Parsing state delta objects and parser objects (both of which show
+            # up in the argument specifications of a parsed argument list) don't
+            # provide a JSON representation of their own; report them as their
+            # repr(), as we already do for the `spec` field of nodes.
+            if isinstance(obj, ParsingStateDelta):
+                return repr(obj)
+
+            if isinstance(obj, LatexParserBase):
+                return repr(obj)
 
             # else:
             return super(LatexNodesJSONEncoder, self).default(obj)

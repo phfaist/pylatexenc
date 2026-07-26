@@ -35,6 +35,13 @@ import warnings
 
 
 
+# The `stacklevel` argument of these helpers counts frames starting at the
+# function that calls the helper (`stacklevel=2`, the default, blames whoever
+# called that function -- normally the user's code).  Increase it by one for
+# each additional internal function that sits between the user's code and the
+# call to the helper, so that the warning always points at the user's own line
+# and never at a file inside pylatexenc.
+
 def pylatexenc_deprecated_ver(ver, msg, stacklevel=2):
     warnings.warn(
         "Deprecated (pylatexenc {}): {} ".format(ver, msg.strip()),

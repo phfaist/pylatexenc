@@ -70,6 +70,20 @@ class _LatexCallableParserBase(LatexParserBase):
 
     def parse_call_arguments(self, latex_walker, token_reader, parsing_state, **kwargs):
 
+### BEGIN_PYLATEXENC1_LEGACY_SUPPORT_CODE
+
+        # Specs built by the pylatexenc 1.x `MacrosDef()` helper accept — and
+        # simply ignore — a leading '*' in the macro call.  Skip over it here,
+        # before the arguments are parsed, so that it does not show up as an
+        # argument: the argument structure must remain the one that the spec
+        # actually declares.
+        if getattr(self.spec_object, '_like_pylatexenc1x_ignore_leading_star', False):
+            tok = token_reader.peek_token_or_none(parsing_state=parsing_state)
+            if tok is not None and tok.tok == 'char' and tok.arg == '*':
+                token_reader.move_past_token(tok)
+
+### END_PYLATEXENC1_LEGACY_SUPPORT_CODE
+
         arguments_parsing_state = get_updated_parsing_state_from_delta(
             parsing_state,
             self.make_arguments_parsing_state_delta(

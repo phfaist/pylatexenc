@@ -596,43 +596,63 @@ class LatexNodesCollector(object):
 
         # check for tokens that are illegal in this context
 
+        # In tolerant parsing mode, these tokens are simply skipped and we carry
+        # on collecting nodes.  (The token was already read off the token
+        # reader, so simply returning here leaves the reader positioned
+        # immediately after the offending token.)
+
         if tok.tok == 'brace_close':
-            raise LatexWalkerNodesParseError(
-                msg=("Unexpected mismatching closing delimiter ‘{}’".format(tok.arg)),
-                pos=tok.pos,
-                recovery_past_token=tok,
-                error_type_info={
-                    'what': 'nodes_unexpected_closing_group_delimiter',
-                    'delimiter': tok.arg,
-                },
+            exc = latex_walker.check_tolerant_parsing_ignore_error(
+                LatexWalkerNodesParseError(
+                    msg=("Unexpected mismatching closing delimiter ‘{}’".format(tok.arg)),
+                    pos=tok.pos,
+                    recovery_past_token=tok,
+                    error_type_info={
+                        'what': 'nodes_unexpected_closing_group_delimiter',
+                        'delimiter': tok.arg,
+                    },
+                )
             )
+            if exc is not None:
+                raise exc
+            return
 
         if tok.tok == 'end_environment':
-            raise LatexWalkerNodesParseError(
-                msg=("Unexpected closing environment: ‘{}’".format(tok.arg)),
-                pos=tok.pos,
-                recovery_past_token=tok,
-                error_type_info={
-                    'what': 'nodes_unexpected_end_environment',
-                    'environmentname': tok.arg,
-                },
+            exc = latex_walker.check_tolerant_parsing_ignore_error(
+                LatexWalkerNodesParseError(
+                    msg=("Unexpected closing environment: ‘{}’".format(tok.arg)),
+                    pos=tok.pos,
+                    recovery_past_token=tok,
+                    error_type_info={
+                        'what': 'nodes_unexpected_end_environment',
+                        'environmentname': tok.arg,
+                    },
+                )
             )
+            if exc is not None:
+                raise exc
+            return
 
         if tok.tok in ('mathmode_inline', 'mathmode_display') \
            and tok.arg not in self.parsing_state._math_delims_info_by_open:
             # an unexpected closing math mode delimiter
-            raise LatexWalkerNodesParseError(
-                msg="Unexpected closing math mode token ‘{}’".format(
-                    tok.arg,
-                ),
-                pos=tok.pos,
-                recovery_past_token=tok,
-                error_type_info={
-                    'what': 'nodes_unexpected_closing_math_delimiter',
-                    'mathmode_type': tok.tok,
-                    'delimiter': tok.arg,
-                },
+            exc = latex_walker.check_tolerant_parsing_ignore_error(
+                LatexWalkerNodesParseError(
+                    msg="Unexpected closing math mode token ‘{}’".format(
+                        tok.arg,
+                    ),
+                    pos=tok.pos,
+                    recovery_past_token=tok,
+                    error_type_info={
+                        'what': 'nodes_unexpected_closing_math_delimiter',
+                        'mathmode_type': tok.tok,
+                        'delimiter': tok.arg,
+                    },
+                )
             )
+            if exc is not None:
+                raise exc
+            return
 
         # now we can start parsing the token and taking the appropriate action.
 
@@ -837,8 +857,10 @@ class LatexNodesCollector(object):
         environmentname = tok.arg
         # envspec = tok.spec
         # if envspec is None:
-        envspec = \
-            self.parsing_state.latex_context.get_environment_spec(environmentname)
+        envspec = None
+        if self.parsing_state.latex_context is not None:
+            envspec = \
+                self.parsing_state.latex_context.get_environment_spec(environmentname)
 
         if envspec is None:
             exc = latex_walker.check_tolerant_parsing_ignore_error(

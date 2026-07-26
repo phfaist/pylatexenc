@@ -13,6 +13,12 @@ from pylatexenc.latexnodes import (
     LatexToken,
     ParsingState,
 )
+from pylatexenc.latexnodes import parsers
+
+from ._helpers_tests import (
+    DummyWalker,
+    DummyLatexContextDb,
+)
 
 
 
@@ -87,6 +93,56 @@ class TestTokenReaderTokenList(unittest.TestCase):
         self.assertEqual(tr.next_token(ps), tlist[1])
 
         self.assertEqual(tr.cur_pos(), tlist[2].pos)
+
+    def test_cur_pos_past_end_of_token_list(self):
+
+        tlist = [
+            LatexToken(tok='char', arg='a', pos=0, pos_end=1, pre_space=''),
+            LatexToken(tok='char', arg='b', pos=1, pos_end=2, pre_space=''),
+        ]
+
+        tr = LatexTokenListTokenReader(tlist)
+
+        ps = ParsingState()
+
+        tr.next_token(ps)
+        tr.next_token(ps)
+
+        # we're past the last token now.  Reporting the current position must
+        # still work (e.g., end-of-stream handlers query the position after
+        # having read the last token); it reports the end position.
+        self.assertEqual(tr.cur_pos(), 2)
+        self.assertEqual(tr.final_pos(), 2)
+
+    def test_cur_pos_empty_token_list(self):
+
+        tr = LatexTokenListTokenReader([])
+
+        self.assertIsNone(tr.cur_pos())
+
+    def test_parse_content_with_exhausted_token_list(self):
+        # an end-to-end check: collecting nodes from a token list must return
+        # the nodes that were collected, and not choke on the end of the token
+        # list
+        tlist = [
+            LatexToken(tok='char', arg='a', pos=0, pos_end=1, pre_space=''),
+            LatexToken(tok='char', arg='b', pos=1, pos_end=2, pre_space=''),
+        ]
+
+        tr = LatexTokenListTokenReader(tlist)
+
+        lw = DummyWalker()
+        ps = ParsingState(s=None, latex_context=DummyLatexContextDb())
+
+        nodes, parsing_state_delta = lw.parse_content(
+            parsers.LatexGeneralNodesParser(),
+            token_reader=tr,
+            parsing_state=ps,
+        )
+
+        self.assertIsNotNone(nodes)
+        self.assertEqual(len(nodes.nodelist), 1)
+        self.assertEqual(nodes.nodelist[0].chars, 'ab')
 
 
 

@@ -458,8 +458,12 @@ class ParsingState(object):
 
         if parent is not None \
            and 'in_math_mode' not in kwargs \
-           and 'math_mode_delimiter' not in kwargs:
-            # relevant info not changed, reuse parent info
+           and 'math_mode_delimiter' not in kwargs \
+           and 'latex_inline_math_delimiters' not in kwargs \
+           and 'latex_display_math_delimiters' not in kwargs:
+            # relevant info not changed, reuse parent info.  (The cached
+            # information is looked up in self._math_delims_info_by_open, so it
+            # also depends on the math delimiter lists.)
             self._math_expecting_close_delim_info = parent._math_expecting_close_delim_info
             return
 

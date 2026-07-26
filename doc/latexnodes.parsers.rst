@@ -2,7 +2,6 @@
 ==============================================
 
 .. automodule:: pylatexenc.latexnodes.parsers
-   :members:
    :no-undoc-members:
    :show-inheritance:
 

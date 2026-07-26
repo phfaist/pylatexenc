@@ -142,15 +142,17 @@ class LatexWalker(latexnodes.LatexWalkerBase):
     length of the string that is considered to be part of the `node`.  That is,
     the position in the string that is immediately after the node is `pos+len`.
 
-    .. deprecated:: 3.0
-
-       These ``get_***()`` methods are deprecated as of `pylatexenc 3`.  Use
-       :py:meth:`parse_content()` together with a parser object from
-       :py:mod:`pylatexenc.latexnodes.parsers` instead.  That method returns a
-       tuple `(nodes, parsing_state_delta)`, and the position information is
-       carried by the nodes themselves in their `pos` and `pos_end` attributes.
-       The documentation of each of the ``get_***()`` methods shows the
-       recommended replacement.
+    These ``get_***()`` methods are the interface that `pylatexenc 2` offered,
+    and they remain fully supported; you can keep using them.  Since
+    `pylatexenc 3` there is a second, more flexible way of parsing content:
+    :py:meth:`parse_content()` together with a parser object from
+    :py:mod:`pylatexenc.latexnodes.parsers`.  Be aware that switching over is
+    not a simple substitution of one call for another, because the return value
+    is different: :py:meth:`parse_content()` returns a tuple `(nodes,
+    parsing_state_delta)`, and the position information is carried by the nodes
+    themselves in their `pos` and `pos_end` attributes rather than being
+    returned alongside them.  The documentation of each of the ``get_***()``
+    methods points to the corresponding parser object.
 
     The following obsolete flag is accepted by the constructor for backwards
     compatibility with `pylatexenc 1.x`:
@@ -717,17 +719,24 @@ def _legacy_pyltxenc1_LatexWalker_init_from_macro_dict(walker, kwargs):
         return None
 
     # LEGACY -- build a latex context using the given macro_dict
+    #
+    # stacklevel: this function is reached from the user's LatexWalker(...) call
+    # via the _legacy_pyltxenc1_do() dispatcher and LatexWalker.__init__(), so
+    # we need to skip those two additional frames to blame the user's own line.
     _util.pylatexenc_deprecated_2(
         "The `macro_dict=...` option in LatexWalker() is obsolete since "
         "pylatexenc 2.  It'll still work, but please consider using instead "
-        "the more versatile option `latex_context=...`."
+        "the more versatile option `latex_context=...`.",
+        stacklevel=4
     )
 
     macro_dict = kwargs.pop('macro_dict', None)
 
     default_latex_context = get_default_latex_context_db()
 
-    latex_context = default_latex_context.filter_context(
+    # use filtered_context(), not the deprecated filter_context() alias, so that
+    # this internal call doesn't emit a deprecation warning of its own
+    latex_context = default_latex_context.filtered_context(
         keep_which=['environments'], # no specials
     )
     latex_context.add_context_category(
@@ -752,11 +761,13 @@ def _pyltxenc2_LatexWalker_get_token(
     starting at position `pos`, to parse a single "token", as defined by
     :py:class:`LatexToken`.
 
-    .. deprecated:: 3.0
-
-       This method was deprecated as of `pylatexenc 3`.  Please use token
-       readers instead, see :py:meth:`make_token_reader()` and
-       :py:class:`LatexTokenReader`.
+    This method is the `pylatexenc 2` style interface and it remains fully
+    supported.  Since `pylatexenc 3` you can also read tokens with a token
+    reader object, see :py:meth:`make_token_reader()` and
+    :py:class:`LatexTokenReader`.  A token reader keeps track of its own
+    position in the string as it reads and it exposes several reading methods
+    (`peek_token()`, `next_token()`, ...), so moving to it is not simply a
+    matter of replacing one call by another.
 
     Parse the token in the stream pointed to at position `pos`.
 
@@ -809,10 +820,6 @@ def _pyltxenc2_LatexWalker_get_token(
        The `parsing_state` argument was introduced in version 2.0.
     """
 
-    _util.pylatexenc_deprecated_3("get_token(); use LatexTokenReader instances instead, "
-                                  "see LatexWalker.make_token_reader()")
-
-
     if parsing_state is None:
         parsing_state = self.make_parsing_state() # get default parsing state
 
@@ -854,19 +861,19 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
     Parses the latex content given to the constructor (and stored in `self.s`)
     into a list of nodes.
 
-    .. deprecated:: 3.0
+    This method is the `pylatexenc 2` style interface and it remains fully
+    supported.  Since `pylatexenc 3` you can also parse the same content with
+    :py:meth:`parse_content()` and a parser object.  The two calls do not return
+    the same thing, so this is not a mechanical substitution; you'd write::
 
-       This method was deprecated as of `pylatexenc 3`.  Please use parser
-       objects instead.  You probably want something like::
+        # pylatexenc 2 style interface, still supported:
 
-        # Deprecated since pylatexenc 3:
-        
         #nodelist, npos, nlen = my_latex_walker.get_latex_nodes(
         #    parsing_state=parsing_state
         #)
-        
-        # New syntax since pylatexenc 3:
-        
+
+        # pylatexenc 3 style interface:
+
         nodelist, parsing_state_delta = my_latex_walker.parse_content(
             latexnodes.parsers.LatexGeneralNodesParser(),
             parsing_state=parsing_state
@@ -874,11 +881,11 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
         npos = nodelist.pos
         nlen = nodelist.len # or nodelist.pos_end - nodelist.pos
 
-       See the documentation for
-       :py:class:`~latexnodes.parsers.LatexGeneralNodesParser` for information
-       on how to implement similar behavior as with the `stop_upon_*=`
-       arguments, or by `read_max_nodes=`.  See also, for instance, the
-       :py:class:`~latexnodes.parsers.LatexSingleNodeParser` parser class.
+    See the documentation for
+    :py:class:`~latexnodes.parsers.LatexGeneralNodesParser` for information
+    on how to implement similar behavior as with the `stop_upon_*=`
+    arguments, or by `read_max_nodes=`.  See also, for instance, the
+    :py:class:`~latexnodes.parsers.LatexSingleNodeParser` parser class.
 
     Returns a tuple `(nodelist, pos, len)` where:
 
@@ -954,11 +961,6 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
 
        The `parsing_state` argument was introduced in version 2.0.
     """
-
-    _util.pylatexenc_deprecated_3(
-        "get_latex_nodes(): "
-        "use LatexWalker.parse_content(LatexGeneralNodesParser(), ...) instead."
-    )
 
     if parsing_state is None:
         parsing_state = self.make_parsing_state()
@@ -1094,6 +1096,13 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
     Returns a tuple `(node, pos, len)`, where `pos` is the position of the
     first char of the expression and `len` the length of the expression.
 
+    This method is the `pylatexenc 2` style interface and it remains fully
+    supported.  Since `pylatexenc 3` you can also parse the same content with
+    ``LatexWalker.parse_content(LatexExpressionParser(), ...)``.  That call
+    returns a tuple `(nodes, parsing_state_delta)` instead of `(node, pos,
+    len)`, with the positions carried by the node itself, so it is not a
+    mechanical substitution.
+
     .. versionadded:: 2.0
 
        The `parsing_state` argument was introduced in version 2.0.
@@ -1101,11 +1110,6 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
 
     if parsing_state is None:
         parsing_state = self.make_parsing_state() # get default parsing state
-
-    _util.pylatexenc_deprecated_3(
-        "get_latex_expression(): "
-        "use LatexWalker.parse_content(LatexExpressionParser(), ...) instead."
-    )
 
     logger.debug("get_latex_expression(): “%s...”",
                  self.s[pos:pos+50])
@@ -1154,6 +1158,26 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
     if info is not None:
         logger.warning("Call to get_latex_expression() ignores parsing state changes information "
                        "of parsing state")
+
+    if nodes is not None and nodes.pos_end is not None and nodes.pos_end <= nodes.pos:
+        # The expression parser refused the next token (e.g., a math mode
+        # delimiter) and reported a zero-length placeholder node, leaving the
+        # offending token in the input.  Skip that token here, so that code that
+        # repeatedly calls get_latex_expression() in a loop---which was the
+        # standard idiom in pylatexenc 1.x and 2.x---always makes progress.  A
+        # closing brace is the exception; as in pylatexenc 2, we leave it in the
+        # input stream so that it gets reported by whoever reads the next token.
+        try:
+            skiptok = token_reader.peek_token_or_none(parsing_state=parsing_state)
+        except LatexWalkerParseError:
+            skiptok = None
+        if skiptok is not None and skiptok.tok != 'brace_close':
+            logger.warning(
+                "get_latex_expression(): skipping unexpected token (%s) at position %d",
+                skiptok.tok, skiptok.pos
+            )
+            token_reader.move_past_token(skiptok, fastforward_post_space=False)
+            nodes.pos_end = skiptok.pos_end
 
     if nodes is None and (self.tolerant_parsing or strict_braces is False):
         logger.warning(
@@ -1207,15 +1231,17 @@ def _pyltxenc2_LatexWalker_get_latex_braced_group(
     distinct single characters providing the opening and closing brace
     chars (e.g., ``("<", ">")``).
 
+    This method is the `pylatexenc 2` style interface and it remains fully
+    supported.  Since `pylatexenc 3` you can also parse the same content with
+    ``LatexWalker.parse_content(LatexDelimitedGroupParser(), ...)``.  That call
+    returns a tuple `(nodes, parsing_state_delta)` instead of `(node, pos,
+    len)`, with the positions carried by the node itself, so it is not a
+    mechanical substitution.
+
     .. versionadded:: 2.0
 
        The `parsing_state` argument was introduced in version 2.0.
     """
-
-    _util.pylatexenc_deprecated_3(
-        "get_latex_braced_group(): "
-        "use LatexWalker.parse_content(LatexDelimitedGroupParser(), ...) instead."
-    )
 
     if parsing_state is None:
         parsing_state = self.make_parsing_state() # get default parsing state
@@ -1301,21 +1327,17 @@ def _pyltxenc2_LatexWalker_get_latex_environment(
     Returns a tuple (node, pos, len) where node is a
     :py:class:`LatexEnvironmentNode`.
 
-    .. deprecated:: 3.0
-    
-       This function was deprecated in pylatexenc 3.0.  Use
-       `LatexWalker.parse_content(LatexSingleNodeParser(), ...)`
-       at the beginning of the environment.
+    This method is the `pylatexenc 2` style interface and it remains fully
+    supported.  Since `pylatexenc 3` you can also parse the same content with
+    ``LatexWalker.parse_content(LatexSingleNodeParser(), ...)`` positioned at
+    the beginning of the environment.  That call returns a tuple `(nodes,
+    parsing_state_delta)` instead of `(node, pos, len)`, with the positions
+    carried by the node itself, so it is not a mechanical substitution.
 
     .. versionadded:: 2.0
 
        The `parsing_state` argument was introduced in version 2.0.
     """
-
-    _util.pylatexenc_deprecated_3(
-        "get_latex_environment(): "
-        "use LatexWalker.parse_content(LatexSingleNodeParser(), ...) instead."
-    )
 
     if parsing_state is None:
         parsing_state = self.make_parsing_state() # get default parsing state
@@ -1367,22 +1389,18 @@ def _pyltxenc2_LatexWalker_get_latex_maybe_optional_arg(self, pos, parsing_state
     a tuple `(node, pos, len)` if success where `node` is a
     :py:class:`LatexGroupNode`.  Otherwise, this method returns None.
 
-    .. deprecated:: 3.0
-
-       This method was deprecated in `pylatexenc 3.0`.  You should use the
-       stronger and more flexible parsers mechanism instead, e.g.,
-       ``LatexWalker.parse_content(LatexOptionalSquareBracketsParser(), ...)``
+    This method is the `pylatexenc 2` style interface and it remains fully
+    supported.  Since `pylatexenc 3` you can also parse the same content with
+    the more flexible parsers mechanism, e.g.,
+    ``LatexWalker.parse_content(LatexOptionalSquareBracketsParser(), ...)``.
+    That call returns a tuple `(nodes, parsing_state_delta)` instead of `(node,
+    pos, len)` or `None`, with the positions carried by the node itself, so it
+    is not a mechanical substitution.
 
     .. versionadded:: 2.0
 
        The `parsing_state` argument was introduced in version 2.0.
     """
-
-    _util.pylatexenc_deprecated_3(
-        "get_latex_maybe_optional_arg(): "
-        "use LatexWalker.parse_content(LatexOptionalSquareBracketsParser(), ...) instead."
-    )
-
 
     if parsing_state is None:
         parsing_state = self.make_parsing_state() # get default parsing state
@@ -1390,7 +1408,9 @@ def _pyltxenc2_LatexWalker_get_latex_maybe_optional_arg(self, pos, parsing_state
 
     # parse a single node and then we'll verify that it was the correct
     # environment node
-    parser = parsers.LatexOptionalSquareBracketsParser()
+    parser = parsers.LatexOptionalSquareBracketsParser(
+        allow_pre_space=True,
+    )
 
     nodes, info = self.parse_content(
         parser,

@@ -14,6 +14,18 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
     the same node tree, because parsing state settings or on-fly changes cannot
     be guaranteed to be followed in the same way.
 
+    The recomposition is built entirely from the information stored in the
+    nodes; the original latex string is never consulted, so that node trees
+    that were built programmatically, obtained by transforming another tree, or
+    reconstructed from serialized data can all be recomposed.
+
+    One consequence is that white space around a paragraph break is normalized.
+    A paragraph break is reported as a single specials node whose characters
+    are ``'\n\n'``, but whose extent in the original string covers all the
+    white space between its first and its last newline character.  The
+    recomposed code therefore always contains exactly ``'\n\n'`` there: for
+    instance ``'a\n\n\n\nb'`` recomposes to ``'a\n\nb'``.
+
     Usage::
 
         node = ... # say, a LatexNodeList or LatexNode instance
@@ -96,7 +108,7 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
         """
         recomposed_arguments = self.descend_into_parsed_arguments(parsed_arguments)
         return (
-            '\\' + macroname + macro_post_space
+            n.parsing_state.macro_escape_char + macroname + macro_post_space
             + recomposed_arguments
         )
 
@@ -116,11 +128,13 @@ class LatexNodesLatexRecomposer(LatexNodesVisitor):
         recomposed_arguments = self.descend_into_parsed_arguments(parsed_arguments)
         recomposed_body = self.recompose_nodelist(body_node_list, n)
 
+        macro_escape_char = n.parsing_state.macro_escape_char
+
         return (
-            '\\begin{' + str(environmentname) + '}'
+            macro_escape_char + 'begin{' + str(environmentname) + '}'
             + recomposed_arguments
             + recomposed_body
-            + '\\end{' + str(environmentname) + '}'
+            + macro_escape_char + 'end{' + str(environmentname) + '}'
         )
 
     def recompose_specials_call(self, specials_chars, parsed_arguments, n):

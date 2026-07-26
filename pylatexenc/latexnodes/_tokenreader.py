@@ -135,8 +135,11 @@ class LatexTokenReader(LatexTokenReaderBase):
         """
         return self._pos
 
-    # def final_pos(self):
-    #     return len(self.s)
+    def final_pos(self):
+        r"""
+        Return the position immediately past the end of the input string.
+        """
+        return len(self.s)
 
     def move_to_pos_chars(self, pos):
         r"""
@@ -192,14 +195,22 @@ class LatexTokenReader(LatexTokenReaderBase):
         Reimplemented from :py:meth:`LatexTokenReaderBase.peek_token()`.
         """
 
+        saved_pos = self._pos
+
         try:
-            
+
             return self.impl_peek_token(parsing_state)
 
         except LatexWalkerTokenParseError as exc:
             if self.tolerant_parsing:
-                # return recovery token if we're in tolerant parsing mode
-                self.move_to_pos_chars(exc.recovery_token_at_pos)
+                # return recovery token if we're in tolerant parsing mode.  Make
+                # sure we leave the position pointer where it was, because
+                # peek_token() must not move it; the recovery token is only
+                # skipped over when it is actually read (the recovery tokens
+                # generated in this class all span up to
+                # exc.recovery_token_at_pos, so that the call to
+                # move_past_token() in next_token() lands on that position).
+                self._pos = saved_pos
                 return exc.recovery_token_placeholder
             else:
                 # raise it up the chain

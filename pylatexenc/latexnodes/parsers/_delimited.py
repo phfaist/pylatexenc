@@ -708,6 +708,7 @@ class LatexDelimitedExpressionParser(LatexParserBase):
             )
 
         opening_delimiter_tokens = None
+        opening_delimiter_not_found = None
 
         try:
             opening_delimiter_tokens = \
@@ -720,35 +721,51 @@ class LatexDelimitedExpressionParser(LatexParserBase):
                     delimited_expression_parser=self,
                 )
         except LatexDelimitedExpressionParserOpeningDelimiterNotFound as e:
-            
+            opening_delimiter_not_found = e
+        except LatexWalkerEndOfStream:
+            # the input ended before we could read an opening delimiter; this is
+            # simply another way in which the opening delimiter can fail to be
+            # there, so handle it in the same way (there are no tokens that we
+            # would need to give back to the token reader).
+            opening_delimiter_not_found = \
+                LatexDelimitedExpressionParserOpeningDelimiterNotFound(
+                    msg="Expected an opening LaTeX delimiter, got end of input",
+                    first_tokens=None,
+                )
+
+        if opening_delimiter_not_found is not None:
+
+            first_tokens = opening_delimiter_not_found.first_tokens
+
             recovery_token = None
-            if e.first_tokens is not None and len(e.first_tokens):
-                recovery_token = e.first_tokens[0]
+            if first_tokens is not None and len(first_tokens):
+                recovery_token = first_tokens[0]
 
             if self.optional:
                 # all ok, the argument was optional and was simply not specified.
-                if e.first_tokens is not None and len(e.first_tokens):
+                if recovery_token is not None:
                     token_reader.move_to_token(recovery_token)
                 return None, None
 
-            pos = None
             if recovery_token is not None:
                 pos = recovery_token.pos
+            else:
+                pos = token_reader.cur_pos()
 
             # raise a parse error
             raise LatexWalkerNodesParseError(
-                msg=e.msg,
+                msg=opening_delimiter_not_found.msg,
                 pos=pos,
                 recovery_nodes=latex_walker.make_nodelist(
                     [],
                     parsing_state=group_parsing_state,
-                    pos=recovery_token.pos,
-                    pos_end=recovery_token.pos, # w/o the token itself
+                    pos=pos,
+                    pos_end=pos, # w/o the token itself
                 ),
                 recovery_at_token=recovery_token,
                 error_type_info={
                     'what': 'nodes_delimited_expected_opening_delimiter_not_found',
-                    'first_tokens': e.first_tokens,
+                    'first_tokens': first_tokens,
                 },
             )
 

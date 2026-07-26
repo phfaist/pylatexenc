@@ -105,6 +105,9 @@ class LatexArgumentSpec(object):
         return d
         
     def __eq__(self, other):
+        if other is None or not isinstance(other, LatexArgumentSpec):
+            # not an argument specification, can't be equal to this one
+            return False
         return (
             self.parser == other.parser
             and self.argname == other.argname
@@ -259,6 +262,9 @@ class ParsedArguments(object):
 
 
     def __eq__(self, other):
+        if other is None or not isinstance(other, ParsedArguments):
+            # not a parsed arguments object, can't be equal to this one
+            return False
         return (
             self.arguments_spec_list == other.arguments_spec_list
             and self.argnlist == other.argnlist

@@ -70,8 +70,10 @@ installed by a plain `uv sync`; `builddoc` (Sphinx) and `buildjslib`
 (Transcrypt, PyYAML) are opt-in via `--group`.
 
 The supported python range is declared once, by `requires-python` in
-`pyproject.toml` (currently `>=3.6`); the `tests-ci` workflow matrix should span
-it.  Python 2 is not supported; do not reintroduce compatibility shims for it.
+`pyproject.toml` (currently `>=3.6`).  The `tests-ci` workflow matrix actually
+exercises 3.8 through 3.13, so the oldest declared versions (3.6 and 3.7) are
+not covered by continuous integration.  Python 2 is not supported; do not
+reintroduce compatibility shims for it.
 
 
 ## Constraints when editing
@@ -92,7 +94,8 @@ transcribed and is less constrained.)
 
 Guards in use: `PYLATEXENC1_LEGACY_SUPPORT_CODE`,
 `PYLATEXENC2_LEGACY_SUPPORT_CODE`, `PYLATEXENC_GET_DEFAULT_SPECS_FN`,
-`LATEXWALKER_HELPERS`, and `DEBUG_SET_EQ_ATTRIBUTE` (test sources);
+`LATEXWALKER_HELPERS`, and — in test sources — `DEBUG_SET_EQ_ATTRIBUTE` and
+`TEST_PYLATEXENC_SKIP`;
 `### BEGINPATCH_…` /
 `### ENDPATCH_…` mark code substituted for the JavaScript build.  The markers
 must sit on their own line and the enclosed lines must not start with `###`.

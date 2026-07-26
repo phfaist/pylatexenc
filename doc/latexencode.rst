@@ -16,6 +16,9 @@ Unicode to Latex Conversion Class and Helper Function
 
 .. autofunction:: pylatexenc.latexencode.unicode_to_latex
 
+.. autoclass:: pylatexenc.latexencode.PartialLatexToLatexEncoder
+   :members:
+
 
 Specifying conversion rules
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

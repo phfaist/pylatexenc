@@ -67,9 +67,11 @@ def MacrosDef(macname, optarg, numargs):
     m.macname = m.macroname
     m.optarg = optarg
     m.numargs = numargs
-    # also, make the macro args parser ignore any leading '*'-s to emulate
-    # pylatexenc 1.x behavior
-    m.args_parser._like_pylatexenc1x_ignore_leading_star = True
+    # also, make the macro call parser ignore any leading '*'-s to emulate
+    # pylatexenc 1.x behavior.  The star is skipped over and is *not* recorded
+    # as an argument, so the argument structure stays exactly the one that
+    # `optarg`/`numargs` describe.
+    m._like_pylatexenc1x_ignore_leading_star = True
     return m
 
 
@@ -187,6 +189,7 @@ def get_latex_nodes(s, pos=0, stop_upon_closing_brace=None, stop_upon_end_enviro
     """
 
     return LatexWalker(s, **parse_flags).get_latex_nodes(
+        pos=pos,
         stop_upon_closing_brace=stop_upon_closing_brace,
         stop_upon_end_environment=stop_upon_end_environment,
         stop_upon_closing_mathmode=stop_upon_closing_mathmode

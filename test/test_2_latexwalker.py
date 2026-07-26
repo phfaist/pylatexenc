@@ -3,6 +3,7 @@
 import unittest
 import logging
 import warnings
+import json
 
 import pytest
 
@@ -10,11 +11,14 @@ from pylatexenc.latexwalker import (
     LatexWalker, LatexToken, LatexCharsNode, LatexGroupNode, LatexCommentNode,
     LatexMacroNode, LatexSpecialsNode, LatexEnvironmentNode, LatexMathNode,
     LatexWalkerParseError, get_default_latex_context_db,
+    MacrosDef, make_json_encoder,
+    get_latex_nodes as pyltxenc1_get_latex_nodes,
 )
 
 from pylatexenc import macrospec
 
 from pylatexenc.latexnodes import ParsedArgumentsInfo
+from pylatexenc.latexnodes import parsers as latexnodes_parsers
 
 from ._helpers_tests import HelperProvideAssertEqualsForLegacyTests
 
@@ -275,6 +279,43 @@ And a final inline math mode \(\mbox{Prob}(\mbox{some event if $x>0$})=1\).
                              pos=p, len=2
                          ), p, 2))
 
+
+    def test_get_latex_expression_always_advances(self):
+
+        # The standard pylatexenc 1.x/2.x idiom is to call get_latex_expression()
+        # repeatedly in a loop.  Even for tokens that cannot form an expression
+        # (like a math mode delimiter), the reported position must advance so
+        # that the loop terminates.
+
+        latextext = r'a $x$ b'
+        lw = LatexWalker(latextext, tolerant_parsing=True)
+
+        positions = []
+        pos = 0
+        num_iterations = 0
+        while pos < len(latextext):
+            num_iterations += 1
+            self.assertLess(num_iterations, 20) # protect against infinite loop
+            positions.append(pos)
+            dummy_node, p, l = lw.get_latex_expression(pos)
+            self.assertGreater(p + l, pos)
+            pos = p + l
+
+        self.assertEqual(positions, [0, 1, 3, 4, 5])
+
+
+    def test_get_latex_maybe_optional_arg_pre_space(self):
+
+        # whitespace before the '[' is skipped, as in pylatexenc 2
+        lw = LatexWalker('  [abc]', tolerant_parsing=True)
+        result = lw.get_latex_maybe_optional_arg(pos=0)
+        self.assertIsNotNone(result)
+        gn, gn_pos, gn_len = result
+        self.assertEqual((gn.delimiters, gn_pos, gn_len), (('[', ']'), 2, 5))
+
+        # ... but there's still no optional argument if there's no '['
+        lw2 = LatexWalker('  abc', tolerant_parsing=True)
+        self.assertIsNone(lw2.get_latex_maybe_optional_arg(pos=0))
 
 
     def test_get_latex_maybe_optional_arg(self):
@@ -2204,6 +2245,80 @@ Use macros: \a{} and \b{xxx}{yyy}.
             urls,
             ['http://a.org/x{y}', 'http://b.org/p{q}', 'http://c.org/{z}']
         )
+
+
+    def test_pyltxenc1_MacrosDef_ignores_leading_star(self):
+        # in pylatexenc 1.x, a leading '*' in a macro call was always accepted
+        # (and ignored); macro specs built with MacrosDef() must still absorb it
+        # so that the arguments that follow are parsed correctly.
+        macro_dict = {'mymacro': MacrosDef('mymacro', '[', 2)}
+
+        lw = LatexWalker(r'\mymacro*[a]{b}{c} x', macro_dict=macro_dict,
+                         tolerant_parsing=False)
+        (nodelist, npos, nlen) = lw.get_latex_nodes(pos=0)
+
+        macronode = nodelist[0]
+        self.assertEqual(macronode.macroname, 'mymacro')
+        self.assertEqual(macronode.latex_verbatim(), r'\mymacro*[a]{b}{c}')
+        self.assertEqual(macronode.nodeoptarg.latex_verbatim(), '[a]')
+        self.assertEqual(
+            [ n.latex_verbatim() for n in macronode.nodeargs ],
+            ['{b}', '{c}']
+        )
+        self.assertEqual(nodelist[1].chars, ' x')
+
+        # the same macro without the star still works
+        lw2 = LatexWalker(r'\mymacro[a]{b}{c} x', macro_dict=macro_dict,
+                          tolerant_parsing=False)
+        (nodelist2, npos2, nlen2) = lw2.get_latex_nodes(pos=0)
+        self.assertEqual(nodelist2[0].latex_verbatim(), r'\mymacro[a]{b}{c}')
+        self.assertEqual(nodelist2[0].nodeoptarg.latex_verbatim(), '[a]')
+        self.assertEqual(nodelist2[1].chars, ' x')
+
+
+    def test_pyltxenc1_module_get_latex_nodes_pos(self):
+        # the module-level get_latex_nodes() must honor its pos= argument
+        (nodelist, npos, nlen) = pyltxenc1_get_latex_nodes('abcdef', pos=3)
+        self.assertEqual([ n.chars for n in nodelist ], ['def'])
+        self.assertEqual(npos, 3)
+
+
+    def test_make_json_encoder(self):
+        # the json encoder must be able to serialize all the objects that show
+        # up in a node tree, including the parsers and the parsing state deltas
+        # stored in the argument specifications
+        latextext = r'\textbf{hi} $x^2$ \begin{enumerate}\item[a] hi\end{enumerate}'
+        lw = LatexWalker(latextext, tolerant_parsing=True)
+        (nodelist, npos, nlen) = lw.get_latex_nodes(pos=0)
+
+        jsonstr = json.dumps({'nodelist': nodelist},
+                             cls=make_json_encoder(lw))
+        # the result is valid JSON that we can read back
+        jsonobj = json.loads(jsonstr)
+        self.assertEqual(jsonobj['nodelist'][0]['nodetype'], 'LatexMacroNode')
+        self.assertEqual(jsonobj['nodelist'][0]['macroname'], 'textbf')
+
+    def test_document_ending_with_an_optional_argument_macro(self):
+        # A document that ends right after a macro that accepts an optional
+        # argument parses normally, and the walker doesn't report anything
+        # about having reached the end of the input.  (The unit-level tests for
+        # this live in test_latexnodes_parsers_delimited.py; this one needs the
+        # default latex context database and so cannot run in the JavaScript
+        # build.)
+        latextext = r'''A title ending in \\'''
+
+        lw = LatexWalker(s=latextext, tolerant_parsing=True)
+
+        nodes, parsing_state_delta = lw.parse_content(
+            latexnodes_parsers.LatexGeneralNodesParser(),
+            token_reader=lw.make_token_reader(),
+            parsing_state=lw.make_parsing_state(),
+        )
+
+        self.assertEqual(len(nodes), 2)
+        self.assertTrue(nodes[0].isNodeType(LatexCharsNode))
+        self.assertTrue(nodes[1].isNodeType(LatexMacroNode))
+        self.assertEqual(nodes[1].macroname, '\\')
 
 
 

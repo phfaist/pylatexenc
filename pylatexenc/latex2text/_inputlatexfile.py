@@ -40,7 +40,10 @@ def read_latex_file(tex_input_directory, strict_input, fn):
         # make sure that the input file is strictly within dirfull, and
         # didn't escape with '../..' tricks or via symlinks.
         dirfull = os.path.realpath(tex_input_directory)
-        if not fnfull.startswith(dirfull):
+        # compare full path components, not simply the string prefix; otherwise
+        # a sibling directory whose name merely begins with the name of the
+        # mandated directory (say, "dir-evil" next to "dir") would be accepted.
+        if fnfull != dirfull and not fnfull.startswith(dirfull + os.sep):
             logger.warning(
                 "Can't access path '%s' leading outside of mandated directory "
                 "[strict input mode]",

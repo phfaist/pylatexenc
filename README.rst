@@ -12,7 +12,7 @@ Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion
 Python: ≥ 3.6.  The library has no runtime dependencies and is designed to be as
 backwards-compatible as reasonably possible.
 
-**NEW (4/2023)**: *PYLATEXENC 3.0alpha* is in pre-release on PyPI.  Try ``pip
+**PYLATEXENC 3.0alpha** is in pre-release on PyPI.  Try ``pip
 install --pre pylatexenc``.  See `new features and major changes
 <https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-3/>`_.  The
 `documentation <https://pylatexenc.readthedocs.io/en/latest/>`_ is still
