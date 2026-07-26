@@ -220,7 +220,7 @@ class LatexStandardArgumentParser(LatexParserBase):
                 raise ValueError("Expected embellishment chars with syntax ‘e{<chars>}’ in "
                                  + "arg_spec; got ‘{}’".format(arg_spec))
 
-            embellishment_chars = arg_spec_arg[1:len(arg_spec)-1]
+            embellishment_chars = arg_spec_arg[1:len(arg_spec_arg)-1]
 
             return LatexOptionalEmbellishmentArgsParser(
                 embellishment_chars=embellishment_chars,

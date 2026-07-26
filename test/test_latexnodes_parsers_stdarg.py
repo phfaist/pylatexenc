@@ -371,6 +371,19 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
         self.assertIsNone(nodes)
 
 
+    def test_arg_embelishments_chars(self):
+
+        parser = LatexStandardArgumentParser(
+            arg_spec=r'e{_^`}'
+        )
+        arg_parser = parser.get_arg_parser_instance(parser.arg_spec)
+
+        # the closing brace of the ‘e{...}’ specification is not an
+        # embellishment char
+        self.assertEqual(arg_parser.embellishment_chars, '_^`')
+        self.assertEqual(arg_parser.chars_list, ['_', '^', '`'])
+
+
     def test_arg_any_delimited_angleb(self):
         latextext = r'''<delimited>more stuff'''
 
