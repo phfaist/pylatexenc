@@ -384,6 +384,125 @@ class TestLatexStandardArgumentParser(unittest.TestCase):
         self.assertEqual(arg_parser.chars_list, ['_', '^', '`'])
 
 
+    def test_arg_embelishments_chars_with_spaces(self):
+
+        parser = LatexStandardArgumentParser(
+            arg_spec=r'e{_ ^ `}'
+        )
+        arg_parser = parser.get_arg_parser_instance(parser.arg_spec)
+
+        # spaces in the ‘e{...}’ specification don't introduce any empty
+        # embellishment chars
+        self.assertEqual(arg_parser.chars_list, ['_', '^', '`'])
+
+
+    def test_arg_embelishments_no_repeated_char(self):
+        latextext = r'''^{test}^x{more stuff} stuff'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalkerWithGroupsAndMath()
+
+        parser = LatexStandardArgumentParser(
+            arg_spec=r'e{_^`}'
+        )
+
+        nodes, parsing_state_delta = \
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        # the second ‘^’ is not read as a further embellishment
+        self.assertEqual(
+            nodes,
+            LatexNodeList(
+                parsing_state=ps,
+                nodelist=[
+                    LatexGroupNode(
+                        parsing_state=ps,
+                        delimiters=('^', ''),
+                        nodelist=LatexNodeList(
+                            parsing_state=ps,
+                            nodelist=[
+                                LatexGroupNode(
+                                    parsing_state=ps,
+                                    delimiters=('{', '}'),
+                                    nodelist=LatexNodeList(
+                                        parsing_state=ps,
+                                        nodelist=[
+                                            LatexCharsNode(
+                                                parsing_state=ps,
+                                                chars='test',
+                                                pos=2,
+                                                pos_end=6,
+                                            ),
+                                        ],
+                                        pos=2,
+                                        pos_end=6,
+                                    ),
+                                    pos=1,
+                                    pos_end=7,
+                                ),
+                            ],
+                            pos=1,
+                            pos_end=7,
+                        ),
+                        pos=0,
+                        pos_end=7,
+                    ),
+                ],
+                pos=0,
+                pos_end=7
+            )
+        )
+        self.assertEqual(tr.cur_pos(), 7)
+
+
+    def test_arg_embelishments_end_of_input(self):
+        latextext = r'''^x'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalkerWithGroupsAndMath()
+
+        parser = LatexStandardArgumentParser(
+            arg_spec=r'e{_^`}'
+        )
+
+        nodes, parsing_state_delta = \
+            lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        # the embellishment that was read is reported even though the input ends
+        # while we are still looking for further embellishments
+        self.assertEqual(
+            nodes,
+            LatexNodeList(
+                parsing_state=ps,
+                nodelist=[
+                    LatexGroupNode(
+                        parsing_state=ps,
+                        delimiters=('^', ''),
+                        nodelist=LatexNodeList(
+                            parsing_state=ps,
+                            nodelist=[
+                                LatexCharsNode(
+                                    parsing_state=ps,
+                                    chars='x',
+                                    pos=1,
+                                    pos_end=2,
+                                ),
+                            ],
+                            pos=1,
+                            pos_end=2,
+                        ),
+                        pos=0,
+                        pos_end=2,
+                    ),
+                ],
+                pos=0,
+                pos_end=2
+            )
+        )
+
+
     def test_arg_any_delimited_angleb(self):
         latextext = r'''<delimited>more stuff'''
 

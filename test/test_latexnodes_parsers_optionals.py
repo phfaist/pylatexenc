@@ -92,6 +92,113 @@ class TestLatexOptionalCharsMarkerParser(unittest.TestCase):
         )
 
 
+    def test_chars_marker_normalizes_chars_list(self):
+
+        parser = LatexOptionalCharsMarkerParser([' * ', '  ', '+'])
+
+        # markers that are empty after whitespace normalization are dropped
+        self.assertEqual(parser.chars_list, ['*', '+'])
+
+        with self.assertRaises(ValueError):
+            LatexOptionalCharsMarkerParser(['  '])
+
+
+    def test_chars_marker_each_marker_read_at_most_once(self):
+
+        latextext = r'''*+*more'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        parser = LatexOptionalCharsMarkerParser(['*', '+'])
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        # the second ‘*’ is not read again, it is left in the token stream
+        self.assertEqual(
+            nodes,
+            LatexNodeList(
+                [
+                    LatexCharsNode(
+                        parsing_state=ps,
+                        chars='*',
+                        pos=0,
+                        pos_end=1,
+                    ),
+                    LatexCharsNode(
+                        parsing_state=ps,
+                        chars='+',
+                        pos=1,
+                        pos_end=2,
+                    ),
+                ],
+                parsing_state=ps
+            )
+        )
+        self.assertEqual(tr.cur_pos(), 2)
+
+
+    def test_chars_marker_at_end_of_input(self):
+
+        latextext = r'''*'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        # a second marker is still expected when the end of the input is reached
+        parser = LatexOptionalCharsMarkerParser(['*', '+'])
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            nodes,
+            LatexNodeList(
+                [
+                    LatexCharsNode(
+                        parsing_state=ps,
+                        chars='*',
+                        pos=0,
+                        pos_end=1,
+                    ),
+                ],
+                parsing_state=ps
+            )
+        )
+
+
+    def test_chars_marker_incomplete_at_end_of_input(self):
+
+        latextext = r'''ca'''
+
+        tr = LatexTokenReader(latextext)
+        ps = ParsingState(s=latextext, latex_context=DummyLatexContextDb())
+        lw = DummyWalker()
+
+        # after ‘c’ was read, the input ends in the middle of a possible ‘ab’
+        # marker
+        parser = LatexOptionalCharsMarkerParser(['ab', 'c'])
+
+        nodes, parsing_state_delta = lw.parse_content(parser, token_reader=tr, parsing_state=ps)
+
+        self.assertEqual(
+            nodes,
+            LatexNodeList(
+                [
+                    LatexCharsNode(
+                        parsing_state=ps,
+                        chars='c',
+                        pos=0,
+                        pos_end=1,
+                    ),
+                ],
+                parsing_state=ps
+            )
+        )
+        self.assertEqual(tr.cur_pos(), 1)
+
+
     def test_simple_chars_marker_isthere_notlist(self):
 
         latextext = r'''*more'''

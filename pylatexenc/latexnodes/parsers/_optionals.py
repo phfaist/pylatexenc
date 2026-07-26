@@ -30,6 +30,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
+from .._exctypes import LatexWalkerEndOfStream
+
 from ._base import LatexParserBase
 from ._delimited import (
     LatexDelimitedGroupParser,
@@ -71,19 +73,24 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
     the marker.
 
     The parser looks for a marker repeatedly, so that several markers can be
-    picked up one after the other.  It stops as soon as the next tokens don't
-    match any of the markers, or once `max_num_args` markers have been read.  If
-    no marker at all was found, the parser reports that the optional argument
-    was not provided (see `return_none_instead_of_empty`).
+    picked up one after the other.  Each marker in `chars_list` can be matched at
+    most once; after a marker was read, only the remaining markers are looked
+    for.  The parser stops as soon as the next tokens don't match any of the
+    remaining markers, once all the markers have been read, or once
+    `max_num_args` markers have been read.  If no marker at all was found, the
+    parser reports that the optional argument was not provided (see
+    `return_none_instead_of_empty`).
 
     Constructor arguments:
 
       - `chars_list` is the list of markers to look for.  Each entry is a string
         of one or more characters.  Whitespace within an entry is normalized,
-        and matches any run of whitespace in the source.  If a single string is
-        given instead of a list, it is interpreted as the list of its individual
-        characters.  A "specials" token counts as its characters here, so that a
-        marker can be made of characters that are declared as specials.
+        and matches any run of whitespace in the source; entries that are empty
+        after this normalization are dropped, as they could never be matched.
+        If a single string is given instead of a list, it is interpreted as the
+        list of its individual characters.  A "specials" token counts as its
+        characters here, so that a marker can be made of characters that are
+        declared as specials.
 
       - `following_arg_parser`, if non-`None`, is the parser that is used to
         read an argument that follows the marker.  It is obtained via
@@ -138,7 +145,16 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
             # individual chars.
             chars_list = [c for c in chars_list]
 
-        self.chars_list = [ " ".join(chars.strip().split()) for chars in chars_list ]
+        # normalize the whitespace in the markers; markers that are empty (or
+        # that only contained whitespace) are dropped, they could never be
+        # matched anyway.  E.g. ‘e{^ _}’ specifies the markers ‘^’ and ‘_’.
+        normalized_chars_list = []
+        for chars in chars_list:
+            normalized_chars = " ".join(chars.strip().split())
+            if normalized_chars:
+                normalized_chars_list.append(normalized_chars)
+
+        self.chars_list = normalized_chars_list
         self.following_arg_parser = following_arg_parser
         self.include_chars_node_before_following_arg = \
             include_chars_node_before_following_arg
@@ -150,11 +166,12 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
         self.max_num_args = max_num_args
 
         if not self.chars_list:
-            raise ValueError(("Invalid chars={!r}, needs to be non-empty "
-                              "string (after stripping whitespce)").format(chars))
+            raise ValueError(("Invalid chars_list={!r}, needs to be non-empty "
+                              "string (after stripping whitespce)").format(chars_list))
 
         if (not self.return_full_node_list and
-            not (len(self.chars_list) == 1 or self.max_num_args <= 1)
+            not (len(self.chars_list) == 1
+                 or (self.max_num_args is not None and self.max_num_args <= 1))
             ):
             raise ValueError("Cannot set return_full_node_list=False if we can have "
                              "multiple given chars marker options "
@@ -207,7 +224,11 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
         remaining_chars_list = self.chars_list
 
         while self.max_num_args is None or num_args < self.max_num_args:
-            
+
+            if not remaining_chars_list:
+                # all the markers we know about have already been read.
+                break
+
             arg_nodes, parsing_state_delta, matched_chars, arg_pos = \
                 self._parse_single(remaining_chars_list,
                                    latex_walker, token_reader, parsing_state, **kwargs)
@@ -256,7 +277,12 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
     def _parse_single(self, remaining_chars_list, latex_walker, token_reader,
                       parsing_state, **kwargs):
         
-        orig_pos_tok = token_reader.peek_token(parsing_state=parsing_state)
+        try:
+            orig_pos_tok = token_reader.peek_token(parsing_state=parsing_state)
+        except LatexWalkerEndOfStream:
+            # end of input reached; the marker is simply not there.
+            return None, None, None, token_reader.cur_pos()
+
         pos_end = None
         read_s = ''
         match_found = False
@@ -264,7 +290,11 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
         first_token = None
         try:
             while True:
-                tok = token_reader.next_token(parsing_state=parsing_state)
+                try:
+                    tok = token_reader.next_token(parsing_state=parsing_state)
+                except LatexWalkerEndOfStream:
+                    # end of input reached; the marker is simply not there.
+                    break
                 if first_token is None:
                     first_token = tok
                     if len(first_token.pre_space) and not self.allow_pre_space:
@@ -281,12 +311,12 @@ class LatexOptionalCharsMarkerParser(LatexParserBase):
                 if read_s and len(tok.pre_space):
                     read_s += " "
                 read_s += tok.arg
-                if read_s in self.chars_list:
+                if read_s in remaining_chars_list:
                     match_found = True
                     matched_chars = read_s
                     pos_end = tok.pos_end
                     break
-                if len([chars for chars in self.chars_list
+                if len([chars for chars in remaining_chars_list
                         if chars.startswith(read_s)]) == 0:
                     # mismatched all at this point, will not match
                     break
