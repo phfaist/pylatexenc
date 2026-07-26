@@ -10,9 +10,11 @@ run without any changes.  The *text* that comes out might look a little
 different here and there, though — see below.  You might get some deprecation
 warnings which you can silence using python's warnings filter management (e.g.,
 ``python -W 'ignore::DeprecationWarning'`` or using
-:py:func:`warnings.simplefilter`)
+:py:func:`warnings.simplefilter`).  We did our best to make the API as
+backwards-compatible as reasonably possible, so there's a good chance your code
+continues to run as-is (or with minor tweaks).
 
-Compatibility with python 2 was dropped.  We'll try to remain compatible with
+Compatibility with Python 2 was dropped.  We'll try to remain compatible with
 Python ≥ 3.6 moving forward.
 
 The parser-related modules have seen a number of changes, including:
