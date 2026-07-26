@@ -79,6 +79,13 @@ Nodes Collector
    :members:
 
 
+Recomposing latex code
+----------------------
+
+.. autoclass:: LatexNodesLatexRecomposer
+   :members:
+
+
 Exception classes
 -----------------
 

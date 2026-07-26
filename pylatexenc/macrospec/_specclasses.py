@@ -415,15 +415,23 @@ class MacroSpec(CallableSpec):
 
        The name of the macro, without the leading backslash.
 
+    .. py:attribute::arguments_spec_list
+
+        Is the list of arguments that this callable accepts.  Each item is
+        either a :py:class:`~pylatexenc.latexnodes.LatexArgumentSpec` instance,
+        or a string representing a standard argument type (see
+        :py:class:`~pylatexenc.latexnodes.parsers.LatexStandardArgumentParser`)
+        which is converted into such an instance.  Specify `None` or an empty
+        list if the callable does not accept any arguments.
+
     .. py:attribute:: args_parser
 
-       The parser instance that can understand this macro's arguments.  For
-       standard LaTeX macros this is usually a
-       :py:class:`MacroStandardArgsParser` instance.
-
-       If you specify a string, then for convenience this is interpreted as an
-       argspec argument for :py:class:`MacroStandardArgsParser` and such an
-       instance is automatically created.
+       The parser instance that can understand this macro's arguments
+       (pylatexenc-v2 obsolete API!).  Can be set, for instance, to a
+       :py:class:`MacroStandardArgsParser` instance.  If you specify a string,
+       then for convenience this is interpreted as an argspec argument for
+       :py:class:`MacroStandardArgsParser` and such an instance is automatically
+       created.
 
        .. deprecated:: 3.0
 
@@ -476,16 +484,23 @@ class EnvironmentSpec(CallableSpec):
        The parsing state changes that are set in order to parse the body
        contents of the environment.
 
+    .. py:attribute::arguments_spec_list
+
+        Is the list of arguments that this callable accepts.  Each item is
+        either a :py:class:`~pylatexenc.latexnodes.LatexArgumentSpec` instance,
+        or a string representing a standard argument type (see
+        :py:class:`~pylatexenc.latexnodes.parsers.LatexStandardArgumentParser`)
+        which is converted into such an instance.  Specify `None` or an empty
+        list if the callable does not accept any arguments.
 
     .. py:attribute:: args_parser
 
-       The parser instance that can understand this environment's arguments.
-       For standard LaTeX environment this is usually a
-       :py:class:`MacroStandardArgsParser` instance.
-
-       If you specify a string, then for convenience this is interpreted as an
-       argspec argument for :py:class:`MacroStandardArgsParser` and such an
-       instance is automatically created.
+       The parser instance that can understand this environment's arguments
+       (obsolete pylatexenc-v2 API!).  For standard LaTeX environment this is
+       usually a :py:class:`MacroStandardArgsParser` instance.  If you specify a
+       string, then for convenience this is interpreted as an argspec argument
+       for :py:class:`MacroStandardArgsParser` and such an instance is
+       automatically created.
 
        .. deprecated:: 3.0
 
@@ -534,11 +549,20 @@ class SpecialsSpec(CallableSpec):
        The string (one or several characters) that has a special meaning. E.g.,
        '&', '~', '``', etc.
 
+    .. py:attribute::arguments_spec_list
+
+        Is the list of arguments that this callable accepts.  Each item is
+        either a :py:class:`~pylatexenc.latexnodes.LatexArgumentSpec` instance,
+        or a string representing a standard argument type (see
+        :py:class:`~pylatexenc.latexnodes.parsers.LatexStandardArgumentParser`)
+        which is converted into such an instance.  Specify `None` or an empty
+        list if the callable does not accept any arguments.
+
     .. py:attribute:: args_parser
     
        A parser (e.g. :py:class:`MacroStandardArgsParser`) that is invoked when
-       the specials is encountered.  Can/should be set to `None` if the specials
-       should not parse any arguments (e.g. '~').
+       the specials is encountered (obsolete pylatexenc-v2 API!).  Can/should be
+       set to `None` if the specials should not parse any arguments (e.g. '~').
 
        .. deprecated:: 3.0
 
@@ -559,7 +583,7 @@ class SpecialsSpec(CallableSpec):
             specials_chars=specials_chars,
             **kwargs
         )
-        #self.specials_chars = specials_chars
+
 
 
 
