@@ -978,15 +978,6 @@ def get_default_latex_context_db():
         built-in rules of :py:mod:`pylatexenc.latexencode`, i.e., the reverse
         direction of the unicode-to-LaTeX conversion.
 
-      - ``'latex-ethuebung'`` — macros of the `ethuebung` LaTeX package.
-
-      - ``'nonstandard-qit'`` — a couple of non-standard macros used in quantum
-        information theory (``\id`` and ``\Ident`` for the identity operator).
-
-      The last two categories are not standard LaTeX; expect them to be removed
-      in a future version, in which case you would include the relevant
-      definitions in your own application instead.
-
     If you want to add your own definitions, you should use the
     :py:meth:`pylatexenc.macrospec.LatexContextDb.add_context_category()`
     method.  If you would like to override some definitions, use that method
