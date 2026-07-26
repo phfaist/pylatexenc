@@ -69,11 +69,22 @@ Dependency groups (PEP 735, in `[dependency-groups]`): `dev` (pytest) is
 installed by a plain `uv sync`; `builddoc` (Sphinx) and `buildjslib`
 (Transcrypt, PyYAML) are opt-in via `--group`.
 
+All three groups are locked for python 3.10 and later only, via
+`[tool.uv.dependency-groups]` in `pyproject.toml`.  This concerns the
+development environment alone — the library keeps advertising python 3.6 and
+has no runtime dependencies — and it is what keeps `uv.lock` on current
+releases of the development tooling.  Without that restriction uv has to
+resolve the groups for python 3.6 as well, and locks one package set per python
+version, reaching back to releases that are long unmaintained and carry
+published vulnerabilities.  Do not widen it back without a good reason.
+
 The supported python range is declared once, by `requires-python` in
-`pyproject.toml` (currently `>=3.6`).  The `tests-ci` workflow matrix actually
-exercises 3.8 through 3.13, so the oldest declared versions (3.6 and 3.7) are
-not covered by continuous integration.  Python 2 is not supported; do not
-reintroduce compatibility shims for it.
+`pyproject.toml` (currently `>=3.6`).  The `tests-ci` workflow exercises 3.7
+through 3.13, in two jobs: 3.10 and later run against the locked tooling, while
+the older ones resolve pytest outside of `uv.lock` (and are correspondingly not
+reproducible).  Only python 3.6 is left uncovered, because the GitHub-hosted
+runners no longer provide an interpreter that old.  Python 2 is not supported;
+do not reintroduce compatibility shims for it.
 
 
 ## Constraints when editing

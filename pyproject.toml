@@ -58,6 +58,22 @@ buildjslib = [
     "PyYAML>=5.0",
 ]
 
+# The development tooling does not have to run on every python version that the
+# library itself supports.  Restricting the groups to python 3.10 and later lets
+# uv lock current releases of pytest, Sphinx and their dependencies.  Without
+# this restriction the resolution has to accommodate python 3.6 (the
+# 'requires-python' value above), and uv then locks one set of packages per
+# python version, down to long-unmaintained releases for the oldest ones.
+#
+# This only concerns the development environment described by 'uv.lock'; the
+# library itself keeps advertising python 3.6 and has no runtime dependencies at
+# all.  The test suite still runs on older pythons, with pytest resolved outside
+# of the lock file; see '.github/workflows/tests-ci.yml'.
+[tool.uv.dependency-groups]
+dev = { requires-python = ">=3.10" }
+builddoc = { requires-python = ">=3.10" }
+buildjslib = { requires-python = ">=3.10" }
+
 [tool.uv]
 # Only "dev" is installed by a plain `uv sync`; "builddoc" and "buildjslib" are
 # opt-in via `--group`.

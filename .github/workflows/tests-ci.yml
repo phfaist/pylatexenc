@@ -9,18 +9,15 @@ on:
 #    - cron: "13 20 * * 3"
 
 jobs:
+
+  # Python 3.10 and later, running against the development tooling that
+  # 'uv.lock' pins.  These runs are fully reproducible.
   tests-ci:
 
     strategy:
       #fail-fast: true
       matrix:
-        # These should span the range declared by 'requires-python' in
-        # pyproject.toml.  uv downloads whichever interpreter is missing from
-        # the runner, so testing older pythons no longer needs an old (and by
-        # now unavailable) runner image.
         python-version:
-          - "3.8"
-          - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
@@ -41,3 +38,52 @@ jobs:
 
       - name: 'Run tests'
         run: uv run --frozen pytest
+
+
+  # Older pythons, down to the oldest one that the GitHub-hosted runners can
+  # still provide.  'uv.lock' deliberately covers python 3.10 and later only
+  # (see [tool.uv.dependency-groups] in pyproject.toml), so pytest is resolved
+  # on the fly here and uv picks whichever release still supports the
+  # interpreter.  These runs are therefore not pinned; a pytest release could
+  # in principle break them without any change on our side.
+  #
+  # The library is pure python and has no runtime dependencies, so there is
+  # nothing to build: it is used straight from the source tree via PYTHONPATH.
+  tests-ci-oldpy:
+
+    strategy:
+      #fail-fast: true
+      matrix:
+        python-version:
+          - "3.7"
+          - "3.8"
+          - "3.9"
+
+    # 'ubuntu-22.04' is the newest runner image for which 'actions/setup-python'
+    # still provides python 3.7.  uv's own python downloads only start at 3.8,
+    # which is why the interpreter comes from 'actions/setup-python' here and
+    # from 'astral-sh/setup-uv' in the job above.
+    runs-on: 'ubuntu-22.04'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 'Set up python ${{ matrix.python-version }}'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '${{ matrix.python-version }}'
+
+      - name: 'Set up uv'
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      # '--no-project' keeps uv from consulting uv.lock (which does not describe
+      # this interpreter); '$(which python)' is the interpreter that
+      # 'actions/setup-python' just put on the PATH.
+      - name: 'Run tests (pytest resolved outside of uv.lock)'
+        env:
+          PYTHONPATH: '.'
+        run: >-
+          uv run --no-project --python "$(which python)" --with pytest
+          pytest
