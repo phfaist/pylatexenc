@@ -94,54 +94,21 @@ The `latex2text` module was improved:
   several lines is aligned with the item text.  Note the default bullet for
   ``\item`` is now ``•`` and no longer ``*``.
 
+- Support for unicode alphabets for bold and italic text.
+
+- There is a new renderer for math content, ``math_mode='fancy'``.  It is now
+  the default.  It tries to make the plain text look like the
+  formula LaTeX would typeset, so that ``$4 \pi c\sin(x+y)$`` gives
+  ``4π𝑐 sin(𝑥 + 𝑦)`` using unicode alphabets.   (Use ``math_mode='text'`` to
+  restore pylatexenc-v2's behavior.)  Relevant options: ``math_mode=``,
+  ``math_fontstyle=``, ``math_expression_in=`` (see
+  :py:class:`~pylatexenc.latex2text.LatexNodes2Text`).
+
 - Subscripts and superscripts are now rendered with unicode characters whenever
   there are suitable ones: ``$x^2$`` gives ``x²``, ``$H_2O$`` gives ``H₂O``,
   and ``$\sum_{i=1}^n x_i$`` gives ``∑ᵢ₌₁ⁿ xᵢ``.  Same for ``\sqrt``, which
   gives ``√`` and ``∛``.
 
-- When a mathematical sub-expression can't be rendered like that, we have to
-  show its extent somehow.  The new `math_expression_in=` option of
-  :py:class:`~pylatexenc.latex2text.LatexNodes2Text` says how: ``'parens'`` (the
-  default) gives ``x_(abc)``, ``'braces'`` gives ``x_{abc}``, an explicit pair
-  of delimiters like ``('<','>')`` gives ``x_<abc>``, and `None` gives plain
-  ``x_abc`` as `pylatexenc 2` did.  It also applies to ``\frac`` and friends.
-
-- There is a new way of rendering formulas, ``math_mode='fancy'``, **which is
-  now the default**, and which tries to make the plain text look like the
-  formula LaTeX would typeset.  It ignores the whitespace of the source the way
-  LaTeX does and puts spaces back only where they help a reader, so that ``$4
-  \pi c$`` gives ``4π𝑐`` with the implicit multiplication kept tight while
-  ``$x+y$`` gives ``𝑥 + 𝑦``; it writes the letters with the unicode
-  mathematical alphanumeric characters, so that a variable is visibly not the
-  name of a function (``$\sin x$`` gives ``sin 𝑥``); it adds delimiters around
-  a sub-expression only where a separating space would leave its extent
-  unclear; and it leaves the fragments of ordinary text such as ``\text{...}``
-  alone, spaces and all.  The font-selecting macros of ordinary text are
-  rendered with those same unicode alphabets, so ``\textbf{bold}`` gives
-  ``𝐛𝐨𝐥𝐝`` and ``\emph{word}`` gives ``𝑤𝑜𝑟𝑑``.
-
-  The four math modes that existed before are untouched by it, and
-  ``math_mode='text'`` is the one that renders a formula the way `pylatexenc 2`
-  did.  Reach for it if the output is going to be processed by a program rather
-  than read by a person.
-
-  The unicode characters this uses live in a high unicode plane that many
-  terminal fonts do not cover.  Two companion options say which alphabet to
-  use: ``math_fontstyle=`` for the letters of a formula, whose default
-  ``'italic'`` is what italicizes the variables, and ``text_fontstyle=`` for
-  the text outside of the formulas, whose default `None` is the upright style.
-  Either of them accepts a style name, and either accepts `False`, which
-  switches the unicode alphabets off in that mode altogether — the font
-  selecting macros then leave the letters alone, so ``\textbf{bold}`` gives
-  ``bold`` and ``\mathbf{a}`` gives ``a``.  Give both as `False` for output
-  that has to be plain ASCII::
-
-      LatexNodes2Text(text_fontstyle=False, math_fontstyle=False)
-
-  The command-line tool exposes all of it, as ``latex2text --math-mode=text``
-  (or any of the other modes), ``--math-fontstyle=`` and ``--text-fontstyle=``,
-  where the style is a style name, ``none`` for the upright style, or ``off``
-  for no unicode alphabets at all.
 
 The `latexencode` module has barely changed.
 
