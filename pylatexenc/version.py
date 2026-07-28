@@ -56,4 +56,4 @@
 
 # This is the single source of truth for the package version; pyproject.toml
 # picks it up from here (see [tool.hatch.version] there).
-version_str = "3.0beta1"
+version_str = "3.0beta2"
