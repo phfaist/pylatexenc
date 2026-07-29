@@ -225,7 +225,7 @@ class TestSingleParsedArgumentInfo(unittest.TestCase):
         # report that the objects are not equal
         arginfo = SingleParsedArgumentInfo(None)
 
-        self.assertFalse( arginfo == None )
+        self.assertFalse( arginfo is None )
         self.assertFalse( arginfo == 'not an argument info object' )
         self.assertTrue( arginfo == SingleParsedArgumentInfo(None) )
 

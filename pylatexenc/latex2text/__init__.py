@@ -678,7 +678,7 @@ def fmt_item_macro(node, l2tobj):
         # item's contents; an explicit label given as ``\item[Label]`` is
         # already followed by whatever separates it from the contents in the
         # source, so don't add another space in that case.
-        label = label + ' '
+        label += ' '
     return '\n  ' + label
 
 
@@ -1663,23 +1663,23 @@ def _segment_plain_str(s, upright_letters_are_op=True):
             if upright_letters_are_op:
                 j = i
                 while j < num and _is_upright_latin_letter(s[j]):
-                    j = j + 1
+                    j += 1
                 if j - i >= 2:
                     atoms.append( (s[i:j], _OP,) )
                     i = j
                     continue
             atoms.append( (c, _ORD,) )
-            i = i + 1
+            i += 1
             continue
 
         if _is_ascii_digit(c):
             j = i
             while j < num:
                 if _is_ascii_digit(s[j]):
-                    j = j + 1
+                    j += 1
                     continue
                 if s[j] == '.' and j + 1 < num and _is_ascii_digit(s[j+1]):
-                    j = j + 1
+                    j += 1
                     continue
                 break
             atoms.append( (s[i:j], _ORD,) )
@@ -1688,7 +1688,7 @@ def _segment_plain_str(s, upright_letters_are_op=True):
 
         cls = _math_char_classes.get(c, _ORD)
         atoms.append( (c, cls,) )
-        i = i + 1
+        i += 1
 
     return atoms
 

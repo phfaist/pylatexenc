@@ -136,10 +136,10 @@ class TestLatexNodeClasses(unittest.TestCase):
         # comparing to None, or to an object of a different type, must simply
         # report that the objects are not equal
 
-        self.assertFalse( LatexNodeList([]) == None )
+        self.assertFalse( LatexNodeList([]) is None )
         self.assertFalse( LatexNodeList([]) == 'not a node list' )
-        self.assertFalse( ParsedArguments() == None )
-        self.assertFalse( LatexArgumentSpec('{') == None )
+        self.assertFalse( ParsedArguments() is None )
+        self.assertFalse( LatexArgumentSpec('{') is None )
 
         # a node list is still comparable to a plain list of nodes
         self.assertTrue( LatexNodeList([]) == [] )

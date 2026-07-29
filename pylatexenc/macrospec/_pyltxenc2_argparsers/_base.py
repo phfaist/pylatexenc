@@ -151,7 +151,7 @@ class MacroStandardArgsParser(object):
             amm = self.args_math_mode[j]
             if amm is None or amm == parsing_state.in_math_mode:
                 return parsing_state
-            if amm == True:
+            if amm:
                 return parsing_state.sub_context(in_math_mode=True)
             return parsing_state.sub_context(in_math_mode=False)
 

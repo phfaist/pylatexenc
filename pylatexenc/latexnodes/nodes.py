@@ -1314,7 +1314,7 @@ class LatexNodeList(object):
         comma_sep_parts = self.split_at_chars(comma_sep_chars)
         for part in comma_sep_parts:
             eq_sep_parts = part.split_at_chars(eq_sep_chars, max_split=1)
-            if len(eq_sep_parts) == 0:
+            if not eq_sep_parts:
                 continue
             key_nl = eq_sep_parts[0]
             value_nl = None

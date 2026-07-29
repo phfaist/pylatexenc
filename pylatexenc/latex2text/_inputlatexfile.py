@@ -52,9 +52,9 @@ def read_latex_file(tex_input_directory, strict_input, fn):
             return ''
 
     if not os.path.exists(fnfull) and os.path.exists(fnfull + '.tex'):
-        fnfull = fnfull + '.tex'
+        fnfull += '.tex'
     if not os.path.exists(fnfull) and os.path.exists(fnfull + '.latex'):
-        fnfull = fnfull + '.latex'
+        fnfull += '.latex'
     if not os.path.isfile(fnfull):
         logger.warning("Error, file doesn't exist: '%s'", fn)
         return ''
