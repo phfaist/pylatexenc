@@ -2347,6 +2347,31 @@ Use macros: \a{} and \b{xxx}{yyy}.
         self.assertTrue(nodes[1].isNodeType(LatexMacroNode))
         self.assertEqual(nodes[1].macroname, '\\')
 
+    def test_parse_content_default_parser(self):
+        # parse_content() without a parser argument parses the full latex string
+        # with a plain LatexGeneralNodesParser().
+        latextext = r'''Hello \textbf{world}, \[ x+y \] and some more text.'''
+
+        lw = LatexWalker(s=latextext)
+        nodes, parsing_state_delta = lw.parse_content()
+
+        lw_explicit = LatexWalker(s=latextext)
+        nodes_explicit, parsing_state_delta_explicit = lw_explicit.parse_content(
+            latexnodes_parsers.LatexGeneralNodesParser()
+        )
+
+        self.assertEqual(len(nodes), len(nodes_explicit))
+        self.assertEqual(nodes.pos, nodes_explicit.pos)
+        self.assertEqual(nodes.pos_end, nodes_explicit.pos_end)
+        self.assertEqual(nodes.pos, 0)
+        self.assertEqual(nodes.pos_end, len(latextext))
+        self.assertEqual(
+            [ n.nodeType() for n in nodes ],
+            [ n.nodeType() for n in nodes_explicit ]
+        )
+        self.assertIsNone(parsing_state_delta)
+        self.assertIsNone(parsing_state_delta_explicit)
+
 
 
 

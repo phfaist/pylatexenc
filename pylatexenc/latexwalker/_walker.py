@@ -128,31 +128,33 @@ class LatexWalker(latexnodes.LatexWalkerBase):
         generally won't need to specify this flag, use `tolerant_parsing`
         instead.
 
-    The methods provided in this class perform various parsing of the given
-    string `s`.  These methods typically accept a `pos` parameter, which must be
-    an integer, which defines the position in the string `s` to start parsing.
+    
+    The main entry point for parsing is the :py:meth:`parse_content()` method.
+    It parses the string `s` you provided in the class' constructor, using the
+    provided parser (or the default parser, if no parser is provided).  It
+    returns a node tree, along with information about how the parsing state was
+    updated during the parsing (e.g., new macro definitions).
 
-    These are the ``get_***()`` methods inherited from `pylatexenc 2`
-    (:py:meth:`get_latex_nodes()`, :py:meth:`get_latex_expression()`,
-    :py:meth:`get_latex_braced_group()`, :py:meth:`get_latex_environment()`,
-    :py:meth:`get_latex_maybe_optional_arg()`).  Unless otherwise documented,
-    they return a tuple `(node, pos, len)`, where node is a
-    :py:class:`LatexNode` describing the parsed content, `pos` is the position
+    This class also provides the ``get_***()`` methods inherited from
+    `pylatexenc 2` (:py:meth:`get_latex_nodes()`,
+    :py:meth:`get_latex_expression()`, :py:meth:`get_latex_braced_group()`,
+    :py:meth:`get_latex_environment()`,
+    :py:meth:`get_latex_maybe_optional_arg()`).  While these methods remain
+    supported, they are subject to a SOFT DEPRECATION notice — avoid their use
+    in new code, as they are likely to become eventually deprecated.  Unless
+    otherwise documented, they return a tuple `(node, pos, len)`, where node is
+    a :py:class:`LatexNode` describing the parsed content, `pos` is the position
     at which the LaTeX element of interest was encountered, and `len` is the
     length of the string that is considered to be part of the `node`.  That is,
     the position in the string that is immediately after the node is `pos+len`.
-
-    These ``get_***()`` methods are the interface that `pylatexenc 2` offered,
-    and they remain fully supported; you can keep using them.  Since
-    `pylatexenc 3` there is a second, more flexible way of parsing content:
-    :py:meth:`parse_content()` together with a parser object from
-    :py:mod:`pylatexenc.latexnodes.parsers`.  Be aware that switching over is
-    not a simple substitution of one call for another, because the return value
-    is different: :py:meth:`parse_content()` returns a tuple `(nodes,
-    parsing_state_delta)`, and the position information is carried by the nodes
-    themselves in their `pos` and `pos_end` attributes rather than being
-    returned alongside them.  The documentation of each of the ``get_***()``
-    methods points to the corresponding parser object.
+    New code should avoid the ``get_***`` methods in favor of `pylatexenc 3`'s
+    :py:meth:`parse_content()`, which is more powerful and more flexible.  If
+    you're porting code, note the return value is slighlty different:
+    :py:meth:`parse_content()` returns a tuple `(nodes, parsing_state_delta)`,
+    and the position information is carried by the nodes themselves in their
+    `pos` and `pos_end` attributes rather than being returned alongside them.
+    See the documentation of each of the ``get_***()`` methods for more
+    information on migration to the new scheme.
 
     The following obsolete flag is accepted by the constructor for backwards
     compatibility with `pylatexenc 1.x`:
@@ -475,19 +477,33 @@ class LatexWalker(latexnodes.LatexWalkerBase):
             token_reader.move_to_pos_chars(pos)
         return token_reader
 
-    def parse_content(self, parser, token_reader=None, parsing_state=None,
+    def parse_content(self, parser=None, token_reader=None, parsing_state=None,
                       open_context=None):
         r"""
         The main entry point to parse the stored LaTeX code into a node structure.
 
         Arguments:
-        
+
         - The `parser` must be a callable object that can be called with the
           keyword arguments `latex_walker`, `token_reader` and `parsing_state`.
           The return value of `parser(...)` should be a :py:class:`LatexNode` or
-          :py:class:`LatexNodeList` instance.
+          :py:class:`~pylatexenc.latexnodes.nodes.LatexNodeList` instance.
 
-        - `token_reader` is a :py:class:`LatexTokenReader` instance that is
+          If `parser` is `None`, then a plain
+          :py:class:`~pylatexenc.latexnodes.parsers.LatexGeneralNodesParser`
+          instance is used.  That parser reads general LaTeX content until the
+          end of the stream, which is what one usually wants when parsing an
+          entire document; so ``lw.parse_content()`` parses all the LaTeX code
+          that was given to the constructor.
+
+          This default is a convenience offered by this class, and not part of
+          the :py:class:`pylatexenc.latexnodes.LatexWalkerBase` interface.  A
+          latex walker class that is derived directly from
+          :py:class:`~pylatexenc.latexnodes.LatexWalkerBase` is not required to
+          accept `parser=None`.
+
+        - `token_reader` is a
+          :py:class:`~pylatexenc.latexnodes.LatexTokenReader` instance that is
           tasked with converting the raw string into tokens.  If `None`, then
           :py:meth:`make_token_reader()` is called to create a token reader
           instance.
@@ -505,14 +521,21 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
         The return value is a tuple `(result, parser_parsing_state_delta)` where
         `result` is the return value of the parser, which is expected to be a
-        :py:class:`LatexNode` or :py:class:`LatexNodeList` instance, and where
-        `parsing_state_delta`, if non-`None`, is a parsing state delta object,
-        see :py:class:`pylatexenc.latexnodes.ParsingStateDelta`.  It represents
-        changes to the parsing state for parsing subsequent content.
+        :py:class:`LatexNode` or
+        :py:class:`~pylatexenc.latexnodes.nodes.LatexNodeList` instance, and
+        where `parsing_state_delta`, if non-`None`, is a parsing state delta
+        object, see :py:class:`pylatexenc.latexnodes.ParsingStateDelta`.  It
+        represents changes to the parsing state for parsing subsequent content.
         """
 
+        the_parser = None
         the_token_reader = None
         the_parsing_state = None
+
+        if parser is None:
+            the_parser = parsers.LatexGeneralNodesParser()
+        else:
+            the_parser = parser
 
         if token_reader is None:
             the_token_reader = self.make_token_reader()
@@ -533,13 +556,13 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
         start_pos = the_token_reader.cur_pos()
         logger.debug(":: Parsing content (%s @ %r) - %r [%r]::",
-                     open_context_name, start_pos, parser, the_parsing_state)
+                     open_context_name, start_pos, the_parser, the_parsing_state)
 
         with self.new_parsing_open_context(open_context_name, open_context_tok) as pc:
 
             try:
 
-                nodes, info = parser.parse(
+                nodes, info = the_parser.parse(
                     latex_walker=self,
                     token_reader=the_token_reader,
                     parsing_state=the_parsing_state,
@@ -547,7 +570,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
 
             except LatexWalkerEndOfStream:
                 logger.warning("End of stream encountered when parsing content with %s (%s)",
-                               parser.__class__.__name__, open_context_name)
+                               the_parser.__class__.__name__, open_context_name)
                 nodes, info = None, None
 
         if pc.recovery_from_exception is not None:
@@ -555,7 +578,7 @@ class LatexWalker(latexnodes.LatexWalkerBase):
                 pc.perform_recovery_nodes_and_parsing_state_delta(the_token_reader)
 
         logger.debug(":: PARSED content (%s @ %r) - %r - result %r + %r DONE ::",
-                     open_context_name, start_pos, parser, nodes, info)
+                     open_context_name, start_pos, the_parser, nodes, info)
 
         return nodes, info
 
@@ -761,13 +784,13 @@ def _pyltxenc2_LatexWalker_get_token(
     starting at position `pos`, to parse a single "token", as defined by
     :py:class:`LatexToken`.
 
-    This method is the `pylatexenc 2` style interface and it remains fully
-    supported.  Since `pylatexenc 3` you can also read tokens with a token
-    reader object, see :py:meth:`make_token_reader()` and
-    :py:class:`LatexTokenReader`.  A token reader keeps track of its own
-    position in the string as it reads and it exposes several reading methods
-    (`peek_token()`, `next_token()`, ...), so moving to it is not simply a
-    matter of replacing one call by another.
+    This method is the `pylatexenc 2` style interface and it remains supported;
+    it is subject to SOFT DEPRECATION - AVOID USE IN NEW CODE.  Since
+    `pylatexenc 3` you can also read tokens with a token reader object, see
+    :py:meth:`make_token_reader()` and :py:class:`LatexTokenReader`.  A token
+    reader keeps track of its own position in the string as it reads and it
+    exposes several reading methods (`peek_token()`, `next_token()`, ...), so
+    moving to it is not simply a matter of replacing one call by another.
 
     Parse the token in the stream pointed to at position `pos`.
 
@@ -861,8 +884,9 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
     Parses the latex content given to the constructor (and stored in `self.s`)
     into a list of nodes.
 
-    This method is the `pylatexenc 2` style interface and it remains fully
-    supported.  Since `pylatexenc 3` you can also parse the same content with
+    This method is the `pylatexenc 2` style interface and it remains supported;
+    it is subject to SOFT DEPRECATION - AVOID USE IN NEW CODE.  Since
+    `pylatexenc 3` you can also parse the same content with
     :py:meth:`parse_content()` and a parser object.  The two calls do not return
     the same thing, so this is not a mechanical substitution; you'd write::
 
@@ -880,6 +904,9 @@ def _pyltxenc2_LatexWalker_get_latex_nodes(
         )
         npos = nodelist.pos
         nlen = nodelist.len # or nodelist.pos_end - nodelist.pos
+
+    The `LatexGeneralNodesParser()` instance shown here is also
+    :py:meth:`parse_content()`'s default parser, so it can simply be omitted.
 
     See the documentation for
     :py:class:`~latexnodes.parsers.LatexGeneralNodesParser` for information
@@ -1096,8 +1123,9 @@ def _pyltxenc2_LatexWalker_get_latex_expression(
     Returns a tuple `(node, pos, len)`, where `pos` is the position of the
     first char of the expression and `len` the length of the expression.
 
-    This method is the `pylatexenc 2` style interface and it remains fully
-    supported.  Since `pylatexenc 3` you can also parse the same content with
+    This method is the `pylatexenc 2` style interface and it remains supported;
+    it is subject to SOFT DEPRECATION - AVOID USE IN NEW CODE.  Since
+    `pylatexenc 3` you can parse the same content with
     ``LatexWalker.parse_content(LatexExpressionParser(), ...)``.  That call
     returns a tuple `(nodes, parsing_state_delta)` instead of `(node, pos,
     len)`, with the positions carried by the node itself, so it is not a
@@ -1231,8 +1259,9 @@ def _pyltxenc2_LatexWalker_get_latex_braced_group(
     distinct single characters providing the opening and closing brace
     chars (e.g., ``("<", ">")``).
 
-    This method is the `pylatexenc 2` style interface and it remains fully
-    supported.  Since `pylatexenc 3` you can also parse the same content with
+    This method is the `pylatexenc 2` style interface and it remains supported;
+    it is subject to SOFT DEPRECATION - AVOID USE IN NEW CODE Since `pylatexenc
+    3` you can parse the same content with
     ``LatexWalker.parse_content(LatexDelimitedGroupParser(), ...)``.  That call
     returns a tuple `(nodes, parsing_state_delta)` instead of `(node, pos,
     len)`, with the positions carried by the node itself, so it is not a
@@ -1327,8 +1356,9 @@ def _pyltxenc2_LatexWalker_get_latex_environment(
     Returns a tuple (node, pos, len) where node is a
     :py:class:`LatexEnvironmentNode`.
 
-    This method is the `pylatexenc 2` style interface and it remains fully
-    supported.  Since `pylatexenc 3` you can also parse the same content with
+    This method is the `pylatexenc 2` style interface and it remains supported;
+    it is subject to SOFT DEPRECATION - AVOID USE IN NEW CODE.  Since
+    `pylatexenc 3` you can parse the same content with
     ``LatexWalker.parse_content(LatexSingleNodeParser(), ...)`` positioned at
     the beginning of the environment.  That call returns a tuple `(nodes,
     parsing_state_delta)` instead of `(node, pos, len)`, with the positions
@@ -1389,9 +1419,10 @@ def _pyltxenc2_LatexWalker_get_latex_maybe_optional_arg(self, pos, parsing_state
     a tuple `(node, pos, len)` if success where `node` is a
     :py:class:`LatexGroupNode`.  Otherwise, this method returns None.
 
-    This method is the `pylatexenc 2` style interface and it remains fully
-    supported.  Since `pylatexenc 3` you can also parse the same content with
-    the more flexible parsers mechanism, e.g.,
+    This method is the `pylatexenc 2` style interface and it remains supported;
+    it is subject to SOFT DEPRECATION - AVOID USE IN NEW CODE.  Since
+    `pylatexenc 3` you can parse the same content with the more flexible parsers
+    mechanism, e.g.,
     ``LatexWalker.parse_content(LatexOptionalSquareBracketsParser(), ...)``.
     That call returns a tuple `(nodes, parsing_state_delta)` instead of `(node,
     pos, len)` or `None`, with the positions carried by the node itself, so it

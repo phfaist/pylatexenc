@@ -32,9 +32,26 @@ LatexWalker will understand the syntax of most common macros.  However,
 ``latexwalker`` was designed to extract useful text for indexing for text
 database searches of LaTeX content.)
 
+Since `pylatexenc 3`, the parsing work itself is carried out by *parser
+objects*, which are specialized in parsing a given LaTeX construct and which
+are provided by :py:mod:`pylatexenc.latexnodes.parsers`.  A
+:py:class:`LatexWalker` instance holds the LaTeX code along with the
+information required to parse it (the "latex context", see below), and it runs
+such parser objects on that code with
+:py:meth:`LatexWalker.parse_content()`.
+
+The result of the parsing is a node tree, along with any information about
+parsing state changes that the parsed code caused (say, a ``\newcommand``).
+The nodes are instances of the classes provided in
+:py:mod:`pylatexenc.latexnodes.nodes`, and lists of nodes are wrapped in a
+:py:class:`~pylatexenc.latexnodes.nodes.LatexNodeList` object.  (For
+compatibility with earlier versions, the node classes can also be imported
+directly from :py:mod:`pylatexenc.latexwalker`.)
+
 Simple example usage::
 
-    >>> from pylatexenc.latexwalker import LatexWalker, LatexEnvironmentNode
+    >>> from pylatexenc.latexwalker import LatexWalker
+    >>> from pylatexenc.latexnodes.nodes import LatexEnvironmentNode
     >>> w = LatexWalker(r"""
     ... \textbf{Hi there!} Here is \emph{a list}:
     ... \begin{enumerate}[label=(i)]
@@ -43,37 +60,52 @@ Simple example usage::
     ... \end{enumerate}
     ... and $x$ is a variable.
     ... """)
-    >>> (nodelist, pos, len_) = w.get_latex_nodes(pos=0)
-    >>> nodelist[0]
-    LatexCharsNode(pos=0, len=1, chars='\n')
-    >>> nodelist[1]
-    LatexMacroNode(pos=1, len=18, macroname='textbf',
-    nodeargd=ParsedMacroArgs(argnlist=[LatexGroupNode(pos=8, len=11,
-    nodelist=[LatexCharsNode(pos=9, len=9, chars='Hi there!')],
-    delimiters=('{', '}'))], argspec='{'), macro_post_space='')
+    >>> nodelist, parsing_state_delta = w.parse_content()
+    >>> nodelist[1].macroname
+    'textbf'
+    >>> (nodelist[1].pos, nodelist[1].pos_end)
+    (1, 19)
+    >>> nodelist[1].latex_verbatim()
+    '\\textbf{Hi there!}'
     >>> nodelist[5].isNodeType(LatexEnvironmentNode)
     True
     >>> nodelist[5].environmentname
     'enumerate'
-    >>> nodelist[5].nodeargd.argspec
-    '['
-    >>> nodelist[5].nodeargd.argnlist
-    [LatexGroupNode(pos=60, len=11, nodelist=[LatexCharsNode(pos=61, len=9,
-    chars='label=(i)')], delimiters=('[', ']'))]
     >>> nodelist[7].latex_verbatim()
     '$x$'
 
-You can also use `latexwalker` directly in command-line, producing JSON or a
-human-readable node tree::
+Macro, environment and specials arguments are collected in a
+:py:class:`pylatexenc.latexnodes.ParsedArguments` object stored as the node's
+`nodeargd` attribute.  Use
+:py:class:`pylatexenc.latexnodes.ParsedArgumentsInfo` to inspect them, by
+position or by argument name::
 
-    $ echo '\textit{italic} text' | latexwalker --output-format=json
+    >>> from pylatexenc.latexnodes import ParsedArgumentsInfo
+    >>> arguments = ParsedArgumentsInfo(node=nodelist[5]).get_all_arguments_info()
+    >>> arguments[0].get_content_nodelist().latex_verbatim()
+    'label=(i)'
+
+You can also use `latexwalker` directly in command-line, producing a
+human-readable node tree or JSON::
+
+    $ latexwalker --code '\textit{italic} text'
+    --- NODES ---
+
+    * \textit
+        {.}: Group:
+            * 'italic'
+    * ' text'
+
+    -------------
+
+    $ latexwalker --output-format=json --code '\textit{italic} text'
     {
       "nodelist": [
         {
           "nodetype": "LatexMacroNode",
           "pos": 0,
-          "len": 15,
-          "macroname": "textit",
+          "pos_end": 15,
+          "parsing_state": {
     [...]
 
     $ latexwalker --help
@@ -85,6 +117,20 @@ environments (the "latex context") that are specified using
 :py:class:`pylatexenc.macrospec.EnvironmentSpec` objects in a
 :py:class:`pylatexenc.macrospec.LatexContextDb` object.  See the doc of the
 module :py:mod:`pylatexenc.macrospec` for more information.
+
+.. versionchanged:: 3.0
+
+   Parsing is now carried out by parser objects that are invoked via
+   :py:meth:`LatexWalker.parse_content()`, in a significant API redesign.  See
+   :doc:`What's new in pylatexenc 3 <new-in-pylatexenc-3>` for the differences
+   between the two interfaces, and the :ref:`list of changes that might affect
+   existing code <new-in-pylatexenc-3-possible-pitfall-changes>`.
+
+   The `pylatexenc 2` interface of :py:class:`LatexWalker` —
+   `get_latex_nodes()`, `get_token()`, `get_latex_expression()`,
+   `get_latex_braced_group()`, `get_latex_environment()` and
+   `get_latex_maybe_optional_arg()` — remains fully supported and should work in
+   the vast majority of cases without code changes.
 '''
 
 
