@@ -48,6 +48,12 @@ def get_default_latex_context_db():
         and specials, i.e., what you can expect to be available in a plain LaTeX
         document.
 
+      - ``'latex-base-subsuperscripts'`` — the ``^`` and ``_`` characters as
+        "specials" definitions.  They belong to the base LaTeX definitions but
+        have a category of their own, so that you can discard them and get back
+        the `pylatexenc 2` behavior in which ``^`` and ``_`` were ordinary
+        characters.
+
       - ``'nonascii-specials'`` — character sequences that LaTeX gives a special
         meaning: the non-breaking space ``~``, the quote and dash "fake
         ligatures" (a pair of backticks, ``''``, ``--`` and ``---``), and the

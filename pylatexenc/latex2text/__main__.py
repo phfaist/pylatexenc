@@ -128,26 +128,29 @@ def main(argv=None):
     fontstyle_choices = ['none', 'off'] + list(_fmt_math_style_offsets.keys())
     group.add_argument('--math-fontstyle', action='store', dest='math_fontstyle',
                        choices=fontstyle_choices, default='italic',
-                       help="In which font style to typeset the letters of a formula, using "
-                       "the unicode math alphanumeric characters.  Only has an effect with "
-                       "--math-mode=fancy, the default.  Those characters live in a high "
-                       "unicode plane which many terminal fonts do not cover; use "
-                       "--math-fontstyle=none to leave the letters upright and in plain "
-                       "ASCII, or --math-fontstyle=off to also keep '\\mathbf{}' and "
-                       "friends from using those characters.")
+                       help="In font style in which to typeset the letters of a formula, "
+                       "using unicode math font characters.  This option sets the "
+                       "initial font style, which can be overridden (e.g.) by `\\mathXX{...}` "
+                       "calls.  Default is 'italic'. "
+                       "Set --math-fontstyle=none for default upright ASCII letters "
+                       "while keeping unicode fonts for `\\mathXX{...}` commands "
+                       "(`Z`, `\\mathbb{Z}`, `\\mathcal{Z}` render as `Z`, `ℤ`, `𝒵`); "
+                       "use --math-fontstyle=off to disable unicode math character fonts "
+                       "entirely (`Z`, `\\mathbb{Z}`, `\\mathcal{Z}` all render as `Z`).")
 
     group.add_argument('--text-fontstyle', action='store', dest='text_fontstyle',
                        choices=fontstyle_choices, default='none',
-                       help="The same for the text outside of the formulas, whose default "
-                       "style is 'none', i.e. upright.  Use --text-fontstyle=off to keep "
-                       "'\\textbf{}', '\\emph{}' and friends from using the unicode "
-                       "alphabets, so that together with --math-fontstyle=off the output "
-                       "stays plain ASCII.")
+                       help="The font style in which to typeset regular text.  Default "
+                       "is 'none', i.e. upright ASCII text.  This option sets the "
+                       "initial font style, which can be overridden by, for instance, "
+                       "``\\textbf{...}``, ``\\textit{...}``, ``\\emph{...}``.  "
+                       "Use --text-fontstyle=off to disable all text alphabets, so that "
+                       "`A`, `\\textbf{A}`, and `\\emph{A}` all render as `A`.")
 
     group.add_argument('--fill-text', dest='fill_text', action='store', nargs='?',
                        default=-1,
-                       help="Attempt to wrap text to the given width, or 80 columns if option is "
-                       "specified with no argument")
+                       help="Attempt to wrap text to the given width, or 80 columns if "
+                       "option is specified with no argument")
 
     group.add_argument('--keep-comments', action='store_const', const=True,
                        dest='keep_comments', default=False)

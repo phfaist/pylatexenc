@@ -26,14 +26,8 @@ Quick example::
 
     where 𝑖 is the imaginary unit.
 
-The letters are written with the unicode mathematical alphanumeric characters,
-which is how ``\textbf{}``, ``\emph{}`` and the variables of a formula are told
-apart in plain text.  Those characters live in a high unicode plane that some
-fonts do not cover, and some uses (indexing, feeding another program) want plain
-ASCII anyway; ``LatexNodes2Text(text_fontstyle=False, math_fontstyle=False)``
-keeps everything else and only leaves the letters alone, and
-``LatexNodes2Text(math_mode='text')`` gives the plainer rendering that
-`pylatexenc 2` produced.
+(With pylatexenc v3, latex-to-text now has support for unicode font styles and
+improved rendering! — see :doc:`new-in-pylatexenc-3`.)
 
 And the other way around::
 

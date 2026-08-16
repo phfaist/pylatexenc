@@ -455,7 +455,20 @@ specs = [
         ],
         'specials': [
             std_specials('&'),
+        ]}),
 
+
+    #
+    # CATEGORY: latex-base-subsuperscripts
+    #
+    # Kept apart from 'latex-base' so that it can be discarded on its own: doing
+    # so restores the `pylatexenc 2` behavior, where '^' and '_' were ordinary
+    # characters that ended up in a chars node along with their surroundings.
+    #
+    ('latex-base-subsuperscripts', {
+        'macros': [],
+        'environments': [],
+        'specials': [
             _SubSuperscriptSpec('^', 'superscript'),
             _SubSuperscriptSpec('_', 'subscript'),
         ]}),

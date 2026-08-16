@@ -40,10 +40,10 @@ You may also use the command-line version of `latex2text`::
     $ echo '\textit{italic} \`acc\^ented text' | latex2text
     𝑖𝑡𝑎𝑙𝑖𝑐 àccênted text
 
-The italics come from the `math_mode='fancy'` rendering, which is the default;
-see :py:class:`LatexNodes2Text`.  Use `math_mode='text'` (``latex2text
---math-mode=text``) for the plainer rendering that `pylatexenc 2` produced.
-
+Note the support for unicode bold and italic font styles, introduced in
+`pylatexenc v3`.  (See the :py:class:`LatexNodes2Text` class doc and
+:doc:`new-in-pylatexenc-3` for how to customize the output, e.g., disabling
+unicode fonts.)
 """
 
 import re
@@ -958,12 +958,11 @@ def fmt_subsuperscript_text(text, which, normalize_math_style_chars=False):
     the plain ascii letter it was made from before it is looked up, because
     unicode offers no styled superscript or subscript characters; the style of
     such a letter is then lost, but the superscript or subscript can still be
-    typeset.  This is what the ``math_mode='fancy'`` rendering of
-    :py:class:`LatexNodes2Text` needs, because that mode italicizes variable
-    names
-    where they are typeset, so that the argument of a superscript reaches this
-    function already styled.  By default the option is off, and a styled letter
-    simply has no superscript or subscript version.
+    typeset.  This is what :py:class:`LatexNodes2Text` needs whenever the
+    letters of a formula are being styled — italicized, say, which is the
+    default — because the argument of a superscript then reaches this function
+    already styled.  By default the option is off, and a styled letter simply
+    has no superscript or subscript version.
 
     The default text replacement specs fall back onto writing out the '^' or
     '_' character followed by the superscript or subscript rendered as ordinary
@@ -1012,9 +1011,6 @@ r"""
 The value that the `math_expression_in=` option of
 :py:class:`LatexNodes2Text` takes when it is not specified.  See the
 documentation of that option for the accepted values.
-
-Change this single constant if you would like all
-:py:class:`LatexNodes2Text` objects to use different delimiters by default.
 
 .. versionadded:: 3.0
 
@@ -1980,6 +1976,13 @@ def get_default_latex_context_db():
         sectioning commands, font commands, accents, Greek letters, and the
         common math symbols, each mapped to a unicode text rendering.
 
+      - ``'latex-base-subsuperscripts'`` — the text rendering of the ``^`` and
+        ``_`` specials, i.e., the unicode superscripts and subscripts.  This
+        category matches the one of the same name in
+        :py:func:`pylatexenc.latexwalker.get_default_latex_context_db()`, so
+        that discarding it in both databases restores the `pylatexenc 2`
+        behavior in which ``^`` and ``_`` were ordinary characters.
+
       - ``'latex-approximations'`` — constructs for which the text rendering can
         only be an approximation of the typeset result, such as the alignment
         environments, the list environments, and matrix environments.
@@ -2349,13 +2352,17 @@ class LatexNodes2Text(object):
       delimiters.  The value 'remove' means to remove the math mode sections
       entirely and not to produce any replacement text.
 
+      This option selects the *engine* that renders a formula.  It has nothing
+      to say about the fonts the letters are set in; those are chosen by the
+      `math_fontstyle=` and `text_fontstyle=` options below, in every math mode
+      alike.  Output that has to be plain ASCII therefore needs both: see the
+      note at the end of this entry.
+
       The default value 'fancy' selects a rendering of the formula that aims to
-      look, as far as plain text allows, like the formula that LaTeX itself
-      would typeset.  It is meant for text that a person is going to read — in
-      a terminal, in an e-mail, in a search result; where the output is
-      processed further by a program that expects plain ASCII, use 'text', or
-      keep the letters upright with the `math_fontstyle=None` option below.  It
-      differs from 'text' in four ways.
+      be as visually appealing as possible, and draws similar rendering ideas
+      from how LaTeX itself would typeset the equation.  It is meant for text
+      that a person is going to read — in a terminal, in an e-mail, in a search
+      result.  It differs from 'text' in four ways.
 
         * The whitespace of the source is ignored, exactly as LaTeX ignores
           it, and spaces are put back only where they help the reader.  So
@@ -2365,11 +2372,7 @@ class LatexNodes2Text(object):
           table of the spacing between neighboring atoms, reduced from four
           widths of space to two.
 
-        * The letters of the formula are written with the unicode mathematical
-          alphanumeric characters, so that a variable name is visibly not the
-          name of a function: ``$\sin x$`` gives ``sin 𝑥``.  Which style is
-          used is the `math_fontstyle=` option below, and macros such as
-          ``\mathbf{}`` change it for their contents.
+        * The engine emits unicode sub/superscripts whenever possible.
 
         * A sub-expression is put in delimiters only where its extent would
           otherwise be unclear, and where a separating space is enough, a space
@@ -2388,12 +2391,24 @@ class LatexNodes2Text(object):
       rendered inline as ``[ 1 2; 3 4 ]``, in math mode and in display math
       alike.
 
+      The examples above are written with the default font styles in force, so
+      the letters of the formulas appear in them as the unicode math italics.
+      To get the rendering of `pylatexenc 2` back, ask for that version's
+      engine *and* for its fonts::
+
+          LatexNodes2Text(math_mode='text', math_fontstyle=None,
+                          text_fontstyle=False)
+
+      Note the `None` rather than `False` for the math font: `pylatexenc 2`
+      applied no alphabet of its own to a formula, leaving the ``x`` of
+      ``$x + \mathbb{Z}$`` plain, but its ``\math..{}`` macros did install
+      theirs, giving ``x + ℤ``.  See the two options below.
+
       .. versionchanged:: 3.0
 
          The `math_mode='fancy'` value was introduced in `pylatexenc 3.0`, and
-         is the default there.  In `pylatexenc 2` the math mode contents were
-         always incorporated as normal text, which is what `math_mode='text'`
-         does now.
+         is the default there.  Use ``math_mode='text'`` to restore `pylatexenc
+         2`'s behavior.
 
     - `math_expression_in='braces'|'parens'|(left, right)|None`: Specify which
       delimiters to place around a mathematical sub-expression that we were not
@@ -2432,12 +2447,6 @@ class LatexNodes2Text(object):
       value `None` leaves the letters upright, and the value `False` switches
       the unicode alphabets off altogether (see below).
 
-      The reason the option exists is that those characters live in a high
-      unicode plane which a good many terminal fonts do not cover, and which
-      they will therefore display as a row of empty boxes.  Give
-      `math_fontstyle=None` if the output might be read in such a place; the
-      letters then stay plain ASCII.
-
       Note that `None` sets the style that the letters of a formula start out
       in, and that ``\mathbf{}`` and friends still install their own style for
       the duration of their contents, so ``$x + \mathbf{a}$`` still gives
@@ -2446,6 +2455,11 @@ class LatexNodes2Text(object):
       macros then leave the letters alone, so the same formula gives
       ``x + a``.  Use it together with `text_fontstyle=False` for output that
       is plain ASCII throughout.
+
+      The value `math_fontstyle=None` reproduces `pylatexenc v2`'s behavior:
+      While the default math alphabet remained upright, every ``\math..{}``
+      macro installed a custom alphabet in `pylatexenc v2` so that ``$x +
+      \mathbb{Z}$`` gave ``x + ℤ`` and ``$\mathcal{C}$`` gave ``𝒞``.
 
       There is a small price for switching the styling off.  A run of two or
       more upright latin letters is what the renderer takes for the name of a
@@ -2462,9 +2476,11 @@ class LatexNodes2Text(object):
       can also be changed for one part of the document only, see
       :py:class:`TextConversionState` and :py:meth:`push_state()`.
 
-      The option is only in effect with ``math_mode='fancy'``, which is the
-      math mode that renders formulas with the unicode math characters; the
-      other math modes ignore it.
+      The option is independent of `math_mode=`, which selects the engine that
+      renders a formula.  Each engine consults ``math_fontstyle`` to render math
+      alphabets as appropriate (e.g., while font styles are honored in
+      ``math_mode='text'``, both ``math_mode='verbatim'`` and
+      ``math_mode='remove'`` ignore math font styles entirely).
 
       .. versionadded:: 3.0
 
@@ -2481,10 +2497,8 @@ class LatexNodes2Text(object):
       own for the duration of their contents, so ``\textbf{bold}`` gives
       ``𝐛𝐨𝐥𝐝``.  The value `False` switches the unicode alphabets off for text
       mode altogether: the font style macros then leave the letters alone and
-      ``\textbf{bold}`` gives ``bold``.  This is what to give, along with
-      `math_fontstyle=False`, when the output has to be plain ASCII — because
-      it is going to be indexed, compared against stored strings, or read
-      somewhere that has no font for the unicode math alphabets.
+      ``\textbf{bold}`` gives ``bold``.  Use ``text_fontstyle=False,
+      math_fontstyle=False`` to disable font styles if you prefer ASCII output.
 
       Note that a style name here applies to the text that is *not* inside one
       of the font style macros: those macros select a whole font and not one of
@@ -2496,9 +2510,6 @@ class LatexNodes2Text(object):
       state, and as with `math_fontstyle=` it can be changed for one part of
       the document only, see :py:class:`TextConversionState` and
       :py:meth:`push_state()`.
-
-      The option is only in effect with ``math_mode='fancy'``; the other math
-      modes never apply a font style to the text.
 
       .. versionadded:: 3.0
 
@@ -3053,12 +3064,11 @@ class LatexNodes2Text(object):
         if self.math_mode == 'fancy' and self.state.in_math_mode:
             # In math mode LaTeX ignores the whitespace of the source, and so do
             # we; the spaces that make the result readable are put back where
-            # they belong when the pieces of the formula are assembled.
+            # they belong when the pieces of the formula are assembled.  This is
+            # the engine's doing and not the font's, hence the test on the math
+            # mode here and not below.
             content = re.sub(r'\s+', '', content)
-            # a style name applies; `None` (upright) and `False` (no unicode
-            # alphabet at all) both leave the characters as they are
-            if self.state.math_fontstyle:
-                content = fmt_math_text_style(content, self.state.math_fontstyle)
+            content = self._apply_fontstyle(content)
             return content
 
         # Unless in strict latex spaces mode, ignore nodes consisting only
@@ -3071,8 +3081,25 @@ class LatexNodes2Text(object):
         if not self.strict_latex_spaces['between-latex-constructs'] \
            and len(content.strip()) == 0:
             return ""
-        if self.math_mode == 'fancy' and self.state.text_fontstyle:
-            content = fmt_math_text_style(content, self.state.text_fontstyle)
+        return self._apply_fontstyle(content)
+
+    def _apply_fontstyle(self, content):
+        r"""
+        Set `content` in the font style that the conversion state calls for: the
+        `math_fontstyle` field in math mode and the `text_fontstyle` field
+        outside of it.
+
+        A style name applies; `None` (upright) and `False` (no unicode alphabet
+        at all) both leave the characters as they are.  Neither field has
+        anything to do with the `math_mode=` option, which selects the engine
+        that renders a formula and not the font its letters are set in.
+        """
+        if self.state.in_math_mode:
+            fontstyle = self.state.math_fontstyle
+        else:
+            fontstyle = self.state.text_fontstyle
+        if fontstyle:
+            return fmt_math_text_style(content, fontstyle)
         return content
 
     def comment_node_to_text(self, node):
@@ -3668,7 +3695,15 @@ def _latexnodes2text(nodelist, keep_inline_math, keep_comments):
     # the LatexNodes2Text object with the current `math_mode=` option instead of
     # the deprecated `keep_inline_math=` one, so that the caller doesn't get a
     # deprecation warning pointing at this file.
+    #
+    # The fonts of that version are asked for along with it.  These functions
+    # exist to reproduce what `pylatexenc 1` returned and take no font options
+    # of their own, so there is no caller intent here to respect.  `None` and
+    # not `False` for the math font: the older versions applied no alphabet of
+    # their own to a formula but did let '\mathbf{}' and friends install one.
     return LatexNodes2Text(
         math_mode=('verbatim' if keep_inline_math else 'text'),
+        math_fontstyle=None,
+        text_fontstyle=False,
         keep_comments=keep_comments
     ).nodelist_to_text(nodelist)

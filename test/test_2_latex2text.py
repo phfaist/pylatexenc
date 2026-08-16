@@ -29,6 +29,27 @@ from pylatexenc.latex2text import LatexNodes2Text
 pytestmark = pytest.mark.filterwarnings("ignore:Deprecated \\(pylatexenc")
 
 
+# The option combination that reproduces the rendering of `pylatexenc 2`: that
+# version's math mode, and its fonts.  Switching the math engine back is not
+# enough on its own — the fonts are selected by `math_fontstyle=` and
+# `text_fontstyle=` alone, in every math mode — so the three options go
+# together.
+#
+# The two font settings are deliberately not the same.  `pylatexenc 2` applied
+# no unicode alphabet of its own to a formula, so that '$x + \mathbb{Z}$' gave
+# 'x + ℤ' with the 'x' left plain, but every '\math..{}' macro did install its
+# own alphabet, '\mathbf{a}' giving '𝐚'.  That is `math_fontstyle=None`, and
+# not the stronger `False`, which keeps those macros from using an alphabet at
+# all — something `pylatexenc 2` never did.  Its text mode, on the other hand,
+# had no alphabets of any kind ('\textbf{b}' gave 'b'), which is
+# `text_fontstyle=False`.
+PYLATEXENC2_RENDERING = dict(
+    math_mode='text',
+    math_fontstyle=None,
+    text_fontstyle=False,
+)
+
+
 #
 # Helpers for the math_mode='fancy' tests further down.
 #
@@ -114,13 +135,13 @@ class TestLatexNodes2Text(unittest.TestCase):
         warnings.simplefilter('ignore', DeprecationWarning)
 
     #
-    # Note: many of the tests below ask for math_mode='text' explicitly, even
-    # where the feature they test has nothing to do with math mode.  They were
-    # written against the rendering that `pylatexenc 2` produced, which is what
-    # 'text' still does; the default became 'fancy' in `pylatexenc 3.0`, and
-    # that mode also styles the letters of '\textbf{}' and friends with the
-    # unicode alphabets, so the expected strings would no longer match.  The
-    # rendering of that mode is tested on its own further down.
+    # Note: many of the tests below ask for PYLATEXENC2_RENDERING explicitly,
+    # even where the feature they test has nothing to do with math mode or with
+    # fonts.  They were written against the rendering that `pylatexenc 2`
+    # produced, and `pylatexenc 3.0` changed the defaults on both counts: the
+    # math engine became 'fancy', and the letters of a formula and of
+    # '\textbf{}' and friends are now written with the unicode alphabets.  The
+    # new defaults are tested on their own further down.
     #
 
     def test_default_math_mode_is_fancy(self):
@@ -132,7 +153,7 @@ class TestLatexNodes2Text(unittest.TestCase):
     def test_basic(self):
 
         self.assertEqual(
-            LatexNodes2Text(math_mode='text')
+            LatexNodes2Text(**PYLATEXENC2_RENDERING)
                 .nodelist_to_text(LatexWalker(r'\textbf{A}').get_latex_nodes()[0]),
             'A'
         )
@@ -145,7 +166,7 @@ class TestLatexNodes2Text(unittest.TestCase):
 where $i$ is the ``imaginary unit.''
 '''
         self.assertEqualUpToWhitespace(
-            LatexNodes2Text(math_mode='text')
+            LatexNodes2Text(**PYLATEXENC2_RENDERING)
                 .nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
             u'''hi there! This is an equation:
 
@@ -155,7 +176,9 @@ where i is the “imaginary unit.”
 '''
         )
         self.assertEqualUpToWhitespace(
-            LatexNodes2Text(math_mode='with-delimiters').nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
+            LatexNodes2Text(math_mode='with-delimiters', math_fontstyle=False,
+                            text_fontstyle=False)
+                .nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
             u'''hi there! This is an equation:
 \\begin{equation}
     x + y i = 0
@@ -165,9 +188,9 @@ where $i$ is the “imaginary unit.”
         )
 
         self.assertEqual(
-            LatexNodes2Text(math_mode='text')
+            LatexNodes2Text(**PYLATEXENC2_RENDERING)
                 .nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
-            LatexNodes2Text(math_mode='text').latex_to_text(latex)
+            LatexNodes2Text(**PYLATEXENC2_RENDERING).latex_to_text(latex)
         )
 
     def test_accents(self):
@@ -188,7 +211,7 @@ where $i$ is the “imaginary unit.”
 
     def test_keep_braced_groups(self):
         self.assertEqual(
-            LatexNodes2Text(math_mode='text', keep_braced_groups=True)
+            LatexNodes2Text(**PYLATEXENC2_RENDERING, keep_braced_groups=True)
             .nodelist_to_text(
                 LatexWalker(
                     r"\textit{Voil\`a du texte}. Il est \'{e}crit {en fran{\c{c}}ais}"
@@ -198,13 +221,13 @@ where $i$ is the “imaginary unit.”
         )
 
         self.assertEqual(
-            LatexNodes2Text(math_mode='text',
+            LatexNodes2Text(**PYLATEXENC2_RENDERING,
                             keep_braced_groups=True, keep_braced_groups_minlen=4)
             .nodelist_to_text(LatexWalker(r"A{XYZ}{ABCD}").get_latex_nodes()[0]),
             '''AXYZ{ABCD}'''
         )
         self.assertEqual(
-            LatexNodes2Text(math_mode='text',
+            LatexNodes2Text(**PYLATEXENC2_RENDERING,
                             keep_braced_groups=True, keep_braced_groups_minlen=0)
             .nodelist_to_text(LatexWalker(r"{A}{XYZ}{ABCD}").get_latex_nodes()[0]),
             '''{A}{XYZ}{ABCD}'''
@@ -255,7 +278,7 @@ where $i$ is the “imaginary unit.”
 
         def do_test(tex, uni, strict_latex_spaces=None, keep_comments=None, **kwargs):
             self.assertEqual(
-                LatexNodes2Text(math_mode='text', strict_latex_spaces=strict_latex_spaces,
+                LatexNodes2Text(**PYLATEXENC2_RENDERING, strict_latex_spaces=strict_latex_spaces,
                                 keep_comments=keep_comments,
                                 **kwargs)
                 .latex_to_text(tex, **kwargs),
@@ -422,7 +445,7 @@ the end.''',
     def test_spacing_specials(self):
 
         self.assertEqualUpToWhitespace(
-            LatexNodes2Text(math_mode='text').latex_to_text(
+            LatexNodes2Text(**PYLATEXENC2_RENDERING).latex_to_text(
                 r"""``Hello,'' \emph{she} said."""
             ),
             r"""“Hello,” she said."""
@@ -449,7 +472,7 @@ MORENKFDNSN'''
 
         testdir = os.path.realpath(os.path.abspath(os.path.dirname(__file__)))
 
-        l2t = LatexNodes2Text(math_mode='text')
+        l2t = LatexNodes2Text(**PYLATEXENC2_RENDERING)
         l2t.set_tex_input_directory(testdir)
 
         output = l2t.nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0])
@@ -482,7 +505,7 @@ MORENKFDNSN'''
 MORENKFDNSN'''
 
         # make sure that the \input{} directive failed to include the file.
-        l2t = LatexNodes2Text(math_mode='text')
+        l2t = LatexNodes2Text(**PYLATEXENC2_RENDERING)
         l2t.set_tex_input_directory(os.path.join(testdir, 'dummy'))
         self.assertEqualUpToWhitespace(
             l2t.nodelist_to_text(LatexWalker(latex).get_latex_nodes()[0]),
@@ -515,7 +538,7 @@ or, equivalently,
     α = 1/β .
 
 """
-        l2t = LatexNodes2Text(math_mode='text')
+        l2t = LatexNodes2Text(**PYLATEXENC2_RENDERING)
         self.assertEqualUpToWhitespace(
             l2t.latex_to_text(latex),
             correct_text
@@ -1023,6 +1046,11 @@ $$ \alpha = \frac1{\beta}\ .$$
     # friends, for the named operators and for the modulo constructs pin the
     # fixed rendering and not the historical one.
     #
+    # What is being pinned here is the engine, so the fonts are held at the
+    # `pylatexenc 2` setting throughout.  They are a separate matter, selected
+    # by `math_fontstyle=`/`text_fontstyle=` in every math mode alike, and
+    # tested above.
+    #
 
     def test_mathmodes_old_modes_unaffected(self):
 
@@ -1055,10 +1083,15 @@ $$ \alpha = \frac1{\beta}\ .$$
                 },
             ),
             (
+                # '\mathbf{a}' gives '𝐚' here as it did in `pylatexenc 2`, but
+                # the superscript lookup takes a styled letter back to plain
+                # ascii first, and unicode does have a superscript 'a'.
+                # `pylatexenc 2` gave 'x^𝐚'; the unicode superscripts are one
+                # of the changes of `pylatexenc 3` and apply in every math mode.
                 '$x^{\\mathbf{a}}$',
                 {
-                    'text': 'x^𝐚',
-                    'with-delimiters': '$x^𝐚$',
+                    'text': 'xᵃ',
+                    'with-delimiters': '$xᵃ$',
                     'verbatim': '$x^{\\mathbf{a}}$',
                     'remove': '',
                 },
@@ -1234,7 +1267,8 @@ $$ \alpha = \frac1{\beta}\ .$$
         for latex, expected_per_mode in old_math_modes_corpus:
             for math_mode, expected in expected_per_mode.items():
                 self.assertEqual(
-                    LatexNodes2Text(math_mode=math_mode).latex_to_text(latex),
+                    LatexNodes2Text(math_mode=math_mode, math_fontstyle=None,
+                                    text_fontstyle=False).latex_to_text(latex),
                     expected,
                     msg="math_mode={!r}, latex={!r}".format(math_mode, latex)
                 )
@@ -1247,7 +1281,7 @@ $$ \alpha = \frac1{\beta}\ .$$
     def test_text_filling(self):
 
         self.assertEqual(
-            LatexNodes2Text(math_mode='text',
+            LatexNodes2Text(**PYLATEXENC2_RENDERING,
                             fill_text=20, strict_latex_spaces=True).latex_to_text(
                 r"""
 Hello world.  This   is
@@ -1265,7 +1299,7 @@ latex2text."""
     def test_text_filling_InitEndPar(self):
 
         self.assertEqual(
-            LatexNodes2Text(math_mode='text',
+            LatexNodes2Text(**PYLATEXENC2_RENDERING,
                             fill_text=True, strict_latex_spaces=True).latex_to_text(
                 r"""
 
@@ -1279,7 +1313,7 @@ more text.
 
 
         self.assertEqual(
-            LatexNodes2Text(math_mode='text',
+            LatexNodes2Text(**PYLATEXENC2_RENDERING,
                             fill_text=True, strict_latex_spaces=True).latex_to_text(
                 r"""
   Hello \emph{world}.  % comment
@@ -1482,7 +1516,7 @@ second line
  'dmath', 'dmath*'):
 
             self.assertEqualUpToWhitespace(
-                LatexNodes2Text(math_mode='text',
+                LatexNodes2Text(**PYLATEXENC2_RENDERING,
                                 strict_latex_spaces='except-in-equations').latex_to_text(
                     r"\begin{%(env)s} e \approx 2.718 \end{%(env)s}"%{'env':env}
                 ),
@@ -1553,7 +1587,7 @@ second line
                 # capital letters have superscript versions, but no subscript ones
                 (r"$X^{AB}$", u"X\N{MODIFIER LETTER CAPITAL A}\N{MODIFIER LETTER CAPITAL B}"),
         ):
-            self.assertEqual(LatexNodes2Text(math_mode='text').latex_to_text(latex), text)
+            self.assertEqual(LatexNodes2Text(**PYLATEXENC2_RENDERING).latex_to_text(latex), text)
 
     def test_repl_subsuperscript_no_unicode_version(self):
 
@@ -1574,7 +1608,7 @@ second line
                 # a superscript within a superscript can't be typeset in unicode
                 (r"$x^{a^b}$", u"x^(a\N{MODIFIER LETTER SMALL B})"),
         ):
-            self.assertEqual(LatexNodes2Text(math_mode='text').latex_to_text(latex), text)
+            self.assertEqual(LatexNodes2Text(**PYLATEXENC2_RENDERING).latex_to_text(latex), text)
 
     def test_repl_subsuperscript_text_mode(self):
 
@@ -1590,7 +1624,7 @@ second line
 
         # an empty superscript or subscript renders as nothing at all
         self.assertEqual(
-            LatexNodes2Text(math_mode='text').latex_to_text(r"$x^{}$"),
+            LatexNodes2Text(**PYLATEXENC2_RENDERING).latex_to_text(r"$x^{}$"),
             "x"
         )
 
@@ -1606,19 +1640,19 @@ second line
                 (None, u"x_abc"),
         ):
             self.assertEqual(
-                LatexNodes2Text(math_mode='text', math_expression_in=math_expression_in)
+                LatexNodes2Text(**PYLATEXENC2_RENDERING, math_expression_in=math_expression_in)
                 .latex_to_text(r"$x_{abc}$"),
                 text
             )
 
         # the delimiters are what makes these two distinguishable
         self.assertEqual(
-            LatexNodes2Text(math_mode='text',
+            LatexNodes2Text(**PYLATEXENC2_RENDERING,
                             math_expression_in='parens').latex_to_text(r"$x_{ab}c$"),
             u"x_(ab)c"
         )
         self.assertEqual(
-            LatexNodes2Text(math_mode='text',
+            LatexNodes2Text(**PYLATEXENC2_RENDERING,
                             math_expression_in='parens').latex_to_text(r"$x_{abc}$"),
             u"x_(abc)"
         )
@@ -1628,14 +1662,14 @@ second line
         # no delimiters are added when the superscript or subscript can be
         # rendered with unicode characters ...
         self.assertEqual(
-            LatexNodes2Text(math_mode='text',
+            LatexNodes2Text(**PYLATEXENC2_RENDERING,
                             math_expression_in='parens').latex_to_text(r"$x^2$"),
             u"x\N{SUPERSCRIPT TWO}"
         )
         # ... nor around a sub-expression of a single character, where they
         # wouldn't carry any information
         self.assertEqual(
-            LatexNodes2Text(math_mode='text',
+            LatexNodes2Text(**PYLATEXENC2_RENDERING,
                             math_expression_in='parens').latex_to_text(r"$x^\Gamma$"),
             u"x^\N{GREEK CAPITAL LETTER GAMMA}"
         )
@@ -1650,18 +1684,18 @@ second line
                 (None, u"a+b/c"),
         ):
             self.assertEqual(
-                LatexNodes2Text(math_mode='text', math_expression_in=math_expression_in)
+                LatexNodes2Text(**PYLATEXENC2_RENDERING, math_expression_in=math_expression_in)
                 .latex_to_text(r"$\frac{a+b}{c}$"),
                 text
             )
         self.assertEqual(
-            LatexNodes2Text(math_mode='text',
+            LatexNodes2Text(**PYLATEXENC2_RENDERING,
                             math_expression_in='parens').latex_to_text(r"$\frac{a}{b+c}$"),
             u"a/(b+c)"
         )
         # single-character numerators and denominators need no delimiters
         self.assertEqual(
-            LatexNodes2Text(math_mode='text',
+            LatexNodes2Text(**PYLATEXENC2_RENDERING,
                             math_expression_in='parens').latex_to_text(r"$\frac12$"),
             u"1/2"
         )
@@ -1693,7 +1727,7 @@ second line
 
         # the option lives on the conversion state, so it can be changed for
         # part of the document only
-        l2t = LatexNodes2Text(math_mode='text', math_expression_in='braces')
+        l2t = LatexNodes2Text(**PYLATEXENC2_RENDERING, math_expression_in='braces')
         with l2t.push_state(math_expression_in='parens'):
             self.assertEqual(l2t.latex_to_text(r"$x_{abc}$"), u"x_(abc)")
         self.assertEqual(l2t.latex_to_text(r"$x_{abc}$"), u"x_{abc}")
@@ -1788,7 +1822,7 @@ second line
 
         # only the target is verbatim; the link text is ordinary LaTeX
         self.assertEqual(
-            LatexNodes2Text(math_mode='text').latex_to_text(
+            LatexNodes2Text(**PYLATEXENC2_RENDERING).latex_to_text(
                 r"\href{http://x.org/a%20b}{\textbf{bold} link}"
             ),
             "bold link <http://x.org/a%20b>"

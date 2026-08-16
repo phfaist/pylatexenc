@@ -35,6 +35,17 @@ architecture with extended and more flexible functionality:
   parsers live in `pylatexenc.latexnodes.parsers`; you can write your own by
   deriving from `LatexParserBase`.
 
+- We've introduced a new entry point interface for parsing:
+  :py:meth:`LatexWalker.parse_content()
+  <pylatexenc.latexwalker.LatexWalker.parse_content>`, with a suitable parser
+  object from :py:mod:`pylatexenc.latexnodes.parsers` (such as
+  :py:class:`~pylatexenc.latexnodes.parsers.LatexGeneralNodesParser`). 
+  The earlier interface exposed by `pylatexenc 2`, using
+  :py:class:`~pylatexenc.latexwalker.LatexWalker` — `get_latex_nodes()`,
+  `get_token()`, `get_latex_expression()`, `get_latex_braced_group()`,
+  `get_latex_environment()`, and `get_latex_maybe_optional_arg()` keeps working
+  as it did.
+
 - Lists of latex node objects
   (:py:class:`~pylatexenc.latexnodes.nodes.LatexNode`) are now wrapped in a
   special object for node lists →
@@ -111,12 +122,12 @@ The `latex2text` module was improved:
 
 - Support for unicode alphabets for bold and italic text.
 
-- There is a new renderer for math content, ``math_mode='fancy'``.  It is now
-  the default.  It tries to make the plain text look like the
-  formula LaTeX would typeset, so that ``$4 \pi c\sin(x+y)$`` gives
-  ``4π𝑐 sin(𝑥 + 𝑦)`` using unicode alphabets.   (Use ``math_mode='text'`` to
-  restore pylatexenc-v2's behavior.)  Relevant options: ``math_mode=``,
-  ``math_fontstyle=``, ``math_expression_in=`` (see
+- A new default renderer for math content, ``math_mode='fancy'``, now formats
+  math content in a way that is much more visually appealing, so that ``$\frac{4
+  \pi c}{2}\sin(x+y)$`` gives ``(4π𝑐)/2 sin(𝑥 + 𝑦)`` instead of ``4 π
+  c/2sin(x+y)``.  We also support unicode fonts for text and math.  (Use
+  ``math_mode='text', math_fontstyle=None, text_fontstyle=False`` to restore
+  pylatexenc v2's behavior; see
   :py:class:`~pylatexenc.latex2text.LatexNodes2Text`).
 
 - Subscripts and superscripts are now rendered with unicode characters whenever
@@ -137,17 +148,42 @@ A couple things to look out for
 -------------------------------
 
 - :py:class:`~pylatexenc.latex2text.LatexNodes2Text` renders formulas with the
-  new ``math_mode='fancy'`` engine by default, so its output now contains the
-  unicode mathematical alphanumeric characters where `pylatexenc 2` produced
-  plain ASCII letters: ``$x+y$`` gives ``𝑥 + 𝑦``, and ``\textbf{bold}`` gives
-  ``𝐛𝐨𝐥𝐝``.  Those characters are outside the Basic Multilingual Plane, and a
-  font that does not cover them shows a placeholder box.  If you are indexing
-  the output, comparing it against stored strings, or feeding it to a program
-  that expects ASCII, pass ``math_mode='text'`` to get the `pylatexenc 2`
-  rendering back, or keep the new rendering and only drop the unicode
-  alphabets with ``text_fontstyle=False, math_fontstyle=False``.  The
-  command-line tool takes ``--math-mode=text``, or ``--text-fontstyle=off
-  --math-fontstyle=off``, for the same purposes.
+  new ``math_mode='fancy'`` engine by default, which improves math content
+  spacing and uses cleverer unicode constructs such as for sub/superscripts and
+  fractions. The renderer now also uses unicode mathematical font characters
+  where `pylatexenc 2` produced plain ASCII letters.  That is, ``$x+y$`` gives
+  ``𝑥 + 𝑦``, and ``\textbf{bold}`` gives ``𝐛𝐨𝐥𝐝``.  If you are indexing the
+  output, comparing it against stored strings, or feeding it to a program that
+  expects ASCII, switch the unicode alphabets off with ``math_fontstyle=False,
+  text_fontstyle=False``.
+
+  To restore `pylatexenc 2`'s behavior, set ``math_fontstyle=None,
+  text_mathmode=False, math_mode='text'``.  For example::
+
+    from pylatexenc.latex2text import LatexNodes2Text
+
+    latex = r'$\gamma x+y + \mathcal{Z}$ and \textbf{bold}'
+
+    # pylatexenc 3 default
+    LatexNodes2Text().latex_to_text(latex)
+    # ->  'γ𝑥 + 𝑦 + 𝒵 and 𝐛𝐨𝐥𝐝'
+
+    # the new math renderer, with all unicode alphabets dropped:
+    LatexNodes2Text(math_fontstyle=False,
+                    text_fontstyle=False).latex_to_text(latex)
+    # ->  'γx + y + Z and bold'
+
+    # Restore pylatexenc 2 behavior: legacy rendering engine; upright
+    # default math font, but \mathcal{}, \mathbb{} still produce
+    # the relevant unicode fonts
+    LatexNodes2Text(math_mode='text',
+                    math_fontstyle=None,
+                    text_fontstyle=False).latex_to_text(latex)
+    # ->  'γ x+y + 𝒵 and bold'
+
+  The command-line tool takes
+  ``--text-fontstyle=off --math-fontstyle=none --math-mode=text`` for the same
+  purposes.
 
 - Paragraph breaks (``\n\n``) as well as ``^`` and ``_`` are now reported as
   their own *specials* nodes.  This means that text which used to come back as
@@ -163,13 +199,37 @@ A couple things to look out for
   or simply concatenating the ``chars`` of every chars node in a list, you'll
   need to handle those specials nodes as well.
 
-- The default macro and environment database learned a few new definitions,
-  including ``\href`` (which takes two arguments), ``\part``, ``\paragraph``
-  (which was misspelled in the `pylatexenc 2` database, and hence unknown), and
-  the ``{lstlisting}`` environment.  When a macro becomes known, the ``{...}``
-  groups that follow it are parsed as its *arguments* instead of remaining
-  sibling group nodes, so the shape of the node tree changes for documents that
-  use them.
+  To restore pylatexenc v2's behavior (`\n\n` kept as chars, `_`/`^` not
+  specials), exclude the corresponding categories from the default latex context
+  DB::
+
+    from pylatexenc import latexwalker, latex2text
+
+    # restore pylatexenc v2 behavior: \n\n, _, ^  as chars and not specials
+    latex_context = latexwalker.get_default_latex_context_db().filtered_context(
+        exclude_categories=["latex-paragraph", "latex-base-subsuperscripts"]
+    )
+
+    # Use in latex2text directly -- kwargs of latex_to_text are directly
+    # handed over as LatexWalker constructor arguments
+    text = latex2text.LatexNodes2Text().latex_to_text(
+        …,
+        latex_context=latex_context
+    )
+
+    # Alternatively, if you want to create a walker object yourself:
+    walker = latexwalker.LatexWalker(…, latex_context=latex_context)
+    nodelist, _ = walker.parse_content()  # returns (nodes, parsing_state_delta)
+    text = latex2text.LatexNodes2Text().nodelist_to_text( nodelist )
+
+
+  The :py:mod:`~pylatexenc.latex2text` module keeps a database of its own, in
+  which the text replacements for ``^`` and ``_`` sit in a category of the same
+  name.  One could disable those definitions there as well with a corresponding
+  ``latex2text.get_default_latex_context_db().filtered_context(…)`` call;
+  however, it is not necessary to do so because a walker that no longer reports
+  ``^`` and ``_`` as specials hands them to `latex2text` inside ordinary chars
+  nodes, so their text replacements are never looked up.
 
 - If you created a :py:class:`~pylatexenc.macrospec.LatexContextDb` database
   from scratch, you might suddenly get errors about unknown macros.  The default
@@ -205,19 +265,6 @@ A couple things to look out for
   that ``isinstance(node.nodeargd, ParsedVerbatimArgs)`` is no longer true for
   ``\verb``; the `verbatim_text` attribute still works as before.
 
-- We've introduced a new entry point interface for parsing:
-  :py:meth:`LatexWalker.parse_content()
-  <pylatexenc.latexwalker.LatexWalker.parse_content>`, with a suitable parser
-  object from :py:mod:`pylatexenc.latexnodes.parsers` (such as
-  :py:class:`~pylatexenc.latexnodes.parsers.LatexGeneralNodesParser`).  The new
-  interface returns ``(nodes, parsing_state_delta)`` — the node list along with
-  any information about state changes that occurred during the parsing.
-  The earlier interface exposed by `pylatexenc 2`, using
-  :py:class:`~pylatexenc.latexwalker.LatexWalker` — `get_latex_nodes()`,
-  `get_token()`, `get_latex_expression()`, `get_latex_braced_group()`,
-  `get_latex_environment()` and `get_latex_maybe_optional_arg()` keeps working
-  as it did.
-
 - Building macro specifications with the `pylatexenc 2` `args_parser=` argument
   still works, but it is deprecated and now warns.
 
@@ -226,10 +273,6 @@ A couple things to look out for
 Some bug fixes in behavior
 --------------------------
 
-- The :py:mod:`~pylatexenc.latex2text` 's ``\paragraph{...}`` output
-  was fixed to produce simply ``"Paragraph Title\nBody"``.  (Pylatexenc 2
-  didn't get the newlines quite right.)
-
 - The ``verbatim`` and ``lstlisting`` environments no longer report the newline
   that immediately follows ``\begin{...}`` as part of their contents, mirroring
   what LaTeX itself does.
@@ -237,11 +280,10 @@ Some bug fixes in behavior
 - An unterminated ``lstlisting`` environment no longer loses its parsed
   arguments in tolerant parsing mode; ``nodeargd`` used to be `None` there.
 
-- Fixes for latex2text: ``\href{...}{...}`` and ``\url{...}``; ``{verbatim}``
-  and ``{lstlisting}``.
+- Fixes in `latex2text`, including ``\href{...}{...}``, ``\url{...}``,
+  ``\paragraph{...}``, ``{verbatim}`` and ``{lstlisting}``.
 
-- ``{enumerate}`` items are numbered, and ``\frac{a}`` (with a missing second
-  argument) no longer emits the literal replacement string ``'%s/%s'``.
+- Numbered and hierarchical ``{enumerate}`` items are numbered.
 
 - More extensive support for math operators and symbols in latex2text.
 

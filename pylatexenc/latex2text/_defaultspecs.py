@@ -114,8 +114,12 @@ def _latex_today():
 # which the excursion into math mode never disturbed.  See the `text_fontstyle`
 # and `math_fontstyle` fields of `TextConversionState`.
 #
-# All of these only do anything of the sort with math_mode='fancy';
-# in every other math mode they behave exactly as they always have.
+# The font styles have nothing to do with the `math_mode=` option, which selects
+# the engine that renders a formula and not the fonts the letters are set in:
+# whether these macros do anything is decided by the `text_fontstyle` and
+# `math_fontstyle` fields alone.  (A math mode that never renders the nodes of a
+# formula, `math_mode='verbatim'` or `'remove'`, naturally shows nothing of the
+# math font either; that is a property of those modes and not a font setting.)
 #
 # A font style field of the conversion state that holds `False` says that no
 # unicode alphabet is to be used in that mode at all, which is what the
@@ -130,24 +134,25 @@ def _is_fancy_math(l2tobj):
 
 def _mathxx_formatter(style):
     # '\mathbf{}' and friends.  The font style is pushed onto the conversion
-    # state *before* the argument is rendered, because the fancy engine applies
-    # the style where the characters are, at the leaves of the node tree.  It
-    # would not do to render first and transform the result afterwards, the way
-    # we have to in the other math modes: the fancy engine italicizes variable
-    # names, so '\mathbf{x}' would arrive here as the math italic 'x' (U+1D465),
+    # state *before* the argument is rendered, because the style is applied
+    # where the characters are, at the leaves of the node tree.  It would not do
+    # to render first and transform the result afterwards: a variable name that
+    # is being italicized would arrive here as the math italic 'x' (U+1D465),
     # which is outside the range of ascii letters that the bold mapping knows
     # how to convert, and the bold would silently be lost.
     def formatter(node, l2tobj, style=style):
-        if not _is_fancy_math(l2tobj) or not l2tobj.state.in_math_mode:
-            arg_text = l2tobj.node_arg_to_text(node, 0)
-            if style is None:
-                return arg_text
-            return fmt_math_text_style(arg_text, style)
+        if l2tobj.state.in_math_mode:
+            if l2tobj.state.math_fontstyle is False:
+                return l2tobj.node_arg_to_text(node, 0)
+            with l2tobj.push_state(math_fontstyle=style):
+                return l2tobj.node_arg_to_text(node, 0)
 
-        if l2tobj.state.math_fontstyle is False:
+        # A math font macro outside of math mode is an error in LaTeX.  We still
+        # honor it, and it is then the text font style that it installs, because
+        # that is the one that governs the text it is being used in.
+        if l2tobj.state.text_fontstyle is False:
             return l2tobj.node_arg_to_text(node, 0)
-
-        with l2tobj.push_state(math_fontstyle=style):
+        with l2tobj.push_state(text_fontstyle=style):
             return l2tobj.node_arg_to_text(node, 0)
 
     return formatter
@@ -190,11 +195,6 @@ def _textxx_formatter(macroname):
     style = _textxx_fontstyles.get(macroname, None)
 
     def formatter(node, l2tobj, set_fontstyle=set_fontstyle, style=style):
-        if not _is_fancy_math(l2tobj):
-            # outside of the fancy engine there are no font styles to apply, so
-            # the argument is simply rendered as ordinary text
-            return l2tobj.node_arg_to_text(node, 0)
-
         in_math_mode = l2tobj.state.in_math_mode
 
         state_changes = {'in_math_mode': False}
@@ -204,7 +204,7 @@ def _textxx_formatter(macroname):
         with l2tobj.push_state(**state_changes):
             arg_text = l2tobj.node_arg_to_text(node, 0)
 
-        if not in_math_mode:
+        if not in_math_mode or not _is_fancy_math(l2tobj):
             return arg_text
         return l2tobj.make_math_piece(text=arg_text, cls='text')
 
@@ -228,9 +228,6 @@ _emph_toggle_fontstyles = {
 
 
 def _emph_formatter(node, l2tobj):
-    if not _is_fancy_math(l2tobj):
-        return l2tobj.node_arg_to_text(node, 0)
-
     in_math_mode = l2tobj.state.in_math_mode
 
     if l2tobj.state.text_fontstyle is False:
@@ -241,7 +238,7 @@ def _emph_formatter(node, l2tobj):
     with l2tobj.push_state(in_math_mode=False, text_fontstyle=style):
         arg_text = l2tobj.node_arg_to_text(node, 0)
 
-    if not in_math_mode:
+    if not in_math_mode or not _is_fancy_math(l2tobj):
         return arg_text
     return l2tobj.make_math_piece(text=arg_text, cls='text')
 
@@ -381,12 +378,12 @@ def _subsuperscript_formatter(which):
 
         # if the full argument can be rendered with unicode superscript or
         # subscript characters, then that's the best we can do in plain text.
-        # The fancy engine italicizes variable names where they are typeset, so
-        # the argument reaches us already styled and has to be taken back to
-        # plain ascii before the lookup; unicode has no styled superscripts to
-        # offer anyway.
+        # A variable name that is being italicized reaches us already styled and
+        # has to be taken back to plain ascii before the lookup; unicode has no
+        # styled superscripts to offer anyway.  Canonicalizing costs nothing
+        # when the letters are unstyled to begin with, so it is done always.
         subsuper_text = fmt_subsuperscript_text(
-            arg_text, which, normalize_math_style_chars=fancy
+            arg_text, which, normalize_math_style_chars=True
         )
         if subsuper_text is None and fancy and ' ' in arg_text:
             # Unicode has no superscript or subscript space, so a single space
@@ -672,7 +669,7 @@ _latex_specs_approximations = {
     )],
 }
 
-_latex_specs_base = {
+_latex_specs_subsuperscripts = {
 
     'environments': [
     ],
@@ -682,6 +679,17 @@ _latex_specs_base = {
         # argument and are simply rendered as themselves
         SpecialsTextSpec('^', simplify_repl=_subsuperscript_formatter('superscript')),
         SpecialsTextSpec('_', simplify_repl=_subsuperscript_formatter('subscript')),
+    ],
+
+    'macros': [
+    ],
+}
+
+_latex_specs_base = {
+
+    'environments': [
+    ],
+    'specials': [
     ],
 
     'macros': [
@@ -1820,6 +1828,15 @@ specs = [
     # CATEGORY: latex-base
     #
     ('latex-base', _latex_specs_base),
+
+    #
+    # CATEGORY: latex-base-subsuperscripts
+    #
+    # Kept apart from 'latex-base' so that it can be discarded on its own,
+    # matching the category of the same name in the latex walker's default
+    # definitions (see pylatexenc.latexwalker._defaultspecs).
+    #
+    ('latex-base-subsuperscripts', _latex_specs_subsuperscripts),
 
     #
     # CATEGORY: latex-approximations
