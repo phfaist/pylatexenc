@@ -40,12 +40,12 @@ jobs:
         run: uv run --frozen pytest
 
 
-  # Older pythons, down to the oldest one that the GitHub-hosted runners can
-  # still provide.  'uv.lock' deliberately covers python 3.10 and later only
-  # (see [tool.uv.dependency-groups] in pyproject.toml), so pytest is resolved
-  # on the fly here and uv picks whichever release still supports the
-  # interpreter.  These runs are therefore not pinned; a pytest release could
-  # in principle break them without any change on our side.
+  # Older pythons that the runner images still provide an interpreter for.
+  # 'uv.lock' deliberately covers python 3.10 and later only (see
+  # [tool.uv.dependency-groups] in pyproject.toml), so pytest is resolved on the
+  # fly here and uv picks whichever release still supports the interpreter.
+  # These runs are therefore not pinned; a pytest release could in principle
+  # break them without any change on our side.
   #
   # The library is pure python and has no runtime dependencies, so there is
   # nothing to build: it is used straight from the source tree via PYTHONPATH.
@@ -55,15 +55,15 @@ jobs:
       #fail-fast: true
       matrix:
         python-version:
-          - "3.7"
           - "3.8"
           - "3.9"
 
-    # 'ubuntu-22.04' is the newest runner image for which 'actions/setup-python'
-    # still provides python 3.7.  uv's own python downloads only start at 3.8,
-    # which is why the interpreter comes from 'actions/setup-python' here and
-    # from 'astral-sh/setup-uv' in the job above.
-    runs-on: 'ubuntu-22.04'
+    # 'actions/setup-python' publishes prebuilt interpreters per runner image.
+    # For python 3.8 and 3.9 the newest image it builds them for is ubuntu
+    # 24.04, so that is what we ask for rather than 'ubuntu-latest' — the
+    # 'latest' label moves on to newer images over time and would eventually
+    # leave these two versions behind without warning.
+    runs-on: 'ubuntu-24.04'
 
     steps:
       - uses: actions/checkout@v4
@@ -87,3 +87,58 @@ jobs:
         run: >-
           uv run --no-project --python "$(which python)" --with pytest
           pytest
+
+
+  # The two oldest pythons we still advertise, run inside the official docker
+  # images for those versions.
+  #
+  # These cannot go through 'actions/setup-python' at all.  That action installs
+  # interpreters that were prebuilt for a specific runner image, and the newest
+  # image python 3.6 was ever built for is ubuntu 20.04, which has been retired;
+  # for python 3.7 it is ubuntu 22.04, whose retirement is already scheduled.
+  # Building these versions from source instead (with pyenv, say) runs into a
+  # second wall: ubuntu 22.04 and later ship OpenSSL 3, which python 3.6
+  # predates, so its secure-sockets module will not compile without supplying an
+  # older OpenSSL first.
+  #
+  # The official images sidestep both problems.  They stopped being updated when
+  # each version reached end of life, which is exactly what we want here: a
+  # frozen, genuine interpreter of that vintage.
+  #
+  # Note the container is used for the test step only, rather than as a
+  # job-level 'container:'.  Anything declared that way makes GitHub run its own
+  # tooling inside the image, and that tooling needs a newer system C library
+  # than these old images carry.  Checking out on the runner and mounting the
+  # working directory keeps all of that on the host, where it is fine, and
+  # leaves the container with nothing to do but install pytest and run it.
+  tests-ci-oldest:
+
+    strategy:
+      #fail-fast: true
+      matrix:
+        # Full versions, because they name the image tag: these are the final
+        # releases of each series, and no further ones are coming.
+        python-version:
+          - "3.6.15"
+          - "3.7.17"
+
+    runs-on: 'ubuntu-latest'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # pytest is left unpinned for the same reason as in the job above.  pip
+      # honours each release's declared python requirement, so this settles on
+      # pytest 7.0.1 under python 3.6 (7.1 was the first to drop it) and on the
+      # last 7.x supporting python 3.7.
+      #
+      # Writing no bytecode keeps the container from leaving root-owned '.pyc'
+      # files behind in the mounted working directory.
+      - name: 'Run tests on python ${{ matrix.python-version }}'
+        run: |
+          docker run --rm \
+            --volume "$PWD:/src" \
+            --workdir /src \
+            --env PYTHONDONTWRITEBYTECODE=1 \
+            "python:${{ matrix.python-version }}-slim" \
+            sh -c 'pip install --quiet --no-cache-dir --disable-pip-version-check pytest && python -m pytest'

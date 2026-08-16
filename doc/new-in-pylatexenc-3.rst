@@ -31,18 +31,18 @@ architecture with extended and more flexible functionality:
 
 - New parsing mechanism in a new `latexnodes` module — everything gets delegated
   to "parser objects" that are specialized in parsing a specific construct.  See
-  :py:class:`pylatexenc.latexnodes.parsers.LatexParserBase`.
-
-- The parser has new enhanced handling of macro, environment, and specials
-  arguments.  Arguments can be named for easier lookup when traversing the node
-  tree.
+  :py:class:`pylatexenc.latexnodes.parsers.LatexParserBase`.  The reusable
+  parsers live in `pylatexenc.latexnodes.parsers`; you can write your own by
+  deriving from `LatexParserBase`.
 
 - Lists of latex node objects
   (:py:class:`~pylatexenc.latexnodes.nodes.LatexNode`) are now wrapped in a
   special object for node lists →
   :py:class:`pylatexenc.latexnodes.nodes.LatexNodeList`.
 
-- Macro, environment and specials arguments are now stored in a
+- The parser has new enhanced handling of macro, environment, and specials
+  arguments.  Arguments can be named for easier lookup when traversing the node
+  tree.  Also, macro, environment and specials arguments are now stored in a
   :py:class:`pylatexenc.latexnodes.ParsedArguments` object.  (The name
   `macrospec.ParsedMacroArgs` still refers to that same class, so existing
   `isinstance()` tests keep working.)  Use
@@ -55,6 +55,11 @@ architecture with extended and more flexible functionality:
   inspired by LaTeX' `xparse` package specification.  For a full list of
   argument types, see :py:class:`~pylatexenc.macrospec.MacroSpec` and
   :py:class:`~pylatexenc.latexnodes.parsers.LatexStandardArgumentParser`.
+
+- Parsing state changes are described by explicit *parsing state delta* objects
+  (:py:class:`~pylatexenc.latexnodes.ParsingStateDelta`, so a construct can now
+  legitimately alter how the rest of the document is parsed — including
+  extending the macro database mid-document.
 
 - Errors got their own little hierarchy.  `LatexWalkerParseError` now derives
   from a new
