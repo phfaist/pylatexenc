@@ -11,13 +11,23 @@ different here and there, though — see below.  You might get some deprecation
 warnings which you can silence using python's warnings filter management (e.g.,
 ``python -W 'ignore::DeprecationWarning'`` or using
 :py:func:`warnings.simplefilter`).  We did our best to make the API as
-backwards-compatible as reasonably possible, so there's a good chance your code
-continues to run as-is (or with minor tweaks).
+backwards-compatible as reasonably possible, so there's a great chance your code
+continues to run as-is.
 
-Compatibility with Python 2 was dropped.  We'll try to remain compatible with
-Python ≥ 3.6 moving forward.
+Compatibility with Python 2 was dropped.  We'll do our best to remain compatible
+with Python ≥ 3.6 moving forward.
 
-The parser-related modules have seen a number of changes, including:
+Overall, the differences between pylatexenc v2 and v3 are mostly associated with
+the parser-related modules :py:mod:`~pylatexenc.latexwalker`,
+:py:mod:`~pylatexenc.macrospec`, and the new module
+:py:mod:`~pylatexenc.latexnodes`.  The :py:mod:`~pylatexenc.latex2text` module
+gained a few helpers, support for unicode text and math font formatting, and a
+better math mode formatter.  (The :py:mod:`~pylatexenc.latexencode` module
+underwent only minor changes.)
+
+
+The parser-related modules have underwent a restructuring for a better
+architecture with extended and more flexible functionality:
 
 - New parsing mechanism in a new `latexnodes` module — everything gets delegated
   to "parser objects" that are specialized in parsing a specific construct.  See
@@ -146,9 +156,7 @@ A couple things to look out for
 
   If you were looking for ``"\n\n"`` inside ``node.chars`` to split paragraphs,
   or simply concatenating the ``chars`` of every chars node in a list, you'll
-  need to handle those specials nodes as well.  This is probably the change
-  that's most likely to bite you, because it doesn't require using any fancy
-  feature — reading ``node.chars`` is enough.
+  need to handle those specials nodes as well.
 
 - The default macro and environment database learned a few new definitions,
   including ``\href`` (which takes two arguments), ``\part``, ``\paragraph``
@@ -206,9 +214,7 @@ A couple things to look out for
   as it did.
 
 - Building macro specifications with the `pylatexenc 2` `args_parser=` argument
-  still works, but it is deprecated and now warns.  You can't mix it with the
-  `pylatexenc 3` options (`arguments_spec_list=`, `body_parsing_state_delta=`,
-  …) in the same call.
+  still works, but it is deprecated and now warns.
 
 
 
