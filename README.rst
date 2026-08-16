@@ -12,13 +12,12 @@ Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion
 Python: ≥ 3.6.  The library has no runtime dependencies and is designed to be as
 backwards-compatible as reasonably possible.
 
-**PYLATEXENC 3.0beta** is in pre-release on PyPI.  Try ``pip
-install --pre pylatexenc``.  See `new features and major changes
-<https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-3/>`_.  The
-`documentation <https://pylatexenc.readthedocs.io/en/latest/>`_ is still
-incomplete, and the new APIs are still subject to changes.  The code is meant to
-be as backwards compatible as is reasonably possible.  Feel free to try it out &
-submit feedback!
+**PYLATEXENC 3.0beta** is in pre-release on PyPI.  Try ``pip install --pre
+pylatexenc``.  See `new features and major changes
+<https://pylatexenc.readthedocs.io/en/latest/new-in-pylatexenc-3/>`_ and read
+`the full documentation here <https://pylatexenc.readthedocs.io/en/latest/>`_ .
+The code is meant to be as backwards compatible as is reasonably possible.  Feel
+free to try it out & submit feedback!
 
 
 Unicode Text to LaTeX code

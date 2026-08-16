@@ -245,6 +245,8 @@ Some bug fixes in behavior
 - You might notice other fixes that we forgot to include here.
 
 
+.. _new-in-pylatexenc-3-details-v3-might-get-different:
+
 Details that v3 might get different
 -----------------------------------
 

@@ -11,12 +11,10 @@ pylatexenc 3.0
 
    new-in-pylatexenc-3
 
-- Currently in beta.  Stable 3.0 release is planned soon (for real this time, I
-  hope, thanks to AI under my tight supervision!)
-
-- see in particular the :ref:`list of changes that might affect existing code
-  <new-in-pylatexenc-3-possible-pitfall-changes>` if you're using some more
-  advanced features of `pylatexenc`.
+- see the :ref:`list of changes that might affect existing code
+  <new-in-pylatexenc-3-possible-pitfall-changes>` and :ref:`Details that v3
+  might get different <new-in-pylatexenc-3-details-v3-might-get-different>`,
+  especially if you're using some more advanced features of `pylatexenc`.
 
 
 
