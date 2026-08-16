@@ -1975,6 +1975,12 @@ Use macros: \a{} and \b{xxx}{yyy}.
         gln_result = \
             lw.get_latex_nodes(pos=p, read_max_nodes=3, parsing_state=parsing_state)
         stuff_parsing_state = gln_result[0][1].nodeargd.argnlist[0].parsing_state
+        # the class name is read as plain characters, so its contents have their
+        # own parsing state (macros, specials, etc. disabled there)
+        docclass_arguments_spec_list = \
+            parsing_state.latex_context.get_macro_spec('documentclass').arguments_spec_list
+        docclass_parsing_state = \
+            gln_result[0][1].nodeargd.argnlist[1].nodelist[0].parsing_state
         self.assertEqual(
             gln_result,
             ([
@@ -1983,7 +1989,9 @@ Use macros: \a{} and \b{xxx}{yyy}.
                                pos=0, len=1),
                 LatexMacroNode(parsing_state=parsing_state,
                                macroname='documentclass',
-                               nodeargd=macrospec.ParsedMacroArgs(argspec='[{', argnlist=[
+                               nodeargd=macrospec.ParsedMacroArgs(
+                                   arguments_spec_list=docclass_arguments_spec_list,
+                                   argnlist=[
                                    LatexGroupNode(parsing_state=stuff_parsing_state,
                                                   delimiters=('[', ']'),
                                                   nodelist=[
@@ -1997,7 +2005,7 @@ Use macros: \a{} and \b{xxx}{yyy}.
                                                   delimiters=('{', '}'),
                                                   nodelist=[
                                                       LatexCharsNode(
-                                                          parsing_state=parsing_state,
+                                                          parsing_state=docclass_parsing_state,
                                                           chars='docclass',
                                                           pos=1+22,len=30-22
                                                       ),

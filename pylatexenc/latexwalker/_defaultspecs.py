@@ -37,6 +37,7 @@ from ..latexnodes.nodes import (
 from ..latexnodes.parsers import (
     LatexStandardArgumentParser,
     LatexExpressionParser,
+    LatexCharsGroupParser,
     LatexDelimitedVerbatimParser,
     LatexVerbatimEnvironmentContentsParser,
 )
@@ -94,6 +95,19 @@ def _arg_mathmode(parser):
 
 def _arg_textmode(parser):
     return LatexArgumentSpec(parser, parsing_state_delta=ParsingStateDeltaLeaveMathMode())
+
+def _arg_charsname(argname):
+    r"""
+    An argument that is a name rather than LaTeX code: a file name, a label
+    name, and the like.
+
+    The contents are read as plain characters, so that a character which would
+    otherwise be picked up as a specials or as a macro stays part of the name.
+    Without this, the underscore in ``\input{my_file.tex}`` is reported as its
+    own specials node and a caller that reassembles the argument from its chars
+    nodes ends up with ``myfile.tex``.
+    """
+    return LatexArgumentSpec(LatexCharsGroupParser(), argname=argname)
 
 
 def _make_verbatim_environment_body_parser(token, nodeargd, arg_parsing_state_delta):
@@ -181,9 +195,12 @@ specs = [
     ('latex-base', {
         'macros': [
 
-            std_macro('documentclass', True, 1),
-            std_macro('usepackage', True, 1),
-            std_macro('RequirePackage', True, 1),
+            MacroSpec('documentclass', arguments_spec_list=[
+                '[', _arg_charsname('classname') ]),
+            MacroSpec('usepackage', arguments_spec_list=[
+                '[', _arg_charsname('packagename') ]),
+            MacroSpec('RequirePackage', arguments_spec_list=[
+                '[', _arg_charsname('packagename') ]),
             std_macro('selectlanguage', True, 1),
             std_macro('setlength', True, 2),
             std_macro('addlength', True, 2),
@@ -241,10 +258,13 @@ specs = [
             std_macro('item', True, 0),
 
             # \input{someotherfile}
-            std_macro('input', False, 1),
-            std_macro('include', False, 1),
+            MacroSpec('input', arguments_spec_list=[ _arg_charsname('filename') ]),
+            MacroSpec('include', arguments_spec_list=[ _arg_charsname('filename') ]),
 
-            std_macro('includegraphics', True, 1),
+            MacroSpec('includegraphics', arguments_spec_list=[
+                '[',
+                _arg_charsname('filename'),
+            ]),
 
             std_macro('part', '*[{'),
             std_macro('chapter', '*[{'),
@@ -254,7 +274,10 @@ specs = [
             std_macro('paragraph', '*[{'),
             std_macro('subparagraph', '*[{'),
 
-            std_macro('bibliography', '{'),
+            MacroSpec('bibliography', arguments_spec_list=[ _arg_charsname('filename') ]),
+            # \bibitem[label]{citekey}, in a {thebibliography} environment
+            MacroSpec('bibitem', arguments_spec_list=[
+                '[', _arg_charsname('citekey') ]),
 
 
             std_macro('emph', False, 1),
@@ -278,12 +301,12 @@ specs = [
             std_macro('mathscr', False, 1),
             std_macro('mathfrak', False, 1),
 
-            std_macro('label', False, 1),
-            std_macro('ref', False, 1),
-            std_macro('autoref', False, 1),
-            std_macro('cref', False, 1),
-            std_macro('Cref', False, 1),
-            std_macro('eqref', False, 1),
+            MacroSpec('label', arguments_spec_list=[ _arg_charsname('label') ]),
+            MacroSpec('ref', arguments_spec_list=[ _arg_charsname('label') ]),
+            MacroSpec('autoref', arguments_spec_list=[ _arg_charsname('label') ]),
+            MacroSpec('cref', arguments_spec_list=[ _arg_charsname('label') ]),
+            MacroSpec('Cref', arguments_spec_list=[ _arg_charsname('label') ]),
+            MacroSpec('eqref', arguments_spec_list=[ _arg_charsname('label') ]),
             MacroSpec('href', arguments_spec_list=[
                 LatexArgumentSpec(
                     LatexDelimitedVerbatimParser(delimiters=('{','}'),),
@@ -552,27 +575,49 @@ specs = [
     #
     ('natbib', {
         'macros': [
-            std_macro('cite', '*[[{'),
-            std_macro('citet', '*[[{'),
-            std_macro('citep', '*[[{'),
-            std_macro('citealt', '*[[{'),
-            std_macro('citealp', '*[[{'),
-            std_macro('citeauthor', '*[[{'),
-            std_macro('citefullauthor', '[[{'),
-            std_macro('citeyear', '[[{'),
-            std_macro('citeyearpar', '[[{'),
-            std_macro('Citet', '*[[{'),
-            std_macro('Citep', '*[[{'),
-            std_macro('Citealt', '*[[{'),
-            std_macro('Citealp', '*[[{'),
-            std_macro('Citeauthor', '*[[{'),
+            # The final mandatory argument of these is a list of citation keys,
+            # not latex code.
+            MacroSpec('cite', arguments_spec_list=[
+                '*', '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('citet', arguments_spec_list=[
+                '*', '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('citep', arguments_spec_list=[
+                '*', '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('citealt', arguments_spec_list=[
+                '*', '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('citealp', arguments_spec_list=[
+                '*', '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('citeauthor', arguments_spec_list=[
+                '*', '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('citefullauthor', arguments_spec_list=[
+                '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('citeyear', arguments_spec_list=[
+                '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('citeyearpar', arguments_spec_list=[
+                '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('Citet', arguments_spec_list=[
+                '*', '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('Citep', arguments_spec_list=[
+                '*', '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('Citealt', arguments_spec_list=[
+                '*', '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('Citealp', arguments_spec_list=[
+                '*', '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('Citeauthor', arguments_spec_list=[
+                '*', '[', '[', _arg_charsname('citekey') ]),
 
+            # \citetext{...} is the exception here: its argument is the text to
+            # place within the citation delimiters, not a key.
             std_macro('citetext', '{'),
-            std_macro('citenum', '{'),
+            MacroSpec('citenum', arguments_spec_list=[ _arg_charsname('citekey') ]),
 
-            std_macro('defcitealias', '{{'),
-            std_macro('citetalias', '[[{'),
-            std_macro('citepalias', '[[{'),
+            # \defcitealias{key}{text that replaces the citation}
+            MacroSpec('defcitealias', arguments_spec_list=[
+                _arg_charsname('citekey'), '{' ]),
+            MacroSpec('citetalias', arguments_spec_list=[
+                '[', '[', _arg_charsname('citekey') ]),
+            MacroSpec('citepalias', arguments_spec_list=[
+                '[', '[', _arg_charsname('citekey') ]),
         ],
         'environments': [
         ],
