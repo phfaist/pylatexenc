@@ -8,6 +8,8 @@ logger = logging.getLogger(__name__)
 
 ### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
+import warnings
+
 from pylatexenc import latexwalker
 
 from pylatexenc.latexnodes import ParsingStateDeltaEnterMathMode
@@ -63,6 +65,18 @@ def _environment_body_parsing_state(spec, latex):
 
 
 class TestCallableSpecLegacyArgsParser(unittest.TestCase):
+
+    def setUp(self):
+        # `args_parser=` is deprecated on purpose here; these tests check that
+        # it keeps working, so the deprecation warnings it emits are expected
+        # and would only clutter the test output.  (The filter has to be set up
+        # in setUp(), and not in the constructor, because pytest installs its
+        # own warning filters for the duration of each individual test.)
+        catch_warnings = warnings.catch_warnings()
+        catch_warnings.__enter__()
+        self.addCleanup(catch_warnings.__exit__, None, None, None)
+        warnings.simplefilter('ignore', DeprecationWarning)
+
 
     def test_args_parser_as_string_provides_the_arguments(self):
         # MacroSpec('foo', args_parser='{[') must accept the very same arguments
