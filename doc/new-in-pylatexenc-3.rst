@@ -158,7 +158,7 @@ A couple things to look out for
   text_fontstyle=False``.
 
   To restore `pylatexenc 2`'s behavior, set ``math_fontstyle=None,
-  text_mathmode=False, math_mode='text'``.  For example::
+  text_fontstyle=False, math_mode='text'``.  For example::
 
     from pylatexenc.latex2text import LatexNodes2Text
 
