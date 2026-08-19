@@ -94,4 +94,34 @@ __eq__ = function (a, b) {
 
 
 
+//
+// Transcrypt's chr() and ord() are String.fromCharCode() and charCodeAt(),
+// which only cover the sixteen-bit range: a character that lies outside of
+// the basic multilingual plane comes back truncated.  The unicode math
+// alphabets that latex2text writes formulas with live exactly there.
+//
+// For a code point that does fit in sixteen bits, and for a string whose
+// first character does, the replacements below behave exactly as the
+// originals did.
+//
+chr = function (codePoint) {
+    return String.fromCodePoint (codePoint);
+};
+ord = function (aChar) {
+    return aChar.codePointAt (0);
+};
+
+//
+// Transcrypt's getattr() ignores the default value that Python's getattr()
+// accepts as its third argument, and hands back the undefined value instead.
+//
+getattr = function (obj, name, aDefault) {
+    var result = name in obj ? obj [name] : obj ['py_' + name];
+    if (result === undefined && aDefault !== undefined) {
+        return aDefault;
+    }
+    return result;
+};
+
+
 /*** PhF/PYLATEXENC - END CUSTOM PATCHES ***/

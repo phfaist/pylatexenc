@@ -102,6 +102,8 @@ def run_main():
                 'test_macrospec_.*',
                 'test_latexwalker_.*',
                 'test_latexencode',
+                'test_latex2text',
+                'test_latex2text_.*',
                 'test_util',
             ]
         )

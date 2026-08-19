@@ -90,12 +90,37 @@ do not reintroduce compatibility shims for it.
 ## Constraints when editing
 
 **Transcrypt-compatible subset.**  `latexnodes`, `latexnodes.parsers`,
-`macrospec`, `latexwalker` and `latexencode` are compiled to JavaScript, so they
-use only a restricted subset of Python: no f-strings, no comprehension-heavy
-idioms beyond what `tools/preprocess_lib.py` rewrites, etc.  Follow the style of
-the surrounding code.  Any change to these modules must be validated by running
-the JavaScript build and its tests, not just `pytest`.  (`latex2text` is not
-transcribed and is less constrained.)
+`macrospec`, `latexwalker`, `latexencode` and `latex2text` are compiled to
+JavaScript, so they use only a restricted subset of Python: no f-strings, no
+comprehension-heavy idioms beyond what `tools/preprocess_lib.py` rewrites, etc.
+Follow the style of the surrounding code.  Any change to these modules must be
+validated by running the JavaScript build and its tests, not just `pytest`.
+(The command-line front ends in the `__main__.py` files are not transcribed and
+are less constrained.)
+
+Things that Transcrypt gets wrong, and that therefore must not appear in these
+modules:
+
+- percent-style string formatting (`'%s' % (x,)`); use `'{}'.format(x)`;
+- a default argument value that refers to a name of the enclosing scope
+  (`lambda n, c=c: ...`, `def f(node, style=style):`); use a plain closure;
+- a comprehension that iterates over a generator expression; use an explicit
+  loop or an explicit list;
+- a `return`, `break` or `continue` that leaves a `with` block — the context
+  manager's clean-up is silently skipped; assign to a variable inside the block
+  and return after it;
+- `len()` of, and iteration over, a string that may hold a character outside
+  of the basic multilingual plane, such as the unicode math alphabets — a
+  string is a sequence of UTF-16 code units there, so such a character counts
+  as two and iterating hands out its two halves separately; `latex2text` has
+  `_split_chars()` and `_num_chars()` for this;
+- the modules `inspect`, `textwrap`, `datetime`, `unicodedata` and `os.path`,
+  which either are absent or fail on import; the few places that need them go
+  through a `### BEGINPATCH_…` block (see below).
+
+Transcrypt's own `chr()`, `ord()` and `getattr()` are patched in
+`js-transcrypt/transcrypt_runtime_patches.js` so that the first two cover the
+full range of code points and the third honors its default value.
 
 **Guarded source blocks.**  `tools/preprocess_lib.py` strips regions delimited by
 
@@ -107,6 +132,17 @@ Guards in use: `PYLATEXENC1_LEGACY_SUPPORT_CODE`,
 `PYLATEXENC2_LEGACY_SUPPORT_CODE`, `PYLATEXENC_GET_DEFAULT_SPECS_FN`,
 `LATEXWALKER_HELPERS`, and — in test sources — `DEBUG_SET_EQ_ATTRIBUTE` and
 `TEST_PYLATEXENC_SKIP`;
+
+`PYLATEXENC_GET_DEFAULT_SPECS_FN` is off in the JavaScript build, so
+`latexwalker.get_default_latex_context_db()` and
+`latex2text.get_default_latex_context_db()` are absent there and the two
+default-definition databases fall back to an empty latex context.  The
+definitions themselves are compiled into the package all the same, in
+`latexwalker/_get_defaultspecs.py` and `latex2text/_get_defaultspecs.py`, which
+calling code imports explicitly and passes as `latex_context=`.  Keep it that
+way: nothing in the library may import those two modules by itself, or every
+build would carry the whole definition catalogue.
+
 `### BEGINPATCH_…` /
 `### ENDPATCH_…` mark code substituted for the JavaScript build.  The markers
 must sit on their own line and the enclosed lines must not start with `###`.

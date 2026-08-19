@@ -11,6 +11,9 @@ module_list:
   - 'pylatexenc.macrospec'
   - 'pylatexenc.latexwalker'
   - 'pylatexenc.latexencode'
+  - 'pylatexenc.latex2text'
+  - 'pylatexenc.latex2text._get_defaultspecs'
+  - 'pylatexenc.latexwalker._get_defaultspecs'
   - 'pylatexenc.latexencode.get_builtin_rules'
 
 # features
@@ -35,3 +38,28 @@ enabled_features:
     LATEXENCODE_CALLABLE_ACCEPTS_U2LOBJ_ARG: |
       def _callable_accepts_u2lobj_arg(fn):
           return True
+
+    # There is no way to inspect a callable's argument names in JavaScript.
+    # Transcrypt silently ignores keyword arguments that a callable does not
+    # accept, so we simply offer it all of the ones it might have asked for.
+    LATEX2TEXT_SIMPLIFY_REPL_FN_ARG_NAMES: |
+      def _simplify_repl_fn_arg_names(fn):
+          return ('l2tobj', 'l2tstate', 'macroname', 'environmentname',
+                  'specials_chars',)
+
+    # each of these imports a single name, and not the module, so that the
+    # several patches of a same source file don't each declare the module
+    LATEX2TEXT_FILL_TEXT: |
+      from latex2text_jscompat import fill_text_paragraph as _fill_text_paragraph
+
+    LATEX2TEXT_PERCENT_SUBSTITUTION: |
+      from latex2text_jscompat import apply_percent_substitution as _apply_percent_substitution
+
+    LATEX2TEXT_COMPOSE_ACCENTED_CHAR: |
+      from latex2text_jscompat import compose_accented_char as _compose_accented_char
+
+    LATEX2TEXT_TODAY: |
+      from latex2text_jscompat import latex_today as _latex_today
+
+    LATEX2TEXT_READ_LATEX_FILE: |
+      from latex2text_jscompat import read_latex_file

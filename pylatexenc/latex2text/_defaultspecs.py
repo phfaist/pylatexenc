@@ -26,8 +26,23 @@
 
 # Internal module. May change without notice.
 
+### BEGINPATCH_LATEX2TEXT_COMPOSE_ACCENTED_CHAR
 import unicodedata
+
+def _compose_accented_char(s):
+    # Combine a base character and the combining accent character that follows
+    # it into the single character that unicode has for the pair, where there
+    # is one.
+    return unicodedata.normalize('NFC', s)
+### ENDPATCH_LATEX2TEXT_COMPOSE_ACCENTED_CHAR
+
+### BEGINPATCH_LATEX2TEXT_TODAY
 import datetime
+
+def _latex_today():
+    # The rendering of '\today', i.e., today's date spelled out.
+    return '{dt:%B} {dt.day}, {dt.year}'.format(dt=datetime.datetime.now())
+### ENDPATCH_LATEX2TEXT_TODAY
 
 
 from ..latex2text import (
@@ -36,15 +51,17 @@ from ..latex2text import (
     placeholder_node_formatter,
     fmt_matrix_environment_node, fmt_input_macro, fmt_math_text_style,
     fmt_list_environment, fmt_item_macro, fmt_subsuperscript_text,
-    fmt_math_expression_in_delimiters
+    fmt_math_expression_in_delimiters,
+    _split_chars
 )
 
 
 def _format_uebung(n, l2tobj):
     # str() because in math mode the 'fancy' math mode renders a
     # node list to a math piece rather than to a string
-    s = '\n' + str(l2tobj.nodelist_to_text([n.nodeargs[0]])) + '\n'
-    optarg = n.nodeargs[1]
+    nodeargs = n.nodeargd.argnlist if n.nodeargd is not None else []
+    s = '\n' + str(l2tobj.nodelist_to_text([nodeargs[0]])) + '\n'
+    optarg = nodeargs[1]
     if optarg is not None:
         s += '[{}]\n'.format(l2tobj.nodelist_to_text([optarg]))
     return s
@@ -100,12 +117,10 @@ def _format_maketitle(title, author, date):
     s = title + '\n'
     s += '    ' + author + '\n'
     s += '    ' + date + '\n'
-    s += '='*max(len(title), 4+len(author), 4+len(date)) + '\n\n'
+    s += '='*max(len(_split_chars(title)),
+                 4+len(_split_chars(author)),
+                 4+len(_split_chars(date))) + '\n\n'
     return s
-
-def _latex_today():
-    return '{dt:%B} {dt.day}, {dt.year}'.format(dt=datetime.datetime.now())
-
 
 #
 # The font style macros.  There are two families, one for text mode and one for
@@ -140,12 +155,19 @@ def _mathxx_formatter(style):
     # is being italicized would arrive here as the math italic 'x' (U+1D465),
     # which is outside the range of ascii letters that the bold mapping knows
     # how to convert, and the bold would silently be lost.
-    def formatter(node, l2tobj, style=style):
+    #
+    # The argument text is returned after the `with` block and not from inside
+    # it, because a `return` that leaves a `with` block does not run the
+    # clean-up when these sources are transcribed to JavaScript -- the font
+    # style would stay in force past the end of the argument.
+    #
+    def formatter(node, l2tobj):
         if l2tobj.state.in_math_mode:
             if l2tobj.state.math_fontstyle is False:
                 return l2tobj.node_arg_to_text(node, 0)
             with l2tobj.push_state(math_fontstyle=style):
-                return l2tobj.node_arg_to_text(node, 0)
+                arg_text = l2tobj.node_arg_to_text(node, 0)
+            return arg_text
 
         # A math font macro outside of math mode is an error in LaTeX.  We still
         # honor it, and it is then the text font style that it installs, because
@@ -153,7 +175,8 @@ def _mathxx_formatter(style):
         if l2tobj.state.text_fontstyle is False:
             return l2tobj.node_arg_to_text(node, 0)
         with l2tobj.push_state(text_fontstyle=style):
-            return l2tobj.node_arg_to_text(node, 0)
+            arg_text = l2tobj.node_arg_to_text(node, 0)
+        return arg_text
 
     return formatter
 
@@ -194,7 +217,7 @@ def _textxx_formatter(macroname):
     set_fontstyle = (macroname in _textxx_fontstyles)
     style = _textxx_fontstyles.get(macroname, None)
 
-    def formatter(node, l2tobj, set_fontstyle=set_fontstyle, style=style):
+    def formatter(node, l2tobj):
         in_math_mode = l2tobj.state.in_math_mode
 
         state_changes = {'in_math_mode': False}
@@ -310,7 +333,7 @@ _math_operator_names = (
 
 
 def _math_operator_formatter(text):
-    def formatter(node, l2tobj, text=text):
+    def formatter(node, l2tobj):
         if not _is_fancy_math(l2tobj) or not l2tobj.state.in_math_mode:
             return text
         return l2tobj.make_math_piece(text=text, cls='op')
@@ -349,7 +372,7 @@ def _bmod_formatter(node, l2tobj):
 
 
 def _mod_formatter(prefix, suffix, cls_right):
-    def formatter(node, l2tobj, prefix=prefix, suffix=suffix, cls_right=cls_right):
+    def formatter(node, l2tobj):
         text = prefix + l2tobj.node_arg_to_text(node, 0) + suffix
         if not _is_fancy_math(l2tobj) or not l2tobj.state.in_math_mode:
             return text
@@ -362,7 +385,7 @@ def _mod_formatter(prefix, suffix, cls_right):
 
 
 def _subsuperscript_formatter(which):
-    def formatter(node, l2tobj, specials_chars, which=which):
+    def formatter(node, l2tobj, specials_chars):
         if node.nodeargd is None or not node.nodeargd.argnlist:
             # In text mode, '^' and '_' don't pick up any argument (see the
             # specials definitions in pylatexenc.latexwalker._defaultspecs), so
@@ -720,7 +743,8 @@ _latex_specs_base = {
         ('today', _latex_today()),
 
         # use second argument:
-        ('texorpdfstring', lambda node, l2tobj: l2tobj.nodelist_to_text(node.nodeargs[1:2])),
+        ('texorpdfstring',
+         lambda node, l2tobj: l2tobj.nodelist_to_text(node.nodeargd.argnlist[1:2])),
 
         ('oe', u'\u0153'),
         ('OE', u'\u0152'),
@@ -1913,36 +1937,65 @@ specs = [
 
 
 
-def _greekletters(letterlist):
-    for l in letterlist:
-        ucharname = l.upper()
-        if ucharname == 'LAMBDA':
-            ucharname = 'LAMDA'
-        smallname = "GREEK SMALL LETTER "+ucharname
-        if ucharname == 'EPSILON':
-            smallname = "GREEK LUNATE EPSILON SYMBOL"
-        if ucharname == 'PHI':
-            smallname = "GREEK PHI SYMBOL"
+#
+# The greek letters, as (macro name, small letter, capital letter) triples.
+#
+# The characters are spelled out rather than looked up by their unicode name,
+# both because the module has to stay free of the `unicodedata` module (which
+# is not available once these sources are transcribed to JavaScript) and
+# because two of the letters do not use the character one would expect from
+# their name: LaTeX's '\epsilon' is the lunate epsilon and its '\phi' is the
+# phi symbol, the two shapes that '\varepsilon' and '\varphi' are the
+# counterparts of (those are defined separately, further down).
+#
+_greek_letters = (
+    ('alpha', u'\N{GREEK SMALL LETTER ALPHA}', u'\N{GREEK CAPITAL LETTER ALPHA}',),
+    ('beta', u'\N{GREEK SMALL LETTER BETA}', u'\N{GREEK CAPITAL LETTER BETA}',),
+    ('gamma', u'\N{GREEK SMALL LETTER GAMMA}', u'\N{GREEK CAPITAL LETTER GAMMA}',),
+    ('delta', u'\N{GREEK SMALL LETTER DELTA}', u'\N{GREEK CAPITAL LETTER DELTA}',),
+    ('epsilon', u'\N{GREEK LUNATE EPSILON SYMBOL}',
+     u'\N{GREEK CAPITAL LETTER EPSILON}',),
+    ('zeta', u'\N{GREEK SMALL LETTER ZETA}', u'\N{GREEK CAPITAL LETTER ZETA}',),
+    ('eta', u'\N{GREEK SMALL LETTER ETA}', u'\N{GREEK CAPITAL LETTER ETA}',),
+    ('theta', u'\N{GREEK SMALL LETTER THETA}', u'\N{GREEK CAPITAL LETTER THETA}',),
+    ('iota', u'\N{GREEK SMALL LETTER IOTA}', u'\N{GREEK CAPITAL LETTER IOTA}',),
+    ('kappa', u'\N{GREEK SMALL LETTER KAPPA}', u'\N{GREEK CAPITAL LETTER KAPPA}',),
+    ('lambda', u'\N{GREEK SMALL LETTER LAMDA}', u'\N{GREEK CAPITAL LETTER LAMDA}',),
+    ('mu', u'\N{GREEK SMALL LETTER MU}', u'\N{GREEK CAPITAL LETTER MU}',),
+    ('nu', u'\N{GREEK SMALL LETTER NU}', u'\N{GREEK CAPITAL LETTER NU}',),
+    ('xi', u'\N{GREEK SMALL LETTER XI}', u'\N{GREEK CAPITAL LETTER XI}',),
+    ('omicron', u'\N{GREEK SMALL LETTER OMICRON}',
+     u'\N{GREEK CAPITAL LETTER OMICRON}',),
+    ('pi', u'\N{GREEK SMALL LETTER PI}', u'\N{GREEK CAPITAL LETTER PI}',),
+    ('rho', u'\N{GREEK SMALL LETTER RHO}', u'\N{GREEK CAPITAL LETTER RHO}',),
+    ('sigma', u'\N{GREEK SMALL LETTER SIGMA}', u'\N{GREEK CAPITAL LETTER SIGMA}',),
+    ('tau', u'\N{GREEK SMALL LETTER TAU}', u'\N{GREEK CAPITAL LETTER TAU}',),
+    ('upsilon', u'\N{GREEK SMALL LETTER UPSILON}',
+     u'\N{GREEK CAPITAL LETTER UPSILON}',),
+    ('phi', u'\N{GREEK PHI SYMBOL}', u'\N{GREEK CAPITAL LETTER PHI}',),
+    ('chi', u'\N{GREEK SMALL LETTER CHI}', u'\N{GREEK CAPITAL LETTER CHI}',),
+    ('psi', u'\N{GREEK SMALL LETTER PSI}', u'\N{GREEK CAPITAL LETTER PSI}',),
+    ('omega', u'\N{GREEK SMALL LETTER OMEGA}', u'\N{GREEK CAPITAL LETTER OMEGA}',),
+)
+
+def _add_greekletters(letterlist):
+    for letterinfo in letterlist:
+        l, small, capital = letterinfo
         _latex_specs_base['macros'].append(
-            MacroTextSpec(l, unicodedata.lookup(smallname))
+            MacroTextSpec(l, small)
         )
         _latex_specs_base['macros'].append(
-            MacroTextSpec(l[0].upper()+l[1:],
-                          unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
+            MacroTextSpec(l[0].upper()+l[1:], capital)
         )
         # up-greek version (from packages such as upgreek or newtxmath)
         _latex_specs_base['macros'].append(
-            MacroTextSpec("up"+l, unicodedata.lookup(smallname))
+            MacroTextSpec("up"+l, small)
         )
         _latex_specs_base['macros'].append(
-            MacroTextSpec("Up"+l, unicodedata.lookup("GREEK CAPITAL LETTER "+ucharname))
+            MacroTextSpec("Up"+l, capital)
         )
 
-_greekletters(
-    ('alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota', 'kappa',
-     'lambda', 'mu', 'nu', 'xi', 'omicron', 'pi', 'rho', 'sigma', 'tau', 'upsilon', 'phi',
-     'chi', 'psi', 'omega')
-)
+_add_greekletters(_greek_letters)
 _latex_specs_base['macros'] += [
     MacroTextSpec('varepsilon', u'\N{GREEK SMALL LETTER EPSILON}'),
     MacroTextSpec('vartheta', u'\N{GREEK THETA SYMBOL}'),
@@ -1995,8 +2048,8 @@ unicode_accents_list = (
     )
 
 def make_accented_char(node, combining, l2tobj):
-    if node.nodeargs and len(node.nodeargs):
-        nodearg = node.nodeargs[0]
+    if node.nodeargd is not None and node.nodeargd.argnlist:
+        nodearg = node.nodeargd.argnlist[0]
         # str() because an accent is common in math mode, where the
         # 'fancy' math mode renders a node list to a math piece
         # rather than to a string
@@ -2011,16 +2064,24 @@ def make_accented_char(node, combining, l2tobj):
             ch = u"i"
         if (ch == u"\N{LATIN SMALL LETTER DOTLESS J}"):
             ch = u"j"
-        #print u"Accenting %s with %s"%(ch, combining) # this causes UnicdeDecodeError!!!
-        return unicodedata.normalize('NFC', str(ch)+combining)
+        return _compose_accented_char(str(ch)+combining)
 
-    return u"".join([getaccented(ch, combining) for ch in c])
+    return u"".join([ getaccented(ch, combining) for ch in _split_chars(c) ])
 
+
+def _accent_formatter(combining):
+    # a closure and not a default argument value, because a default argument
+    # that refers to a name of the enclosing scope is not transcribed
+    # faithfully to JavaScript
+    def formatter(x, l2tobj):
+        return make_accented_char(x, combining, l2tobj)
+
+    return formatter
 
 for u in unicode_accents_list:
     (mname, mcombining) = u
     _latex_specs_base['macros'].append(
-        MacroTextSpec(mname, lambda x, l2tobj, c=mcombining: make_accented_char(x, c, l2tobj))
+        MacroTextSpec(mname, _accent_formatter(mcombining))
     )
 
 # specs structure now complete

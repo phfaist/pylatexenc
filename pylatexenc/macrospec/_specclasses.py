@@ -173,14 +173,21 @@ class CallableSpec(CallableSpecBase):
         # "make_body_parsing_state_delta" function is provided or overridden
         body_parsing_state_delta = kwargs.pop('body_parsing_state_delta', None)
 
-### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
-        self.is_math_mode = kwargs.pop('is_math_mode', None) # obsolete !
-        if self.is_math_mode:
+        # `is_math_mode=` is the `pylatexenc 2` spelling of a body that is to
+        # be parsed in math mode.  The translation happens here and not in the
+        # compatibility block below, because the standard specs of
+        # `latexwalker` still declare their math environments this way, through
+        # the `is_math_mode=` argument of `macrospec.std_environment()`.
+        is_math_mode = kwargs.pop('is_math_mode', None) # obsolete !
+        if is_math_mode:
             if body_parsing_state_delta is None:
                 body_parsing_state_delta = ParsingStateDeltaEnterMathMode()
             else:
                 raise ValueError("You cannot specify both is_math_mode= and "
                                  "body_parsing_state_delta=")
+
+### BEGIN_PYLATEXENC2_LEGACY_SUPPORT_CODE
+        self.is_math_mode = is_math_mode
 ### END_PYLATEXENC2_LEGACY_SUPPORT_CODE
 
         self.body_parsing_state_delta = body_parsing_state_delta

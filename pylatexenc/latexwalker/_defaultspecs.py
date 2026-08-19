@@ -42,10 +42,15 @@ from ..latexnodes.parsers import (
     LatexVerbatimEnvironmentContentsParser,
 )
 
-from ..macrospec import (
+# these three helpers are imported from the module that defines them, and not
+# from the `macrospec` package, because the package only re-exports them as
+# part of its `pylatexenc 2` compatibility layer, which a build can leave out
+from ..macrospec._spechelpers import (
     std_macro,
     std_environment,
     std_specials,
+)
+from ..macrospec import (
     MacroSpec, EnvironmentSpec, SpecialsSpec,
     LatexSpecialsCallParser,
     # MacroStandardArgsParser,
