@@ -137,6 +137,27 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
         self.assertEqual(u.unicode_to_latex(test_unknown_chars),
                          "A unicode character: \\ensuremath{\\langle}\\texttt{U+0E18}\\ensuremath{\\rangle}")
 
+    def test_accent_decomposition_fallback(self):
+        # characters that have no direct entry in the conversion rules, but
+        # which decompose into an ascii base character and known latex accents
+        u = UnicodeToLatexEncoder(
+            conversion_rules=lenc_get_builtin.get_builtin_conversion_rules('defaults'),
+            unknown_char_warning=False
+        )
+        self.assertEqual(u.unicode_to_latex("\N{LATIN SMALL LETTER I WITH DOT BELOW}"),
+                         "\\d{i}")
+        self.assertEqual(u.unicode_to_latex("\N{LATIN CAPITAL LETTER O WITH DOT BELOW}"),
+                         "\\d{O}")
+        # stacked accents
+        self.assertEqual(
+            u.unicode_to_latex("\N{LATIN SMALL LETTER E WITH CIRCUMFLEX AND TILDE}"),
+            "\\~{\\^{e}}"
+        )
+        # a character with no decomposition at all is still left to the
+        # unknown-character policy
+        self.assertEqual(u.unicode_to_latex("\N{THAI CHARACTER THO THONG}"),
+                         "\N{THAI CHARACTER THO THONG}")
+
 
 ### BEGIN_TEST_PYLATEXENC_SKIP
     def test_rules_00(self):
