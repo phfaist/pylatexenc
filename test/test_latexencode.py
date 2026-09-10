@@ -160,6 +160,13 @@ class TestLatexEncode(unittest.TestCase, ProvideAssertCmds):
             u.unicode_to_latex("\N{LATIN SMALL LETTER E WITH CIRCUMFLEX AND TILDE}"),
             "\\~{\\^{e}}"
         )
+        # a below-accent combined with an above-accent: the \accent-based mark
+        # goes innermost, directly on the base character, and the box-building
+        # mark goes outermost
+        self.assertEqual(
+            u.unicode_to_latex("\N{LATIN SMALL LETTER A WITH CIRCUMFLEX AND DOT BELOW}"),
+            "\\d{\\^{a}}"
+        )
         # a character with no decomposition at all is still left to the
         # unknown-character policy
         self.assertEqual(u.unicode_to_latex("\N{THAI CHARACTER THO THONG}"),
