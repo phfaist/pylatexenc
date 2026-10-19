@@ -89,6 +89,19 @@ __eq__ = function (a, b) {
         return a == b;
     }
 };
+//
+// Same for __ne__, now that our getattr() patch below can hand back a null
+// default value, as in "getattr(obj, 'attr', None) != value".
+//
+__ne__ = function (a, b) {
+    if (typeof a == 'object' && a != null && '__ne__' in a) {
+        return a.__ne__ (b);
+    } else if (typeof b == 'object' && b != null && '__ne__' in b) {
+        return b.__ne__ (a);
+    } else {
+        return a != b;
+    }
+};
 
 
 
