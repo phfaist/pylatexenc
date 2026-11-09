@@ -834,6 +834,33 @@ class TestColorAndSpacingMacros(unittest.TestCase):
 # Escaped characters, ligatures, quotation marks and dashes
 # ------------------------------------------------------------------------------
 
+class TestBoxAndPhantomMacros(unittest.TestCase):
+    r"""
+    The box and phantom macros: the layout arguments stay out of the text
+    output, and the content of a phantom is invisible by definition.
+    """
+
+    def test_box_macros_render_only_their_content(self):
+        self.assertEqual(convert(r'a\raisebox{1pt}{up}b'), 'aupb')
+        self.assertEqual(convert(r'a\raisebox{1pt}[2pt][3pt]{up}b'), 'aupb')
+        self.assertEqual(convert(r'a\rotatebox{90}{rot}b'), 'arotb')
+        self.assertEqual(convert(r'a\rotatebox[origin=c]{90}{rot}b'), 'arotb')
+        self.assertEqual(convert(r'a\parbox{1cm}{content}b'), 'acontentb')
+        self.assertEqual(convert(r'a\parbox[t]{1cm}{content}b'), 'acontentb')
+        self.assertEqual(convert(r'a\savebox{mybox}{content}b'), 'acontentb')
+        self.assertEqual(convert(r'a\savebox{mybox}[2cm][3cm]{content}b'),
+                         'acontentb')
+
+    def test_content_only_boxes_are_unchanged(self):
+        self.assertEqual(convert(r'\fbox{fenced} \mbox{mboxed}'),
+                         'fenced mboxed')
+
+    def test_phantom_content_is_invisible(self):
+        self.assertEqual(convert(r'\phantom{x}y'), 'y')
+        self.assertEqual(convert(r'a\hphantom{bc}d'), 'ad')
+        self.assertEqual(convert(r'a\vphantom{bc}d'), 'ad')
+
+
 class TestEscapedCharacters(unittest.TestCase):
     r"""
     The macros that stand for a character which cannot be written on its own.

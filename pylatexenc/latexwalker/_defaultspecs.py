@@ -330,8 +330,17 @@ specs = [
 
             std_macro('keywords', False, 1),
 
+            std_macro('phantom', True, 1),
             std_macro('hphantom', True, 1),
             std_macro('vphantom', True, 1),
+
+            # box/layout commands: '\raisebox{lift}[height][depth]{content}',
+            # '\rotatebox[options]{angle}{content}',
+            # '\parbox[pos]{width}{content}' and '\savebox{cmd}[width][height]{content}'
+            std_macro('raisebox', "{[[{"),
+            std_macro('rotatebox', "[{{"),
+            std_macro('parbox', "[{{"),
+            std_macro('savebox', "{[[{"),
 
             std_macro("'", False, 1),
             std_macro("`", False, 1),
