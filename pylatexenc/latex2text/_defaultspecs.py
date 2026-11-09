@@ -234,6 +234,13 @@ def _textxx_formatter(macroname):
     return formatter
 
 
+def _verb_formatter(node, l2tobj):
+    # '\verb|...|' typesets its argument exactly as written; the verbatim
+    # content is already parsed into the argument group by the latex walker,
+    # so rendering the argument gives the text without interpreting it.
+    return l2tobj.node_arg_to_text(node, 0)
+
+
 # '\emph{}' switches the italic shape on where it is off and off where it is on,
 # which is how LaTeX restores an upright shape in an italic context.  The
 # toggling is done through this table rather than by simply setting 'italic', so
@@ -592,6 +599,7 @@ _latex_specs_approximations = {
         MacroTextSpec('texttt', simplify_repl=_textxx_formatter('texttt')),
         MacroTextSpec('textup', simplify_repl=_textxx_formatter('textup')),
         MacroTextSpec('mbox', simplify_repl=_textxx_formatter('mbox')),
+        MacroTextSpec('verb', simplify_repl=_verb_formatter),
 
     ] + [ MacroTextSpec(x, simplify_repl=y) for x, y in (
 

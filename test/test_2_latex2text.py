@@ -2032,12 +2032,12 @@ The Title
     #
 
     def test_verbatim_verb_is_not_interpreted(self):
-        # the verbatim content is not interpreted as latex code; note that
-        # latex2text does not currently reproduce the content of \verb itself
+        # the verbatim content is not interpreted as latex code; the content
+        # itself is reproduced as it appears in the source (issue #146)
         self.assertEqual(
             LatexNodes2Text().nodelist_to_text(
                 LatexWalker(r'before \verb+\textbf{x}$y$+ after').get_latex_nodes()[0]),
-            'before  after'
+            r'before \textbf{x}$y$ after'
         )
 
     def test_verbatim_environment_is_not_interpreted(self):
