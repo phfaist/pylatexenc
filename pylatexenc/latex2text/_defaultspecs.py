@@ -234,6 +234,23 @@ def _textxx_formatter(macroname):
     return formatter
 
 
+def _box_content_formatter():
+    # '\raisebox{1pt}{up}' and friends are layout commands: the lift, the
+    # angle, the width, the box register and any other dimension arguments
+    # have no place in the text output, only the content argument does.  The
+    # content is the last argument in the parsing order of every one of these
+    # macros, independently of how many optional arguments appear in between.
+    def formatter(node, l2tobj):
+        argnlist = []
+        if node.nodeargd is not None and node.nodeargd.argnlist:
+            argnlist = node.nodeargd.argnlist
+        if not argnlist:
+            return ''
+        return l2tobj.node_arg_to_text(node, len(argnlist) - 1)
+
+    return formatter
+
+
 # '\emph{}' switches the italic shape on where it is off and off where it is on,
 # which is how LaTeX restores an upright shape in an italic context.  The
 # toggling is done through this table rather than by simply setting 'italic', so
@@ -592,6 +609,18 @@ _latex_specs_approximations = {
         MacroTextSpec('texttt', simplify_repl=_textxx_formatter('texttt')),
         MacroTextSpec('textup', simplify_repl=_textxx_formatter('textup')),
         MacroTextSpec('mbox', simplify_repl=_textxx_formatter('mbox')),
+        # '\phantom{}' typesets nothing: its content is invisible by
+        # definition.  '\hphantom{}' and '\vphantom{}' are the same.
+        MacroTextSpec('phantom', discard=True),
+        MacroTextSpec('hphantom', discard=True),
+        MacroTextSpec('vphantom', discard=True),
+        # '\raisebox{}', '\rotatebox{}', '\parbox{}' and '\savebox{}' are
+        # layout commands: their dimension and box-register arguments have no
+        # place in the text output, only the content argument does.
+        MacroTextSpec('raisebox', simplify_repl=_box_content_formatter()),
+        MacroTextSpec('rotatebox', simplify_repl=_box_content_formatter()),
+        MacroTextSpec('parbox', simplify_repl=_box_content_formatter()),
+        MacroTextSpec('savebox', simplify_repl=_box_content_formatter()),
 
     ] + [ MacroTextSpec(x, simplify_repl=y) for x, y in (
 
