@@ -834,6 +834,23 @@ class TestColorAndSpacingMacros(unittest.TestCase):
 # Escaped characters, ligatures, quotation marks and dashes
 # ------------------------------------------------------------------------------
 
+class TestVerbatimMacros(unittest.TestCase):
+    r"""
+    '\verb|...|' typesets its argument exactly as written, without
+    interpreting it as LaTeX code.
+    """
+
+    def test_verb_macro_content_is_kept(self):
+        self.assertEqual(convert(r'a \verb|hello| b'), 'a hello b')
+
+    def test_verb_macro_content_is_not_interpreted(self):
+        self.assertEqual(convert(r'\verb|\textbf{x} & $y$|'),
+                         r'\textbf{x} & $y$')
+
+    def test_verb_macro_with_other_delimiters(self):
+        self.assertEqual(convert(r'\verb!a_b!'), 'a_b')
+
+
 class TestEscapedCharacters(unittest.TestCase):
     r"""
     The macros that stand for a character which cannot be written on its own.
