@@ -281,7 +281,7 @@ class Preprocess:
             for mm in matches:
                 assert mm.endswith('.py')
                 mm = mm[:-3]
-                new_module_list.append( mm.replace('/', '.') )
+                new_module_list.append( mm.replace('\\', '/').replace('/', '.') )
 
         logging.info(f"Final module list is {new_module_list}")
 
