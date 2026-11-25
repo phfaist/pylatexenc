@@ -978,9 +978,9 @@ class LatexNodeList(object):
         def filter_full_predicate_fn(n):
             if skip_none and n is None:
                 return False
-            if skip_comments and n.isNodeType(LatexCommentNode):
+            if skip_comments and n is not None and n.isNodeType(LatexCommentNode):
                 return False
-            if skip_whitespace_char_nodes and n.isNodeType(LatexCharsNode) \
+            if skip_whitespace_char_nodes and n is not None and n.isNodeType(LatexCharsNode) \
                and len(n.chars.strip()) == 0:
                 return False
             if node_predicate_fn is not None:
