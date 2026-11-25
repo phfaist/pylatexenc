@@ -1313,7 +1313,7 @@ class LatexNodeList(object):
 
         comma_sep_parts = self.split_at_chars(comma_sep_chars)
         for part in comma_sep_parts:
-            eq_sep_parts = part.split_at_chars(eq_sep_chars, max_split=1)
+            eq_sep_parts = part.split_at_chars(eq_sep_chars, max_split=1, keep_empty=True)
             if len(eq_sep_parts) == 0:
                 continue
             key_nl = eq_sep_parts[0]
@@ -1331,7 +1331,7 @@ class LatexNodeList(object):
 
             if not isinstance(value_nl, LatexNodeList):
                 value_nl = make_nodelist(
-                    [value_nl],
+                    value_nl if isinstance(value_nl, list) else [value_nl],
                     parsing_state=self.parsing_state,
                 )
             
