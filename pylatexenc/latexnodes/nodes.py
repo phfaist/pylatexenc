@@ -738,7 +738,9 @@ class LatexMathNode(LatexNode):
        The contents of the environment.  This attribute is normally a
        :py:class:`LatexNodeList`.
     """
-    def __init__(self, displaytype, nodelist=[], **kwargs):
+    def __init__(self, displaytype, nodelist=None, **kwargs):
+        if nodelist is None:
+            nodelist = []
         delimiters = kwargs.pop('delimiters', (None, None))
 
         super(LatexMathNode, self).__init__(
